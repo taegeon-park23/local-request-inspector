@@ -49,6 +49,7 @@ This task is done when all of the following are true:
 - Required PRD, shell, request-builder, script, mock, history/inspector, QA, and tooling documents were re-read before defining T010.
 - T010 now defines a shell-first, route-light implementation plan with clear `client/` boundaries, provider/state ownership rules, an ordered feature rollout, and a ten-slice PR sequence.
 - The plan explicitly identifies S1 as the first implementation PR: new client bootstrap + provider scaffold + top-level routes + shell placeholders + minimal component coverage.
+- **Implementation follow-up (2026-03-18):** S1 is now delivered in code with the React + Vite + TypeScript client bootstrap, persistent shell region placeholders, provider seams, route skeleton, component tests, and a conservative `/app` coexistence entrypoint that leaves the legacy prototype intact.
 
 ## 7. Key Decisions
 1. The frontend rewrite should proceed **shell-first with incremental feature slices**, not route-first and not all-at-once.

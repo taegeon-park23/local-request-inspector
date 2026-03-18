@@ -6,7 +6,26 @@ const fs = require("fs");
 const app = express();
 const PORT = 5671;
 
-app.use(express.static(path.join(__dirname, "public")));
+const clientDistPath = path.join(__dirname, 'client', 'dist');
+const hasClientDist = fs.existsSync(clientDistPath);
+
+app.use(express.static(path.join(__dirname, 'public')));
+
+// S1 coexistence seam: preserve the legacy prototype at `/` while allowing the new client shell
+// to be served from `/app` after a future Vite build produces `client/dist`.
+if (hasClientDist) {
+  app.use('/app', express.static(clientDistPath));
+
+  app.get(['/app', '/app/*'], (req, res) => {
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+} else {
+  app.get(['/app', '/app/*'], (req, res) => {
+    res.status(503).send(
+      'The React client shell is available through the Vite dev server during S1. Build the client to enable the /app coexistence entrypoint.',
+    );
+  });
+}
 
 // [복구 완료] 원본 라우터 코드 들여쓰기 원상 복구
 let clients = [];
