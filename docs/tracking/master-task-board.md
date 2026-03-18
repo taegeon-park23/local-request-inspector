@@ -35,8 +35,8 @@
 | T018 | Delivery milestone plan | Convert backlog into phased milestones with readiness gates and review checkpoints. | P1 | todo | Needed once P0 architecture decisions stabilize. | T001-T007 | Milestone plan | Delivery Agent | Shifts if P0 scope changes | Revisit after architecture |
 
 ## Current Focus
-- **Active highest-priority next step:** first implementation PR for the T010 shell bootstrap slice
-- T010 now hands implementation a narrow S1 scope: client bootstrap, route/provider scaffold, persistent shell regions, and minimal component coverage.
+- **Active highest-priority next step:** S2 workspace explorer + request tab shell slice after validating the landed S1 bootstrap.
+- S1 is now implemented with the new client bootstrap, route/provider scaffold, persistent shell regions, component coverage, and a conservative legacy coexistence seam.
 
 ## Blockers Snapshot
 - No blocker remains for starting the first frontend implementation slice.

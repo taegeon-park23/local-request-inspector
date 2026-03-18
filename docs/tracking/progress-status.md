@@ -18,13 +18,14 @@
 - Testing and QA strategy: **done**
 - Developer environment and tooling baseline: **done**
 - Frontend workspace shell implementation plan: **done**
-- Next implementation focus (T010 slice S1): **ready**
+- T010 slice S1 client bootstrap + shell skeleton: **done**
+- Next implementation focus (T010 slice S2): **ready**
 
 ## Current Next Action
-Start the first T010 implementation slice: client bootstrap + provider scaffold + top-level route skeleton + persistent shell placeholders.
+Start T010 slice S2: workspace explorer + request tab shell scaffolding on top of the landed S1 bootstrap.
 
 ## Open Blockers
-- No blocker for starting the first T010 implementation slice.
+- No blocker for starting T010 slice S2 after the S1 shell bootstrap baseline.
 - Major planning dependencies for request behavior, script UX, mock behavior, runtime observation, QA strategy, tooling baseline, and shell slicing are now documented.
 
 ## Notes for Next Contributor
