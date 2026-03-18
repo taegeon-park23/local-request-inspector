@@ -9,20 +9,28 @@
 ## Current State
 - Documentation and tracking structure: **done**
 - PRD execution summary: **done**
-- Task backlog decomposition: **done**
-- Priority sequencing: **done**
-- First task readiness package: **done**
-- Architecture design work: **not started**
+- Foundation architecture, schema, persistence, and shell planning: **done**
+- Internal API and persistence bootstrap planning: **done**
+- Request builder MVP design: **done**
+- Script editor and automation UX spec: **done**
+- Mock engine rules spec: **done**
+- History / inspector behavior spec: **done**
+- Testing and QA strategy: **done**
+- Developer environment and tooling baseline: **done**
+- Frontend workspace shell implementation plan: **done**
+- Next implementation focus (T010 slice S1): **ready**
 
 ## Current Next Action
-Start `T001 - Foundation architecture and domain model` using the readiness brief in `../tasks/task-001-foundation-architecture.md`.
+Start the first T010 implementation slice: client bootstrap + provider scaffold + top-level route skeleton + persistent shell placeholders.
 
 ## Open Blockers
-- No blocker for starting T001.
-- Several downstream tasks remain blocked on architecture and domain decisions.
+- No blocker for starting the first T010 implementation slice.
+- Major planning dependencies for request behavior, script UX, mock behavior, runtime observation, QA strategy, tooling baseline, and shell slicing are now documented.
 
 ## Notes for Next Contributor
 1. Read `../prd/overview.md`
-2. Read `master-task-board.md`
-3. Open `../tasks/task-001-foundation-architecture.md`
-4. Update this file and the master board when T001 moves to `doing`
+2. Read `master-task-board.md` and `priority-roadmap.md`
+3. Open `../tasks/task-016-testing-and-qa-strategy.md` for the latest verification layers, smoke scenarios, and regression guards
+4. Open `../tasks/task-017-developer-environment-and-tooling-baseline.md` for the tooling, fixture, bootstrap, and script baseline
+5. Open `../tasks/task-010-frontend-workspace-shell-implementation-plan.md` for the shell-first slice sequence and first-PR scope
+6. Use T011/T012/T013/T014/T016/T017/T010 handoff notes when preparing implementation prompts and PR slices
