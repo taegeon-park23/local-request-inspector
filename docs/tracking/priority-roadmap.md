@@ -55,15 +55,12 @@ Tasks are prioritized using these criteria:
 
 ## Near-Term Ready Queue
 Ready to start now:
-- `T012` Script editor and automation UX spec
-- `T014` History / inspector behavior spec
+- `T001` Foundation architecture and domain model
 
-Prepare immediately after T012/T014:
-- `T017` Developer environment and tooling baseline
-- `T013` Mock engine rules spec
-
-Prepare after T013/T017 inputs stabilize:
-- `T016` Testing and QA strategy
+Prepare immediately after T001:
+- `T007` Shared domain schema and naming conventions
+- `T004` Persistence strategy decision
+- `T003` UX information architecture and workspace flows
 
 ## Deferred / Lower Priority Notes
 - Import/export can wait until schemas stabilize.

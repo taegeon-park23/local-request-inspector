@@ -4,7 +4,7 @@
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-18
 - **Related Documents:** `task-001-foundation-architecture.md`, `../architecture/shared-schema.md`, `../architecture/naming-conventions.md`, `../architecture/domain-model.md`, `../tracking/master-task-board.md`
-- **Status:** done
+- **Status:** doing
 - **Priority:** P0
 
 ## 1. Summary
@@ -35,9 +35,9 @@ This task is done when all of the following are true:
 - `../architecture/naming-conventions.md`
 
 ## 6. Current Progress
-- Shared schema draft completed in `../architecture/shared-schema.md`.
-- Naming conventions draft completed in `../architecture/naming-conventions.md`.
-- T007 outputs were reviewed and determined sufficient to start T004 persistence strategy work.
+- T007 has been started.
+- Shared schema draft is being documented based on T001 domain entities and relationships.
+- Naming conventions are being normalized for entities, fields, enums, API paths, and events.
 
 ## 7. Open Questions
 1. Whether `Secret` is a first-class persisted entity or an implementation policy behind `EnvironmentVariable` is **확실하지 않음**.
