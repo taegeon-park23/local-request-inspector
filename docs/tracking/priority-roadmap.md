@@ -54,13 +54,25 @@ Tasks are prioritized using these criteria:
 - Frontend shell strategy is selected.
 
 ## Near-Term Ready Queue
-Ready to start now:
+Recently completed foundation work:
 - `T001` Foundation architecture and domain model
-
-Prepare immediately after T001:
 - `T007` Shared domain schema and naming conventions
 - `T004` Persistence strategy decision
+- `T005` Script execution safety model
 - `T003` UX information architecture and workspace flows
+- `T006` Frontend stack and application shell decision
+- `T008` Internal API contract design
+- `T009` Workspace persistence bootstrap
+- `T011` Request builder MVP design
+- `T012` Script editor and automation UX spec
+- `T013` Mock engine rules spec
+- `T014` History / inspector behavior spec
+- `T016` Testing and QA strategy
+- `T017` Developer environment and tooling baseline
+- `T010` Frontend workspace shell implementation plan
+
+Ready to start now:
+- First frontend implementation PR from the T010 shell bootstrap slice
 
 ## Deferred / Lower Priority Notes
 - Import/export can wait until schemas stabilize.

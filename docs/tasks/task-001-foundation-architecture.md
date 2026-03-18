@@ -1,10 +1,10 @@
 # T001 - Foundation Architecture and Domain Model
 
-- **Purpose:** Prepare the first implementation-critical planning task so another agent or developer can start it immediately.
+- **Purpose:** Prepare and record the first implementation-critical architecture package so downstream tasks can start from stable boundaries.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-18
 - **Related Documents:** `../prd/overview.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../../skills/common-workflow.md`
-- **Status:** todo
+- **Status:** done
 - **Priority:** P0
 
 ## 1. Summary
@@ -86,14 +86,18 @@ Suggested path:
 
 ## 11. Handoff Checklist
 Before handing this task to the next contributor, verify:
-- [ ] Architecture docs are created and linked
-- [ ] Domain entities have names, responsibilities, and relationships
-- [ ] Migration phases are described
-- [ ] Open questions are visible and actionable
-- [ ] Downstream task impacts are listed
-- [ ] `master-task-board.md` status is updated
-- [ ] `progress-status.md` is updated
+- [x] Architecture docs are created and linked
+- [x] Domain entities have names, responsibilities, and relationships
+- [x] Migration phases are described
+- [x] Open questions are visible and actionable
+- [x] Downstream task impacts are listed
+- [x] `master-task-board.md` status is updated
+- [x] `progress-status.md` is updated
 
 ## 12. Recommended Owner
 - Primary: Architecture Agent / Senior Engineer
 - Secondary reviewer: Product / Documentation Agent
+
+
+## 13. Closure Decision
+T001 can be treated as **done** at the planning/documentation level because the architecture overview, domain model, and migration plan now exist and have already been consumed by downstream tasks.
