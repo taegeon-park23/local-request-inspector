@@ -55,12 +55,12 @@ Tasks are prioritized using these criteria:
 
 ## Near-Term Ready Queue
 Ready to start now:
-- `T007` Shared domain schema and naming conventions
+- `T001` Foundation architecture and domain model
 
-Prepare immediately after T007:
+Prepare immediately after T001:
+- `T007` Shared domain schema and naming conventions
 - `T004` Persistence strategy decision
-- `T005` Script execution safety model
-- `T008` Internal API contract design
+- `T003` UX information architecture and workspace flows
 
 ## Deferred / Lower Priority Notes
 - Import/export can wait until schemas stabilize.

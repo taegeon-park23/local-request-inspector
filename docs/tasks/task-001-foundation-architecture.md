@@ -3,8 +3,8 @@
 - **Purpose:** Prepare the first implementation-critical planning task so another agent or developer can start it immediately.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-18
-- **Related Documents:** `../prd/overview.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../architecture/overview.md`, `../architecture/domain-model.md`, `../architecture/migration-plan.md`, `../../skills/common-workflow.md`
-- **Status:** done
+- **Related Documents:** `../prd/overview.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../../skills/common-workflow.md`
+- **Status:** todo
 - **Priority:** P0
 
 ## 1. Summary
@@ -84,28 +84,16 @@ Suggested path:
 3. Exact local security guarantees for script execution are **확실하지 않음**.
 4. Whether inbound and outbound events must share one persistence model in MVP is **확실하지 않음**.
 
-## 11. Current Progress
-- Architecture overview drafted in `../architecture/overview.md`.
-- Domain model drafted in `../architecture/domain-model.md`.
-- Migration strategy drafted in `../architecture/migration-plan.md`.
-- Current codebase findings documented to support T003, T004, T005, T006, T007, and T008.
-
-## 12. Remaining Open Questions
-1. Persistence model is still **확실하지 않음** and should be resolved in T004.
-2. Frontend stack and packaging direction are still **확실하지 않음** and should be resolved across T003/T006.
-3. Sandbox isolation and capability policy remain **확실하지 않음** and should be resolved in T005.
-4. Canonical shared schema details have moved into T007 and should continue there.
-
-## 13. Handoff Checklist
+## 11. Handoff Checklist
 Before handing this task to the next contributor, verify:
-- [x] Architecture docs are created and linked
-- [x] Domain entities have names, responsibilities, and relationships
-- [x] Migration phases are described
-- [x] Open questions are visible and actionable
-- [x] Downstream task impacts are listed
-- [x] `master-task-board.md` status is updated
-- [x] `progress-status.md` is updated
+- [ ] Architecture docs are created and linked
+- [ ] Domain entities have names, responsibilities, and relationships
+- [ ] Migration phases are described
+- [ ] Open questions are visible and actionable
+- [ ] Downstream task impacts are listed
+- [ ] `master-task-board.md` status is updated
+- [ ] `progress-status.md` is updated
 
-## 14. Recommended Owner
+## 12. Recommended Owner
 - Primary: Architecture Agent / Senior Engineer
 - Secondary reviewer: Product / Documentation Agent

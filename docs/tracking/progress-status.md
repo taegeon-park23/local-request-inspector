@@ -12,21 +12,17 @@
 - Task backlog decomposition: **done**
 - Priority sequencing: **done**
 - First task readiness package: **done**
-- Architecture design work: **done**
-- Shared schema and naming draft work: **doing**
+- Architecture design work: **not started**
 
 ## Current Next Action
-Continue `T007 - Shared domain schema and naming conventions` by reviewing the new shared schema and naming drafts, then using them to start T004, T005, and T008.
+Start `T001 - Foundation architecture and domain model` using the readiness brief in `../tasks/task-001-foundation-architecture.md`.
 
 ## Open Blockers
-- No blocker for continuing T007 documentation work.
-- T004 still needs persistence decisions for `Secret`, runtime retention, and artifact separation.
-- T005 still needs sandbox policy for script outputs, secrets exposure, and runtime capabilities.
-- T008 still needs DTO/event/API path design built from the shared schema draft.
-- T006 still needs frontend stack / packaging direction, but T007 is not blocked by that decision.
+- No blocker for starting T001.
+- Several downstream tasks remain blocked on architecture and domain decisions.
 
 ## Notes for Next Contributor
-1. Read `../architecture/shared-schema.md` and `../architecture/naming-conventions.md` first.
-2. Then move into T004, T005, or T008 using the follow-up input sections in `shared-schema.md`.
-3. Keep unresolved decisions marked **확실하지 않음** until the owning task resolves them.
-4. Update this file and the master board when T007 moves from `doing` to `done`.
+1. Read `../prd/overview.md`
+2. Read `master-task-board.md`
+3. Open `../tasks/task-001-foundation-architecture.md`
+4. Update this file and the master board when T001 moves to `doing`
