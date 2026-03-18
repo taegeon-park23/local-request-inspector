@@ -15,7 +15,7 @@
 ## Canonical Backlog
 | ID | Title | Description | Priority | Status | Rationale / Purpose | Dependencies | Deliverables | Recommended Role | Risks | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| T001 | Foundation architecture and domain model | Define target module boundaries, core domain entities, persistence candidates, and migration approach from the current monolith. | P0 | doing | Unlocks nearly every downstream implementation decision and reduces high-risk rework. | PRD summary alignment | Architecture decision doc, domain model draft, migration outline | Architecture Agent | Premature stack choices, unresolved storage/security trade-offs | Draft architecture package created; follow-up decisions remain for T004/T005/T006/T007/T008 |
+| T001 | Foundation architecture and domain model | Define target module boundaries, core domain entities, persistence candidates, and migration approach from the current monolith. | P0 | todo | Unlocks nearly every downstream implementation decision and reduces high-risk rework. | PRD summary alignment | Architecture decision doc, domain model draft, migration outline | Architecture Agent | Premature stack choices, unresolved storage/security trade-offs | First execution-ready task |
 | T002 | Delivery documentation and tracking system | Establish PRD summary, roadmap, board, task docs, and collaboration rules. | P0 | done | Enables coordinated execution and clean handoff before feature work. | None | `docs/` structure, AGENTS, workflow guidance | Product / Documentation Agent | Docs can drift if not maintained | Created in this change set |
 | T003 | UX information architecture and workspace flows | Define top-level navigation, panel layout, request editing flow, and key user journeys. | P0 | todo | Prevents frontend rewrite churn and aligns storage/API decisions with user flow. | T001 | IA doc, screen map, user journey notes | Product + UX / Architecture | Could be blocked by unresolved desktop/web scope | Focus on MVP flows first |
 | T004 | Persistence strategy decision | Decide between JSON-file, SQLite, or hybrid persistence for collections, history, environments, and mock rules. | P0 | todo | Affects repositories, import/export, backup, and migration complexity. | T001 | Storage decision memo, pros/cons, initial schema approach | Architecture Agent | Rework if chosen too late | May become an ADR |
@@ -35,8 +35,8 @@
 | T018 | Delivery milestone plan | Convert backlog into phased milestones with readiness gates and review checkpoints. | P1 | todo | Needed once P0 architecture decisions stabilize. | T001-T007 | Milestone plan | Delivery Agent | Shifts if P0 scope changes | Revisit after architecture |
 
 ## Current Focus
-- **Active highest-priority task:** `T001 - Foundation architecture and domain model`
-- Architecture overview, domain model, and migration-plan drafts now exist; the next step is to convert this package into T004/T005/T006/T007 inputs.
+- **Active highest-priority next task:** `T001 - Foundation architecture and domain model`
+- This task is not started yet because readiness preparation is being completed first.
 
 ## Blockers Snapshot
 - No blocking issue for documentation setup.
