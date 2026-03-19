@@ -6,8 +6,8 @@ export interface AppSection {
 
 export const appSections: AppSection[] = [
   { label: 'Workspace', path: '/workspace', summary: 'Request authoring shell placeholder.' },
-  { label: 'Captures', path: '/captures', summary: 'Inbound capture monitoring placeholder.' },
-  { label: 'History', path: '/history', summary: 'Execution history and detail placeholder.' },
+  { label: 'Captures', path: '/captures', summary: 'Inbound capture observation skeleton and runtime feed seam.' },
+  { label: 'History', path: '/history', summary: 'Execution history observation skeleton and result composition.' },
   { label: 'Mocks', path: '/mocks', summary: 'Mock rule management placeholder.' },
   { label: 'Environments', path: '/environments', summary: 'Environment and secret management placeholder.' },
   { label: 'Scripts', path: '/scripts', summary: 'Automation script catalog placeholder.' },

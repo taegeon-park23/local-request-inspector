@@ -1,13 +1,20 @@
+import type { RuntimeConnectionHealth } from '@client/features/runtime-events/runtime-events.types';
 import { create } from 'zustand';
-
-export type RuntimeConnectionHealth = 'idle' | 'connecting' | 'offline';
 
 interface ShellState {
   runtimeConnectionHealth: RuntimeConnectionHealth;
   setRuntimeConnectionHealth: (health: RuntimeConnectionHealth) => void;
 }
 
-export const useShellStore = create<ShellState>((set) => ({
+const initialShellState: Pick<ShellState, 'runtimeConnectionHealth'> = {
   runtimeConnectionHealth: 'idle',
+};
+
+export const useShellStore = create<ShellState>((set) => ({
+  ...initialShellState,
   setRuntimeConnectionHealth: (runtimeConnectionHealth) => set({ runtimeConnectionHealth }),
 }));
+
+export function resetShellStore() {
+  useShellStore.setState(initialShellState);
+}

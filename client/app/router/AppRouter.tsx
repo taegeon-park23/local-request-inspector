@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+﻿import { Navigate, Route, Routes } from 'react-router-dom';
 import { appSections } from '@client/app/router/sections';
 import { AppShell } from '@client/app/shell/AppShell';
 import { CapturesPlaceholder } from '@client/features/captures/components/CapturesPlaceholder';
@@ -9,7 +9,13 @@ import { ScriptsPlaceholder } from '@client/features/scripts/components/ScriptsP
 import { SettingsPlaceholder } from '@client/features/settings/components/SettingsPlaceholder';
 import { WorkspacePlaceholder } from '@client/features/workspace/components/WorkspacePlaceholder';
 
-const [workspaceSection, capturesSection, historySection, mocksSection, environmentsSection, scriptsSection, settingsSection] = appSections;
+const workspaceSection = appSections[0]!;
+const capturesSection = appSections[1]!;
+const historySection = appSections[2]!;
+const mocksSection = appSections[3]!;
+const environmentsSection = appSections[4]!;
+const scriptsSection = appSections[5]!;
+const settingsSection = appSections[6]!;
 
 export function AppRouter() {
   return (

@@ -2,7 +2,7 @@
 
 - **Purpose:** Provide the canonical backlog and execution status for project preparation and delivery.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-18
+- **Last Updated:** 2026-03-19
 - **Related Documents:** `priority-roadmap.md`, `../prd/overview.md`, `../tasks/task-001-foundation-architecture.md`
 - **Update Rule:** Update status, dependencies, notes, and outputs whenever task state changes.
 
@@ -35,9 +35,14 @@
 | T018 | Delivery milestone plan | Convert backlog into phased milestones with readiness gates and review checkpoints. | P1 | todo | Needed once P0 architecture decisions stabilize. | T001-T007 | Milestone plan | Delivery Agent | Shifts if P0 scope changes | Revisit after architecture |
 
 ## Current Focus
-- **Active highest-priority next step:** S2 workspace explorer + request tab shell slice after validating the landed S1 bootstrap.
-- S1 is now implemented with the new client bootstrap, route/provider scaffold, persistent shell regions, component coverage, and a conservative legacy coexistence seam.
+- **Active highest-priority next step:** S7 mocks skeleton on top of the landed S6 history observation skeleton and result composition seam.
+- S1 is implemented with the new client bootstrap, route/provider scaffold, persistent shell regions, component coverage, and a conservative legacy coexistence seam.
+- S2 is implemented with the `/workspace` explorer scaffold, in-memory request tree, request tab registry shell, tab focus/close behavior, active work-surface placeholder, and contextual result-panel placeholder.
+- S3 is implemented with per-tab request draft state, method/url authoring, params/headers/body/auth core editors, scripts placeholder, dirty tab indicators, and a still-separated observation panel seam.
+- S4 is implemented with a typed runtime-events adapter seam, synthetic normalized capture feed, shell-level connection health, and a `/captures` list/detail/timeline skeleton that keeps mock outcome vocabulary separate from authoring state.
+- S5 is implemented with props-only shared result/detail primitives, a refactored request observation placeholder, and a refactored captures observation surface that reuse tabs, summary sections, empty callouts, and family-aware badges without changing feature state ownership.
+- S6 is implemented with a feature-local `/history` observation store, synthetic execution history fixtures, shared-primitive-based result composition tabs, compact stage summaries, and explicit execution/transport/test outcome family separation that remains independent from captures and request drafts.
 
 ## Blockers Snapshot
-- No blocker remains for starting the first frontend implementation slice.
+- No blocker remains for starting T010 slice S7 after the S6 history skeleton and result composition landed.
 - Architecture, schema, safety, persistence, request-builder, script-UX, mock-rule, history/inspector, QA, tooling, and shell-slicing inputs are now documented.

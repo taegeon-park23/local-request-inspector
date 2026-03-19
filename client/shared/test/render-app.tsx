@@ -1,3 +1,4 @@
+import type { RuntimeEventsAdapterFactory } from '@client/features/runtime-events/runtime-events.types';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { render, type RenderOptions } from '@testing-library/react';
 import { type PropsWithChildren, type ReactElement } from 'react';
@@ -7,16 +8,22 @@ import { RuntimeEventsProvider } from '@client/app/providers/runtime-events';
 
 interface RenderAppOptions extends Omit<RenderOptions, 'wrapper'> {
   initialEntries?: string[];
+  runtimeEventsAdapterFactory?: RuntimeEventsAdapterFactory;
 }
 
-export function renderApp(ui: ReactElement, { initialEntries = ['/workspace'], ...options }: RenderAppOptions = {}) {
+export function renderApp(
+  ui: ReactElement,
+  { initialEntries = ['/workspace'], runtimeEventsAdapterFactory, ...options }: RenderAppOptions = {},
+) {
   const queryClient = createQueryClient();
 
   function Wrapper({ children }: PropsWithChildren) {
     return (
       <MemoryRouter initialEntries={initialEntries}>
         <QueryClientProvider client={queryClient}>
-          <RuntimeEventsProvider>{children}</RuntimeEventsProvider>
+          <RuntimeEventsProvider {...(runtimeEventsAdapterFactory ? { createAdapter: runtimeEventsAdapterFactory } : {})}>
+            {children}
+          </RuntimeEventsProvider>
         </QueryClientProvider>
       </MemoryRouter>
     );

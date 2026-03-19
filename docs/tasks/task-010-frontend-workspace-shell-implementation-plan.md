@@ -2,7 +2,7 @@
 
 - **Purpose:** Define the incremental implementation plan for the React + Vite + TypeScript frontend shell so the team can begin coding with clear route, shell, provider, state, and slice boundaries.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-18
+- **Last Updated:** 2026-03-19
 - **Related Documents:** `task-006-frontend-stack-and-application-shell-decision.md`, `task-011-request-builder-mvp-design.md`, `task-012-script-editor-and-automation-ux-spec.md`, `task-013-mock-engine-rules-spec.md`, `task-014-history-inspector-behavior-spec.md`, `task-016-testing-and-qa-strategy.md`, `task-017-developer-environment-and-tooling-baseline.md`, `../architecture/frontend-workspace-shell-implementation-plan.md`, `../tracking/master-task-board.md`
 - **Status:** done
 - **Priority:** P1
@@ -50,6 +50,11 @@ This task is done when all of the following are true:
 - T010 now defines a shell-first, route-light implementation plan with clear `client/` boundaries, provider/state ownership rules, an ordered feature rollout, and a ten-slice PR sequence.
 - The plan explicitly identifies S1 as the first implementation PR: new client bootstrap + provider scaffold + top-level routes + shell placeholders + minimal component coverage.
 - **Implementation follow-up (2026-03-18):** S1 is now delivered in code with the React + Vite + TypeScript client bootstrap, persistent shell region placeholders, provider seams, route skeleton, component tests, and a conservative `/app` coexistence entrypoint that leaves the legacy prototype intact.
+- **Implementation follow-up (2026-03-18):** S2 is now delivered in code with a `/workspace` explorer/sidebar scaffold, in-memory collection/folder/request tree, request tab registry shell, active-tab switching and close fallback behavior, empty-state handling, and explicit authoring-vs-observation placeholder surfaces ready for S3.
+- **Implementation follow-up (2026-03-19):** S3 is now delivered in code with per-tab request draft state separated from the workspace tab registry, method/url authoring controls, params/headers/body/auth core editors, scripts placeholder copy, dirty tab indicators, and a still-placeholder observation panel ready for S4 runtime events and captures seams.
+- **Implementation follow-up (2026-03-19):** S4 is now delivered in code with a typed runtime-events adapter seam, normalized capture observation fixtures, shell-level connection health wiring, and a `/captures` list/detail/timeline skeleton that keeps mock outcome vocabulary separate from request authoring state and leaves shared result/detail primitives for S5.
+- **Implementation follow-up (2026-03-19):** S5 is now delivered in code with props-only shared result/detail primitives, a refactored request observation placeholder, and a refactored captures observation surface that reuse tabs, summary sections, empty callouts, and family-aware badges without moving feature state into shared layers.
+- **Implementation follow-up (2026-03-19):** S6 is now delivered in code with a feature-local history observation store, synthetic execution history fixtures, shared-primitive-based Response/Console/Tests/Execution Info composition, compact execution stage summaries, and explicit execution/transport/test outcome family separation that stays isolated from captures and request drafts.
 
 ## 7. Key Decisions
 1. The frontend rewrite should proceed **shell-first with incremental feature slices**, not route-first and not all-at-once.
@@ -79,4 +84,4 @@ This task is done when all of the following are true:
 - Secondary reviewers: Backend Lead + QA / Senior Engineer
 
 ## 11. Closure Decision
-T010 can be closed as **done** at the planning/documentation level. The next step is to start the first implementation PR for the shell bootstrap slice rather than continue broad frontend design debate.
+T010 can be closed as **done** at the planning/documentation level. The next step is to start the S7 mocks skeleton slice on top of the landed history/result-composition seams rather than widen S6 into replay, diff, persistence queries, or live execution-stream modeling.
