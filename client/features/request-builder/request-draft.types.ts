@@ -1,6 +1,7 @@
-﻿import type { HttpMethodLabel } from '@client/features/request-builder/request-tab.types';
+import type { HttpMethodLabel } from '@client/features/request-builder/request-tab.types';
 
 export type RequestEditorTabId = 'params' | 'headers' | 'body' | 'auth' | 'scripts';
+export type RequestScriptStageId = 'pre-request' | 'post-response' | 'tests';
 
 export type RequestBodyMode =
   | 'none'
@@ -30,6 +31,20 @@ export interface RequestDraftAuthState {
   apiKeyPlacement: ApiKeyPlacement;
 }
 
+export interface RequestDraftScriptsState {
+  activeStage: RequestScriptStageId;
+  preRequest: string;
+  postResponse: string;
+  tests: string;
+}
+
+export interface RequestDraftScriptsSeed {
+  activeStage?: RequestScriptStageId;
+  preRequest?: string;
+  postResponse?: string;
+  tests?: string;
+}
+
 export interface RequestDraftState {
   tabId: string;
   name: string;
@@ -42,6 +57,7 @@ export interface RequestDraftState {
   formBody: RequestKeyValueRow[];
   multipartBody: RequestKeyValueRow[];
   auth: RequestDraftAuthState;
+  scripts: RequestDraftScriptsState;
   activeEditorTab: RequestEditorTabId;
   dirty: boolean;
   collectionName?: string;
@@ -59,4 +75,5 @@ export interface RequestDraftSeed {
   formBody?: RequestKeyValueRow[];
   multipartBody?: RequestKeyValueRow[];
   auth?: Partial<RequestDraftAuthState>;
+  scripts?: RequestDraftScriptsSeed;
 }

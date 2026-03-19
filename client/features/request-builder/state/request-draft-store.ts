@@ -2,9 +2,13 @@ import { create } from 'zustand';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
 import type {
   RequestDraftAuthState,
+  RequestDraftScriptsSeed,
+  RequestDraftScriptsState,
   RequestDraftSeed,
   RequestDraftState,
   RequestEditorTabId,
+  RequestKeyValueRow,
+  RequestScriptStageId,
 } from '@client/features/request-builder/request-draft.types';
 import { getSavedWorkspaceRequestSeedById } from '@client/features/workspace/data/workspace-explorer-fixtures';
 
@@ -15,12 +19,14 @@ interface RequestDraftEntry {
 
 type DraftRowTarget = 'params' | 'headers' | 'formBody' | 'multipartBody';
 type DraftRowField = 'key' | 'value' | 'enabled';
+type ScriptContentField = keyof Omit<RequestDraftScriptsState, 'activeStage'>;
 
 interface RequestDraftStoreState {
   draftsByTabId: Record<string, RequestDraftEntry>;
   nextRowSequence: number;
-  ensureDraftForTab: (tab: RequestTabRecord) => void;
+  ensureDraftForTab: (tab: RequestTabRecord, draftSeed?: RequestDraftSeed) => void;
   removeDraft: (tabId: string) => void;
+  commitSavedDraft: (tabId: string, placement: { collectionName: string; folderName?: string }) => void;
   updateDraftName: (tabId: string, name: string) => void;
   updateDraftMethod: (tabId: string, method: RequestDraftState['method']) => void;
   updateDraftUrl: (tabId: string, url: string) => void;
@@ -32,12 +38,24 @@ interface RequestDraftStoreState {
   updateBodyText: (tabId: string, bodyText: string) => void;
   updateAuthType: (tabId: string, authType: RequestDraftAuthState['type']) => void;
   updateAuthField: (tabId: string, field: keyof Omit<RequestDraftAuthState, 'type'>, value: string) => void;
+  setActiveScriptStage: (tabId: string, stage: RequestScriptStageId) => void;
+  updateScriptContent: (tabId: string, stage: RequestScriptStageId, content: string) => void;
 }
 
 const initialRequestDraftStoreState: Pick<RequestDraftStoreState, 'draftsByTabId' | 'nextRowSequence'> = {
   draftsByTabId: {},
   nextRowSequence: 1,
 };
+
+const scriptStageFieldMap: Record<RequestScriptStageId, ScriptContentField> = {
+  'pre-request': 'preRequest',
+  'post-response': 'postResponse',
+  tests: 'tests',
+};
+
+function cloneRows(rows?: RequestKeyValueRow[]) {
+  return (rows ?? []).map((row) => ({ ...row }));
+}
 
 function createDefaultAuthState(seed?: RequestDraftSeed['auth']): RequestDraftAuthState {
   return {
@@ -48,6 +66,15 @@ function createDefaultAuthState(seed?: RequestDraftSeed['auth']): RequestDraftAu
     apiKeyName: seed?.apiKeyName ?? '',
     apiKeyValue: seed?.apiKeyValue ?? '',
     apiKeyPlacement: seed?.apiKeyPlacement ?? 'header',
+  };
+}
+
+function createDefaultScriptsState(seed?: RequestDraftScriptsSeed): RequestDraftScriptsState {
+  return {
+    activeStage: seed?.activeStage ?? 'pre-request',
+    preRequest: seed?.preRequest ?? '',
+    postResponse: seed?.postResponse ?? '',
+    tests: seed?.tests ?? '',
   };
 }
 
@@ -63,6 +90,11 @@ function createDraftSnapshotString(draft: RequestDraftState) {
     formBody: draft.formBody,
     multipartBody: draft.multipartBody,
     auth: draft.auth,
+    scripts: {
+      preRequest: draft.scripts.preRequest,
+      postResponse: draft.scripts.postResponse,
+      tests: draft.scripts.tests,
+    },
   });
 }
 
@@ -79,22 +111,23 @@ function withDirtyState(entry: RequestDraftEntry, draft: RequestDraftState): Req
   };
 }
 
-function createDraftFromTab(tab: RequestTabRecord): RequestDraftState {
-  const savedSeed = tab.requestId ? getSavedWorkspaceRequestSeedById(tab.requestId) : null;
-  const draftSeed = savedSeed?.draftSeed;
+function createDraftFromTab(tab: RequestTabRecord, explicitDraftSeed?: RequestDraftSeed): RequestDraftState {
+  const savedSeed = explicitDraftSeed ? null : (tab.requestId ? getSavedWorkspaceRequestSeedById(tab.requestId) : null);
+  const draftSeed = explicitDraftSeed ?? savedSeed?.draftSeed;
 
   return {
     tabId: tab.id,
     name: draftSeed?.name ?? tab.title,
     method: draftSeed?.method ?? tab.methodLabel,
     url: draftSeed?.url ?? '',
-    params: draftSeed?.params ?? [],
-    headers: draftSeed?.headers ?? [],
+    params: cloneRows(draftSeed?.params),
+    headers: cloneRows(draftSeed?.headers),
     bodyMode: draftSeed?.bodyMode ?? 'none',
     bodyText: draftSeed?.bodyText ?? '',
-    formBody: draftSeed?.formBody ?? [],
-    multipartBody: draftSeed?.multipartBody ?? [],
+    formBody: cloneRows(draftSeed?.formBody),
+    multipartBody: cloneRows(draftSeed?.multipartBody),
     auth: createDefaultAuthState(draftSeed?.auth),
+    scripts: createDefaultScriptsState(draftSeed?.scripts),
     activeEditorTab: 'params',
     dirty: false,
     ...(tab.collectionName ? { collectionName: tab.collectionName } : {}),
@@ -123,13 +156,13 @@ function updateDraftEntry(
 
 export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
   ...initialRequestDraftStoreState,
-  ensureDraftForTab: (tab) =>
+  ensureDraftForTab: (tab, draftSeed) =>
     set((state) => {
       if (state.draftsByTabId[tab.id]) {
         return {};
       }
 
-      const draft = createDraftFromTab(tab);
+      const draft = createDraftFromTab(tab, draftSeed);
 
       return {
         draftsByTabId: {
@@ -154,6 +187,27 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
         draftsByTabId: nextDraftsByTabId,
       };
     }),
+  commitSavedDraft: (tabId, placement) =>
+    set((state) =>
+      updateDraftEntry(state, tabId, (entry) => {
+        const nextDraft: RequestDraftState = {
+          ...entry.draft,
+          collectionName: placement.collectionName,
+          dirty: false,
+        };
+
+        delete nextDraft.folderName;
+
+        if (placement.folderName) {
+          nextDraft.folderName = placement.folderName;
+        }
+
+        return {
+          baseline: createDraftSnapshotString(nextDraft),
+          draft: nextDraft,
+        };
+      }),
+    ),
   updateDraftName: (tabId, name) =>
     set((state) =>
       updateDraftEntry(state, tabId, (entry) => withDirtyState(entry, { ...entry.draft, name })),
@@ -259,6 +313,31 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
           auth: {
             ...entry.draft.auth,
             [field]: value,
+          },
+        }),
+      ),
+    ),
+  setActiveScriptStage: (tabId, stage) =>
+    set((state) =>
+      updateDraftEntry(state, tabId, (entry) => ({
+        ...entry,
+        draft: {
+          ...entry.draft,
+          scripts: {
+            ...entry.draft.scripts,
+            activeStage: stage,
+          },
+        },
+      })),
+    ),
+  updateScriptContent: (tabId, stage, content) =>
+    set((state) =>
+      updateDraftEntry(state, tabId, (entry) =>
+        withDirtyState(entry, {
+          ...entry.draft,
+          scripts: {
+            ...entry.draft.scripts,
+            [scriptStageFieldMap[stage]]: content,
           },
         }),
       ),

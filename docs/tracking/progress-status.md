@@ -2,7 +2,7 @@
 
 - **Purpose:** Provide a concise snapshot of what is done, what is next, and what is blocked.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-19
+- **Last Updated:** 2026-03-20
 - **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `../tasks/task-001-foundation-architecture.md`
 - **Update Rule:** Update at the end of each meaningful planning or implementation step.
 
@@ -24,13 +24,17 @@
 - T010 slice S4 runtime events seam + captures skeleton: **done**
 - T010 slice S5 shared result/detail primitives: **done**
 - T010 slice S6 history skeleton + result composition: **done**
-- Next implementation focus (T010 slice S7): **ready**
+- T010 slice S7 mocks skeleton: **done**
+- T010 slice S8 replay bridge: **done**
+- T010 slice S9 scripts lazy editor path: **done**
+- T010 slice S10 smoke / readiness refinement: **done**
+- T010 slice S11 request save/run wiring: **done**
 
 ## Current Next Action
-Start T010 slice S7: mocks skeleton on top of the landed history observation and shared result/detail seams.
+Use the landed MVP shell plus S11 save/run wiring as the baseline for follow-up implementation axes: persistence connection refinement, history real data, richer diagnostics, scripts execution, mocks CRUD/evaluation, and captures real data.
 
 ## Open Blockers
-- No blocker for starting T010 slice S7 after the S6 history skeleton and result composition slice.
+- No blocker remains inside T010. The remaining work is post-S11 refinement around persistence, real data, diagnostics, and execution expansion.
 - Major planning dependencies for request behavior, script UX, mock behavior, runtime observation, QA strategy, tooling baseline, and shell slicing are now documented.
 
 ## Notes for Next Contributor
@@ -40,3 +44,8 @@ Start T010 slice S7: mocks skeleton on top of the landed history observation and
 4. Open `../tasks/task-017-developer-environment-and-tooling-baseline.md` for the tooling, fixture, bootstrap, and script baseline
 5. Open `../tasks/task-010-frontend-workspace-shell-implementation-plan.md` for the shell-first slice sequence and current slice handoff notes
 6. Use T011/T012/T013/T014/T016/T017/T010 handoff notes when preparing implementation prompts and PR slices
+
+
+
+
+

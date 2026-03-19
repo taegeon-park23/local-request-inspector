@@ -9,6 +9,24 @@ export type HistoryTransportOutcome =
 export type HistoryTestOutcome = 'All tests passed' | 'Some tests failed' | 'No tests' | 'Tests skipped';
 export type HistoryOutcomeFilter = 'all' | HistoryExecutionOutcome;
 export type HistoryResultTabId = 'response' | 'console' | 'tests' | 'execution-info';
+export type HistoryRequestBodyMode = 'none' | 'json' | 'text' | 'form-urlencoded' | 'multipart-form-data';
+export type HistoryRequestAuthType = 'none' | 'bearer' | 'basic' | 'api-key';
+export type HistoryApiKeyPlacement = 'header' | 'query';
+
+export interface HistoryRequestInputItem {
+  key: string;
+  value: string;
+}
+
+export interface HistoryRequestAuthSnapshot {
+  type: HistoryRequestAuthType;
+  bearerToken: string;
+  basicUsername: string;
+  basicPassword: string;
+  apiKeyName: string;
+  apiKeyValue: string;
+  apiKeyPlacement: HistoryApiKeyPlacement;
+}
 
 export interface HistoryTimelineEntry {
   id: string;
@@ -32,6 +50,11 @@ export interface HistoryRecord {
   testOutcome: HistoryTestOutcome;
   testSummaryLabel: string;
   requestSnapshotSummary: string;
+  requestParams: HistoryRequestInputItem[];
+  requestHeaders: HistoryRequestInputItem[];
+  requestBodyMode: HistoryRequestBodyMode;
+  requestBodyText: string;
+  requestAuth: HistoryRequestAuthSnapshot;
   responseSummary: string;
   headersSummary: string;
   bodyHint: string;

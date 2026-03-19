@@ -1,5 +1,6 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import type {
+  ReplayRequestTabSeed,
   RequestTabRecord,
   SavedWorkspaceRequestSeed,
 } from '@client/features/request-builder/request-tab.types';
@@ -11,6 +12,8 @@ interface WorkspaceShellState {
   nextDraftSequence: number;
   openNewRequest: () => void;
   openSavedRequest: (request: SavedWorkspaceRequestSeed) => void;
+  openReplayRequest: (replaySeed: ReplayRequestTabSeed) => RequestTabRecord;
+  markTabSaved: (tabId: string, request: SavedWorkspaceRequestSeed) => void;
   setActiveTab: (tabId: string) => void;
   closeTab: (tabId: string) => void;
 }
@@ -48,6 +51,19 @@ function createSavedTab(request: SavedWorkspaceRequestSeed): RequestTabRecord {
     summary: request.summary,
     collectionName: request.collectionName,
     ...(request.folderName ? { folderName: request.folderName } : {}),
+    hasUnsavedChanges: false,
+  };
+}
+
+function createReplayTab(sequence: number, replaySeed: ReplayRequestTabSeed): RequestTabRecord {
+  return {
+    id: `replay-${sequence}`,
+    sourceKey: `replay-${replaySeed.replaySource.kind}-${sequence}`,
+    title: replaySeed.title,
+    methodLabel: replaySeed.methodLabel,
+    source: 'replay',
+    summary: replaySeed.summary,
+    replaySource: replaySeed.replaySource,
     hasUnsavedChanges: false,
   };
 }
@@ -102,6 +118,60 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
         selectedExplorerItemId: request.id,
       };
     }),
+  openReplayRequest: (replaySeed) => {
+    let replayTab: RequestTabRecord | null = null;
+
+    set((state) => {
+      replayTab = createReplayTab(state.nextDraftSequence, replaySeed);
+
+      return {
+        tabs: [...state.tabs, replayTab],
+        activeTabId: replayTab.id,
+        selectedExplorerItemId: null,
+        nextDraftSequence: state.nextDraftSequence + 1,
+      };
+    });
+
+    return replayTab!;
+  },
+  markTabSaved: (tabId, request) =>
+    set((state) => {
+      const existingTab = state.tabs.find((tab) => tab.id === tabId);
+
+      if (!existingTab) {
+        return {};
+      }
+
+      return {
+        tabs: state.tabs.map((tab) => {
+          if (tab.id !== tabId) {
+            return tab;
+          }
+
+          const nextTab: RequestTabRecord = {
+            ...tab,
+            sourceKey: `saved-${request.id}`,
+            requestId: request.id,
+            title: request.name,
+            methodLabel: request.methodLabel,
+            source: 'saved',
+            summary: request.summary,
+            collectionName: request.collectionName,
+            hasUnsavedChanges: false,
+          };
+
+          delete nextTab.replaySource;
+          delete nextTab.folderName;
+
+          if (request.folderName) {
+            nextTab.folderName = request.folderName;
+          }
+
+          return nextTab;
+        }),
+        selectedExplorerItemId: state.activeTabId === tabId ? request.id : state.selectedExplorerItemId,
+      };
+    }),
   setActiveTab: (tabId) =>
     set((state) => {
       const activeTab = state.tabs.find((tab) => tab.id === tabId);
@@ -139,3 +209,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
 export function resetWorkspaceShellStore() {
   useWorkspaceShellStore.setState(initialWorkspaceShellState);
 }
+
+
+
+

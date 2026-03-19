@@ -1,18 +1,17 @@
-﻿import type { SavedWorkspaceRequestSeed } from '@client/features/request-builder/request-tab.types';
-import type { WorkspaceExplorerNode } from '@client/features/workspace/data/workspace-explorer-fixtures';
+import type { WorkspaceSavedRequestSeed, WorkspaceExplorerNode } from '@client/features/workspace/data/workspace-explorer-fixtures';
 
 interface WorkspaceExplorerProps {
   tree: WorkspaceExplorerNode[];
   selectedRequestId: string | null;
   onCreateRequest: () => void;
-  onOpenSavedRequest: (request: SavedWorkspaceRequestSeed) => void;
+  onOpenSavedRequest: (request: WorkspaceSavedRequestSeed) => void;
 }
 
 interface WorkspaceExplorerNodeListProps {
   nodes: WorkspaceExplorerNode[];
   depth: number;
   selectedRequestId: string | null;
-  onOpenSavedRequest: (request: SavedWorkspaceRequestSeed) => void;
+  onOpenSavedRequest: (request: WorkspaceSavedRequestSeed) => void;
 }
 
 export function WorkspaceExplorer({
@@ -27,8 +26,7 @@ export function WorkspaceExplorer({
         <p className="section-placeholder__eyebrow">Workspace explorer</p>
         <h2>Collections</h2>
         <p>
-          Static in-memory tree for S2. Collection, folder, and saved request nodes stay local
-          until persistence and request builder flows land later.
+          Fixture-backed collections stay visible, and storage-backed saved requests are overlaid as they are persisted. New saves fall into a default collection until richer placement UX lands.
         </p>
         <button type="button" className="workspace-button" onClick={onCreateRequest}>
           New Request

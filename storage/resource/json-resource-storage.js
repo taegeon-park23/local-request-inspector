@@ -58,6 +58,23 @@ class JsonResourceStorage {
 
     return JSON.parse(fs.readFileSync(entityPath, 'utf8'));
   }
+
+  list(entityType) {
+    if (!RESOURCE_ENTITY_TYPES.includes(entityType)) {
+      throw new Error(`Unsupported resource entity type: ${entityType}`);
+    }
+
+    const entityDir = path.join(this.layout.resourcesDir, entityType);
+
+    if (!fs.existsSync(entityDir)) {
+      return [];
+    }
+
+    return fs
+      .readdirSync(entityDir)
+      .filter((fileName) => fileName.endsWith('.json'))
+      .map((fileName) => JSON.parse(fs.readFileSync(path.join(entityDir, fileName), 'utf8')));
+  }
 }
 
 module.exports = {

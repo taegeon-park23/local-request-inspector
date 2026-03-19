@@ -1,7 +1,14 @@
-﻿import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
+import { Suspense, lazy } from 'react';
+import { useRequestBuilderCommands } from '@client/features/request-builder/hooks/useRequestBuilderCommands';
 import type { RequestDraftState } from '@client/features/request-builder/request-draft.types';
+import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
 import { RequestKeyValueEditor } from '@client/features/request-builder/components/RequestKeyValueEditor';
 import { useRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
+
+const LazyRequestScriptsEditorSurface = lazy(async () => {
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  return import('@client/features/request-builder/components/RequestScriptsEditorSurface');
+});
 
 const requestEditorTabs: Array<{ id: RequestDraftState['activeEditorTab']; label: string }> = [
   { id: 'params', label: 'Params' },
@@ -31,6 +38,14 @@ interface RequestWorkSurfacePlaceholderProps {
   onCreateRequest: () => void;
 }
 
+function formatSavedAt(savedAt: string | null) {
+  if (!savedAt) {
+    return 'Saved request definition is up to date.';
+  }
+
+  return `Saved request definition at ${new Date(savedAt).toLocaleTimeString()}.`;
+}
+
 export function RequestWorkSurfacePlaceholder({
   activeTab,
   onCreateRequest,
@@ -49,17 +64,22 @@ export function RequestWorkSurfacePlaceholder({
   const updateBodyText = useRequestDraftStore((state) => state.updateBodyText);
   const updateAuthType = useRequestDraftStore((state) => state.updateAuthType);
   const updateAuthField = useRequestDraftStore((state) => state.updateAuthField);
+  const setActiveScriptStage = useRequestDraftStore((state) => state.setActiveScriptStage);
+  const updateScriptContent = useRequestDraftStore((state) => state.updateScriptContent);
+  const { saveStatus, runStatus, saveDisabledReason, runDisabledReason, handleSave, handleRun } = useRequestBuilderCommands(
+    activeTab,
+    draft,
+  );
 
   if (!activeTab) {
     return (
       <div className="request-work-surface request-work-surface--empty" data-testid="request-tab-empty-state">
         <h2>No request tab selected</h2>
         <p>
-          S3 keeps `/workspace` route-light. Open a saved request from the explorer or create a new
-          draft tab to start authoring request fields.
+          Open a saved request or create a draft to begin authoring. Response, history, captures, and mocks stay in separate observation or management routes until wiring lands.
         </p>
         <button type="button" className="workspace-button" onClick={onCreateRequest}>
-          Open Draft Tab
+          Create Draft Request
         </button>
       </div>
     );
@@ -69,15 +89,22 @@ export function RequestWorkSurfacePlaceholder({
     return (
       <div className="request-work-surface request-work-surface--empty">
         <h2>Preparing request draft</h2>
-        <p>Request draft state is being hydrated for the active workspace tab.</p>
+        <p>This tab is creating a fresh authoring context. Replay and observation records are always copied into a new draft instead of being edited in place.</p>
       </div>
     );
   }
 
   const displayTitle = draft.name.trim() || 'Untitled Request';
-  const locationSummary = draft.collectionName
-    ? `${draft.collectionName}${draft.folderName ? ` / ${draft.folderName}` : ''}`
-    : 'Unsaved draft';
+  const replaySource = activeTab.source === 'replay' ? activeTab.replaySource ?? null : null;
+  const locationSummary = replaySource
+    ? replaySource.description
+    : draft.collectionName
+      ? `${draft.collectionName}${draft.folderName ? ` / ${draft.folderName}` : ''}`
+      : 'Unsaved draft';
+  const saveStatusCopy = saveStatus.status === 'success'
+    ? formatSavedAt(saveStatus.savedAt)
+    : saveStatus.message ?? (saveDisabledReason ?? 'Save updates the request definition only.');
+  const runStatusCopy = runStatus.message ?? (runDisabledReason ?? 'Run creates a separate observation record in the right-hand panel.');
 
   return (
     <div className="request-work-surface request-builder-core" data-testid="request-work-surface">
@@ -85,11 +112,15 @@ export function RequestWorkSurfacePlaceholder({
         <div>
           <p className="section-placeholder__eyebrow">Request builder core</p>
           <h2>{displayTitle}</h2>
-          <p>Request authoring state lives in this workspace tab and remains separate from observation surfaces.</p>
+          <p>This tab owns editable request state only. Save updates the request definition, while Run creates separate observation in the right-hand panel without mutating history or captures.</p>
         </div>
         <div className="request-work-surface__badges">
           <span className="workspace-chip">{draft.method}</span>
-          <span className="workspace-chip">{draft.collectionName ? 'Saved placeholder' : 'New draft'}</span>
+          {replaySource ? (
+            <span className="workspace-chip workspace-chip--replay">{replaySource.label}</span>
+          ) : (
+            <span className="workspace-chip">{draft.collectionName ? 'Saved request' : 'New draft'}</span>
+          )}
           {draft.dirty ? <span className="workspace-chip workspace-chip--accent">Dirty</span> : null}
         </div>
       </header>
@@ -104,23 +135,40 @@ export function RequestWorkSurfacePlaceholder({
               onChange={(event) => updateDraftName(draft.tabId, event.currentTarget.value)}
             />
           </label>
-          <p>{locationSummary}</p>
+          <p className="request-builder-core__source-copy">{locationSummary}</p>
         </div>
         <div className="request-builder-core__command-area">
           <div className="request-work-surface__future-actions" aria-label="Request header actions">
-            <button type="button" className="workspace-button workspace-button--secondary" disabled>
-              Save
+            <button
+              type="button"
+              className="workspace-button workspace-button--secondary"
+              onClick={handleSave}
+              disabled={Boolean(saveDisabledReason)}
+            >
+              {saveStatus.status === 'pending' ? 'Saving...' : 'Save'}
             </button>
             <button type="button" className="workspace-button workspace-button--secondary" disabled>
               Duplicate
             </button>
-            <button type="button" className="workspace-button workspace-button--secondary" disabled>
-              Run
+            <button
+              type="button"
+              className="workspace-button workspace-button--secondary"
+              onClick={handleRun}
+              disabled={Boolean(runDisabledReason)}
+            >
+              {runStatus.status === 'pending' ? 'Running...' : 'Run'}
             </button>
           </div>
-          <p className="request-builder-core__command-copy">
-            Save updates authored request definition. Run will stay separate from runtime observation wiring until a later slice.
-          </p>
+          <div className="request-builder-core__command-copy-group">
+            <p className="request-builder-core__command-copy">
+              {replaySource
+                ? 'Replay drafts still open in edit-first mode. Saving creates a request definition, while Run creates separate observation for this draft only.'
+                : 'Save updates the request definition. Run does not save automatically and does not clear unsaved changes.'}
+            </p>
+            <p className="shared-readiness-note" data-testid="save-command-status">{saveStatusCopy}</p>
+            <p className="shared-readiness-note" data-testid="run-command-status">{runStatusCopy}</p>
+            <p className="shared-readiness-note">Duplicate stays deferred until saved-request copy semantics land in a later slice.</p>
+          </div>
         </div>
       </div>
 
@@ -129,6 +177,7 @@ export function RequestWorkSurfacePlaceholder({
           <label className="request-field request-field--compact">
             <span>Request method</span>
             <select
+              aria-label="Request method"
               value={draft.method}
               onChange={(event) => updateDraftMethod(draft.tabId, event.currentTarget.value as RequestDraftState['method'])}
             >
@@ -142,6 +191,7 @@ export function RequestWorkSurfacePlaceholder({
           <label className="request-field request-field--wide">
             <span>Request URL</span>
             <input
+              aria-label="Request URL"
               placeholder="https://api.example.com/resource"
               type="text"
               value={draft.url}
@@ -169,7 +219,7 @@ export function RequestWorkSurfacePlaceholder({
         {draft.activeEditorTab === 'params' ? (
           <RequestKeyValueEditor
             addButtonLabel="Add param"
-            description="Edit query params as request authoring inputs. URL serialization remains a later concern."
+            description="Edit query params as request authoring inputs. Run applies only enabled rows, and save persists the authored definition as-is."
             emptyCopy="No params yet. Add rows only if this request needs query input."
             rowLabel="Param"
             rows={draft.params}
@@ -183,7 +233,7 @@ export function RequestWorkSurfacePlaceholder({
         {draft.activeEditorTab === 'headers' ? (
           <RequestKeyValueEditor
             addButtonLabel="Add header"
-            description="Edit request headers without introducing execution-time validation or transport coupling yet."
+            description="Edit request headers without coupling them to runtime history or captures. Save persists them, and Run applies enabled rows only to this execution."
             emptyCopy="No headers yet. Add rows when this request needs explicit header values."
             rowLabel="Header"
             rows={draft.headers}
@@ -199,7 +249,7 @@ export function RequestWorkSurfacePlaceholder({
             <header className="request-editor-card__header">
               <div>
                 <h3>Body</h3>
-                <p>Choose a lightweight authoring mode. Monaco, binary uploads, and schema helpers stay out of S3.</p>
+                <p>Choose a lightweight authoring mode. Save persists body inputs, while Run sends the current authored body without pulling result state back into the draft.</p>
               </div>
             </header>
 
@@ -235,7 +285,7 @@ export function RequestWorkSurfacePlaceholder({
             {draft.bodyMode === 'form-urlencoded' ? (
               <RequestKeyValueEditor
                 addButtonLabel="Add form field"
-                description="Scaffold x-www-form-urlencoded request bodies as key/value rows."
+                description="Scaffold x-www-form-urlencoded request bodies as key/value rows. Save persists them, and Run encodes only enabled rows."
                 emptyCopy="No form fields yet. Add rows to prepare encoded body inputs."
                 rowLabel="Form field"
                 rows={draft.formBody}
@@ -249,7 +299,7 @@ export function RequestWorkSurfacePlaceholder({
             {draft.bodyMode === 'multipart-form-data' ? (
               <RequestKeyValueEditor
                 addButtonLabel="Add multipart field"
-                description="Scaffold multipart rows only. Real file attachment UX is explicitly deferred."
+                description="Scaffold multipart rows only. Real file attachment UX is still deferred, but enabled rows are already preserved in the saved definition."
                 emptyCopy="No multipart rows yet. Add basic fields or file placeholders for later implementation."
                 rowLabel="Multipart field"
                 rows={draft.multipartBody}
@@ -267,7 +317,7 @@ export function RequestWorkSurfacePlaceholder({
             <header className="request-editor-card__header">
               <div>
                 <h3>Auth</h3>
-                <p>Keep auth authoring lightweight in S3. OAuth and environment resolution remain out of scope.</p>
+                <p>Auth stays lightweight here. Save persists authored auth fields, while Run applies them for this request only without reusing history or capture observation state.</p>
               </div>
             </header>
 
@@ -355,29 +405,34 @@ export function RequestWorkSurfacePlaceholder({
         ) : null}
 
         {draft.activeEditorTab === 'scripts' ? (
-          <section className="workspace-surface-card request-editor-card request-editor-card--scripts">
-            <header className="request-editor-card__header">
-              <div>
-                <h3>Scripts</h3>
-                <p>Script authoring remains a later slice. S3 only reserves the stage-aware authoring slot.</p>
-              </div>
-            </header>
-
-            <div className="request-script-placeholder-grid">
-              <article className="workspace-surface-card workspace-surface-card--muted">
-                <h4>Pre-request</h4>
-                <p>Later slice: stage-aware script editor for request preparation.</p>
-              </article>
-              <article className="workspace-surface-card workspace-surface-card--muted">
-                <h4>Post-response</h4>
-                <p>Later slice: response-bound script authoring stays separate from Response observation.</p>
-              </article>
-              <article className="workspace-surface-card workspace-surface-card--muted">
-                <h4>Tests</h4>
-                <p>Later slice: assertion authoring and diagnostics wiring.</p>
-              </article>
-            </div>
-          </section>
+          <Suspense
+            fallback={
+              <section className="workspace-surface-card request-editor-card request-editor-card--scripts request-script-loading" data-testid="script-editor-loading">
+                <header className="request-editor-card__header">
+                  <div>
+                    <h3>Scripts</h3>
+                    <p>
+                      Loading the stage-aware script editor on demand so Params, Headers, Body, and Auth stay responsive while the heavy editor path initializes.
+                    </p>
+                  </div>
+                </header>
+                <div className="request-script-loading__body">
+                  <article className="workspace-surface-card workspace-surface-card--muted">
+                    <h4>Lazy editor path</h4>
+                    <p>
+                      This fallback explains the wait: the script editor bundle is loaded only when Scripts is active. Monaco, execution wiring, and richer diagnostics still arrive in later slices.
+                    </p>
+                  </article>
+                </div>
+              </section>
+            }
+          >
+            <LazyRequestScriptsEditorSurface
+              draft={draft}
+              onStageChange={(stage) => setActiveScriptStage(draft.tabId, stage)}
+              onContentChange={(stage, content) => updateScriptContent(draft.tabId, stage, content)}
+            />
+          </Suspense>
         ) : null}
       </div>
     </div>

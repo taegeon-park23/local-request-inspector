@@ -8,7 +8,7 @@ async function openNewRequest(user: ReturnType<typeof userEvent.setup>) {
   await user.click(within(explorer).getByRole('button', { name: 'New Request' }));
 }
 
-describe('Workspace S3 request builder core', () => {
+describe('Workspace request builder authoring shell', () => {
   it('renders method and url authoring controls for the active tab', async () => {
     const user = userEvent.setup();
     renderApp(<AppRouter />);
@@ -106,7 +106,7 @@ describe('Workspace S3 request builder core', () => {
     expect(screen.getByLabelText('Request name')).toHaveValue('Health patch');
   });
 
-  it('keeps the Scripts tab as a placeholder and the shared observation tabs separate from authoring', async () => {
+  it('loads a stage-aware Scripts editor lazily and keeps stage content independent', async () => {
     const user = userEvent.setup();
     renderApp(<AppRouter />);
 
@@ -114,14 +114,80 @@ describe('Workspace S3 request builder core', () => {
     const detailPanel = screen.getByLabelText('Contextual detail panel');
 
     await openNewRequest(user);
+    await user.type(screen.getByLabelText('Request URL'), 'https://scripts.example/resource');
     await user.click(within(mainSurface).getByRole('button', { name: 'Scripts' }));
 
-    expect(screen.getByText('Pre-request')).toBeInTheDocument();
-    expect(screen.getByText('Post-response')).toBeInTheDocument();
-    expect(screen.getByText('Tests')).toBeInTheDocument();
+    expect(await screen.findByTestId('script-editor-loading')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Pre-request script')).toBeInTheDocument();
+
+    const scriptStages = screen.getByRole('tablist', { name: 'Script stages' });
+    await user.type(screen.getByLabelText('Pre-request script'), "request.headers.set('x-trace-id', 'draft-local');");
+
+    await user.click(within(scriptStages).getByRole('tab', { name: 'Post-response' }));
+    expect(screen.getByLabelText('Post-response script')).toBeInTheDocument();
+    await user.type(screen.getByLabelText('Post-response script'), "console.warn('review response');");
+
+    await user.click(within(scriptStages).getByRole('tab', { name: 'Tests' }));
+    expect(screen.getByLabelText('Tests script')).toBeInTheDocument();
+    await user.type(screen.getByLabelText('Tests script'), 'assert(response.status === 200);');
+
+    await user.click(within(scriptStages).getByRole('tab', { name: 'Pre-request' }));
+    expect(screen.getByLabelText('Pre-request script')).toHaveValue("request.headers.set('x-trace-id', 'draft-local');");
+
+    await user.click(within(scriptStages).getByRole('tab', { name: 'Post-response' }));
+    expect(screen.getByLabelText('Post-response script')).toHaveValue("console.warn('review response');");
+
+    await user.click(within(mainSurface).getByRole('button', { name: 'Params' }));
+    expect(screen.getByLabelText('Request URL')).toHaveValue('https://scripts.example/resource');
+
     expect(within(detailPanel).getByRole('tablist', { name: 'Result panel tabs' })).toBeInTheDocument();
     await user.click(within(detailPanel).getByRole('tab', { name: 'Console' }));
     expect(within(detailPanel).getByRole('heading', { name: 'Console summary' })).toBeInTheDocument();
-    expect(within(detailPanel).queryByLabelText('Request method')).not.toBeInTheDocument();
+    expect(within(detailPanel).queryByLabelText('Pre-request script')).not.toBeInTheDocument();
+  });
+
+  it('keeps stage-specific script drafts across workspace tab switches', async () => {
+    const user = userEvent.setup();
+    renderApp(<AppRouter />);
+
+    const explorer = screen.getByLabelText('Section explorer');
+    const mainSurface = screen.getByLabelText('Main work surface');
+
+    await openNewRequest(user);
+    await user.click(within(mainSurface).getByRole('button', { name: 'Scripts' }));
+    await screen.findByLabelText('Pre-request script');
+
+    const firstTabScriptStages = screen.getByRole('tablist', { name: 'Script stages' });
+    await user.click(within(firstTabScriptStages).getByRole('tab', { name: 'Tests' }));
+    await user.type(screen.getByLabelText('Tests script'), 'assert(response.status === 200);');
+
+    await user.click(within(explorer).getByRole('button', { name: 'Open Health check' }));
+    await user.click(within(mainSurface).getByRole('button', { name: 'Scripts' }));
+    expect(screen.getByLabelText('Pre-request script')).toHaveValue('');
+    await user.type(screen.getByLabelText('Pre-request script'), "request.headers.set('x-health-check', '1');");
+
+    const tabStrip = screen.getByRole('tablist', { name: 'Request tab strip' });
+    await user.click(within(tabStrip).getByRole('tab', { name: /Untitled Request/i }));
+    expect(screen.getByLabelText('Tests script')).toHaveValue('assert(response.status === 200);');
+
+    await user.click(within(tabStrip).getByRole('tab', { name: /Health check/i }));
+    expect(screen.getByLabelText('Pre-request script')).toHaveValue("request.headers.set('x-health-check', '1');");
+  });
+
+  it('renders scripts stage copy inside replay drafts without breaking shell composition', async () => {
+    const user = userEvent.setup();
+    renderApp(<AppRouter />, { initialEntries: ['/history'] });
+
+    await user.click(screen.getByRole('button', { name: 'Open Replay Draft' }));
+    expect(await screen.findByRole('heading', { name: 'Workspace' })).toBeInTheDocument();
+    expect(screen.getByText('Opened from history')).toBeInTheDocument();
+
+    const mainSurface = screen.getByLabelText('Main work surface');
+    await user.click(within(mainSurface).getByRole('button', { name: 'Scripts' }));
+    expect(await screen.findByLabelText('Pre-request script')).toBeInTheDocument();
+    expect(screen.getByText('Deferred in later slices')).toBeInTheDocument();
   });
 });
+
+
+

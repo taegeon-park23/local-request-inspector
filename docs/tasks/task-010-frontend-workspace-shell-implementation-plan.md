@@ -2,7 +2,7 @@
 
 - **Purpose:** Define the incremental implementation plan for the React + Vite + TypeScript frontend shell so the team can begin coding with clear route, shell, provider, state, and slice boundaries.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-19
+- **Last Updated:** 2026-03-20
 - **Related Documents:** `task-006-frontend-stack-and-application-shell-decision.md`, `task-011-request-builder-mvp-design.md`, `task-012-script-editor-and-automation-ux-spec.md`, `task-013-mock-engine-rules-spec.md`, `task-014-history-inspector-behavior-spec.md`, `task-016-testing-and-qa-strategy.md`, `task-017-developer-environment-and-tooling-baseline.md`, `../architecture/frontend-workspace-shell-implementation-plan.md`, `../tracking/master-task-board.md`
 - **Status:** done
 - **Priority:** P1
@@ -55,6 +55,11 @@ This task is done when all of the following are true:
 - **Implementation follow-up (2026-03-19):** S4 is now delivered in code with a typed runtime-events adapter seam, normalized capture observation fixtures, shell-level connection health wiring, and a `/captures` list/detail/timeline skeleton that keeps mock outcome vocabulary separate from request authoring state and leaves shared result/detail primitives for S5.
 - **Implementation follow-up (2026-03-19):** S5 is now delivered in code with props-only shared result/detail primitives, a refactored request observation placeholder, and a refactored captures observation surface that reuse tabs, summary sections, empty callouts, and family-aware badges without moving feature state into shared layers.
 - **Implementation follow-up (2026-03-19):** S6 is now delivered in code with a feature-local history observation store, synthetic execution history fixtures, shared-primitive-based Response/Console/Tests/Execution Info composition, compact execution stage summaries, and explicit execution/transport/test outcome family separation that stays isolated from captures and request drafts.
+- **Implementation follow-up (2026-03-19):** S7 is now delivered in code with a feature-local mocks management store, synthetic mock-rule fixtures, a /mocks list/detail skeleton, a local-only New Rule draft shell, and explicit separation between authored rule state (Enabled/Disabled) and runtime mock outcome vocabulary.
+- **Implementation follow-up (2026-03-19):** S8 is now delivered in code with an explicit replay bridge layer, capture/history-to-draft normalization, Open Replay Draft entrypoints in both observation surfaces, and new workspace replay tabs that hydrate authoring state without mutating observation records.
+- **Implementation follow-up (2026-03-19):** S9 is now delivered in code with a stage-aware Scripts authoring surface, lazy-loaded editor boundary, per-tab pre-request/post-response/tests draft content, and explicit separation between request-bound script authoring state and execution/history/captures observation state.
+- **Implementation follow-up (2026-03-20):** S10 is now delivered in code with smoke/readiness copy refinement across workspace, captures, history, mocks, replay, and scripts, improving empty/degraded/loading/deferred messaging without widening feature scope.
+- **Implementation follow-up (2026-03-20):** S11 is now delivered in code with actual request definition save wiring, active-tab run wiring, storage-backed workspace explorer refresh, separate run observation state for the active request tab, and maintained separation between authoring drafts and observation results.
 
 ## 7. Key Decisions
 1. The frontend rewrite should proceed **shell-first with incremental feature slices**, not route-first and not all-at-once.
@@ -84,4 +89,8 @@ This task is done when all of the following are true:
 - Secondary reviewers: Backend Lead + QA / Senior Engineer
 
 ## 11. Closure Decision
-T010 can be closed as **done** at the planning/documentation level. The next step is to start the S7 mocks skeleton slice on top of the landed history/result-composition seams rather than widen S6 into replay, diff, persistence queries, or live execution-stream modeling.
+T010 can stay closed as **done** at the planning/documentation level, and the linked implementation slices S1-S11 are now landed. The next work should move to follow-up refinement around persistence integration, history real data, richer diagnostics, script execution, mocks CRUD/evaluation, and captures real data rather than widening the shell itself.
+
+
+
+

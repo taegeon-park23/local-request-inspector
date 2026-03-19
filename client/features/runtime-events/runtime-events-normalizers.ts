@@ -1,4 +1,8 @@
-import type { CaptureMockOutcome, CaptureRecord } from '@client/features/captures/capture.types';
+import type {
+  CaptureMockOutcome,
+  CaptureRecord,
+  CaptureReplayBodyModeHint,
+} from '@client/features/captures/capture.types';
 import type { RuntimeCaptureTransportEvent } from '@client/features/runtime-events/runtime-events.types';
 
 const bodyHintByOutcome: Record<CaptureMockOutcome, string> = {
@@ -52,6 +56,25 @@ function createBodyPreview(event: RuntimeCaptureTransportEvent) {
   return 'No request body payload was captured for this request.';
 }
 
+function createBodyModeHint(event: RuntimeCaptureTransportEvent): CaptureReplayBodyModeHint {
+  const contentType = event.parsedHeaders?.['content-type'] ?? event.parsedHeaders?.['Content-Type'];
+  const normalizedContentType = contentType?.toLowerCase() ?? '';
+
+  if (event.parsedBody && typeof event.parsedBody === 'object') {
+    return 'json';
+  }
+
+  if (typeof event.parsedBody === 'string' && event.parsedBody.trim().length > 0) {
+    return normalizedContentType.includes('json') ? 'json' : 'text';
+  }
+
+  if (event.rawBody && event.rawBody !== 'No Body or Binary') {
+    return normalizedContentType.includes('json') ? 'json' : 'text';
+  }
+
+  return 'none';
+}
+
 function createHeadersSummary(headers: Record<string, string>) {
   const headerNames = Object.keys(headers);
   const contentType = headers['content-type'] ?? headers['Content-Type'];
@@ -65,6 +88,10 @@ function createHeadersSummary(headers: Record<string, string>) {
   }
 
   return `${headerNames.length} header(s) observed`;
+}
+
+function createRequestHeaders(headers: Record<string, string>) {
+  return Object.entries(headers).map(([key, value]) => ({ key, value }));
 }
 
 function createMockSummary(mockOutcome: CaptureMockOutcome, mockRuleName?: string) {
@@ -104,6 +131,7 @@ export function normalizeRuntimeCaptureEvent(event: RuntimeCaptureTransportEvent
   return {
     id: String(event.id),
     method: event.method.toUpperCase(),
+    url: normalizedUrl.toString(),
     host: normalizedUrl.host,
     path,
     receivedAtIso,
@@ -112,6 +140,8 @@ export function normalizeRuntimeCaptureEvent(event: RuntimeCaptureTransportEvent
     requestSummary: `${event.method.toUpperCase()} ${path} reached ${normalizedUrl.host} as an inbound capture.`,
     headersSummary: createHeadersSummary(headers),
     bodyPreview: createBodyPreview(event),
+    bodyModeHint: createBodyModeHint(event),
+    requestHeaders: createRequestHeaders(headers),
     mockOutcome,
     mockSummary,
     responseSummary,

@@ -2,7 +2,7 @@
 
 - **Purpose:** Provide the canonical backlog and execution status for project preparation and delivery.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-19
+- **Last Updated:** 2026-03-20
 - **Related Documents:** `priority-roadmap.md`, `../prd/overview.md`, `../tasks/task-001-foundation-architecture.md`
 - **Update Rule:** Update status, dependencies, notes, and outputs whenever task state changes.
 
@@ -35,14 +35,23 @@
 | T018 | Delivery milestone plan | Convert backlog into phased milestones with readiness gates and review checkpoints. | P1 | todo | Needed once P0 architecture decisions stabilize. | T001-T007 | Milestone plan | Delivery Agent | Shifts if P0 scope changes | Revisit after architecture |
 
 ## Current Focus
-- **Active highest-priority next step:** S7 mocks skeleton on top of the landed S6 history observation skeleton and result composition seam.
+- **Active highest-priority next step:** Post-S11 refinement: persistence connection refinement, history real data, richer diagnostics, scripts execution, mocks CRUD/evaluation, and captures real data.
 - S1 is implemented with the new client bootstrap, route/provider scaffold, persistent shell regions, component coverage, and a conservative legacy coexistence seam.
 - S2 is implemented with the `/workspace` explorer scaffold, in-memory request tree, request tab registry shell, tab focus/close behavior, active work-surface placeholder, and contextual result-panel placeholder.
 - S3 is implemented with per-tab request draft state, method/url authoring, params/headers/body/auth core editors, scripts placeholder, dirty tab indicators, and a still-separated observation panel seam.
 - S4 is implemented with a typed runtime-events adapter seam, synthetic normalized capture feed, shell-level connection health, and a `/captures` list/detail/timeline skeleton that keeps mock outcome vocabulary separate from authoring state.
 - S5 is implemented with props-only shared result/detail primitives, a refactored request observation placeholder, and a refactored captures observation surface that reuse tabs, summary sections, empty callouts, and family-aware badges without changing feature state ownership.
 - S6 is implemented with a feature-local `/history` observation store, synthetic execution history fixtures, shared-primitive-based result composition tabs, compact stage summaries, and explicit execution/transport/test outcome family separation that remains independent from captures and request drafts.
+- S7 is implemented with a feature-local /mocks rule-management store, synthetic rule fixtures, a shared-primitive-based list/detail skeleton, local New Rule draft entrypoint, and explicit separation between authored rule state and runtime mock outcome vocabulary.
+- S8 is implemented with an explicit replay bridge layer, capture/history-to-draft normalization, edit-first Open Replay Draft entrypoints, and new workspace replay tabs that hydrate authoring state without mutating observation records.
+- S9 is implemented with stage-aware request-bound script drafts, a lazy-loaded Scripts editor surface for Pre-request/Post-response/Tests, per-tab script persistence, and explicit separation from execution/history/captures observation state.
+- S10 is implemented with smoke/readiness copy refinement across workspace, captures, history, mocks, replay, and scripts, keeping authoring and observation surfaces legible without widening feature scope.
+- S11 is implemented with actual request save/run wiring, storage-backed saved request refresh in the workspace explorer, active-tab run observation in the right-hand result panel, and continued separation between authoring draft state and observation result state.
 
 ## Blockers Snapshot
-- No blocker remains for starting T010 slice S7 after the S6 history skeleton and result composition landed.
+- T010 shell slices S1-S11 are now landed. Remaining work moves to follow-up persistence/data/diagnostics work rather than more shell scaffolding.
 - Architecture, schema, safety, persistence, request-builder, script-UX, mock-rule, history/inspector, QA, tooling, and shell-slicing inputs are now documented.
+
+
+
+

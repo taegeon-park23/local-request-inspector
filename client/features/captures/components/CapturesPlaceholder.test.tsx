@@ -14,12 +14,13 @@ describe('Captures S4 observation skeleton', () => {
     expect(screen.getByLabelText('Search captures')).toBeInTheDocument();
     expect(screen.getByLabelText('Mock outcome filter')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: /Open capture POST \/webhooks\/stripe/i })).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByText(/Runtime seam: connected/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Runtime connection: connected/i)).toBeInTheDocument());
 
     const connectionBadge = screen.getByText('connected', { selector: '[data-kind="connection"]' });
     expect(connectionBadge).toHaveAttribute('data-kind', 'connection');
     expect(screen.getByRole('heading', { name: 'Capture detail' })).toBeInTheDocument();
     expect(screen.getByRole('tablist', { name: 'Capture detail tabs' })).toBeInTheDocument();
+    expect(screen.getByText(/Run Replay Now is disabled on purpose in this readiness slice/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Deferred detail' }));
     expect(screen.getByRole('heading', { name: 'Deferred runtime detail' })).toBeInTheDocument();
@@ -50,8 +51,8 @@ describe('Captures S4 observation skeleton', () => {
         }),
     });
 
-    await waitFor(() => expect(screen.getByText(/Runtime seam: degraded/i)).toBeInTheDocument());
-    expect(screen.getByText('Runtime seam is degraded')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/Runtime connection: degraded/i)).toBeInTheDocument());
+    expect(screen.getByText('Capture observation is degraded')).toBeInTheDocument();
     expect(screen.getByText('No captures yet')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'No capture selected' })).toBeInTheDocument();
   });
@@ -68,3 +69,5 @@ describe('Captures S4 observation skeleton', () => {
     expect(screen.queryByLabelText('Request URL')).not.toBeInTheDocument();
   });
 });
+
+

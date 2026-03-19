@@ -2,6 +2,13 @@ export type CaptureMockOutcome = 'Mocked' | 'Bypassed' | 'No rule matched' | 'Bl
 
 export type CaptureOutcomeFilter = 'all' | CaptureMockOutcome;
 
+export type CaptureReplayBodyModeHint = 'none' | 'json' | 'text';
+
+export interface CaptureRequestInputItem {
+  key: string;
+  value: string;
+}
+
 export interface CaptureTimelineEntry {
   id: string;
   title: string;
@@ -11,6 +18,7 @@ export interface CaptureTimelineEntry {
 export interface CaptureRecord {
   id: string;
   method: string;
+  url: string;
   host: string;
   path: string;
   receivedAtIso: string;
@@ -19,6 +27,8 @@ export interface CaptureRecord {
   requestSummary: string;
   headersSummary: string;
   bodyPreview: string;
+  bodyModeHint: CaptureReplayBodyModeHint;
+  requestHeaders: CaptureRequestInputItem[];
   mockOutcome: CaptureMockOutcome;
   mockSummary: string;
   responseSummary: string;

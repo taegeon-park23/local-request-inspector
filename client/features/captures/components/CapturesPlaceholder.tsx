@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { CaptureOutcomeFilter, CaptureRecord } from '@client/features/captures/capture.types';
 import { useCapturesStore } from '@client/features/captures/state/captures-store';
+import { openCaptureReplayDraft } from '@client/features/request-builder/replay/replay-bridge';
 import { DetailViewerSection } from '@client/shared/ui/DetailViewerSection';
 import { EmptyStateCallout } from '@client/shared/ui/EmptyStateCallout';
 import { KeyValueMetaList } from '@client/shared/ui/KeyValueMetaList';
@@ -23,11 +25,11 @@ const captureDetailTabs = [
 type CaptureDetailTabId = (typeof captureDetailTabs)[number]['id'];
 
 const connectionCopyByHealth = {
-  idle: 'Runtime observation seam is idle until the provider starts.',
-  connecting: 'Connecting to the runtime capture seam.',
-  connected: 'Runtime capture seam is connected and normalizing capture events.',
-  degraded: 'Runtime capture seam is degraded. Showing the last normalized observations while the adapter retries.',
-  offline: 'Runtime capture seam is offline. Captures stay static until the adapter reconnects.',
+  idle: 'Capture observation is idle until the runtime adapter starts.',
+  connecting: 'Connecting to the runtime capture feed and waiting for normalized observations.',
+  connected: 'Normalized capture observations are flowing. Select a row to inspect it or open a replay draft without mutating the capture record.',
+  degraded: 'Capture observation is degraded. Showing the last normalized records while deeper loading and replay execution remain deferred.',
+  offline: 'Capture observation is offline. Existing rows stay visible, but no new normalized captures can arrive.',
 } as const;
 
 function captureMatchesSearch(capture: CaptureRecord, searchText: string) {
@@ -54,6 +56,7 @@ function captureMatchesSearch(capture: CaptureRecord, searchText: string) {
 }
 
 export function CapturesPlaceholder() {
+  const navigate = useNavigate();
   const [activeDetailTab, setActiveDetailTab] = useState<CaptureDetailTabId>('timeline');
   const connectionHealth = useCapturesStore((state) => state.connectionHealth);
   const listItems = useCapturesStore((state) => state.listItems);
@@ -75,6 +78,15 @@ export function CapturesPlaceholder() {
   const isLoading = connectionHealth === 'connecting' && listItems.length === 0;
   const isEmpty = !isLoading && listItems.length === 0;
   const hasNoFilteredResults = !isLoading && listItems.length > 0 && filteredCaptures.length === 0;
+
+  const handleOpenReplayDraft = () => {
+    if (!selectedCapture) {
+      return;
+    }
+
+    openCaptureReplayDraft(selectedCapture);
+    navigate('/workspace');
+  };
 
   return (
     <>
@@ -117,15 +129,15 @@ export function CapturesPlaceholder() {
 
           {connectionHealth === 'degraded' ? (
             <EmptyStateCallout
-              title="Runtime seam is degraded"
-              description="The adapter is degraded. Captures remain visible, but deeper timeline and history composition stay deferred from S4 and S5."
+              title="Capture observation is degraded"
+              description="The adapter is degraded. Existing summaries remain visible, but deeper loading, replay execution, and richer diagnostics stay deferred."
             />
           ) : null}
 
           {isLoading ? (
             <EmptyStateCallout
               title="Waiting for inbound traffic"
-              description="The runtime adapter has started, but no normalized capture records have arrived yet."
+              description="The runtime adapter has started, but no normalized capture records have arrived yet. This route stays observation-only until traffic reaches the adapter."
               className="captures-empty-state"
             />
           ) : null}
@@ -133,7 +145,7 @@ export function CapturesPlaceholder() {
           {isEmpty ? (
             <EmptyStateCallout
               title="No captures yet"
-              description="Inbound traffic will appear here once the runtime seam receives normalized capture events."
+              description="Inbound traffic will appear here once the runtime seam receives normalized capture events. Until then, replay and deeper runtime detail have nothing to open."
               className="captures-empty-state"
             />
           ) : null}
@@ -181,7 +193,7 @@ export function CapturesPlaceholder() {
           <p className="section-placeholder__eyebrow">Top-level section</p>
           <h1>Captures</h1>
           <p>
-            S4 connects a normalized runtime-events seam to the observation surface. Request authoring state remains separate from inbound capture observation state.
+            Captures is an observation route for inbound traffic. Select a row to inspect normalized summaries or open an edit-first replay draft without mutating the capture record.
           </p>
         </header>
 
@@ -189,7 +201,7 @@ export function CapturesPlaceholder() {
           <div className="request-work-surface request-work-surface--empty">
             <EmptyStateCallout
               title="No capture selected"
-              description="Pick a capture row to inspect request summaries, mock outcome vocabulary, and the compact timeline scaffold."
+              description="Pick a capture row to inspect normalized request summaries, mock outcome vocabulary, and the compact timeline scaffold. Replay opens a separate authoring draft in Workspace."
             />
           </div>
         ) : (
@@ -209,13 +221,22 @@ export function CapturesPlaceholder() {
 
             <DetailViewerSection
               title="Observation bridge"
-              description="Replay remains an explicit observation-to-authoring bridge and stays deferred until a later slice."
+              description="Replay stays edit-first. Open Replay Draft creates a new request draft while the capture record remains observation-only."
               actions={(
-                <button type="button" className="workspace-button workspace-button--secondary" disabled>
-                  Open replay in request builder
-                </button>
+                <div className="request-work-surface__future-actions">
+                  <button type="button" className="workspace-button workspace-button--secondary" onClick={handleOpenReplayDraft}>
+                    Open Replay Draft
+                  </button>
+                  <button type="button" className="workspace-button workspace-button--secondary" disabled>
+                    Run Replay Now
+                  </button>
+                </div>
               )}
-            />
+            >
+              <p className="shared-readiness-note">
+                Run Replay Now is disabled on purpose in this readiness slice. Save and execution wiring land later, so replay opens a fresh editable draft first.
+              </p>
+            </DetailViewerSection>
 
             <div className="captures-summary-grid">
               <DetailViewerSection
@@ -320,7 +341,7 @@ export function CapturesPlaceholder() {
                 />
                 <EmptyStateCallout
                   title="Deeper capture composition is deferred"
-                  description="Shared result/detail primitives now structure this panel, but replay wiring and history composition land in later slices."
+                  description="Shared result/detail primitives reserve this panel while raw transport views, richer diagnostics, and replay execution remain out of scope."
                 />
               </DetailViewerSection>
             )}
@@ -330,3 +351,4 @@ export function CapturesPlaceholder() {
     </>
   );
 }
+

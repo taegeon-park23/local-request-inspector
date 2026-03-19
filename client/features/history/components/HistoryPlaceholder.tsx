@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { HistoryResultTabId } from '@client/features/history/history.types';
 import {
   historyExecutionOutcomeOptions,
@@ -6,6 +7,7 @@ import {
   historyMatchesSearch,
   useHistoryStore,
 } from '@client/features/history/state/history-store';
+import { openHistoryReplayDraft } from '@client/features/request-builder/replay/replay-bridge';
 import { DetailViewerSection } from '@client/shared/ui/DetailViewerSection';
 import { EmptyStateCallout } from '@client/shared/ui/EmptyStateCallout';
 import { KeyValueMetaList } from '@client/shared/ui/KeyValueMetaList';
@@ -20,11 +22,12 @@ const historyResultTabs = [
 ] as const;
 
 const observationHealthCopy = {
-  ready: 'Synthetic execution history fixtures back this slice while persistence/query wiring stays deferred.',
-  degraded: 'History observation is degraded. Showing only the last bounded summaries that are still available.',
+  ready: 'Synthetic execution history fixtures back this route for now. Select a row to review bounded result composition or open a replay draft into Workspace.',
+  degraded: 'History observation is degraded. Showing only the last bounded summaries that are still available while richer diagnostics remain deferred.',
 } as const;
 
 export function HistoryPlaceholder() {
+  const navigate = useNavigate();
   const [activeResultTab, setActiveResultTab] = useState<HistoryResultTabId>('response');
   const observationHealth = useHistoryStore((state) => state.observationHealth);
   const listItems = useHistoryStore((state) => state.listItems);
@@ -45,6 +48,15 @@ export function HistoryPlaceholder() {
     ?? null;
   const isEmpty = listItems.length === 0;
   const hasNoFilteredResults = listItems.length > 0 && filteredHistory.length === 0;
+
+  const handleOpenReplayDraft = () => {
+    if (!selectedHistory) {
+      return;
+    }
+
+    openHistoryReplayDraft(selectedHistory);
+    navigate('/workspace');
+  };
 
   return (
     <>
@@ -87,7 +99,7 @@ export function HistoryPlaceholder() {
           {observationHealth === 'degraded' ? (
             <EmptyStateCallout
               title="History observation is degraded"
-              description="Persisted execution summaries remain visible, but richer history loading and replay composition stay deferred from S6."
+              description="Persisted execution summaries remain visible, but richer history loading, replay execution, and deeper diagnostics stay deferred."
             />
           ) : null}
 
@@ -146,7 +158,7 @@ export function HistoryPlaceholder() {
           <p className="section-placeholder__eyebrow">Top-level section</p>
           <h1>History</h1>
           <p>
-            History keeps outbound execution observation state separate from request drafts and inbound captures while reusing the shared result/detail primitives from S5.
+            History is an observation route for executed outbound requests. Result composition stays bounded here, and replay opens a separate authoring draft in Workspace.
           </p>
         </header>
 
@@ -154,7 +166,7 @@ export function HistoryPlaceholder() {
           <div className="request-work-surface request-work-surface--empty">
             <EmptyStateCallout
               title="No history selected"
-              description="Pick an execution row to inspect the request snapshot, result composition, and compact stage summary."
+              description="Pick an execution row to inspect the request snapshot, result composition, and compact stage summary. Replay opens a separate authoring draft instead of mutating history detail."
             />
           </div>
         ) : (
@@ -175,13 +187,22 @@ export function HistoryPlaceholder() {
 
             <DetailViewerSection
               title="Observation boundary"
-              description="History stays observation-only in S6. Replay and request-builder bridge actions remain explicit later slices."
+              description="History detail stays observation-only. Open Replay Draft creates a new editable request draft instead of turning this record into live authoring state."
               actions={(
-                <button type="button" className="workspace-button workspace-button--secondary" disabled>
-                  Open request snapshot in builder
-                </button>
+                <div className="request-work-surface__future-actions">
+                  <button type="button" className="workspace-button workspace-button--secondary" onClick={handleOpenReplayDraft}>
+                    Open Replay Draft
+                  </button>
+                  <button type="button" className="workspace-button workspace-button--secondary" disabled>
+                    Run Replay Now
+                  </button>
+                </div>
               )}
-            />
+            >
+              <p className="shared-readiness-note">
+                Run Replay Now stays disabled in this slice because replay is still edit-first. Execution wiring and replay diagnostics land later.
+              </p>
+            </DetailViewerSection>
 
             <div className="history-summary-grid">
               <DetailViewerSection
@@ -245,7 +266,7 @@ export function HistoryPlaceholder() {
                 <pre className="history-preview-block">{selectedHistory.bodyPreview}</pre>
                 <EmptyStateCallout
                   title="Persisted response detail is bounded"
-                  description="Rich JSON viewers, diff, and full raw payload inspection stay deferred from S6."
+                  description="Rich JSON viewers, diff, and full raw payload inspection stay deferred for a later slice."
                 />
               </DetailViewerSection>
             ) : null}
@@ -296,7 +317,7 @@ export function HistoryPlaceholder() {
                 </ul>
                 <EmptyStateCallout
                   title="Per-assertion drilldown is deferred"
-                  description="S6 stops at bounded test summaries and does not add script-editor or deep diagnostics composition."
+                  description="This shell stops at bounded test summaries and does not add script-editor or deep diagnostics composition yet."
                 />
               </DetailViewerSection>
             ) : null}
@@ -320,7 +341,7 @@ export function HistoryPlaceholder() {
                 />
                 <EmptyStateCallout
                   title="Advanced execution diagnostics are deferred"
-                  description="Cancellation controls, live stage streams, and diff viewers remain outside the S6 slice."
+                  description="Cancellation controls, live stage streams, and diff viewers remain outside this readiness pass."
                 />
               </DetailViewerSection>
             ) : null}
@@ -361,12 +382,12 @@ export function HistoryPlaceholder() {
 
             <DetailViewerSection
               title="Deferred runtime detail"
-              description="Persisted history detail is intentionally bounded and replay composition remains a later bridge."
+              description="Persisted history detail is intentionally bounded, and replay continues to use an explicit edit-first bridge into Workspace."
               tone="muted"
             >
               <EmptyStateCallout
-                title="Replay, diff, and deep traces remain deferred"
-                description="S6 stops at history skeleton and result composition. Observation-to-authoring bridge work lands in a later slice."
+                title="Replay defaults to edit-first"
+                description="Open Replay Draft creates a new request-builder draft without turning history detail into editable state."
               />
             </DetailViewerSection>
           </div>
@@ -375,3 +396,5 @@ export function HistoryPlaceholder() {
     </>
   );
 }
+
+

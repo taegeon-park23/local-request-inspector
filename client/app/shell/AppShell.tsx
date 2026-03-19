@@ -10,9 +10,9 @@ export function AppShell() {
       <header className="shell-topbar" aria-label="Top bar">
         <div>
           <p className="shell-topbar__eyebrow">Local Request Inspector</p>
-          <h1>Client shell bootstrap</h1>
+          <h1>Local API Workbench shell</h1>
         </div>
-        <p className="shell-health">Runtime seam: {runtimeConnectionHealth}</p>
+        <p className="shell-health">Runtime connection: {runtimeConnectionHealth}</p>
       </header>
       <div className="shell-body">
         <nav className="shell-nav" aria-label="Navigation rail">
@@ -39,3 +39,4 @@ export function AppShell() {
     </div>
   );
 }
+

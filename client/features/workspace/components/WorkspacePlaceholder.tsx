@@ -1,11 +1,18 @@
-﻿import { useRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
+import { useQuery } from '@tanstack/react-query';
+import {
+  listWorkspaceSavedRequests,
+  workspaceSavedRequestsQueryKey,
+} from '@client/features/request-builder/request-builder.api';
 import { RequestResultPanelPlaceholder } from '@client/features/request-builder/components/RequestResultPanelPlaceholder';
 import { RequestTabShell } from '@client/features/request-builder/components/RequestTabShell';
-import type { SavedWorkspaceRequestSeed, RequestTabRecord } from '@client/features/request-builder/request-tab.types';
-import { workspaceExplorerTree } from '@client/features/workspace/data/workspace-explorer-fixtures';
-import { WorkspaceExplorer } from '@client/features/workspace/components/WorkspaceExplorer';
-import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
 import { RequestWorkSurfacePlaceholder } from '@client/features/request-builder/components/RequestWorkSurfacePlaceholder';
+import { useRequestCommandStore } from '@client/features/request-builder/state/request-command-store';
+import { useRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
+import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
+import { WorkspaceExplorer } from '@client/features/workspace/components/WorkspaceExplorer';
+import { buildWorkspaceExplorerTree } from '@client/features/workspace/data/workspace-explorer-data';
+import type { WorkspaceSavedRequestSeed } from '@client/features/workspace/data/workspace-explorer-fixtures';
+import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
 
 function resolvePresentationTab(
   tab: RequestTabRecord,
@@ -34,7 +41,20 @@ export function WorkspacePlaceholder() {
   const draftsByTabId = useRequestDraftStore((state) => state.draftsByTabId);
   const ensureDraftForTab = useRequestDraftStore((state) => state.ensureDraftForTab);
   const removeDraft = useRequestDraftStore((state) => state.removeDraft);
+  const removeCommandState = useRequestCommandStore((state) => state.removeTab);
 
+  const savedRequestsQuery = useQuery({
+    queryKey: workspaceSavedRequestsQueryKey,
+    queryFn: async () => {
+      try {
+        return await listWorkspaceSavedRequests();
+      } catch {
+        return [];
+      }
+    },
+  });
+
+  const explorerTree = buildWorkspaceExplorerTree(savedRequestsQuery.data ?? []);
   const resolvedTabs = tabs.map((tab) => resolvePresentationTab(tab, draftsByTabId[tab.id]));
   const activeTab = resolvedTabs.find((tab) => tab.id === activeTabId) ?? null;
   const activeTabKey = activeTab?.id ?? 'empty';
@@ -51,7 +71,7 @@ export function WorkspacePlaceholder() {
     }
   };
 
-  const handleOpenSavedRequest = (request: SavedWorkspaceRequestSeed) => {
+  const handleOpenSavedRequest = (request: WorkspaceSavedRequestSeed) => {
     const existingTab = useWorkspaceShellStore
       .getState()
       .tabs.find((tab) => tab.sourceKey === `saved-${request.id}`);
@@ -59,7 +79,7 @@ export function WorkspacePlaceholder() {
     openSavedRequest(request);
 
     if (existingTab) {
-      ensureDraftForTab(existingTab);
+      ensureDraftForTab(existingTab, request.draftSeed);
       return;
     }
 
@@ -68,12 +88,13 @@ export function WorkspacePlaceholder() {
       .tabs.find((tab) => tab.sourceKey === `saved-${request.id}`);
 
     if (nextTab) {
-      ensureDraftForTab(nextTab);
+      ensureDraftForTab(nextTab, request.draftSeed);
     }
   };
 
   const handleCloseTab = (tabId: string) => {
     removeDraft(tabId);
+    removeCommandState(tabId);
     closeTab(tabId);
   };
 
@@ -81,7 +102,7 @@ export function WorkspacePlaceholder() {
     <>
       <section className="shell-panel shell-panel--sidebar" aria-label="Section explorer">
         <WorkspaceExplorer
-          tree={workspaceExplorerTree}
+          tree={explorerTree}
           selectedRequestId={selectedExplorerItemId}
           onCreateRequest={handleCreateRequest}
           onOpenSavedRequest={handleOpenSavedRequest}
@@ -93,7 +114,7 @@ export function WorkspacePlaceholder() {
           <p className="section-placeholder__eyebrow">Top-level section</p>
           <h1>Workspace</h1>
           <p>
-            S3 replaces the request builder placeholder with core authoring UI while keeping the route model light and observation panel separate.
+            Workspace remains the authoring surface for saved requests, new drafts, replay drafts, and the lazy-loaded Scripts path. Save updates request definitions, while Run writes observation only into the right-hand result surface.
           </p>
         </header>
 

@@ -32,6 +32,7 @@ describe('History S6 observation skeleton', () => {
       'testSummary',
     );
     expect(screen.queryByText('Mocked', { selector: '[data-kind="mockOutcome"]' })).not.toBeInTheDocument();
+    expect(screen.getByText(/Run Replay Now stays disabled in this slice because replay is still edit-first/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Console' }));
     expect(screen.getByRole('heading', { name: 'Console summary' })).toBeInTheDocument();
@@ -78,3 +79,4 @@ describe('History S6 observation skeleton', () => {
     expect(useHistoryStore.getState().selectedHistoryId).toBe('history-4');
   });
 });
+

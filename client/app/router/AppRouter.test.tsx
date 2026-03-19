@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AppRouter } from '@client/app/router/AppRouter';
 import { renderApp } from '@client/shared/test/render-app';
@@ -32,5 +32,45 @@ describe('AppRouter shell bootstrap', () => {
 
     await user.click(screen.getByRole('link', { name: /settings/i }));
     expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument();
+  });
+
+  it('supports the smoke path across workspace, scripts, history replay, and mocks shell readiness', async () => {
+    const user = userEvent.setup();
+    renderApp(<AppRouter />);
+
+    const workspaceExplorer = screen.getByLabelText('Section explorer');
+    const workspaceMainSurface = screen.getByLabelText('Main work surface');
+
+    await user.click(within(workspaceExplorer).getByRole('button', { name: 'New Request' }));
+    expect(screen.getByText(/Save updates the request definition\. Run does not save automatically and does not clear unsaved changes\./i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Run' })).toBeDisabled();
+
+    await user.click(within(workspaceMainSurface).getByRole('button', { name: 'Scripts' }));
+    expect(await screen.findByTestId('script-editor-loading')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Pre-request script')).toBeInTheDocument();
+    expect(screen.getByText(/loaded on demand so the rest of the request builder stays responsive/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('link', { name: /captures/i }));
+    expect(screen.getByRole('heading', { name: 'Captures' })).toBeInTheDocument();
+    expect(screen.getByText(/observation route for inbound traffic/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('link', { name: /history/i }));
+    expect(screen.getByRole('heading', { name: 'History' })).toBeInTheDocument();
+    expect(screen.getByText(/Run Replay Now stays disabled in this slice because replay is still edit-first/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Open Replay Draft' }));
+    expect(await screen.findByRole('heading', { name: 'Workspace' })).toBeInTheDocument();
+    expect(screen.getByText('Opened from history')).toBeInTheDocument();
+
+    const replayMainSurface = screen.getByLabelText('Main work surface');
+    await user.click(within(replayMainSurface).getByRole('button', { name: 'Scripts' }));
+    expect(await screen.findByLabelText('Pre-request script')).toBeInTheDocument();
+    expect(screen.getByText(/Scripts stays request-bound and draft-owned/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('link', { name: /mocks/i }));
+    expect(screen.getByRole('heading', { name: 'Mocks' })).toBeInTheDocument();
+    expect(screen.getByText(/Disabled actions here are readiness cues, not broken buttons/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save rule' })).toBeDisabled();
   });
 });
