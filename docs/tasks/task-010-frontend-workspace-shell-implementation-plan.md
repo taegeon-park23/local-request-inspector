@@ -61,6 +61,8 @@ This task is done when all of the following are true:
 - **Implementation follow-up (2026-03-20):** S10 is now delivered in code with smoke/readiness copy refinement across workspace, captures, history, mocks, replay, and scripts, improving empty/degraded/loading/deferred messaging without widening feature scope.
 - **Implementation follow-up (2026-03-20):** S11 is now delivered in code with actual request definition save wiring, active-tab run wiring, storage-backed workspace explorer refresh, separate run observation state for the active request tab, and maintained separation between authoring drafts and observation results.
 - **Implementation follow-up (2026-03-20):** S12 is now delivered in code with real /history query wiring against the SQLite runtime lane, persisted execution list/detail loading, run-to-history visibility via query invalidation, and maintained separation between active request-tab result state and history observation state.
+- **Implementation follow-up (2026-03-20):** S13 is now delivered in code with real /captures query wiring against persisted runtime capture records, query-driven capture list/detail loading, runtime-event-triggered refresh against canonical capture queries, and maintained separation between captures observation state and request draft/history state.
+- **Implementation follow-up (2026-03-20):** S14 is now delivered in code with richer bounded diagnostics across the active request result panel, persisted history detail, and persisted captures detail, while keeping family-aware outcome badges and authoring-versus-observation state boundaries intact.
 
 ## 7. Key Decisions
 1. The frontend rewrite should proceed **shell-first with incremental feature slices**, not route-first and not all-at-once.
@@ -90,7 +92,8 @@ This task is done when all of the following are true:
 - Secondary reviewers: Backend Lead + QA / Senior Engineer
 
 ## 11. Closure Decision
-T010 can stay closed as **done** at the planning/documentation level, and the linked implementation slices S1-S11 are now landed. The next work should move to follow-up refinement around persistence integration, richer diagnostics, script execution, mocks CRUD/evaluation, and captures real data rather than widening the shell itself.
+T010 can stay closed as **done** at the planning/documentation level, and the linked implementation slices S1-S14 are now landed. The next work should move to follow-up refinement around script execution, mocks CRUD/evaluation, and persistence integration rather than widening the shell itself.
+
 
 
 

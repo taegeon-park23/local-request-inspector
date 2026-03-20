@@ -45,6 +45,9 @@ export interface HistoryRecord {
   testOutcome: HistoryTestOutcome;
   testSummaryLabel: string;
   requestSnapshotSummary: string;
+  requestInputSummary?: string;
+  requestParamCount?: number;
+  requestHeaderCount?: number;
   requestParams: HistoryRequestInputItem[];
   requestHeaders: HistoryRequestInputItem[];
   requestBodyMode: HistoryRequestBodyMode;
@@ -54,6 +57,8 @@ export interface HistoryRecord {
   headersSummary: string;
   bodyHint: string;
   bodyPreview: string;
+  responsePreviewSizeLabel?: string;
+  responsePreviewPolicy?: string;
   consoleSummary: string;
   consolePreview: string[];
   consoleLogCount: number;
@@ -67,6 +72,8 @@ export interface HistoryRecord {
   completedAtLabel: string;
   environmentLabel: string;
   sourceLabel: string;
+  errorCode?: string | null;
+  errorSummary?: string;
   timelineEntries: HistoryTimelineEntry[];
 }
 

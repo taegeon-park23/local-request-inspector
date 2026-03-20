@@ -23,12 +23,16 @@ export interface CaptureRecord {
   path: string;
   receivedAtIso: string;
   receivedAtLabel: string;
+  statusCode: number | null;
   bodyHint: string;
   requestSummary: string;
   headersSummary: string;
   bodyPreview: string;
+  bodyPreviewPolicy?: string;
+  storageSummary?: string;
   bodyModeHint: CaptureReplayBodyModeHint;
   requestHeaders: CaptureRequestInputItem[];
+  requestHeaderCount?: number;
   mockOutcome: CaptureMockOutcome;
   mockSummary: string;
   responseSummary: string;

@@ -15,7 +15,10 @@ CREATE TABLE IF NOT EXISTS captured_requests (
   request_headers_json TEXT,
   request_body_preview TEXT,
   request_body_redacted INTEGER NOT NULL DEFAULT 1,
-  received_at TEXT NOT NULL
+  received_at TEXT NOT NULL,
+  mock_outcome TEXT NOT NULL DEFAULT 'Mocked',
+  scope_label TEXT NOT NULL DEFAULT 'All runtime captures',
+  request_body_mode TEXT NOT NULL DEFAULT 'none'
 );
 
 CREATE TABLE IF NOT EXISTS execution_histories (

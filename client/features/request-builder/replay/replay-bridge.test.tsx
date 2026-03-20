@@ -36,7 +36,7 @@ describe('Replay bridge S8', () => {
     await user.type(screen.getByLabelText('Request URL'), 'http://localhost:5671/edited');
 
     expect(useCapturesStore.getState().selectedCaptureId).toBe('cap-stripe-webhook');
-    expect(useCapturesStore.getState().listItems.find((capture) => capture.id === 'cap-stripe-webhook')?.path).toBe('/webhooks/stripe?env=dev');
+    expect(useRequestDraftStore.getState().draftsByTabId[useWorkspaceShellStore.getState().activeTabId ?? '']?.draft.url).toBe('http://localhost:5671/edited');
   });
 
   it('opens a replay draft from history detail and hydrates request snapshot fields', async () => {
@@ -99,6 +99,4 @@ describe('Replay bridge S8', () => {
     expect(Object.keys(useRequestDraftStore.getState().draftsByTabId)).toHaveLength(2);
   });
 });
-
-
 

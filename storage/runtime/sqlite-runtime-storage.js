@@ -29,6 +29,7 @@ class SqliteRuntimeStorage {
     this.database.exec('PRAGMA foreign_keys = ON;');
     this.applyBootstrapMigration();
     this.ensureExecutionResultColumns();
+    this.ensureCapturedRequestColumns();
     this.upsertMetadata('schemaVersion', String(STORAGE_SCHEMA_VERSION));
     this.upsertMetadata('runtimePersistenceMode', 'redacted-only');
   }
@@ -52,6 +53,12 @@ class SqliteRuntimeStorage {
     this.ensureColumn('execution_results', 'request_snapshot_json', `TEXT NOT NULL DEFAULT '{}'`);
   }
 
+  ensureCapturedRequestColumns() {
+    this.ensureColumn('captured_requests', 'mock_outcome', `TEXT NOT NULL DEFAULT 'Mocked'`);
+    this.ensureColumn('captured_requests', 'scope_label', `TEXT NOT NULL DEFAULT 'All runtime captures'`);
+    this.ensureColumn('captured_requests', 'request_body_mode', `TEXT NOT NULL DEFAULT 'none'`);
+  }
+
   upsertMetadata(key, value) {
     const statement = this.database.prepare(`
       INSERT INTO runtime_metadata (key, value, updated_at)
@@ -60,6 +67,92 @@ class SqliteRuntimeStorage {
     `);
 
     statement.run(key, value, new Date().toISOString());
+  }
+
+  insertCapturedRequest(record) {
+    const statement = this.database.prepare(`
+      INSERT INTO captured_requests (
+        id, workspace_id, method, url, path, status_code, matched_mock_rule_id,
+        request_headers_json, request_body_preview, request_body_redacted, received_at,
+        mock_outcome, scope_label, request_body_mode
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    statement.run(
+      record.id,
+      record.workspaceId || null,
+      record.method,
+      record.url,
+      record.path || null,
+      record.statusCode ?? null,
+      record.matchedMockRuleId || null,
+      record.requestHeadersJson ?? '{}',
+      record.requestBodyPreview ?? '',
+      record.requestBodyRedacted ? 1 : 0,
+      record.receivedAt,
+      record.mockOutcome || 'Mocked',
+      record.scopeLabel || 'All runtime captures',
+      record.requestBodyMode || 'none',
+    );
+  }
+
+  mapCapturedRequestRow(row) {
+    if (!row) {
+      return null;
+    }
+
+    return {
+      id: row.id,
+      workspaceId: row.workspace_id,
+      method: row.method,
+      url: row.url,
+      path: row.path,
+      statusCode: row.status_code,
+      matchedMockRuleId: row.matched_mock_rule_id,
+      requestHeaders: parseJsonColumn(row.request_headers_json, {}),
+      requestBodyPreview: row.request_body_preview || '',
+      requestBodyRedacted: Number(row.request_body_redacted || 0) === 1,
+      receivedAt: row.received_at,
+      mockOutcome: row.mock_outcome || 'Mocked',
+      scopeLabel: row.scope_label || 'All runtime captures',
+      requestBodyMode: row.request_body_mode || 'none',
+    };
+  }
+
+  createCapturedRequestSelectSql(whereClause = '') {
+    return `
+      SELECT
+        id,
+        workspace_id,
+        method,
+        url,
+        path,
+        status_code,
+        matched_mock_rule_id,
+        request_headers_json,
+        request_body_preview,
+        request_body_redacted,
+        received_at,
+        mock_outcome,
+        scope_label,
+        request_body_mode
+      FROM captured_requests
+      ${whereClause}
+      ORDER BY received_at DESC
+    `;
+  }
+
+  listCapturedRequests() {
+    const statement = this.database.prepare(this.createCapturedRequestSelectSql());
+    return statement.all().map((row) => this.mapCapturedRequestRow(row));
+  }
+
+  readCapturedRequest(capturedRequestId) {
+    const statement = this.database.prepare(
+      this.createCapturedRequestSelectSql('WHERE id = ?'),
+    );
+
+    return this.mapCapturedRequestRow(statement.get(capturedRequestId));
   }
 
   insertExecutionHistory(record) {

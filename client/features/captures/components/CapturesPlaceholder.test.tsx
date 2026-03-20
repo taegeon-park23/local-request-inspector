@@ -1,73 +1,312 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
 import { AppRouter } from '@client/app/router/AppRouter';
+import { defaultCaptureFixtureRecords } from '@client/features/captures/data/capture-fixtures';
+import { useCapturesStore } from '@client/features/captures/state/captures-store';
 import { useRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
+import { syntheticRuntimeCaptureEvents } from '@client/features/runtime-events/data/runtime-events-fixtures';
 import { createSyntheticRuntimeEventsAdapter } from '@client/features/runtime-events/runtime-events-adapter';
 import { renderApp } from '@client/shared/test/render-app';
 
-describe('Captures S4 observation skeleton', () => {
-  it('renders the captures list/detail skeleton and shared detail tabs while exposing connection health', async () => {
-    const user = userEvent.setup();
-    renderApp(<AppRouter />, { initialEntries: ['/captures'] });
+function createApiResponse(data: unknown, status = 200) {
+  return new Response(JSON.stringify({ data }), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
+function createApiError(message: string, status = 500) {
+  return new Response(
+    JSON.stringify({
+      error: {
+        code: 'captured_request_query_failed',
+        message,
+        retryable: false,
+      },
+    }),
+    {
+      status,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    },
+  );
+}
+
+function getUrl(input: RequestInfo | URL) {
+  if (typeof input === 'string') {
+    return input;
+  }
+
+  if (input instanceof URL) {
+    return input.toString();
+  }
+
+  return input.url;
+}
+
+const connectedAdapterFactory = () =>
+  createSyntheticRuntimeEventsAdapter({
+    captureEvents: [],
+    terminalConnectionHealth: 'connected',
+  });
+
+describe('Captures S13 real data integration', () => {
+  it('renders persisted captures from the query seam and preserves mock outcome family detail', async () => {
+    const firstCapture = defaultCaptureFixtureRecords[0]!;
+    const secondCapture = defaultCaptureFixtureRecords[1]!;
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/captured-requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [firstCapture, secondCapture] });
+      }
+
+      if (url === `/api/captured-requests/${firstCapture.id}` && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ capture: firstCapture });
+      }
+
+      if (url === `/api/captured-requests/${secondCapture.id}` && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ capture: secondCapture });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />, {
+      initialEntries: ['/captures'],
+      runtimeEventsAdapterFactory: connectedAdapterFactory,
+    });
 
     expect(screen.getByRole('heading', { name: 'Captures' })).toBeInTheDocument();
+    expect(screen.getByText(/Captures is an observation route for inbound traffic/i)).toBeInTheDocument();
     expect(screen.getByLabelText('Search captures')).toBeInTheDocument();
     expect(screen.getByLabelText('Mock outcome filter')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: /Open capture POST \/webhooks\/stripe/i })).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByText(/Runtime connection: connected/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('connected', { selector: '[data-kind="connection"]' })).toBeInTheDocument());
 
-    const connectionBadge = screen.getByText('connected', { selector: '[data-kind="connection"]' });
-    expect(connectionBadge).toHaveAttribute('data-kind', 'connection');
     expect(screen.getByRole('heading', { name: 'Capture detail' })).toBeInTheDocument();
     expect(screen.getByRole('tablist', { name: 'Capture detail tabs' })).toBeInTheDocument();
-    expect(screen.getByText(/Run Replay Now is disabled on purpose in this readiness slice/i)).toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', { name: 'Deferred detail' }));
-    expect(screen.getByRole('heading', { name: 'Deferred runtime detail' })).toBeInTheDocument();
-    expect(screen.getByText('Mock outcome family')).toBeInTheDocument();
-    expect(screen.getAllByText('Mocked', { selector: '[data-kind="mockOutcome"]' }).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Real capture data now drives this route/i)).toBeInTheDocument();
+    expect(screen.getByText(/Persisted capture keeps/i)).toBeInTheDocument();
+    expect(screen.getByText(/bounded request-body preview/i)).toBeInTheDocument();
+    expect(screen.getByText('Mocked', { selector: '[data-kind="mockOutcome"]' })).toHaveAttribute('data-kind', 'mockOutcome');
+    expect(screen.queryByText('Succeeded', { selector: '[data-kind="executionOutcome"]' })).not.toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([input]) => getUrl(input as RequestInfo | URL) === '/api/captured-requests')).toBe(true);
   });
 
-  it('changes the active detail when a capture row is selected', async () => {
+  it('changes detail when a persisted capture row is selected', async () => {
     const user = userEvent.setup();
-    renderApp(<AppRouter />, { initialEntries: ['/captures'] });
+    const firstCapture = defaultCaptureFixtureRecords[0]!;
+    const secondCapture = defaultCaptureFixtureRecords[1]!;
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/captured-requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [firstCapture, secondCapture] });
+      }
+
+      if (url === `/api/captured-requests/${firstCapture.id}` && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ capture: firstCapture });
+      }
+
+      if (url === `/api/captured-requests/${secondCapture.id}` && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ capture: secondCapture });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />, {
+      initialEntries: ['/captures'],
+      runtimeEventsAdapterFactory: connectedAdapterFactory,
+    });
 
     const capturesList = await screen.findByLabelText('Captures list');
-    const healthRow = within(capturesList).getByRole('button', { name: /Open capture GET \/health/i });
+    await user.click(within(capturesList).getByRole('button', { name: /Open capture GET \/health/i }));
 
-    await user.click(healthRow);
-
-    expect(screen.getByText(/GET \/health reached localhost:5671 as an inbound capture/i)).toBeInTheDocument();
+    expect(await screen.findByText(/GET \/health reached localhost:5671 as an inbound capture/i)).toBeInTheDocument();
+    expect(screen.getByText('No request body preview was stored for this capture.')).toBeInTheDocument();
     expect(screen.getAllByText('Bypassed', { selector: '[data-kind="mockOutcome"]' }).length).toBeGreaterThan(0);
+    expect(useCapturesStore.getState().selectedCaptureId).toBe(secondCapture.id);
   });
 
-  it('shows degraded empty-state copy when the synthetic feed has no captures', async () => {
+  it('shows loading state while persisted captures are being queried', async () => {
+    let resolveList!: (value: Response) => void;
+
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
+        return Promise.resolve(createApiResponse({ items: [] }));
+      }
+
+      if (url === '/api/captured-requests' && (!init || !init.method || init.method === 'GET')) {
+        return new Promise<Response>((resolve) => {
+          resolveList = resolve;
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />, {
+      initialEntries: ['/captures'],
+      runtimeEventsAdapterFactory: connectedAdapterFactory,
+    });
+
+    expect(await screen.findByText('Loading persisted captures')).toBeInTheDocument();
+    resolveList(createApiResponse({ items: [] }));
+    await waitFor(() => expect(screen.getByText('No captures yet')).toBeInTheDocument());
+  });
+
+  it('shows empty state when the persisted captures query returns no rows', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/captured-requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [] });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />, {
+      initialEntries: ['/captures'],
+      runtimeEventsAdapterFactory: connectedAdapterFactory,
+    });
+
+    await waitFor(() => expect(screen.getByText('No captures yet')).toBeInTheDocument());
+    expect(screen.getByRole('heading', { name: 'No capture selected' })).toBeInTheDocument();
+  });
+
+  it('shows degraded state when the persisted captures query fails', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/captured-requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiError('SQLite capture query failed');
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />, {
+      initialEntries: ['/captures'],
+      runtimeEventsAdapterFactory: connectedAdapterFactory,
+    });
+
+    await waitFor(() => expect(screen.getByText('Capture observation is degraded')).toBeInTheDocument());
+    expect(screen.getByText(/SQLite capture query failed/i)).toBeInTheDocument();
+  });
+
+  it('refreshes persisted captures after a runtime event invalidates the query seam', async () => {
+    const firstCapture = defaultCaptureFixtureRecords[1]!;
+    const refreshedCapture = defaultCaptureFixtureRecords[0]!;
+    let listCallCount = 0;
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/captured-requests' && (!init || !init.method || init.method === 'GET')) {
+        listCallCount += 1;
+        return createApiResponse({ items: listCallCount === 1 ? [firstCapture] : [refreshedCapture, firstCapture] });
+      }
+
+      if (url === `/api/captured-requests/${firstCapture.id}` && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ capture: firstCapture });
+      }
+
+      if (url === `/api/captured-requests/${refreshedCapture.id}` && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ capture: refreshedCapture });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
     renderApp(<AppRouter />, {
       initialEntries: ['/captures'],
       runtimeEventsAdapterFactory: () =>
         createSyntheticRuntimeEventsAdapter({
-          captureEvents: [],
-          terminalConnectionHealth: 'degraded',
+          captureEvents: [syntheticRuntimeCaptureEvents[0]!],
+          terminalConnectionHealth: 'connected',
         }),
     });
 
-    await waitFor(() => expect(screen.getByText(/Runtime connection: degraded/i)).toBeInTheDocument());
-    expect(screen.getByText('Capture observation is degraded')).toBeInTheDocument();
-    expect(screen.getByText('No captures yet')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'No capture selected' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Open capture GET \/health/i })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', { name: /Open capture POST \/webhooks\/stripe/i })).toBeInTheDocument());
+    expect(screen.getByText(/POST \/webhooks\/stripe reached localhost:5671 as an inbound capture/i)).toBeInTheDocument();
+    expect(listCallCount).toBeGreaterThanOrEqual(2);
   });
 
-  it('keeps capture observation separate from request draft authoring state', async () => {
+  it('keeps replay edit-first and separate from request draft state when real capture data is selected', async () => {
     const user = userEvent.setup();
-    renderApp(<AppRouter />, { initialEntries: ['/captures'] });
+    const capture = defaultCaptureFixtureRecords[0]!;
 
-    const capturesList = await screen.findByLabelText('Captures list');
-    await user.click(within(capturesList).getByRole('button', { name: /Open capture DELETE \/admin\/purge/i }));
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
 
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/captured-requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [capture] });
+      }
+
+      if (url === `/api/captured-requests/${capture.id}` && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ capture });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />, {
+      initialEntries: ['/captures'],
+      runtimeEventsAdapterFactory: connectedAdapterFactory,
+    });
+
+    expect(await screen.findByRole('button', { name: 'Open Replay Draft' })).toBeInTheDocument();
     expect(Object.keys(useRequestDraftStore.getState().draftsByTabId)).toHaveLength(0);
-    expect(screen.queryByLabelText('Request method')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Request URL')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Run Replay Now' })).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: 'Open Replay Draft' }));
+
+    expect(await screen.findByRole('heading', { name: 'Workspace' })).toBeInTheDocument();
+    expect(screen.getByText('Opened from capture')).toBeInTheDocument();
+    expect(Object.keys(useRequestDraftStore.getState().draftsByTabId)).toHaveLength(1);
   });
 });
-
 

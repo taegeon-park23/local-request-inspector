@@ -107,5 +107,8 @@ export function createServerSentRuntimeEventsAdapter({
 }
 
 export const createDefaultRuntimeEventsAdapter: RuntimeEventsAdapterFactory = () =>
-  createSyntheticRuntimeEventsAdapter();
+  (typeof EventSource === 'undefined'
+    ? createSyntheticRuntimeEventsAdapter()
+    : createServerSentRuntimeEventsAdapter());
+
 

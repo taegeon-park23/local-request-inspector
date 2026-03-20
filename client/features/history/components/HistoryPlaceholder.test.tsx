@@ -50,7 +50,25 @@ function getUrl(input: RequestInfo | URL) {
 describe('History S12 real data integration', () => {
   it('renders persisted execution history from the query seam and switches detail composition by row selection', async () => {
     const user = userEvent.setup();
-    const [firstHistory, secondHistory] = defaultHistoryFixtureScenario.listItems as [typeof defaultHistoryFixtureScenario.listItems[number], typeof defaultHistoryFixtureScenario.listItems[number]];
+    const [baseFirstHistory, baseSecondHistory] = defaultHistoryFixtureScenario.listItems as [typeof defaultHistoryFixtureScenario.listItems[number], typeof defaultHistoryFixtureScenario.listItems[number]];
+    const firstHistory = {
+      ...baseFirstHistory,
+      responsePreviewSizeLabel: '73 B preview',
+      responsePreviewPolicy: 'Persisted response preview is bounded and redacted before deeper diagnostics are added.',
+      requestInputSummary: '0 params · 3 headers · json body · bearer',
+      requestParamCount: 0,
+      requestHeaderCount: 3,
+    };
+    const secondHistory = {
+      ...baseSecondHistory,
+      responsePreviewSizeLabel: '56 B preview',
+      responsePreviewPolicy: 'Persisted response preview is bounded and redacted before deeper diagnostics are added.',
+      requestInputSummary: '2 params · 2 headers · No body · No auth',
+      requestParamCount: 2,
+      requestHeaderCount: 2,
+      errorCode: 'upstream_503',
+      errorSummary: 'Transport returned a retryable 503 summary.',
+    };
 
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = getUrl(input);
@@ -84,6 +102,8 @@ describe('History S12 real data integration', () => {
     expect(await screen.findByRole('button', { name: 'Open history Create user' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'History detail' })).toBeInTheDocument();
     expect(screen.getByRole('tablist', { name: 'History result tabs' })).toBeInTheDocument();
+    expect(screen.getByText('73 B preview')).toBeInTheDocument();
+    expect(screen.getByText(/bounded and redacted before deeper diagnostics/i)).toBeInTheDocument();
 
     expect(screen.getByText('Succeeded', { selector: '[data-kind="executionOutcome"]' })).toHaveAttribute(
       'data-kind',
@@ -103,6 +123,7 @@ describe('History S12 real data integration', () => {
     await user.click(within(historyList).getByRole('button', { name: 'Open history Load dashboard' }));
 
     expect(screen.getByText(/GET https:\/\/api.example.com\/dashboard ran from an ad hoc tab/i)).toBeInTheDocument();
+    expect(screen.getByText('56 B preview')).toBeInTheDocument();
     expect(screen.getAllByText('503 Service Unavailable', { selector: '[data-kind="transportOutcome"]' }).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Some tests failed', { selector: '[data-kind="testSummary"]' }).length).toBeGreaterThan(0);
 
@@ -114,6 +135,8 @@ describe('History S12 real data integration', () => {
 
     await user.click(screen.getByRole('tab', { name: 'Execution Info' }));
     expect(screen.getByRole('heading', { name: 'Execution info' })).toBeInTheDocument();
+    expect(screen.getByText('upstream_503')).toBeInTheDocument();
+    expect(screen.getByText('Transport returned a retryable 503 summary.')).toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([input]) => getUrl(input as RequestInfo | URL) === '/api/execution-histories')).toBe(true);
     expect(
       fetchMock.mock.calls.some(([input]) => getUrl(input as RequestInfo | URL) === `/api/execution-histories/${secondHistory.id}`),

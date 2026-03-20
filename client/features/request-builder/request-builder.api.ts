@@ -68,13 +68,24 @@ export interface RequestRunObservation {
   responseHeadersSummary: string;
   responseBodyPreview: string;
   responseBodyHint: string;
+  responsePreviewSizeLabel?: string;
+  responsePreviewPolicy?: string;
   startedAt: string;
   completedAt: string;
   durationMs: number;
   consoleSummary: string;
   consoleEntries: string[];
+  consoleLogCount?: number;
+  consoleWarningCount?: number;
   testsSummary: string;
   testEntries: string[];
+  requestSnapshotSummary?: string;
+  requestInputSummary?: string;
+  requestHeaderCount?: number;
+  requestParamCount?: number;
+  requestBodyMode?: RequestDraftState['bodyMode'];
+  authSummary?: string;
+  errorCode?: string;
   errorSummary?: string;
 }
 
@@ -226,5 +237,3 @@ export async function runRequestDefinition(input: RequestDefinitionInput) {
 
   return parseJsonResponse<{ execution: RequestRunObservation }>(response).then((payload) => payload.execution);
 }
-
-

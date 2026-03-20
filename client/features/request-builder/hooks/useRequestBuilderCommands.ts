@@ -37,6 +37,47 @@ function isJsonBodyMalformed(draft: RequestDraftState) {
   }
 }
 
+function countEnabledRows(rows: RequestDraftState['params']) {
+  return rows.filter((row) => row.enabled !== false && row.key.trim().length > 0).length;
+}
+
+function createBodyModeSummary(bodyMode: RequestDraftState['bodyMode']) {
+  switch (bodyMode) {
+    case 'json':
+      return 'JSON body';
+    case 'text':
+      return 'Text body';
+    case 'form-urlencoded':
+      return 'Form body';
+    case 'multipart-form-data':
+      return 'Multipart body';
+    default:
+      return 'No body';
+  }
+}
+
+function createAuthSummary(draft: RequestDraftState) {
+  switch (draft.auth.type) {
+    case 'bearer':
+      return 'Bearer auth';
+    case 'basic':
+      return 'Basic auth';
+    case 'api-key':
+      return draft.auth.apiKeyPlacement === 'query' ? 'API key in query' : 'API key in header';
+    default:
+      return 'No auth';
+  }
+}
+
+function createDraftRequestInputSummary(draft: RequestDraftState) {
+  return `${countEnabledRows(draft.params)} params · ${countEnabledRows(draft.headers)} headers · ${createBodyModeSummary(draft.bodyMode)} · ${createAuthSummary(draft)}`;
+}
+
+function createDraftRequestSnapshotSummary(draft: RequestDraftState) {
+  const targetUrl = draft.url.trim().length > 0 ? draft.url.trim() : 'request snapshot unavailable';
+  return `${draft.method} ${targetUrl} executed from the active workspace draft with ${createDraftRequestInputSummary(draft)}.`;
+}
+
 function createFailedExecutionObservation(
   draft: RequestDraftState,
   error: RequestBuilderApiError | Error,
@@ -53,13 +94,24 @@ function createFailedExecutionObservation(
     responseHeadersSummary: 'No response headers were captured.',
     responseBodyPreview: '',
     responseBodyHint: 'No response payload is available for this failed run.',
+    responsePreviewSizeLabel: 'No preview stored',
+    responsePreviewPolicy: 'No response preview is available because the run failed before transport completed.',
     startedAt: typeof details.startedAt === 'string' ? details.startedAt : now,
     completedAt: typeof details.completedAt === 'string' ? details.completedAt : now,
     durationMs: typeof details.durationMs === 'number' ? details.durationMs : 0,
     consoleSummary: 'No console entries were captured. Script execution is not wired yet.',
     consoleEntries: [],
+    consoleLogCount: 0,
+    consoleWarningCount: 0,
     testsSummary: 'No tests ran. Script execution is not wired yet.',
     testEntries: [],
+    requestSnapshotSummary: createDraftRequestSnapshotSummary(draft),
+    requestInputSummary: createDraftRequestInputSummary(draft),
+    requestHeaderCount: countEnabledRows(draft.headers),
+    requestParamCount: countEnabledRows(draft.params),
+    requestBodyMode: draft.bodyMode,
+    authSummary: createAuthSummary(draft),
+    errorCode: error instanceof RequestBuilderApiError ? error.code : 'execution_failed',
     errorSummary: error.message,
   };
 }
@@ -230,6 +282,3 @@ export function useRequestBuilderCommands(
     },
   };
 }
-
-
-

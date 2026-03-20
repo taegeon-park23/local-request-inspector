@@ -14,6 +14,7 @@ export interface RuntimeCaptureTransportEvent {
   mockOutcome?: CaptureRecord['mockOutcome'];
   mockRuleName?: string;
   workspaceLabel?: string;
+  statusCode?: number;
 }
 
 export type RuntimeEventsMessage =

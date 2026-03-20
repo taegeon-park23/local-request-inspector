@@ -33,12 +33,12 @@ function getTabSourceCopy(activeTab: RequestTabRecord) {
   return activeTab.folderName ? `${collectionCopy} / ${activeTab.folderName}` : collectionCopy;
 }
 
-function getTransportOutcomeLabel(responseStatus: number | null, executionOutcome: 'Succeeded' | 'Failed') {
+function getTransportOutcomeLabel(responseStatus: number | null) {
   if (responseStatus === null) {
-    return executionOutcome === 'Failed' ? 'No response' : 'No response';
+    return 'No response';
   }
 
-  return `${responseStatus} Response`;
+  return `HTTP ${responseStatus}`;
 }
 
 export function RequestResultPanelPlaceholder({
@@ -108,34 +108,36 @@ export function RequestResultPanelPlaceholder({
       {activeResultTab === 'response' ? (
         <DetailViewerSection
           title="Response detail"
-          description="Response preview belongs to the latest run for this active tab only."
+          description="Response preview belongs to the latest run for this active tab only. It remains bounded here and does not rewrite the request draft."
           tone="muted"
         >
           {runStatus.status === 'pending' && !execution ? (
             <EmptyStateCallout
               title="Running request"
-              description="The request is in flight. Response headers and body preview will appear here when the current run settles."
+              description="The request is in flight. Response headers, preview size, and body preview will appear here when the current run settles."
             />
           ) : execution ? (
             <>
               <div className="request-run-outcome-row">
                 <StatusBadge kind="executionOutcome" value={execution.executionOutcome} />
-                <StatusBadge kind="transportOutcome" value={getTransportOutcomeLabel(execution.responseStatus, execution.executionOutcome)} />
+                <StatusBadge kind="transportOutcome" value={getTransportOutcomeLabel(execution.responseStatus)} />
               </div>
               <KeyValueMetaList
                 items={[
                   { label: 'HTTP status', value: execution.responseStatusLabel },
                   { label: 'Duration', value: `${execution.durationMs} ms` },
+                  { label: 'Preview size', value: execution.responsePreviewSizeLabel ?? 'No preview stored' },
                   { label: 'Headers summary', value: execution.responseHeadersSummary },
                   { label: 'Body hint', value: execution.responseBodyHint },
                 ]}
               />
+              <p className="shared-readiness-note">{execution.responsePreviewPolicy ?? 'Response preview stays bounded in this surface while richer inspection remains deferred.'}</p>
               <pre className="history-preview-block" data-testid="request-response-preview">{execution.responseBodyPreview || 'No response body preview was captured.'}</pre>
             </>
           ) : (
             <EmptyStateCallout
               title="Run this request to populate Response"
-              description="Save only updates the request definition. Use Run to execute the current draft and load response status, headers, and body preview here."
+              description="Save only updates the request definition. Use Run to execute the current draft and load response status, preview size, headers, and body preview here."
             />
           )}
         </DetailViewerSection>
@@ -144,26 +146,35 @@ export function RequestResultPanelPlaceholder({
       {activeResultTab === 'console' ? (
         <DetailViewerSection
           title="Console detail"
-          description="Console stays observation-only. Script execution is still deferred, so console output remains intentionally thin in this slice."
+          description="Console stays observation-only. Script execution is still deferred, so this tab explains what was or was not captured instead of inventing logs."
           tone="muted"
         >
           {execution ? (
-            execution.consoleEntries.length > 0 ? (
-              <ul className="history-preview-list">
-                {execution.consoleEntries.map((entry, index) => (
-                  <li key={`${entry}-${index}`}>{entry}</li>
-                ))}
-              </ul>
-            ) : (
-              <EmptyStateCallout
-                title="No console entries for this run"
-                description={execution.consoleSummary}
+            <>
+              <KeyValueMetaList
+                items={[
+                  { label: 'Log lines', value: execution.consoleLogCount ?? execution.consoleEntries.length },
+                  { label: 'Warnings', value: execution.consoleWarningCount ?? 0 },
+                  { label: 'Summary', value: execution.consoleSummary },
+                ]}
               />
-            )
+              {execution.consoleEntries.length > 0 ? (
+                <ul className="history-preview-list">
+                  {execution.consoleEntries.map((entry, index) => (
+                    <li key={`${entry}-${index}`}>{entry}</li>
+                  ))}
+                </ul>
+              ) : (
+                <EmptyStateCallout
+                  title="No console entries for this run"
+                  description={execution.consoleSummary}
+                />
+              )}
+            </>
           ) : (
             <EmptyStateCallout
               title="Console waits for an execution"
-              description="Run the current request to associate console output with this tab. Richer script-linked console wiring is still deferred."
+              description="Run the current request to associate console output with this tab. Script-linked console diagnostics remain deferred in this slice."
             />
           )}
         </DetailViewerSection>
@@ -172,22 +183,30 @@ export function RequestResultPanelPlaceholder({
       {activeResultTab === 'tests' ? (
         <DetailViewerSection
           title="Tests detail"
-          description="Tests are reserved for execution-linked assertions. Script execution is not wired in this slice, so this slot stays explicitly deferred."
+          description="Tests are reserved for execution-linked assertions. Script execution is not wired in this slice, so this slot stays explicitly deferred instead of fabricating results."
           tone="muted"
         >
           {execution ? (
-            execution.testEntries.length > 0 ? (
-              <ul className="history-preview-list">
-                {execution.testEntries.map((entry, index) => (
-                  <li key={`${entry}-${index}`}>{entry}</li>
-                ))}
-              </ul>
-            ) : (
-              <EmptyStateCallout
-                title="No tests ran for this execution"
-                description={execution.testsSummary}
+            <>
+              <KeyValueMetaList
+                items={[
+                  { label: 'Summary', value: execution.testsSummary },
+                  { label: 'Entries', value: execution.testEntries.length },
+                ]}
               />
-            )
+              {execution.testEntries.length > 0 ? (
+                <ul className="history-preview-list">
+                  {execution.testEntries.map((entry, index) => (
+                    <li key={`${entry}-${index}`}>{entry}</li>
+                  ))}
+                </ul>
+              ) : (
+                <EmptyStateCallout
+                  title="No tests ran for this execution"
+                  description={execution.testsSummary}
+                />
+              )}
+            </>
           ) : (
             <EmptyStateCallout
               title="Tests remain deferred"
@@ -200,13 +219,13 @@ export function RequestResultPanelPlaceholder({
       {activeResultTab === 'execution-info' ? (
         <DetailViewerSection
           title="Execution info"
-          description="Execution info belongs to the latest run and stays separate from saved request definitions."
+          description="Execution metadata belongs to the latest run and stays separate from saved request definitions and inbound observation routes."
           tone="muted"
         >
           {runStatus.status === 'pending' && !execution ? (
             <EmptyStateCallout
               title="Execution is starting"
-              description="A local run id and timing data will appear here once the current request settles."
+              description="A local run id, timing data, and bounded request snapshot summary will appear here once the current request settles."
             />
           ) : execution ? (
             <>
@@ -216,10 +235,12 @@ export function RequestResultPanelPlaceholder({
                   { label: 'Started at', value: execution.startedAt },
                   { label: 'Completed at', value: execution.completedAt },
                   { label: 'Outcome', value: execution.executionOutcome },
-                  { label: 'Duration', value: `${execution.durationMs} ms` },
+                  { label: 'Error code', value: execution.errorCode ?? 'No execution error code' },
                   { label: 'Error summary', value: execution.errorSummary ?? 'No execution error was reported.' },
+                  { label: 'Request input', value: execution.requestInputSummary ?? 'Request snapshot summary was not returned.' },
                 ]}
               />
+              {execution.requestSnapshotSummary ? <p className="shared-readiness-note">{execution.requestSnapshotSummary}</p> : null}
               {runStatus.message ? <p className="shared-readiness-note">{runStatus.message}</p> : null}
             </>
           ) : (

@@ -186,19 +186,31 @@ describe('Request builder save/run wiring', () => {
           responseHeadersSummary: '1 response header captured from the latest run.',
           responseBodyPreview: '{"ok":true,"requestId":"demo-1"}',
           responseBodyHint: '30 characters captured from the latest run.',
+          responsePreviewSizeLabel: '31 B response body',
+          responsePreviewPolicy: 'Preview is bounded before richer diagnostics and raw payload inspection are added.',
           startedAt: '2026-03-20T10:02:00.000Z',
           completedAt: '2026-03-20T10:02:00.120Z',
           durationMs: 120,
           consoleSummary: 'No console entries were captured. Script execution is not wired yet.',
           consoleEntries: [],
+          consoleLogCount: 0,
+          consoleWarningCount: 0,
           testsSummary: 'No tests ran. Script execution is not wired yet.',
           testEntries: [],
+          requestSnapshotSummary: 'GET https://api.example.com/runtime executed from the active workspace draft with 0 params · 0 headers · No body · No auth.',
+          requestInputSummary: '0 params · 0 headers · No body · No auth',
+          requestHeaderCount: 0,
+          requestParamCount: 0,
+          requestBodyMode: 'none',
+          authSummary: 'No auth',
         },
       }),
     );
 
     await waitFor(() => expect(screen.getByTestId('request-response-preview')).toHaveTextContent('"ok":true'));
     expect(screen.getByText('HTTP 201')).toBeInTheDocument();
+    expect(screen.getByText('31 B response body')).toBeInTheDocument();
+    expect(screen.getByText(/Preview is bounded before richer diagnostics/i)).toBeInTheDocument();
     expect(screen.getByLabelText('Runtime probe has unsaved changes')).toBeInTheDocument();
     expect(screen.getByTestId('run-command-status')).toHaveTextContent('Request run completed.');
   });
@@ -238,6 +250,8 @@ describe('Request builder save/run wiring', () => {
     await user.click(screen.getByRole('tab', { name: 'Execution Info' }));
     expect(screen.getByText('Failed')).toBeInTheDocument();
     expect(screen.getByText('Connection refused')).toBeInTheDocument();
+    expect(screen.getByText('request_builder_failure')).toBeInTheDocument();
+    expect(screen.getByText(/GET https:\/\/api.example.com\/failure executed from the active workspace draft/i)).toBeInTheDocument();
     expect(screen.getByText('No response')).toBeInTheDocument();
   });
 

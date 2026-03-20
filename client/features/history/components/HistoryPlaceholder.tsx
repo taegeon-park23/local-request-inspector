@@ -7,7 +7,7 @@ import {
   listExecutionHistories,
   readExecutionHistory,
 } from '@client/features/history/history.api';
-import type { HistoryResultTabId } from '@client/features/history/history.types';
+import type { HistoryRecord, HistoryResultTabId } from '@client/features/history/history.types';
 import {
   historyExecutionOutcomeOptions,
   historyMatchesExecutionOutcome,
@@ -32,6 +32,26 @@ const observationHealthCopy = {
   ready: 'History reads persisted execution summaries from the runtime lane. Select a row to inspect bounded result composition or open a replay draft into Workspace.',
   degraded: 'History query is degraded. Persisted execution summaries may be unavailable until the runtime lane responds again.',
 } as const;
+
+function createFallbackPreviewSizeLabel(history: HistoryRecord) {
+  if (history.bodyPreview.length === 0 || history.bodyPreview.startsWith('No persisted response body preview')) {
+    return 'No persisted preview';
+  }
+
+  return `${new TextEncoder().encode(history.bodyPreview).length} B preview`;
+}
+
+function createFallbackRequestInputSummary(history: HistoryRecord) {
+  return `${history.requestParams.length} params · ${history.requestHeaders.length} headers · ${history.requestBodyMode === 'none' ? 'No body' : `${history.requestBodyMode} body`} · ${history.requestAuth.type === 'none' ? 'No auth' : history.requestAuth.type}`;
+}
+
+function createFallbackResponsePreviewPolicy(history: HistoryRecord) {
+  if (history.bodyPreview.startsWith('No persisted response body preview')) {
+    return 'No response preview was persisted for this execution.';
+  }
+
+  return 'Persisted response preview is bounded and redacted before deeper diagnostics are added.';
+}
 
 export function HistoryPlaceholder() {
   const navigate = useNavigate();
@@ -285,6 +305,7 @@ export function HistoryPlaceholder() {
                   items={[
                     { label: 'Request label', value: selectedHistory.requestLabel },
                     { label: 'URL', value: selectedHistory.url },
+                    { label: 'Request input', value: selectedHistory.requestInputSummary ?? createFallbackRequestInputSummary(selectedHistory) },
                     { label: 'Environment', value: selectedHistory.environmentLabel },
                     { label: 'Source', value: selectedHistory.sourceLabel },
                   ]}
@@ -315,10 +336,12 @@ export function HistoryPlaceholder() {
                       value: selectedHistory.transportStatusCode === null ? 'No persisted code' : selectedHistory.transportStatusCode,
                     },
                     { label: 'Duration', value: selectedHistory.durationLabel },
+                    { label: 'Preview size', value: selectedHistory.responsePreviewSizeLabel ?? createFallbackPreviewSizeLabel(selectedHistory) },
                     { label: 'Headers summary', value: selectedHistory.headersSummary },
                     { label: 'Body hint', value: selectedHistory.bodyHint },
                   ]}
                 />
+                <p className="shared-readiness-note">{selectedHistory.responsePreviewPolicy ?? createFallbackResponsePreviewPolicy(selectedHistory)}</p>
                 <pre className="history-preview-block">{selectedHistory.bodyPreview}</pre>
                 <EmptyStateCallout
                   title="Persisted response detail is bounded"
@@ -396,11 +419,14 @@ export function HistoryPlaceholder() {
                     { label: 'Completed', value: selectedHistory.completedAtLabel },
                     { label: 'Environment', value: selectedHistory.environmentLabel },
                     { label: 'Source', value: selectedHistory.sourceLabel },
+                    { label: 'Error code', value: selectedHistory.errorCode ?? 'No execution error code' },
+                    { label: 'Error summary', value: selectedHistory.errorSummary ?? 'No execution error was reported.' },
+                    { label: 'Request input', value: selectedHistory.requestInputSummary ?? createFallbackRequestInputSummary(selectedHistory) },
                   ]}
                 />
                 <EmptyStateCallout
                   title="Advanced execution diagnostics are deferred"
-                  description="Cancellation controls, live stage streams, and diff viewers remain outside this history real-data slice."
+                  description="Cancellation controls, live stage streams, and diff viewers remain outside this history richer-diagnostics slice."
                 />
               </DetailViewerSection>
             ) : null}

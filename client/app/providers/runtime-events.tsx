@@ -1,5 +1,7 @@
 import { createContext, useEffect, useState, type PropsWithChildren } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useShellStore } from '@client/app/providers/shell-store';
+import { capturedRequestsQueryKey } from '@client/features/captures/captures.api';
 import { useCapturesStore } from '@client/features/captures/state/captures-store';
 import { createDefaultRuntimeEventsAdapter } from '@client/features/runtime-events/runtime-events-adapter';
 import type {
@@ -19,9 +21,9 @@ export function RuntimeEventsProvider({
   createAdapter = createDefaultRuntimeEventsAdapter,
 }: RuntimeEventsProviderProps) {
   const [adapter] = useState(createAdapter);
+  const queryClient = useQueryClient();
   const setRuntimeConnectionHealth = useShellStore((state) => state.setRuntimeConnectionHealth);
   const setCapturesConnectionHealth = useCapturesStore((state) => state.setConnectionHealth);
-  const ingestCapture = useCapturesStore((state) => state.ingestCapture);
 
   useEffect(() => {
     const handleMessage = (message: RuntimeEventsMessage) => {
@@ -32,7 +34,7 @@ export function RuntimeEventsProvider({
       }
 
       if (message.kind === 'capture.received') {
-        ingestCapture(message.capture);
+        queryClient.invalidateQueries({ queryKey: capturedRequestsQueryKey });
       }
     };
 
@@ -43,7 +45,7 @@ export function RuntimeEventsProvider({
       setRuntimeConnectionHealth('idle');
       setCapturesConnectionHealth('idle');
     };
-  }, [adapter, ingestCapture, setCapturesConnectionHealth, setRuntimeConnectionHealth]);
+  }, [adapter, queryClient, setCapturesConnectionHealth, setRuntimeConnectionHealth]);
 
   return <RuntimeEventsContext.Provider value={adapter}>{children}</RuntimeEventsContext.Provider>;
 }

@@ -117,6 +117,25 @@ function createResponseSummary(mockOutcome: CaptureMockOutcome) {
   }
 }
 
+function createBodyPreviewPolicy(event: RuntimeCaptureTransportEvent) {
+  if (!event.rawBody || event.rawBody === 'No Body or Binary') {
+    return 'No request body preview was stored for this capture.';
+  }
+
+  return 'Capture detail keeps a bounded request-body preview only. Full raw payload inspection and deeper transport traces remain deferred.';
+}
+
+function createStorageSummary(headers: Record<string, string>, event: RuntimeCaptureTransportEvent) {
+  const headerCount = Object.keys(headers).length;
+  const hasBodyPreview = Boolean(event.rawBody && event.rawBody !== 'No Body or Binary');
+
+  if (hasBodyPreview) {
+    return `Persisted capture keeps ${headerCount} header(s) and a bounded body preview for observation and replay.`;
+  }
+
+  return `Persisted capture keeps ${headerCount} header(s) and no request body preview for this inbound request.`;
+}
+
 export function normalizeRuntimeCaptureEvent(event: RuntimeCaptureTransportEvent): CaptureRecord {
   const normalizedUrl = new URL(event.url, 'http://localhost');
   const mockOutcome = event.mockOutcome ?? 'Bypassed';
@@ -127,6 +146,7 @@ export function normalizeRuntimeCaptureEvent(event: RuntimeCaptureTransportEvent
   const scopeLabel = event.workspaceLabel ?? 'All runtime captures';
   const mockSummary = createMockSummary(mockOutcome, event.mockRuleName);
   const responseSummary = createResponseSummary(mockOutcome);
+  const requestHeaders = createRequestHeaders(headers);
 
   return {
     id: String(event.id),
@@ -136,12 +156,16 @@ export function normalizeRuntimeCaptureEvent(event: RuntimeCaptureTransportEvent
     path,
     receivedAtIso,
     receivedAtLabel,
+    statusCode: typeof event.statusCode === 'number' ? event.statusCode : null,
     bodyHint: createBodyHint(event),
     requestSummary: `${event.method.toUpperCase()} ${path} reached ${normalizedUrl.host} as an inbound capture.`,
     headersSummary: createHeadersSummary(headers),
     bodyPreview: createBodyPreview(event),
+    bodyPreviewPolicy: createBodyPreviewPolicy(event),
+    storageSummary: createStorageSummary(headers, event),
     bodyModeHint: createBodyModeHint(event),
-    requestHeaders: createRequestHeaders(headers),
+    requestHeaders,
+    requestHeaderCount: requestHeaders.length,
     mockOutcome,
     mockSummary,
     responseSummary,

@@ -140,11 +140,18 @@ function createExecutionObservation({
   responseStatus,
   responseHeaders,
   responseBodyPreview,
+  responsePreviewLength,
+  responsePreviewTruncated,
   startedAt,
   completedAt,
   durationMs,
+  requestSnapshot,
+  errorCode,
   errorSummary,
 }) {
+  const requestParamCount = Array.isArray(requestSnapshot?.params) ? requestSnapshot.params.length : 0;
+  const requestHeaderCount = Array.isArray(requestSnapshot?.headers) ? requestSnapshot.headers.length : 0;
+
   return {
     executionId,
     executionOutcome,
@@ -158,15 +165,39 @@ function createExecutionObservation({
     responseBodyPreview,
     responseBodyHint:
       responseBodyPreview.length > 0
-        ? `${responseBodyPreview.length} characters captured from the latest run.`
+        ? `${responseBodyPreview.length} characters captured from the latest run preview.`
         : 'No response body preview was captured.',
+    responsePreviewSizeLabel:
+      typeof responsePreviewLength === 'number' && responsePreviewLength > 0
+        ? `${responsePreviewLength} B response body`
+        : createPreviewSizeLabel(
+            responseBodyPreview,
+            responseStatus === null ? 'No preview stored' : 'Empty preview',
+          ),
+    responsePreviewPolicy: createResponsePreviewPolicy({
+      preview: responseBodyPreview,
+      redactionApplied: false,
+      previewTruncated: responsePreviewTruncated,
+      absentSummary: executionOutcome === 'Failed'
+        ? 'No response preview is available because the run failed before transport completed.'
+        : 'No response preview is available for this execution.',
+    }),
     startedAt,
     completedAt,
     durationMs,
     consoleSummary: 'No console entries were captured. Script execution is not wired yet.',
     consoleEntries: [],
+    consoleLogCount: 0,
+    consoleWarningCount: 0,
     testsSummary: 'No tests ran. Script execution is not wired yet.',
     testEntries: [],
+    requestSnapshotSummary: createRequestSnapshotSummary(requestSnapshot),
+    requestInputSummary: createRequestInputSummary(requestSnapshot),
+    requestHeaderCount,
+    requestParamCount,
+    requestBodyMode: requestSnapshot?.bodyMode || 'none',
+    authSummary: createAuthSummary(requestSnapshot?.auth),
+    ...(errorCode ? { errorCode } : {}),
     ...(errorSummary ? { errorSummary } : {}),
   };
 }
@@ -336,6 +367,101 @@ function createPersistedRequestSnapshot(request, targetUrl) {
   };
 }
 
+function createPreviewSizeLabel(preview, emptyLabel = 'No preview stored') {
+  if (typeof preview !== 'string' || preview.length === 0) {
+    return emptyLabel;
+  }
+
+  return `${Buffer.byteLength(preview, 'utf8')} B preview`;
+}
+
+function createBodyModeSummary(bodyMode) {
+  switch (bodyMode) {
+    case 'json':
+      return 'JSON body';
+    case 'text':
+      return 'Text body';
+    case 'form-urlencoded':
+      return 'Form body';
+    case 'multipart-form-data':
+      return 'Multipart body';
+    default:
+      return 'No body';
+  }
+}
+
+function createAuthSummary(auth = createPersistedAuthSnapshot()) {
+  switch (auth?.type) {
+    case 'bearer':
+      return 'Bearer auth';
+    case 'basic':
+      return 'Basic auth';
+    case 'api-key':
+      return auth.apiKeyPlacement === 'query' ? 'API key in query' : 'API key in header';
+    default:
+      return 'No auth';
+  }
+}
+
+function createRequestInputSummary(requestSnapshot = {}) {
+  const paramsCount = Array.isArray(requestSnapshot?.params) ? requestSnapshot.params.length : 0;
+  const headerCount = Array.isArray(requestSnapshot?.headers) ? requestSnapshot.headers.length : 0;
+  return `${paramsCount} params · ${headerCount} headers · ${createBodyModeSummary(requestSnapshot?.bodyMode)} · ${createAuthSummary(requestSnapshot?.auth)}`;
+}
+
+function createRequestSnapshotSummary(requestSnapshot = {}) {
+  const method = typeof requestSnapshot?.method === 'string' && requestSnapshot.method.length > 0
+    ? requestSnapshot.method
+    : 'GET';
+  const url = typeof requestSnapshot?.url === 'string' && requestSnapshot.url.length > 0
+    ? requestSnapshot.url
+    : 'request snapshot unavailable';
+  const sourceLabel = typeof requestSnapshot?.sourceLabel === 'string' && requestSnapshot.sourceLabel.length > 0
+    ? requestSnapshot.sourceLabel.toLowerCase()
+    : 'request snapshot';
+
+  return `${method} ${url} executed from ${sourceLabel} with ${createRequestInputSummary(requestSnapshot)}.`;
+}
+
+function createResponsePreviewPolicy({
+  preview,
+  redactionApplied,
+  previewTruncated,
+  absentSummary,
+}) {
+  if (typeof preview !== 'string' || preview.length === 0) {
+    return absentSummary || 'No response preview is available.';
+  }
+
+  if (previewTruncated) {
+    return 'Preview was truncated at the bounded diagnostics limit before richer inspection is added.';
+  }
+
+  if (redactionApplied) {
+    return 'Preview is bounded and redacted before persistence and downstream diagnostics surfaces.';
+  }
+
+  return 'Preview is bounded before richer diagnostics and raw payload inspection are added.';
+}
+
+function createCaptureBodyPreviewPolicy(preview, wasRedacted) {
+  if (typeof preview !== 'string' || preview.length === 0) {
+    return 'No request body preview was persisted for this capture.';
+  }
+
+  return wasRedacted
+    ? 'Captured request body preview is redacted and bounded before persistence.'
+    : 'Captured request body preview is bounded before persistence.';
+}
+
+function createCaptureStorageSummary(headerCount, bodyPreview) {
+  if (typeof bodyPreview === 'string' && bodyPreview.length > 0) {
+    return `Persisted capture keeps ${headerCount} header(s) and a bounded request-body preview for observation and replay.`;
+  }
+
+  return `Persisted capture keeps ${headerCount} header(s) and no request body preview for this inbound request.`;
+}
+
 function createExecutionOutcomeLabel(status, cancellationOutcome) {
   switch (status) {
     case 'succeeded':
@@ -465,6 +591,9 @@ function createHistoryRecord(runtimeRecord) {
   const executionOutcome = createExecutionOutcomeLabel(runtimeRecord.status, runtimeRecord.cancellationOutcome);
   const transportOutcome = createTransportOutcomeLabel(runtimeRecord.responseStatus, executionOutcome);
   const responseHeaders = Array.isArray(runtimeRecord.responseHeaders) ? runtimeRecord.responseHeaders : [];
+  const requestParams = Array.isArray(requestSnapshot.params) ? requestSnapshot.params : [];
+  const requestHeaders = Array.isArray(requestSnapshot.headers) ? requestSnapshot.headers : [];
+  const responseBodyPreview = typeof runtimeRecord.responseBodyPreview === 'string' ? runtimeRecord.responseBodyPreview : '';
   const consoleLogCount = Number(runtimeRecord.logSummary?.consoleEntries || 0);
   const consoleWarningCount = Number(runtimeRecord.logSummary?.consoleWarnings || runtimeRecord.logSummary?.warnings || 0);
   const tests = createTestSummary(
@@ -491,9 +620,12 @@ function createHistoryRecord(runtimeRecord) {
     transportStatusCode: runtimeRecord.responseStatus ?? null,
     testOutcome: tests.outcome,
     testSummaryLabel: tests.label,
-    requestSnapshotSummary: `${method} ${url} was persisted as a bounded redacted request snapshot for history review.`,
-    requestParams: Array.isArray(requestSnapshot.params) ? requestSnapshot.params : [],
-    requestHeaders: Array.isArray(requestSnapshot.headers) ? requestSnapshot.headers : [],
+    requestSnapshotSummary: createRequestSnapshotSummary(requestSnapshot),
+    requestInputSummary: createRequestInputSummary(requestSnapshot),
+    requestParamCount: requestParams.length,
+    requestHeaderCount: requestHeaders.length,
+    requestParams,
+    requestHeaders,
     requestBodyMode: requestSnapshot.bodyMode || 'none',
     requestBodyText: requestSnapshot.bodyText || '',
     requestAuth: requestSnapshot.auth || createPersistedAuthSnapshot(),
@@ -506,16 +638,26 @@ function createHistoryRecord(runtimeRecord) {
         ? `${responseHeaders.length} response headers persisted in redacted summary form.`
         : 'No response headers were persisted for this execution.',
     bodyHint:
-      typeof runtimeRecord.responseBodyPreview === 'string' && runtimeRecord.responseBodyPreview.length > 0
-        ? `${runtimeRecord.responseBodyPreview.length} characters captured from the persisted response preview.`
+      responseBodyPreview.length > 0
+        ? `${responseBodyPreview.length} characters captured from the persisted response preview.`
         : 'No response body preview was persisted for this execution.',
     bodyPreview:
-      runtimeRecord.responseBodyPreview && runtimeRecord.responseBodyPreview.length > 0
-        ? runtimeRecord.responseBodyPreview
+      responseBodyPreview.length > 0
+        ? responseBodyPreview
         : 'No persisted response body preview is available for this execution.',
+    responsePreviewSizeLabel: createPreviewSizeLabel(
+      responseBodyPreview,
+      runtimeRecord.responseStatus === null ? 'No persisted preview' : 'Empty preview',
+    ),
+    responsePreviewPolicy: createResponsePreviewPolicy({
+      preview: responseBodyPreview,
+      redactionApplied: runtimeRecord.redactionApplied || runtimeRecord.responseBodyRedacted,
+      previewTruncated: responseBodyPreview.length >= 4000,
+      absentSummary: 'No response preview was persisted for this execution.',
+    }),
     consoleSummary:
       consoleLogCount > 0
-        ? `${consoleLogCount} persisted console summaries are available for this execution.`
+        ? `${consoleLogCount} persisted console summaries are available${consoleWarningCount > 0 ? `, including ${consoleWarningCount} warning(s).` : '.'}`
         : 'No console entries were persisted. Live script-linked console remains deferred.',
     consolePreview: [],
     consoleLogCount,
@@ -529,11 +671,259 @@ function createHistoryRecord(runtimeRecord) {
     completedAtLabel: runtimeRecord.completedAt || runtimeRecord.startedAt,
     environmentLabel: runtimeRecord.environmentId || 'No environment persisted',
     sourceLabel: requestSnapshot.sourceLabel || 'Runtime request snapshot',
+    errorCode: runtimeRecord.errorCode || null,
+    errorSummary: runtimeRecord.errorMessage || 'No execution error was reported.',
     timelineEntries: [],
   };
 
   historyRecord.timelineEntries = createHistoryTimelineEntries(historyRecord);
   return historyRecord;
+}
+
+function formatCaptureReceivedAtLabel(receivedAtIso) {
+  return new Date(receivedAtIso).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}
+
+function createSanitizedCaptureHeaders(headers = {}) {
+  return Object.fromEntries(
+    Object.entries(headers).map(([key, value]) => {
+      const normalizedValue = Array.isArray(value) ? value.join(', ') : String(value ?? '');
+      return [key, sanitizeFieldValue(key, normalizedValue)];
+    }),
+  );
+}
+
+function createCapturedRequestBodyMode(contentType, parsedBody, rawBody) {
+  const normalizedContentType = String(contentType || '').toLowerCase();
+  const normalizedRawBody = typeof rawBody === 'string' ? rawBody.trim() : '';
+
+  if (normalizedRawBody.length === 0 || normalizedRawBody === 'No Body or Binary') {
+    return 'none';
+  }
+
+  if (normalizedContentType.includes('application/x-www-form-urlencoded')) {
+    return 'text';
+  }
+
+  if (parsedBody && typeof parsedBody === 'object') {
+    return 'json';
+  }
+
+  return normalizedContentType.includes('json') ? 'json' : 'text';
+}
+
+function createCapturedRequestBodyPreview(parsedBody, rawBody, contentType) {
+  const normalizedContentType = String(contentType || '').toLowerCase();
+  const normalizedRawBody = typeof rawBody === 'string' ? rawBody.trim() : '';
+
+  if (normalizedRawBody.length === 0 || normalizedRawBody === 'No Body or Binary') {
+    return '';
+  }
+
+  if (normalizedContentType.includes('application/x-www-form-urlencoded')) {
+    const bodyEntries = parsedBody && typeof parsedBody === 'object'
+      ? Object.entries(parsedBody)
+      : Array.from(new URLSearchParams(normalizedRawBody).entries());
+
+    return bodyEntries
+      .map(([key, value]) => `${key}=${sanitizeFieldValue(key, String(value ?? ''))}`)
+      .join('\n');
+  }
+
+  if (parsedBody && typeof parsedBody === 'object') {
+    return truncatePreview(JSON.stringify(redactStructuredJson(parsedBody), null, 2), 2000);
+  }
+
+  if (normalizedContentType.includes('application/json')) {
+    try {
+      const parsedJson = JSON.parse(normalizedRawBody);
+      return truncatePreview(JSON.stringify(redactStructuredJson(parsedJson), null, 2), 2000);
+    } catch {
+      return 'JSON body preview is unavailable because runtime persistence keeps only bounded redacted summaries.';
+    }
+  }
+
+  return 'Text body preview is omitted by redacted-only runtime persistence.';
+}
+
+function createPersistedCapturedRequestRecord(req) {
+  const receivedAt = new Date().toISOString();
+  const host = req.get('host') || 'localhost';
+  const fullUrl = new URL(req.originalUrl, `${req.protocol}://${host}`).toString();
+  const rawBody = req.rawBody || (typeof req.body === 'string' ? req.body : '');
+  const contentType = req.headers['content-type'] || '';
+  const sanitizedHeaders = createSanitizedCaptureHeaders(req.headers);
+  const requestBodyMode = createCapturedRequestBodyMode(contentType, req.body, rawBody);
+
+  return {
+    id: randomUUID(),
+    workspaceId: null,
+    method: req.method.toUpperCase(),
+    url: fullUrl,
+    path: req.originalUrl,
+    statusCode: Number(mockConfig.statusCode),
+    matchedMockRuleId: null,
+    requestHeadersJson: JSON.stringify(sanitizedHeaders),
+    requestBodyPreview: createCapturedRequestBodyPreview(req.body, rawBody, contentType),
+    requestBodyRedacted: true,
+    receivedAt,
+    mockOutcome: 'Mocked',
+    scopeLabel: 'All runtime captures',
+    requestBodyMode,
+  };
+}
+
+function createCaptureBodyHint(bodyModeHint, bodyPreview) {
+  if (bodyModeHint === 'json' && bodyPreview.length > 0) {
+    return `JSON body · ${bodyPreview.length} characters captured in bounded summary form.`;
+  }
+
+  if (bodyModeHint === 'text' && bodyPreview.length > 0) {
+    return 'Text body · bounded redacted summary';
+  }
+
+  return 'No request body payload was persisted for this capture.';
+}
+
+function createCaptureHeadersSummary(headers) {
+  const headerNames = Object.keys(headers || {});
+  const contentType = headers['content-type'] || headers['Content-Type'];
+
+  if (headerNames.length === 0) {
+    return 'No headers were persisted for this capture.';
+  }
+
+  if (contentType) {
+    return `${headerNames.length} header(s) · ${contentType}`;
+  }
+
+  return `${headerNames.length} header(s) observed`;
+}
+
+function createCaptureMockSummary(mockOutcome, statusCode, matchedMockRuleId) {
+  if (mockOutcome === 'Mocked' && matchedMockRuleId) {
+    return `Matched runtime mock rule ${matchedMockRuleId} and returned HTTP ${statusCode ?? 200}.`;
+  }
+
+  if (mockOutcome === 'Mocked') {
+    return `Returned a local mock response with HTTP ${statusCode ?? 200}.`;
+  }
+
+  if (mockOutcome === 'Blocked') {
+    return 'The runtime blocked response generation before a fallback response completed.';
+  }
+
+  if (mockOutcome === 'No rule matched') {
+    return 'No enabled rule matched this capture, so the runtime fell back without richer diagnostics.';
+  }
+
+  return 'The runtime bypassed mock handling and continued through the fallback path.';
+}
+
+function createCaptureResponseSummary(mockOutcome, statusCode) {
+  if (mockOutcome === 'Mocked') {
+    return `Response handling stayed inside the local mock path and returned HTTP ${statusCode ?? 200}.`;
+  }
+
+  if (mockOutcome === 'Blocked') {
+    return 'The runtime blocked response generation before a mock or fallback response could complete.';
+  }
+
+  if (mockOutcome === 'No rule matched') {
+    return 'No rule matched, so response handling fell back without richer transport detail in this slice.';
+  }
+
+  return 'The runtime let this request continue through the fallback handling path.';
+}
+
+function createCaptureTimelineEntries(captureRecord) {
+  return [
+    {
+      id: `${captureRecord.id}-received`,
+      title: 'Request received',
+      summary: `${captureRecord.method} ${captureRecord.path} was captured at ${captureRecord.receivedAtLabel}.`,
+    },
+    {
+      id: `${captureRecord.id}-mock`,
+      title: 'Mock evaluation summary',
+      summary: captureRecord.mockSummary,
+    },
+    {
+      id: `${captureRecord.id}-response`,
+      title: 'Response handling summary',
+      summary: captureRecord.responseSummary,
+    },
+  ];
+}
+
+function createCapturedRequestRecord(runtimeRecord) {
+  const normalizedUrl = new URL(runtimeRecord.url);
+  const requestHeaders = runtimeRecord.requestHeaders || {};
+  const requestHeadersEntries = Object.entries(requestHeaders).map(([key, value]) => ({ key, value }));
+  const requestHeaderCount = requestHeadersEntries.length;
+  const requestBodyPreview = runtimeRecord.requestBodyPreview || '';
+  const bodyModeHint = runtimeRecord.requestBodyMode === 'json' ? 'json' : runtimeRecord.requestBodyMode === 'text' ? 'text' : 'none';
+  const mockOutcome = runtimeRecord.mockOutcome || 'Mocked';
+  const receivedAtIso = runtimeRecord.receivedAt;
+  const receivedAtLabel = formatCaptureReceivedAtLabel(receivedAtIso);
+  const host = normalizedUrl.host;
+  const path = runtimeRecord.path || `${normalizedUrl.pathname}${normalizedUrl.search}`;
+  const mockSummary = createCaptureMockSummary(mockOutcome, runtimeRecord.statusCode, runtimeRecord.matchedMockRuleId);
+  const responseSummary = createCaptureResponseSummary(mockOutcome, runtimeRecord.statusCode);
+
+  const captureRecord = {
+    id: runtimeRecord.id,
+    method: runtimeRecord.method,
+    url: normalizedUrl.toString(),
+    host,
+    path,
+    receivedAtIso,
+    receivedAtLabel,
+    statusCode: runtimeRecord.statusCode ?? null,
+    bodyHint: createCaptureBodyHint(bodyModeHint, requestBodyPreview),
+    requestSummary: `${runtimeRecord.method} ${path} reached ${host} as an inbound capture.`,
+    headersSummary: createCaptureHeadersSummary(requestHeaders),
+    bodyPreview: requestBodyPreview.length > 0
+      ? requestBodyPreview
+      : 'No request body payload was captured for this request.',
+    bodyPreviewPolicy: createCaptureBodyPreviewPolicy(requestBodyPreview, runtimeRecord.requestBodyRedacted),
+    storageSummary: createCaptureStorageSummary(requestHeaderCount, requestBodyPreview),
+    bodyModeHint,
+    requestHeaders: requestHeadersEntries,
+    requestHeaderCount,
+    mockOutcome,
+    mockSummary,
+    responseSummary,
+    scopeLabel: runtimeRecord.scopeLabel || 'All runtime captures',
+    timelineEntries: [],
+    ...(runtimeRecord.matchedMockRuleId ? { mockRuleName: runtimeRecord.matchedMockRuleId } : {}),
+  };
+
+  captureRecord.timelineEntries = createCaptureTimelineEntries(captureRecord);
+  return captureRecord;
+}
+
+function createCaptureEventPayload(captureRecord) {
+  const parsedHeaders = Object.fromEntries(
+    captureRecord.requestHeaders.map((header) => [header.key, header.value]),
+  );
+
+  return {
+    id: captureRecord.id,
+    method: captureRecord.method,
+    url: captureRecord.url,
+    receivedAtIso: captureRecord.receivedAtIso,
+    statusCode: captureRecord.statusCode,
+    parsedHeaders,
+    rawBody: captureRecord.bodyPreview,
+    mockOutcome: captureRecord.mockOutcome,
+    mockRuleName: captureRecord.mockRuleName,
+    workspaceLabel: captureRecord.scopeLabel,
+  };
 }
 
 function createExecutionRequestTarget(url, params, auth) {
@@ -717,9 +1107,12 @@ app.post('/api/executions/run', async (req, res) => {
       responseStatus: response.status,
       responseHeaders,
       responseBodyPreview: responseBodyText.slice(0, 4000),
+      responsePreviewLength: Buffer.byteLength(responseBodyText, 'utf8'),
+      responsePreviewTruncated: responseBodyText.length > 4000,
       startedAt,
       completedAt,
       durationMs,
+      requestSnapshot,
     });
 
     runtimeStorage.insertExecutionHistory({
@@ -751,12 +1144,15 @@ app.post('/api/executions/run', async (req, res) => {
   } catch (error) {
     const completedAt = new Date().toISOString();
     const durationMs = Date.now() - startedAtMs;
+    let requestSnapshot = {};
     let requestSnapshotJson = '{}';
 
     try {
       const failureTarget = createExecutionRequestTarget(input.url, input.params, input.auth);
-      requestSnapshotJson = JSON.stringify(createPersistedRequestSnapshot(input, failureTarget));
+      requestSnapshot = createPersistedRequestSnapshot(input, failureTarget);
+      requestSnapshotJson = JSON.stringify(requestSnapshot);
     } catch {
+      requestSnapshot = {};
       requestSnapshotJson = '{}';
     }
 
@@ -766,9 +1162,13 @@ app.post('/api/executions/run', async (req, res) => {
       responseStatus: null,
       responseHeaders: [],
       responseBodyPreview: '',
+      responsePreviewLength: 0,
+      responsePreviewTruncated: false,
       startedAt,
       completedAt,
       durationMs,
+      requestSnapshot,
+      errorCode: error?.code || error?.cause?.code || 'execution_failed',
       errorSummary: error.message,
     });
 
@@ -783,7 +1183,7 @@ app.post('/api/executions/run', async (req, res) => {
         startedAt,
         completedAt,
         durationMs,
-        errorCode: 'execution_failed',
+        errorCode: error?.code || error?.cause?.code || 'execution_failed',
         errorMessage: error.message,
       });
       runtimeStorage.insertExecutionResult({
@@ -837,6 +1237,32 @@ app.get('/api/execution-histories/:executionId', (req, res) => {
   }
 });
 
+app.get('/api/captured-requests', (req, res) => {
+  try {
+    const items = runtimeStorage.listCapturedRequests().map(createCapturedRequestRecord);
+    return sendData(res, { items });
+  } catch (error) {
+    return sendError(res, 500, 'captured_request_list_failed', error.message);
+  }
+});
+
+app.get('/api/captured-requests/:capturedRequestId', (req, res) => {
+  try {
+    const capture = runtimeStorage.readCapturedRequest(req.params.capturedRequestId);
+
+    if (!capture) {
+      return sendError(res, 404, 'captured_request_not_found', 'Captured request was not found.', {
+        capturedRequestId: req.params.capturedRequestId,
+      });
+    }
+
+    return sendData(res, { capture: createCapturedRequestRecord(capture) });
+  } catch (error) {
+    return sendError(res, 500, 'captured_request_detail_failed', error.message, {
+      capturedRequestId: req.params.capturedRequestId,
+    });
+  }
+});
 let mockConfig = {
   statusCode: 200,
   contentType: 'application/json',
@@ -980,27 +1406,39 @@ app.post('/__inspector/execute', async (req, res) => {
 });
 
 app.all(/.*/, (req, res) => {
-  if (req.path === '/events' || req.path.startsWith('/__inspector') || req.path.startsWith('/api/')) return;
-  const rawHeadersStr = req.rawHeaders.reduce(
-    (acc, current, index) =>
-      index % 2 === 0 ? acc + current + ': ' : acc + current + '\n',
-    '',
-  );
-  const requestData = {
-    id: Date.now(),
-    timestamp: new Date().toLocaleTimeString(),
-    method: req.method,
-    url: req.originalUrl,
-    parsedHeaders: req.headers,
-    rawHeaders: rawHeadersStr,
-    parsedBody: req.body,
-    rawBody:
-      req.rawBody ||
-      (typeof req.body === 'string' ? req.body : 'No Body or Binary'),
-  };
+  if (req.path === '/events' || req.path.startsWith('/__inspector') || req.path.startsWith('/api/')) {
+    return;
+  }
+
+  const persistedCapture = createPersistedCapturedRequestRecord(req);
+  const captureRecord = createCapturedRequestRecord({
+    id: persistedCapture.id,
+    workspaceId: persistedCapture.workspaceId,
+    method: persistedCapture.method,
+    url: persistedCapture.url,
+    path: persistedCapture.path,
+    statusCode: persistedCapture.statusCode,
+    matchedMockRuleId: persistedCapture.matchedMockRuleId,
+    requestHeaders: JSON.parse(persistedCapture.requestHeadersJson),
+    requestBodyPreview: persistedCapture.requestBodyPreview,
+    requestBodyRedacted: persistedCapture.requestBodyRedacted,
+    receivedAt: persistedCapture.receivedAt,
+    mockOutcome: persistedCapture.mockOutcome,
+    scopeLabel: persistedCapture.scopeLabel,
+    requestBodyMode: persistedCapture.requestBodyMode,
+  });
+
+  try {
+    runtimeStorage.insertCapturedRequest(persistedCapture);
+  } catch (error) {
+    console.error('Captured request persistence error:', error);
+  }
+
+  const requestEvent = createCaptureEventPayload(captureRecord);
   clients.forEach((client) =>
-    client.write(`data: ${JSON.stringify(requestData)}\n\n`),
+    client.write(`data: ${JSON.stringify(requestEvent)}\n\n`),
   );
+
   res
     .status(Number(mockConfig.statusCode))
     .set('Content-Type', mockConfig.contentType)
@@ -1008,3 +1446,8 @@ app.all(/.*/, (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`[Ready] http://localhost:${PORT}`));
+
+
+
+
+

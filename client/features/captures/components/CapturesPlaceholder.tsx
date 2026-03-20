@@ -1,5 +1,12 @@
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  capturedRequestDetailQueryKey,
+  capturedRequestsQueryKey,
+  listCapturedRequests,
+  readCapturedRequest,
+} from '@client/features/captures/captures.api';
 import type { CaptureOutcomeFilter, CaptureRecord } from '@client/features/captures/capture.types';
 import { useCapturesStore } from '@client/features/captures/state/captures-store';
 import { openCaptureReplayDraft } from '@client/features/request-builder/replay/replay-bridge';
@@ -25,11 +32,11 @@ const captureDetailTabs = [
 type CaptureDetailTabId = (typeof captureDetailTabs)[number]['id'];
 
 const connectionCopyByHealth = {
-  idle: 'Capture observation is idle until the runtime adapter starts.',
-  connecting: 'Connecting to the runtime capture feed and waiting for normalized observations.',
-  connected: 'Normalized capture observations are flowing. Select a row to inspect it or open a replay draft without mutating the capture record.',
-  degraded: 'Capture observation is degraded. Showing the last normalized records while deeper loading and replay execution remain deferred.',
-  offline: 'Capture observation is offline. Existing rows stay visible, but no new normalized captures can arrive.',
+  idle: 'Capture observation is idle until the runtime adapter starts and the persisted capture list is queried.',
+  connecting: 'Connecting to the runtime capture feed while loading the latest persisted capture summaries.',
+  connected: 'Persisted capture summaries are available. Select a row to inspect it or open a replay draft without mutating the capture record.',
+  degraded: 'Capture observation is degraded. Existing persisted summaries may still be visible while refresh and deeper diagnostics remain limited.',
+  offline: 'Capture observation is offline. Persisted rows remain queryable, but no new inbound capture events can trigger refresh right now.',
 } as const;
 
 function captureMatchesSearch(capture: CaptureRecord, searchText: string) {
@@ -55,11 +62,26 @@ function captureMatchesSearch(capture: CaptureRecord, searchText: string) {
   return haystack.includes(normalizedSearchText);
 }
 
+function getCaptureStorageSummary(capture: CaptureRecord) {
+  return capture.storageSummary
+    ?? `Persisted capture keeps ${capture.requestHeaderCount ?? capture.requestHeaders.length} header(s) and bounded request previews for observation and replay.`;
+}
+
+function getCaptureBodyPreviewPolicy(capture: CaptureRecord) {
+  return capture.bodyPreviewPolicy
+    ?? (capture.bodyPreview.length > 0
+      ? 'Captured request body preview remains bounded before deeper diagnostics are added.'
+      : 'No request body preview was persisted for this capture.');
+}
+
+function getCaptureStatusSummary(capture: CaptureRecord) {
+  return capture.statusCode === null ? 'No response status summary' : `HTTP ${capture.statusCode}`;
+}
+
 export function CapturesPlaceholder() {
   const navigate = useNavigate();
   const [activeDetailTab, setActiveDetailTab] = useState<CaptureDetailTabId>('timeline');
   const connectionHealth = useCapturesStore((state) => state.connectionHealth);
-  const listItems = useCapturesStore((state) => state.listItems);
   const selectedCaptureId = useCapturesStore((state) => state.selectedCaptureId);
   const searchText = useCapturesStore((state) => state.searchText);
   const outcomeFilter = useCapturesStore((state) => state.outcomeFilter);
@@ -67,17 +89,42 @@ export function CapturesPlaceholder() {
   const setSearchText = useCapturesStore((state) => state.setSearchText);
   const setOutcomeFilter = useCapturesStore((state) => state.setOutcomeFilter);
 
+  const capturesListQuery = useQuery({
+    queryKey: capturedRequestsQueryKey,
+    queryFn: listCapturedRequests,
+  });
+
+  const listItems = capturesListQuery.data ?? [];
   const filteredCaptures = listItems.filter((capture) => {
     const matchesSearch = captureMatchesSearch(capture, searchText);
     const matchesOutcome = outcomeFilter === 'all' || capture.mockOutcome === outcomeFilter;
 
     return matchesSearch && matchesOutcome;
   });
+  const effectiveSelectedCaptureId = filteredCaptures.some((capture) => capture.id === selectedCaptureId)
+    ? selectedCaptureId
+    : filteredCaptures[0]?.id ?? null;
+  const captureDetailQuery = useQuery({
+    queryKey: capturedRequestDetailQueryKey(effectiveSelectedCaptureId),
+    queryFn: () => readCapturedRequest(effectiveSelectedCaptureId!),
+    enabled: effectiveSelectedCaptureId !== null,
+  });
 
-  const selectedCapture = listItems.find((capture) => capture.id === selectedCaptureId) ?? null;
-  const isLoading = connectionHealth === 'connecting' && listItems.length === 0;
+  const selectedCapture = captureDetailQuery.data
+    ?? filteredCaptures.find((capture) => capture.id === effectiveSelectedCaptureId)
+    ?? null;
+  const observationHealth = capturesListQuery.isError || captureDetailQuery.isError ? 'degraded' : connectionHealth;
+  const isLoading = capturesListQuery.isPending && !capturesListQuery.data;
+  const isDetailLoading = effectiveSelectedCaptureId !== null && captureDetailQuery.isPending && !captureDetailQuery.data;
   const isEmpty = !isLoading && listItems.length === 0;
   const hasNoFilteredResults = !isLoading && listItems.length > 0 && filteredCaptures.length === 0;
+  const degradedReason = capturesListQuery.error instanceof Error
+    ? capturesListQuery.error.message
+    : captureDetailQuery.error instanceof Error
+      ? captureDetailQuery.error.message
+      : connectionHealth === 'degraded'
+        ? 'Runtime events are degraded, so new capture refreshes may lag behind persisted data.'
+        : 'Capture observation is temporarily unavailable.';
 
   const handleOpenReplayDraft = () => {
     if (!selectedCapture) {
@@ -96,7 +143,7 @@ export function CapturesPlaceholder() {
             <div>
               <p className="section-placeholder__eyebrow">Observation feed</p>
               <h2>Capture list</h2>
-              <p>{connectionCopyByHealth[connectionHealth]}</p>
+              <p>{connectionCopyByHealth[observationHealth]}</p>
             </div>
             <StatusBadge kind="connection" value={connectionHealth} />
           </header>
@@ -127,25 +174,25 @@ export function CapturesPlaceholder() {
             </label>
           </div>
 
-          {connectionHealth === 'degraded' ? (
+          {isLoading ? (
             <EmptyStateCallout
-              title="Capture observation is degraded"
-              description="The adapter is degraded. Existing summaries remain visible, but deeper loading, replay execution, and richer diagnostics stay deferred."
+              title="Loading persisted captures"
+              description="Waiting for the runtime lane to return the latest inbound capture summaries. Runtime events will refresh this list when new captures arrive."
+              className="captures-empty-state"
             />
           ) : null}
 
-          {isLoading ? (
+          {observationHealth === 'degraded' ? (
             <EmptyStateCallout
-              title="Waiting for inbound traffic"
-              description="The runtime adapter has started, but no normalized capture records have arrived yet. This route stays observation-only until traffic reaches the adapter."
-              className="captures-empty-state"
+              title="Capture observation is degraded"
+              description={`Persisted capture summaries could not be refreshed cleanly. ${degradedReason}`}
             />
           ) : null}
 
           {isEmpty ? (
             <EmptyStateCallout
               title="No captures yet"
-              description="Inbound traffic will appear here once the runtime seam receives normalized capture events. Until then, replay and deeper runtime detail have nothing to open."
+              description="Inbound traffic will appear here once requests hit the local server and the runtime lane persists bounded capture summaries."
               className="captures-empty-state"
             />
           ) : null}
@@ -153,7 +200,7 @@ export function CapturesPlaceholder() {
           {hasNoFilteredResults ? (
             <EmptyStateCallout
               title="No captures match these filters"
-              description="Adjust the search text or mock outcome filter to bring list rows back into view."
+              description="Adjust the search text or mock outcome filter to bring persisted capture rows back into view."
               className="captures-empty-state"
             />
           ) : null}
@@ -161,7 +208,7 @@ export function CapturesPlaceholder() {
           {filteredCaptures.length > 0 ? (
             <ul className="captures-list" aria-label="Captures list">
               {filteredCaptures.map((capture) => {
-                const isSelected = capture.id === selectedCaptureId;
+                const isSelected = capture.id === effectiveSelectedCaptureId;
 
                 return (
                   <li key={capture.id}>
@@ -193,15 +240,36 @@ export function CapturesPlaceholder() {
           <p className="section-placeholder__eyebrow">Top-level section</p>
           <h1>Captures</h1>
           <p>
-            Captures is an observation route for inbound traffic. Select a row to inspect normalized summaries or open an edit-first replay draft without mutating the capture record.
+            Captures is an observation route for inbound traffic. It reads persisted capture summaries from the runtime lane and keeps replay as an explicit edit-first bridge into Workspace.
           </p>
         </header>
 
-        {!selectedCapture ? (
+        {isLoading ? (
+          <div className="request-work-surface request-work-surface--empty">
+            <EmptyStateCallout
+              title="Loading persisted capture detail"
+              description="The runtime lane is loading the latest capture list before a detail row can be selected."
+            />
+          </div>
+        ) : !selectedCapture ? (
           <div className="request-work-surface request-work-surface--empty">
             <EmptyStateCallout
               title="No capture selected"
-              description="Pick a capture row to inspect normalized request summaries, mock outcome vocabulary, and the compact timeline scaffold. Replay opens a separate authoring draft in Workspace."
+              description="Pick a capture row to inspect persisted request summaries, mock outcome vocabulary, and the compact timeline scaffold. Replay opens a separate authoring draft in Workspace."
+            />
+          </div>
+        ) : isDetailLoading ? (
+          <div className="request-work-surface request-work-surface--empty">
+            <EmptyStateCallout
+              title="Loading persisted capture detail"
+              description="Fetching the selected captured request from the runtime lane. The detail surface stays observation-only once the row loads."
+            />
+          </div>
+        ) : captureDetailQuery.isError ? (
+          <div className="request-work-surface request-work-surface--empty">
+            <EmptyStateCallout
+              title="Capture detail is degraded"
+              description={`The selected captured request could not be loaded cleanly. ${degradedReason}`}
             />
           </div>
         ) : (
@@ -221,7 +289,7 @@ export function CapturesPlaceholder() {
 
             <DetailViewerSection
               title="Observation bridge"
-              description="Replay stays edit-first. Open Replay Draft creates a new request draft while the capture record remains observation-only."
+              description="Replay stays edit-first. Open Replay Draft creates a new request draft while the captured request remains observation-only."
               actions={(
                 <div className="request-work-surface__future-actions">
                   <button type="button" className="workspace-button workspace-button--secondary" onClick={handleOpenReplayDraft}>
@@ -234,14 +302,14 @@ export function CapturesPlaceholder() {
               )}
             >
               <p className="shared-readiness-note">
-                Run Replay Now is disabled on purpose in this readiness slice. Save and execution wiring land later, so replay opens a fresh editable draft first.
+                Run Replay Now stays disabled in this slice. Real capture data now drives this route, but replay still opens a fresh editable draft first.
               </p>
             </DetailViewerSection>
 
             <div className="captures-summary-grid">
               <DetailViewerSection
                 title="Request summary"
-                description="Normalized request metadata remains owned by the captures feature."
+                description="Captured request metadata remains owned by the captures observation feature."
                 className="capture-summary-card"
               >
                 <KeyValueMetaList
@@ -249,17 +317,24 @@ export function CapturesPlaceholder() {
                     { label: 'Scope', value: selectedCapture.scopeLabel },
                     { label: 'Host/path', value: `${selectedCapture.host}${selectedCapture.path}` },
                     { label: 'Received', value: selectedCapture.receivedAtLabel },
+                    { label: 'Headers', value: selectedCapture.requestHeaderCount ?? selectedCapture.requestHeaders.length },
                   ]}
                 />
                 <p>{selectedCapture.requestSummary}</p>
+                <p className="shared-readiness-note">{getCaptureStorageSummary(selectedCapture)}</p>
               </DetailViewerSection>
 
               <DetailViewerSection
                 title="Headers preview"
-                description="Deeper header diff and raw transport views remain deferred."
+                description="Persisted capture headers stay bounded and redacted where needed."
                 className="capture-summary-card"
               >
-                <p>{selectedCapture.headersSummary}</p>
+                <KeyValueMetaList
+                  items={[
+                    { label: 'Headers summary', value: selectedCapture.headersSummary },
+                    { label: 'Storage policy', value: getCaptureStorageSummary(selectedCapture) },
+                  ]}
+                />
               </DetailViewerSection>
 
               <DetailViewerSection
@@ -267,12 +342,18 @@ export function CapturesPlaceholder() {
                 description={selectedCapture.bodyHint}
                 className="capture-summary-card"
               >
+                <KeyValueMetaList
+                  items={[
+                    { label: 'Response status', value: getCaptureStatusSummary(selectedCapture) },
+                    { label: 'Preview policy', value: getCaptureBodyPreviewPolicy(selectedCapture) },
+                  ]}
+                />
                 <pre>{selectedCapture.bodyPreview}</pre>
               </DetailViewerSection>
 
               <DetailViewerSection
                 title="Mock outcome"
-                description="Mock outcome family stays separate from transport and execution vocabulary."
+                description="Mock outcome family stays separate from connection, execution, and transport vocabulary."
                 className="capture-summary-card"
               >
                 <p className="captures-meta-label">Mock outcome family</p>
@@ -280,6 +361,7 @@ export function CapturesPlaceholder() {
                 <KeyValueMetaList
                   items={[
                     { label: 'Summary', value: selectedCapture.mockSummary },
+                    { label: 'Handling', value: selectedCapture.responseSummary },
                     ...(selectedCapture.mockRuleName ? [{ label: 'Rule', value: selectedCapture.mockRuleName }] : []),
                   ]}
                 />
@@ -294,7 +376,7 @@ export function CapturesPlaceholder() {
           <div className="workspace-detail-panel workspace-detail-panel--empty">
             <EmptyStateCallout
               title="Compact timeline placeholder"
-              description="Capture timeline summaries, deeper transport views, and replay bridge notes appear after a list row is selected."
+              description="Capture timeline summaries, handling notes, and replay bridge guidance appear after a persisted capture row is selected."
             />
           </div>
         ) : (
@@ -337,11 +419,13 @@ export function CapturesPlaceholder() {
                   items={[
                     { label: 'Mock outcome', value: selectedCapture.mockOutcome },
                     { label: 'Response summary', value: selectedCapture.responseSummary },
+                    { label: 'Storage policy', value: getCaptureStorageSummary(selectedCapture) },
+                    { label: 'Preview policy', value: getCaptureBodyPreviewPolicy(selectedCapture) },
                   ]}
                 />
                 <EmptyStateCallout
                   title="Deeper capture composition is deferred"
-                  description="Shared result/detail primitives reserve this panel while raw transport views, richer diagnostics, and replay execution remain out of scope."
+                  description="Persisted capture detail stops at bounded handling summaries while raw transport views, richer diagnostics, and replay execution remain out of scope."
                 />
               </DetailViewerSection>
             )}
@@ -351,4 +435,3 @@ export function CapturesPlaceholder() {
     </>
   );
 }
-

@@ -2,6 +2,7 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { vi } from 'vitest';
 import { resetShellStore } from '@client/app/providers/shell-store';
+import { defaultCaptureFixtureRecords } from '@client/features/captures/data/capture-fixtures';
 import { resetCapturesStore } from '@client/features/captures/state/captures-store';
 import { defaultHistoryFixtureScenario } from '@client/features/history/data/history-fixtures';
 import { resetHistoryStore } from '@client/features/history/state/history-store';
@@ -55,6 +56,19 @@ beforeEach(() => {
 
     if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
       return createApiResponse({ items: [] });
+    }
+
+    if (url === '/api/captured-requests' && (!init || !init.method || init.method === 'GET')) {
+      return createApiResponse({ items: defaultCaptureFixtureRecords });
+    }
+
+    if (url.startsWith('/api/captured-requests/') && (!init || !init.method || init.method === 'GET')) {
+      const capturedRequestId = url.split('/').pop() ?? '';
+      const capture = defaultCaptureFixtureRecords.find((item) => item.id === capturedRequestId);
+
+      return capture
+        ? createApiResponse({ capture })
+        : createApiError(`Captured request ${capturedRequestId} was not found.`);
     }
 
     if (url === '/api/execution-histories' && (!init || !init.method || init.method === 'GET')) {
