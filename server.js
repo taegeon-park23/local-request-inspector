@@ -3,6 +3,12 @@ const path = require('path');
 const vm = require('vm');
 const fs = require('fs');
 const { randomUUID } = require('node:crypto');
+const {
+  DEFAULT_WORKSPACE_ID,
+  createMockRuleRecord,
+  evaluateMockRules,
+  validateMockRuleInput,
+} = require('./mock-rule-engine');
 const { bootstrapPersistence } = require('./storage');
 
 const app = express();
@@ -1692,7 +1698,7 @@ function createCapturedRequestBodyPreview(parsedBody, rawBody, contentType) {
   return 'Text body preview is omitted by redacted-only runtime persistence.';
 }
 
-function createPersistedCapturedRequestRecord(req) {
+function createPersistedCapturedRequestRecord(req, evaluationResult) {
   const receivedAt = new Date().toISOString();
   const host = req.get('host') || 'localhost';
   const fullUrl = new URL(req.originalUrl, `${req.protocol}://${host}`).toString();
@@ -1703,17 +1709,20 @@ function createPersistedCapturedRequestRecord(req) {
 
   return {
     id: randomUUID(),
-    workspaceId: null,
+    workspaceId: DEFAULT_WORKSPACE_ID,
     method: req.method.toUpperCase(),
     url: fullUrl,
     path: req.originalUrl,
-    statusCode: Number(mockConfig.statusCode),
-    matchedMockRuleId: null,
+    statusCode: Number(evaluationResult.response.statusCode),
+    matchedMockRuleId: evaluationResult.matchedRuleId || null,
+    matchedMockRuleName: evaluationResult.matchedRuleName || null,
     requestHeadersJson: JSON.stringify(sanitizedHeaders),
     requestBodyPreview: createCapturedRequestBodyPreview(req.body, rawBody, contentType),
     requestBodyRedacted: true,
     receivedAt,
-    mockOutcome: 'Mocked',
+    mockOutcome: evaluationResult.outcome,
+    mockEvaluationSummary: evaluationResult.mockEvaluationSummary || '',
+    appliedDelayMs: typeof evaluationResult.appliedDelayMs === 'number' ? evaluationResult.appliedDelayMs : null,
     scopeLabel: 'All runtime captures',
     requestBodyMode,
   };
@@ -1746,7 +1755,15 @@ function createCaptureHeadersSummary(headers) {
   return `${headerNames.length} header(s) observed`;
 }
 
-function createCaptureMockSummary(mockOutcome, statusCode, matchedMockRuleId) {
+function createCaptureMockSummary(mockOutcome, statusCode, matchedMockRuleId, matchedMockRuleName, evaluationSummary) {
+  if (typeof evaluationSummary === 'string' && evaluationSummary.trim().length > 0) {
+    return evaluationSummary;
+  }
+
+  if (mockOutcome === 'Mocked' && matchedMockRuleName) {
+    return `Matched runtime mock rule "${matchedMockRuleName}" and returned HTTP ${statusCode ?? 200}.`;
+  }
+
   if (mockOutcome === 'Mocked' && matchedMockRuleId) {
     return `Matched runtime mock rule ${matchedMockRuleId} and returned HTTP ${statusCode ?? 200}.`;
   }
@@ -1766,9 +1783,9 @@ function createCaptureMockSummary(mockOutcome, statusCode, matchedMockRuleId) {
   return 'The runtime bypassed mock handling and continued through the fallback path.';
 }
 
-function createCaptureResponseSummary(mockOutcome, statusCode) {
+function createCaptureResponseSummary(mockOutcome, statusCode, appliedDelayMs) {
   if (mockOutcome === 'Mocked') {
-    return `Response handling stayed inside the local mock path and returned HTTP ${statusCode ?? 200}.`;
+    return `Response handling stayed inside the local mock path and returned HTTP ${statusCode ?? 200}.${appliedDelayMs > 0 ? ` Applied ${appliedDelayMs} ms fixed delay.` : ''}`;
   }
 
   if (mockOutcome === 'Blocked') {
@@ -1814,8 +1831,18 @@ function createCapturedRequestRecord(runtimeRecord) {
   const receivedAtLabel = formatCaptureReceivedAtLabel(receivedAtIso);
   const host = normalizedUrl.host;
   const path = runtimeRecord.path || `${normalizedUrl.pathname}${normalizedUrl.search}`;
-  const mockSummary = createCaptureMockSummary(mockOutcome, runtimeRecord.statusCode, runtimeRecord.matchedMockRuleId);
-  const responseSummary = createCaptureResponseSummary(mockOutcome, runtimeRecord.statusCode);
+  const mockSummary = createCaptureMockSummary(
+    mockOutcome,
+    runtimeRecord.statusCode,
+    runtimeRecord.matchedMockRuleId,
+    runtimeRecord.matchedMockRuleName,
+    runtimeRecord.mockEvaluationSummary,
+  );
+  const responseSummary = createCaptureResponseSummary(
+    mockOutcome,
+    runtimeRecord.statusCode,
+    runtimeRecord.appliedDelayMs,
+  );
 
   const captureRecord = {
     id: runtimeRecord.id,
@@ -1842,7 +1869,10 @@ function createCapturedRequestRecord(runtimeRecord) {
     responseSummary,
     scopeLabel: runtimeRecord.scopeLabel || 'All runtime captures',
     timelineEntries: [],
-    ...(runtimeRecord.matchedMockRuleId ? { mockRuleName: runtimeRecord.matchedMockRuleId } : {}),
+    ...(runtimeRecord.matchedMockRuleName ? { mockRuleName: runtimeRecord.matchedMockRuleName } : {}),
+    ...(typeof runtimeRecord.appliedDelayMs === 'number' && runtimeRecord.appliedDelayMs > 0
+      ? { delayLabel: `Applied ${runtimeRecord.appliedDelayMs} ms delay` }
+      : {}),
   };
 
   captureRecord.timelineEntries = createCaptureTimelineEntries(captureRecord);
@@ -2013,6 +2043,161 @@ app.post('/api/workspaces/:workspaceId/requests', (req, res) => {
     return sendData(res, { request: record });
   } catch (error) {
     return sendError(res, 500, 'request_save_failed', error.message);
+  }
+});
+
+app.get('/api/workspaces/:workspaceId/mock-rules', (req, res) => {
+  try {
+    const items = resourceStorage
+      .list('mock-rule')
+      .filter((record) => record.workspaceId === req.params.workspaceId)
+      .sort((left, right) => {
+        if ((right.priority || 0) !== (left.priority || 0)) {
+          return (right.priority || 0) - (left.priority || 0);
+        }
+
+        return String(right.updatedAt || '').localeCompare(String(left.updatedAt || ''));
+      });
+
+    return sendData(res, { items });
+  } catch (error) {
+    return sendError(res, 500, 'mock_rule_list_failed', error.message);
+  }
+});
+
+app.post('/api/workspaces/:workspaceId/mock-rules', (req, res) => {
+  const input = req.body?.rule;
+  const validationError = validateMockRuleInput(input);
+
+  if (validationError) {
+    return sendError(res, 400, 'invalid_mock_rule', validationError);
+  }
+
+  try {
+    const rule = createMockRuleRecord(input, null, req.params.workspaceId);
+    resourceStorage.save('mock-rule', rule);
+    return sendData(res, { rule }, 201);
+  } catch (error) {
+    return sendError(res, 500, 'mock_rule_create_failed', error.message);
+  }
+});
+
+app.get('/api/mock-rules/:mockRuleId', (req, res) => {
+  try {
+    const rule = resourceStorage.read('mock-rule', req.params.mockRuleId);
+
+    if (!rule) {
+      return sendError(res, 404, 'mock_rule_not_found', 'Mock rule was not found.', {
+        mockRuleId: req.params.mockRuleId,
+      });
+    }
+
+    return sendData(res, { rule });
+  } catch (error) {
+    return sendError(res, 500, 'mock_rule_detail_failed', error.message, {
+      mockRuleId: req.params.mockRuleId,
+    });
+  }
+});
+
+app.patch('/api/mock-rules/:mockRuleId', (req, res) => {
+  const input = req.body?.rule;
+  const validationError = validateMockRuleInput(input);
+
+  if (validationError) {
+    return sendError(res, 400, 'invalid_mock_rule', validationError, {
+      mockRuleId: req.params.mockRuleId,
+    });
+  }
+
+  try {
+    const existingRule = resourceStorage.read('mock-rule', req.params.mockRuleId);
+
+    if (!existingRule) {
+      return sendError(res, 404, 'mock_rule_not_found', 'Mock rule was not found.', {
+        mockRuleId: req.params.mockRuleId,
+      });
+    }
+
+    const rule = createMockRuleRecord(input, existingRule, existingRule.workspaceId || DEFAULT_WORKSPACE_ID);
+    resourceStorage.save('mock-rule', rule);
+    return sendData(res, { rule });
+  } catch (error) {
+    return sendError(res, 500, 'mock_rule_update_failed', error.message, {
+      mockRuleId: req.params.mockRuleId,
+    });
+  }
+});
+
+app.delete('/api/mock-rules/:mockRuleId', (req, res) => {
+  try {
+    const deleted = resourceStorage.delete('mock-rule', req.params.mockRuleId);
+
+    if (!deleted) {
+      return sendError(res, 404, 'mock_rule_not_found', 'Mock rule was not found.', {
+        mockRuleId: req.params.mockRuleId,
+      });
+    }
+
+    return sendData(res, { deletedRuleId: req.params.mockRuleId });
+  } catch (error) {
+    return sendError(res, 500, 'mock_rule_delete_failed', error.message, {
+      mockRuleId: req.params.mockRuleId,
+    });
+  }
+});
+
+app.post('/api/mock-rules/:mockRuleId/enable', (req, res) => {
+  try {
+    const existingRule = resourceStorage.read('mock-rule', req.params.mockRuleId);
+
+    if (!existingRule) {
+      return sendError(res, 404, 'mock_rule_not_found', 'Mock rule was not found.', {
+        mockRuleId: req.params.mockRuleId,
+      });
+    }
+
+    const rule = createMockRuleRecord(
+      {
+        ...existingRule,
+        enabled: true,
+      },
+      existingRule,
+      existingRule.workspaceId || DEFAULT_WORKSPACE_ID,
+    );
+    resourceStorage.save('mock-rule', rule);
+    return sendData(res, { rule });
+  } catch (error) {
+    return sendError(res, 500, 'mock_rule_enable_failed', error.message, {
+      mockRuleId: req.params.mockRuleId,
+    });
+  }
+});
+
+app.post('/api/mock-rules/:mockRuleId/disable', (req, res) => {
+  try {
+    const existingRule = resourceStorage.read('mock-rule', req.params.mockRuleId);
+
+    if (!existingRule) {
+      return sendError(res, 404, 'mock_rule_not_found', 'Mock rule was not found.', {
+        mockRuleId: req.params.mockRuleId,
+      });
+    }
+
+    const rule = createMockRuleRecord(
+      {
+        ...existingRule,
+        enabled: false,
+      },
+      existingRule,
+      existingRule.workspaceId || DEFAULT_WORKSPACE_ID,
+    );
+    resourceStorage.save('mock-rule', rule);
+    return sendData(res, { rule });
+  } catch (error) {
+    return sendError(res, 500, 'mock_rule_disable_failed', error.message, {
+      mockRuleId: req.params.mockRuleId,
+    });
   }
 });
 
@@ -2288,6 +2473,16 @@ let mockConfig = {
   body: '{\n  "message": "Request captured by Local Request Inspector"\n}',
 };
 
+function waitForDelay(delayMs) {
+  if (!delayMs || delayMs <= 0) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    setTimeout(resolve, delayMs);
+  });
+}
+
 app.post('/__inspector/mock', (req, res) => {
   mockConfig = { ...mockConfig, ...req.body };
   res.json({
@@ -2424,12 +2619,62 @@ app.post('/__inspector/execute', async (req, res) => {
   }
 });
 
-app.all(/.*/, (req, res) => {
+app.all(/.*/, async (req, res) => {
   if (req.path === '/events' || req.path.startsWith('/__inspector') || req.path.startsWith('/api/')) {
     return;
   }
 
-  const persistedCapture = createPersistedCapturedRequestRecord(req);
+  const host = req.get('host') || 'localhost';
+  const inboundUrl = new URL(req.originalUrl, `${req.protocol}://${host}`);
+  const rawBody = req.rawBody || (typeof req.body === 'string' ? req.body : '');
+
+  let evaluationResult;
+
+  try {
+    const persistedRules = resourceStorage
+      .list('mock-rule')
+      .filter((rule) => rule.workspaceId === DEFAULT_WORKSPACE_ID);
+
+    evaluationResult = evaluateMockRules(
+      persistedRules,
+      {
+        method: req.method.toUpperCase(),
+        pathname: inboundUrl.pathname,
+        searchParams: inboundUrl.searchParams,
+        headers: req.headers,
+        rawBody,
+      },
+      mockConfig,
+    );
+  } catch (error) {
+    evaluationResult = {
+      outcome: 'Blocked',
+      matchedRuleId: null,
+      matchedRuleName: null,
+      appliedDelayMs: null,
+      mockEvaluationSummary: `Mock evaluation was blocked before response generation. ${error.message}`,
+      response: {
+        statusCode: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(
+          {
+            blocked: true,
+            reason: 'Mock evaluation failed before a response could be generated.',
+          },
+          null,
+          2,
+        ),
+      },
+    };
+  }
+
+  if (typeof evaluationResult.appliedDelayMs === 'number' && evaluationResult.appliedDelayMs > 0) {
+    await waitForDelay(evaluationResult.appliedDelayMs);
+  }
+
+  const persistedCapture = createPersistedCapturedRequestRecord(req, evaluationResult);
   const captureRecord = createCapturedRequestRecord({
     id: persistedCapture.id,
     workspaceId: persistedCapture.workspaceId,
@@ -2438,11 +2683,14 @@ app.all(/.*/, (req, res) => {
     path: persistedCapture.path,
     statusCode: persistedCapture.statusCode,
     matchedMockRuleId: persistedCapture.matchedMockRuleId,
+    matchedMockRuleName: persistedCapture.matchedMockRuleName,
     requestHeaders: JSON.parse(persistedCapture.requestHeadersJson),
     requestBodyPreview: persistedCapture.requestBodyPreview,
     requestBodyRedacted: persistedCapture.requestBodyRedacted,
     receivedAt: persistedCapture.receivedAt,
     mockOutcome: persistedCapture.mockOutcome,
+    mockEvaluationSummary: persistedCapture.mockEvaluationSummary,
+    appliedDelayMs: persistedCapture.appliedDelayMs,
     scopeLabel: persistedCapture.scopeLabel,
     requestBodyMode: persistedCapture.requestBodyMode,
   });
@@ -2458,10 +2706,13 @@ app.all(/.*/, (req, res) => {
     client.write(`data: ${JSON.stringify(requestEvent)}\n\n`),
   );
 
-  res
-    .status(Number(mockConfig.statusCode))
-    .set('Content-Type', mockConfig.contentType)
-    .send(mockConfig.body);
+  res.status(Number(evaluationResult.response.statusCode));
+
+  for (const [headerName, headerValue] of Object.entries(evaluationResult.response.headers || {})) {
+    res.set(headerName, headerValue);
+  }
+
+  res.send(evaluationResult.response.body);
 });
 
 app.listen(PORT, () => console.log(`[Ready] http://localhost:${PORT}`));

@@ -99,6 +99,7 @@ describe('Captures S13 real data integration', () => {
     expect(screen.getByText(/Real capture data now drives this route/i)).toBeInTheDocument();
     expect(screen.getByText(/Persisted capture keeps/i)).toBeInTheDocument();
     expect(screen.getByText(/bounded request-body preview/i)).toBeInTheDocument();
+    expect(screen.getByText('Stripe webhook success')).toBeInTheDocument();
     expect(screen.getByText('Mocked', { selector: '[data-kind="mockOutcome"]' })).toHaveAttribute('data-kind', 'mockOutcome');
     expect(screen.queryByText('Succeeded', { selector: '[data-kind="executionOutcome"]' })).not.toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([input]) => getUrl(input as RequestInfo | URL) === '/api/captured-requests')).toBe(true);

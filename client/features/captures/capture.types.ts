@@ -39,4 +39,5 @@ export interface CaptureRecord {
   scopeLabel: string;
   timelineEntries: CaptureTimelineEntry[];
   mockRuleName?: string;
+  delayLabel?: string;
 }

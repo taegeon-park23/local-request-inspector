@@ -12,11 +12,14 @@ CREATE TABLE IF NOT EXISTS captured_requests (
   path TEXT,
   status_code INTEGER,
   matched_mock_rule_id TEXT,
+  matched_mock_rule_name TEXT,
   request_headers_json TEXT,
   request_body_preview TEXT,
   request_body_redacted INTEGER NOT NULL DEFAULT 1,
   received_at TEXT NOT NULL,
   mock_outcome TEXT NOT NULL DEFAULT 'Mocked',
+  mock_evaluation_summary TEXT NOT NULL DEFAULT '',
+  applied_delay_ms INTEGER,
   scope_label TEXT NOT NULL DEFAULT 'All runtime captures',
   request_body_mode TEXT NOT NULL DEFAULT 'none'
 );

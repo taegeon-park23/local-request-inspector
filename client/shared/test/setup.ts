@@ -6,6 +6,7 @@ import { defaultCaptureFixtureRecords } from '@client/features/captures/data/cap
 import { resetCapturesStore } from '@client/features/captures/state/captures-store';
 import { defaultHistoryFixtureScenario } from '@client/features/history/data/history-fixtures';
 import { resetHistoryStore } from '@client/features/history/state/history-store';
+import { defaultMockRuleFixtureRecords } from '@client/features/mocks/data/mock-rule-fixtures';
 import { resetMocksStore } from '@client/features/mocks/state/mocks-store';
 import { resetRequestCommandStore } from '@client/features/request-builder/state/request-command-store';
 import { resetRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
@@ -82,6 +83,19 @@ beforeEach(() => {
       return history
         ? createApiResponse({ history })
         : createApiError(`Execution history ${executionId} was not found.`);
+    }
+
+    if (url === '/api/workspaces/local-workspace/mock-rules' && (!init || !init.method || init.method === 'GET')) {
+      return createApiResponse({ items: defaultMockRuleFixtureRecords });
+    }
+
+    if (url.startsWith('/api/mock-rules/') && (!init || !init.method || init.method === 'GET')) {
+      const mockRuleId = url.split('/').pop() ?? '';
+      const rule = defaultMockRuleFixtureRecords.find((item) => item.id === mockRuleId);
+
+      return rule
+        ? createApiResponse({ rule })
+        : createApiError(`Mock rule ${mockRuleId} was not found.`);
     }
 
     throw new Error(`Unhandled fetch in test setup: ${url}`);

@@ -70,7 +70,7 @@ describe('AppRouter shell bootstrap', () => {
 
     await user.click(screen.getByRole('link', { name: /mocks/i }));
     expect(screen.getByRole('heading', { name: 'Mocks' })).toBeInTheDocument();
-    expect(screen.getByText(/Disabled actions here are readiness cues, not broken buttons/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Save rule' })).toBeDisabled();
+    expect(screen.getByText(/Persisted workspace rules live here/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save rule' })).toBeEnabled();
   });
 });

@@ -64,6 +64,7 @@ This task is done when all of the following are true:
 - **Implementation follow-up (2026-03-20):** S13 is now delivered in code with real /captures query wiring against persisted runtime capture records, query-driven capture list/detail loading, runtime-event-triggered refresh against canonical capture queries, and maintained separation between captures observation state and request draft/history state.
 - **Implementation follow-up (2026-03-20):** S14 is now delivered in code with richer bounded diagnostics across the active request result panel, persisted history detail, and persisted captures detail, while keeping family-aware outcome badges and authoring-versus-observation state boundaries intact.
 - **Implementation follow-up (2026-03-20):** S15 is now delivered in code with bounded pre-request/post-response/tests script execution in the run lane, structured redacted stage summaries in the active request result panel, and persisted script diagnostics summaries in history while keeping request authoring state separate from runtime observation state.
+- **Implementation follow-up (2026-03-20):** S16 is now delivered in code with persisted mock-rule CRUD, query-driven /mocks management UI, enabled/priority-based inbound mock evaluation, and capture-side mock outcome summaries that remain separate from authored rule state.
 
 ## 7. Key Decisions
 1. The frontend rewrite should proceed **shell-first with incremental feature slices**, not route-first and not all-at-once.
@@ -93,7 +94,7 @@ This task is done when all of the following are true:
 - Secondary reviewers: Backend Lead + QA / Senior Engineer
 
 ## 11. Closure Decision
-T010 can stay closed as **done** at the planning/documentation level, and the linked implementation slices S1-S15 are now landed. The next work should move to follow-up refinement around mocks CRUD/evaluation, persistence integration, and captures/history fidelity rather than widening the shell itself.
+T010 can stay closed as **done** at the planning/documentation level, and the linked implementation slices S1-S16 are now landed. The next work should move to follow-up refinement around persistence integration, captures/history fidelity, and wording/diagnostics polish rather than widening the shell itself.
 
 
 

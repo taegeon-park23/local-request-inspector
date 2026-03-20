@@ -59,6 +59,17 @@ class JsonResourceStorage {
     return JSON.parse(fs.readFileSync(entityPath, 'utf8'));
   }
 
+  delete(entityType, entityId) {
+    const entityPath = this.getEntityPath(entityType, entityId);
+
+    if (!fs.existsSync(entityPath)) {
+      return false;
+    }
+
+    fs.unlinkSync(entityPath);
+    return true;
+  }
+
   list(entityType) {
     if (!RESOURCE_ENTITY_TYPES.includes(entityType)) {
       throw new Error(`Unsupported resource entity type: ${entityType}`);

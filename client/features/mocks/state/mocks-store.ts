@@ -1,94 +1,43 @@
 import { create } from 'zustand';
-import { defaultMockRuleFixtureScenario } from '@client/features/mocks/data/mock-rule-fixtures';
-import type {
-  MockRuleFixtureScenario,
-  MockRuleRecord,
-  MockRuleStateFilter,
-} from '@client/features/mocks/mock-rule.types';
+import type { MockRuleRecord, MockRuleStateFilter } from '@client/features/mocks/mock-rule.types';
 
 interface MocksStoreState {
-  listItems: MockRuleRecord[];
   selectedRuleId: string | null;
   searchText: string;
   stateFilter: MockRuleStateFilter;
-  nextDraftSequence: number;
+  isCreatingRule: boolean;
   selectRule: (ruleId: string) => void;
+  clearSelection: () => void;
   setSearchText: (searchText: string) => void;
   setStateFilter: (stateFilter: MockRuleStateFilter) => void;
-  openNewRuleDraft: () => void;
-  applyFixtureScenario: (scenario: MockRuleFixtureScenario) => void;
+  startCreatingRule: () => void;
+  finishCreatingRule: (ruleId: string) => void;
 }
 
 const initialMocksStoreState: Pick<
   MocksStoreState,
-  'listItems' | 'selectedRuleId' | 'searchText' | 'stateFilter' | 'nextDraftSequence'
+  'selectedRuleId' | 'searchText' | 'stateFilter' | 'isCreatingRule'
 > = {
-  listItems: defaultMockRuleFixtureScenario.listItems,
-  selectedRuleId: defaultMockRuleFixtureScenario.selectedRuleId,
+  selectedRuleId: null,
   searchText: '',
   stateFilter: 'all',
-  nextDraftSequence: 1,
+  isCreatingRule: false,
 };
-
-function getFallbackSelectedRuleId(listItems: MockRuleRecord[], selectedRuleId: string | null) {
-  if (selectedRuleId && listItems.some((item) => item.id === selectedRuleId)) {
-    return selectedRuleId;
-  }
-
-  return listItems[0]?.id ?? null;
-}
-
-function buildDraftRule(nextDraftSequence: number): MockRuleRecord {
-  const draftSuffix = nextDraftSequence === 1 ? '' : ` ${nextDraftSequence}`;
-
-  return {
-    id: `mock-rule-draft-${nextDraftSequence}`,
-    name: `Untitled Mock Rule${draftSuffix}`,
-    ruleState: 'Disabled',
-    priority: 100,
-    matcherSummary: 'Draft matcher scaffold. Structured matcher editing lands in a later slice.',
-    responseSummary: 'Draft static response scaffold. Persistence and generation stay deferred in S7.',
-    methodSummary: 'Method: any',
-    pathSummary: 'Path matcher: not set',
-    querySummary: 'Query matcher summary: none yet',
-    headerSummary: 'Header matcher summary: none yet',
-    bodySummary: 'Body matcher summary: none yet',
-    responseStatusSummary: '200 OK placeholder',
-    responseHeadersSummary: 'Header summary not configured',
-    responseBodyPreview: '{\n  "draft": true\n}',
-    fixedDelayLabel: 'No fixed delay',
-    diagnosticsSummary: 'Local-only draft shell. Saving, persistence, and runtime evaluation remain disabled in S7.',
-    deferredSummary: 'Script-assisted matcher/response, validation-heavy forms, and runtime traces remain deferred.',
-    sourceLabel: 'Local draft shell',
-    isDraftShell: true,
-  };
-}
 
 export const useMocksStore = create<MocksStoreState>((set) => ({
   ...initialMocksStoreState,
-  selectRule: (selectedRuleId) => set({ selectedRuleId }),
+  selectRule: (selectedRuleId) => set({ selectedRuleId, isCreatingRule: false }),
+  clearSelection: () => set({ selectedRuleId: null, isCreatingRule: false }),
   setSearchText: (searchText) => set({ searchText }),
   setStateFilter: (stateFilter) => set({ stateFilter }),
-  openNewRuleDraft: () =>
-    set((state) => {
-      const draftRule = buildDraftRule(state.nextDraftSequence);
-
-      return {
-        listItems: [draftRule, ...state.listItems],
-        selectedRuleId: draftRule.id,
-        searchText: '',
-        stateFilter: 'all',
-        nextDraftSequence: state.nextDraftSequence + 1,
-      };
-    }),
-  applyFixtureScenario: ({ listItems, selectedRuleId }) =>
-    set((state) => ({
-      listItems,
-      selectedRuleId: getFallbackSelectedRuleId(listItems, selectedRuleId ?? state.selectedRuleId),
+  startCreatingRule: () =>
+    set({
+      isCreatingRule: true,
+      selectedRuleId: null,
       searchText: '',
       stateFilter: 'all',
-      nextDraftSequence: 1,
-    })),
+    }),
+  finishCreatingRule: (ruleId) => set({ selectedRuleId: ruleId, isCreatingRule: false }),
 }));
 
 export function mockRuleMatchesSearch(rule: MockRuleRecord, searchText: string) {

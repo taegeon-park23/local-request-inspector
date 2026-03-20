@@ -363,6 +363,7 @@ export function CapturesPlaceholder() {
                     { label: 'Summary', value: selectedCapture.mockSummary },
                     { label: 'Handling', value: selectedCapture.responseSummary },
                     ...(selectedCapture.mockRuleName ? [{ label: 'Rule', value: selectedCapture.mockRuleName }] : []),
+                    ...(selectedCapture.delayLabel ? [{ label: 'Delay', value: selectedCapture.delayLabel }] : []),
                   ]}
                 />
               </DetailViewerSection>

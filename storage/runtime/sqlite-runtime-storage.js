@@ -55,6 +55,9 @@ class SqliteRuntimeStorage {
 
   ensureCapturedRequestColumns() {
     this.ensureColumn('captured_requests', 'mock_outcome', `TEXT NOT NULL DEFAULT 'Mocked'`);
+    this.ensureColumn('captured_requests', 'matched_mock_rule_name', 'TEXT');
+    this.ensureColumn('captured_requests', 'mock_evaluation_summary', `TEXT NOT NULL DEFAULT ''`);
+    this.ensureColumn('captured_requests', 'applied_delay_ms', 'INTEGER');
     this.ensureColumn('captured_requests', 'scope_label', `TEXT NOT NULL DEFAULT 'All runtime captures'`);
     this.ensureColumn('captured_requests', 'request_body_mode', `TEXT NOT NULL DEFAULT 'none'`);
   }
@@ -73,9 +76,9 @@ class SqliteRuntimeStorage {
     const statement = this.database.prepare(`
       INSERT INTO captured_requests (
         id, workspace_id, method, url, path, status_code, matched_mock_rule_id,
-        request_headers_json, request_body_preview, request_body_redacted, received_at,
-        mock_outcome, scope_label, request_body_mode
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        matched_mock_rule_name, request_headers_json, request_body_preview, request_body_redacted,
+        received_at, mock_outcome, mock_evaluation_summary, applied_delay_ms, scope_label, request_body_mode
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     statement.run(
@@ -86,11 +89,14 @@ class SqliteRuntimeStorage {
       record.path || null,
       record.statusCode ?? null,
       record.matchedMockRuleId || null,
+      record.matchedMockRuleName || null,
       record.requestHeadersJson ?? '{}',
       record.requestBodyPreview ?? '',
       record.requestBodyRedacted ? 1 : 0,
       record.receivedAt,
       record.mockOutcome || 'Mocked',
+      record.mockEvaluationSummary || '',
+      typeof record.appliedDelayMs === 'number' ? record.appliedDelayMs : null,
       record.scopeLabel || 'All runtime captures',
       record.requestBodyMode || 'none',
     );
@@ -109,11 +115,14 @@ class SqliteRuntimeStorage {
       path: row.path,
       statusCode: row.status_code,
       matchedMockRuleId: row.matched_mock_rule_id,
+      matchedMockRuleName: row.matched_mock_rule_name,
       requestHeaders: parseJsonColumn(row.request_headers_json, {}),
       requestBodyPreview: row.request_body_preview || '',
       requestBodyRedacted: Number(row.request_body_redacted || 0) === 1,
       receivedAt: row.received_at,
       mockOutcome: row.mock_outcome || 'Mocked',
+      mockEvaluationSummary: row.mock_evaluation_summary || '',
+      appliedDelayMs: typeof row.applied_delay_ms === 'number' ? row.applied_delay_ms : null,
       scopeLabel: row.scope_label || 'All runtime captures',
       requestBodyMode: row.request_body_mode || 'none',
     };
@@ -129,11 +138,14 @@ class SqliteRuntimeStorage {
         path,
         status_code,
         matched_mock_rule_id,
+        matched_mock_rule_name,
         request_headers_json,
         request_body_preview,
         request_body_redacted,
         received_at,
         mock_outcome,
+        mock_evaluation_summary,
+        applied_delay_ms,
         scope_label,
         request_body_mode
       FROM captured_requests

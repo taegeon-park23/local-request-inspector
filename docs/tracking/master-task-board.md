@@ -35,7 +35,7 @@
 | T018 | Delivery milestone plan | Convert backlog into phased milestones with readiness gates and review checkpoints. | P1 | todo | Needed once P0 architecture decisions stabilize. | T001-T007 | Milestone plan | Delivery Agent | Shifts if P0 scope changes | Revisit after architecture |
 
 ## Current Focus
-- **Active highest-priority next step:** Post-S15 refinement: mocks CRUD/evaluation, persistence connection refinement, and captures/history fidelity polish.
+- **Active highest-priority next step:** Post-S16 refinement: persistence connection refinement, captures/history fidelity polish, and wording/diagnostics follow-up.
 - S1 is implemented with the new client bootstrap, route/provider scaffold, persistent shell regions, component coverage, and a conservative legacy coexistence seam.
 - S2 is implemented with the `/workspace` explorer scaffold, in-memory request tree, request tab registry shell, tab focus/close behavior, active work-surface placeholder, and contextual result-panel placeholder.
 - S3 is implemented with per-tab request draft state, method/url authoring, params/headers/body/auth core editors, scripts placeholder, dirty tab indicators, and a still-separated observation panel seam.
@@ -51,9 +51,10 @@
 - S13 is implemented with real /captures query wiring against persisted runtime capture records, query-driven capture list/detail loading, runtime-event-triggered refresh against canonical capture queries, and continued separation between captures observation state and request draft/history state.
 - S14 is implemented with richer bounded diagnostics across the active request result panel, persisted history detail, and persisted captures detail, keeping family-aware badges and authoring/observation state separation intact.
 - S15 is implemented with bounded pre-request/post-response/tests script execution in the run lane, structured/redacted stage summaries in the active request result panel, and persisted script diagnostics summaries in history without merging authoring state into runtime observation state.
+- S16 is implemented with persisted mock-rule CRUD, real /mocks query-driven management UI, inbound capture evaluation against enabled priority-ordered rules, and capture outcome summaries that stay separate from authored mock-rule state.
 
 ## Blockers Snapshot
-- T010 shell slices S1-S15 are now landed. Remaining work moves to follow-up mocks, persistence, and fidelity refinement rather than more shell scaffolding.
+- T010 shell slices S1-S16 are now landed. Remaining work moves to follow-up persistence and fidelity refinement rather than more shell scaffolding.
 - Architecture, schema, safety, persistence, request-builder, script-UX, mock-rule, history/inspector, QA, tooling, and shell-slicing inputs are now documented.
 
 
