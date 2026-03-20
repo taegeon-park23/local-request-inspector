@@ -1,11 +1,6 @@
 export type HistoryObservationHealth = 'ready' | 'degraded';
 export type HistoryExecutionOutcome = 'Succeeded' | 'Failed' | 'Timed out' | 'Cancelled' | 'Blocked';
-export type HistoryTransportOutcome =
-  | '200 OK'
-  | '404 Not Found'
-  | '503 Service Unavailable'
-  | 'No response'
-  | 'Blocked before transport';
+export type HistoryTransportOutcome = string;
 export type HistoryTestOutcome = 'All tests passed' | 'Some tests failed' | 'No tests' | 'Tests skipped';
 export type HistoryOutcomeFilter = 'all' | HistoryExecutionOutcome;
 export type HistoryResultTabId = 'response' | 'console' | 'tests' | 'execution-info';

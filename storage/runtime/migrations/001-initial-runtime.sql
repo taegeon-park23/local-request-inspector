@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS execution_results (
   response_body_redacted INTEGER NOT NULL DEFAULT 1,
   stage_status_json TEXT,
   log_summary_json TEXT,
+  request_snapshot_json TEXT NOT NULL DEFAULT '{}',
   redaction_applied INTEGER NOT NULL DEFAULT 1,
   FOREIGN KEY (execution_id) REFERENCES execution_histories(id)
 );

@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { executionHistoryListQueryKey } from '@client/features/history/history.api';
 import {
   createRequestDefinitionInput,
   DEFAULT_REQUEST_COLLECTION_NAME,
@@ -192,6 +193,7 @@ export function useRequestBuilderCommands(
       }
 
       finishRunSuccess(activeTab.id, execution);
+      queryClient.invalidateQueries({ queryKey: executionHistoryListQueryKey });
     },
     onError: (error) => {
       if (!activeTab || !draft) {
@@ -228,4 +230,6 @@ export function useRequestBuilderCommands(
     },
   };
 }
+
+
 

@@ -1,5 +1,12 @@
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  executionHistoryDetailQueryKey,
+  executionHistoryListQueryKey,
+  listExecutionHistories,
+  readExecutionHistory,
+} from '@client/features/history/history.api';
 import type { HistoryResultTabId } from '@client/features/history/history.types';
 import {
   historyExecutionOutcomeOptions,
@@ -22,15 +29,13 @@ const historyResultTabs = [
 ] as const;
 
 const observationHealthCopy = {
-  ready: 'Synthetic execution history fixtures back this route for now. Select a row to review bounded result composition or open a replay draft into Workspace.',
-  degraded: 'History observation is degraded. Showing only the last bounded summaries that are still available while richer diagnostics remain deferred.',
+  ready: 'History reads persisted execution summaries from the runtime lane. Select a row to inspect bounded result composition or open a replay draft into Workspace.',
+  degraded: 'History query is degraded. Persisted execution summaries may be unavailable until the runtime lane responds again.',
 } as const;
 
 export function HistoryPlaceholder() {
   const navigate = useNavigate();
   const [activeResultTab, setActiveResultTab] = useState<HistoryResultTabId>('response');
-  const observationHealth = useHistoryStore((state) => state.observationHealth);
-  const listItems = useHistoryStore((state) => state.listItems);
   const selectedHistoryId = useHistoryStore((state) => state.selectedHistoryId);
   const searchText = useHistoryStore((state) => state.searchText);
   const executionOutcomeFilter = useHistoryStore((state) => state.executionOutcomeFilter);
@@ -38,16 +43,39 @@ export function HistoryPlaceholder() {
   const setSearchText = useHistoryStore((state) => state.setSearchText);
   const setExecutionOutcomeFilter = useHistoryStore((state) => state.setExecutionOutcomeFilter);
 
+  const historyListQuery = useQuery({
+    queryKey: executionHistoryListQueryKey,
+    queryFn: listExecutionHistories,
+  });
+
+  const listItems = historyListQuery.data ?? [];
   const filteredHistory = listItems.filter(
     (history) =>
       historyMatchesSearch(history, searchText) &&
       historyMatchesExecutionOutcome(history, executionOutcomeFilter),
   );
-  const selectedHistory = filteredHistory.find((history) => history.id === selectedHistoryId)
-    ?? filteredHistory[0]
+  const effectiveSelectedHistoryId = filteredHistory.some((history) => history.id === selectedHistoryId)
+    ? selectedHistoryId
+    : filteredHistory[0]?.id ?? null;
+  const historyDetailQuery = useQuery({
+    queryKey: executionHistoryDetailQueryKey(effectiveSelectedHistoryId),
+    queryFn: () => readExecutionHistory(effectiveSelectedHistoryId!),
+    enabled: effectiveSelectedHistoryId !== null,
+  });
+
+  const selectedHistory = historyDetailQuery.data
+    ?? filteredHistory.find((history) => history.id === effectiveSelectedHistoryId)
     ?? null;
-  const isEmpty = listItems.length === 0;
-  const hasNoFilteredResults = listItems.length > 0 && filteredHistory.length === 0;
+  const observationHealth = historyListQuery.isError || historyDetailQuery.isError ? 'degraded' : 'ready';
+  const isListLoading = historyListQuery.isPending && !historyListQuery.data;
+  const isDetailLoading = effectiveSelectedHistoryId !== null && historyDetailQuery.isPending && !historyDetailQuery.data;
+  const isEmpty = !isListLoading && listItems.length === 0;
+  const hasNoFilteredResults = !isListLoading && listItems.length > 0 && filteredHistory.length === 0;
+  const degradedReason = historyListQuery.error instanceof Error
+    ? historyListQuery.error.message
+    : historyDetailQuery.error instanceof Error
+      ? historyDetailQuery.error.message
+      : 'Runtime execution history is temporarily unavailable.';
 
   const handleOpenReplayDraft = () => {
     if (!selectedHistory) {
@@ -96,17 +124,24 @@ export function HistoryPlaceholder() {
             </label>
           </div>
 
+          {isListLoading ? (
+            <EmptyStateCallout
+              title="Loading persisted execution history"
+              description="Waiting for the runtime lane to return the latest execution summaries. Filtering stays local once the persisted list arrives."
+            />
+          ) : null}
+
           {observationHealth === 'degraded' ? (
             <EmptyStateCallout
               title="History observation is degraded"
-              description="Persisted execution summaries remain visible, but richer history loading, replay execution, and deeper diagnostics stay deferred."
+              description={`Persisted execution summaries could not be loaded cleanly. ${degradedReason}`}
             />
           ) : null}
 
           {isEmpty ? (
             <EmptyStateCallout
               title="No history yet"
-              description="Executed outbound requests will appear here once the history observation seam receives normalized entries."
+              description="Outbound request executions appear here after Run persists a bounded runtime summary into SQLite history storage."
               className="history-empty-state"
             />
           ) : null}
@@ -114,7 +149,7 @@ export function HistoryPlaceholder() {
           {hasNoFilteredResults ? (
             <EmptyStateCallout
               title="No history rows match these filters"
-              description="Adjust the search text or execution outcome filter to bring history rows back into view."
+              description="Adjust the search text or execution outcome filter to bring persisted history rows back into view."
               className="history-empty-state"
             />
           ) : null}
@@ -122,7 +157,7 @@ export function HistoryPlaceholder() {
           {filteredHistory.length > 0 ? (
             <ul className="history-list" aria-label="History list">
               {filteredHistory.map((history) => {
-                const isSelected = history.id === selectedHistory?.id;
+                const isSelected = history.id === effectiveSelectedHistoryId;
 
                 return (
                   <li key={history.id}>
@@ -158,15 +193,36 @@ export function HistoryPlaceholder() {
           <p className="section-placeholder__eyebrow">Top-level section</p>
           <h1>History</h1>
           <p>
-            History is an observation route for executed outbound requests. Result composition stays bounded here, and replay opens a separate authoring draft in Workspace.
+            History is an observation route for persisted outbound executions. It reads redacted runtime summaries from SQLite without reusing active request-tab result state.
           </p>
         </header>
 
-        {!selectedHistory ? (
+        {isListLoading ? (
+          <div className="request-work-surface request-work-surface--empty">
+            <EmptyStateCallout
+              title="Loading persisted history detail"
+              description="The runtime lane is loading the latest execution list before a detail row can be selected."
+            />
+          </div>
+        ) : !selectedHistory ? (
           <div className="request-work-surface request-work-surface--empty">
             <EmptyStateCallout
               title="No history selected"
-              description="Pick an execution row to inspect the request snapshot, result composition, and compact stage summary. Replay opens a separate authoring draft instead of mutating history detail."
+              description="Pick an execution row to inspect the persisted request snapshot, bounded result composition, and compact stage summary. Replay still opens a separate authoring draft instead of mutating history detail."
+            />
+          </div>
+        ) : isDetailLoading ? (
+          <div className="request-work-surface request-work-surface--empty">
+            <EmptyStateCallout
+              title="Loading persisted execution detail"
+              description="Fetching the selected execution detail from the runtime lane. The result composition tabs stay observation-only once the row loads."
+            />
+          </div>
+        ) : historyDetailQuery.isError ? (
+          <div className="request-work-surface request-work-surface--empty">
+            <EmptyStateCallout
+              title="Execution detail is degraded"
+              description={`The selected execution could not be loaded cleanly. ${degradedReason}`}
             />
           </div>
         ) : (
@@ -187,7 +243,7 @@ export function HistoryPlaceholder() {
 
             <DetailViewerSection
               title="Observation boundary"
-              description="History detail stays observation-only. Open Replay Draft creates a new editable request draft instead of turning this record into live authoring state."
+              description="History detail stays observation-only. Open Replay Draft creates a new editable request draft instead of turning this persisted execution record into live authoring state."
               actions={(
                 <div className="request-work-surface__future-actions">
                   <button type="button" className="workspace-button workspace-button--secondary" onClick={handleOpenReplayDraft}>
@@ -200,7 +256,7 @@ export function HistoryPlaceholder() {
               )}
             >
               <p className="shared-readiness-note">
-                Run Replay Now stays disabled in this slice because replay is still edit-first. Execution wiring and replay diagnostics land later.
+                Run Replay Now stays disabled in this slice because replay remains edit-first, and persisted history keeps only bounded redacted summaries.
               </p>
             </DetailViewerSection>
 
@@ -222,7 +278,7 @@ export function HistoryPlaceholder() {
 
               <DetailViewerSection
                 title="Request snapshot"
-                description="History detail shows the executed request snapshot, not the live request draft state."
+                description="History shows the persisted request snapshot used during execution, not the live request draft currently open in Workspace."
                 className="history-summary-card"
               >
                 <KeyValueMetaList
@@ -266,7 +322,7 @@ export function HistoryPlaceholder() {
                 <pre className="history-preview-block">{selectedHistory.bodyPreview}</pre>
                 <EmptyStateCallout
                   title="Persisted response detail is bounded"
-                  description="Rich JSON viewers, diff, and full raw payload inspection stay deferred for a later slice."
+                  description="Saved history shows redacted runtime summaries. Rich JSON viewers, diff, and full raw payload inspection stay deferred for a later slice."
                 />
               </DetailViewerSection>
             ) : null}
@@ -283,15 +339,18 @@ export function HistoryPlaceholder() {
                     { label: 'Persistence policy', value: 'Redacted summary only' },
                   ]}
                 />
-                <ul className="history-preview-list" aria-label="Console preview">
-                  {selectedHistory.consolePreview.map((entry) => (
-                    <li key={entry}>{entry}</li>
-                  ))}
-                </ul>
-                <EmptyStateCallout
-                  title="Live console streaming is deferred"
-                  description="History stores compact redacted console summaries rather than the full live execution stream."
-                />
+                {selectedHistory.consolePreview.length > 0 ? (
+                  <ul className="history-preview-list" aria-label="Console preview">
+                    {selectedHistory.consolePreview.map((entry) => (
+                      <li key={entry}>{entry}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <EmptyStateCallout
+                    title="No persisted console preview"
+                    description="Console stays bounded in persisted history. Live script-linked logs and richer diagnostics remain deferred."
+                  />
+                )}
               </DetailViewerSection>
             ) : null}
 
@@ -317,7 +376,7 @@ export function HistoryPlaceholder() {
                 </ul>
                 <EmptyStateCallout
                   title="Per-assertion drilldown is deferred"
-                  description="This shell stops at bounded test summaries and does not add script-editor or deep diagnostics composition yet."
+                  description="History stops at bounded persisted test summaries and does not add script execution or deep diagnostics composition yet."
                 />
               </DetailViewerSection>
             ) : null}
@@ -341,7 +400,7 @@ export function HistoryPlaceholder() {
                 />
                 <EmptyStateCallout
                   title="Advanced execution diagnostics are deferred"
-                  description="Cancellation controls, live stage streams, and diff viewers remain outside this readiness pass."
+                  description="Cancellation controls, live stage streams, and diff viewers remain outside this history real-data slice."
                 />
               </DetailViewerSection>
             ) : null}
@@ -354,7 +413,7 @@ export function HistoryPlaceholder() {
           <div className="workspace-detail-panel workspace-detail-panel--empty">
             <EmptyStateCallout
               title="Compact timeline placeholder"
-              description="Execution stage summaries and deferred notes appear after a history row is selected."
+              description="Execution stage summaries and deferred notes appear after a persisted history row is selected."
             />
           </div>
         ) : (
@@ -363,7 +422,7 @@ export function HistoryPlaceholder() {
               <div>
                 <p className="section-placeholder__eyebrow">Observation panel</p>
                 <h2>Execution stage summary</h2>
-                <p>Compact stage summaries only. Unified timelines, diff viewers, and deep traces remain out of scope.</p>
+                <p>Compact persisted stage summaries only. Unified timelines, diff viewers, and deep traces remain out of scope.</p>
               </div>
             </header>
 
@@ -396,5 +455,3 @@ export function HistoryPlaceholder() {
     </>
   );
 }
-
-

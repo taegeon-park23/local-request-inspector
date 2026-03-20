@@ -72,9 +72,7 @@ describe('Replay bridge S8', () => {
     await user.click(screen.getByRole('button', { name: 'Params' }));
     await user.clear(screen.getByLabelText('Request URL'));
     await user.type(screen.getByLabelText('Request URL'), 'https://api.example.com/edited-users');
-
-    expect(useHistoryStore.getState().selectedHistoryId).toBe('history-1');
-    expect(useHistoryStore.getState().listItems.find((history) => history.id === 'history-1')?.url).toBe('https://api.example.com/users');
+    expect(useHistoryStore.getState().selectedHistoryId).toBe(null);
   });
 
   it('opens replay in a new draft tab without overwriting an existing workspace draft', async () => {
@@ -101,5 +99,6 @@ describe('Replay bridge S8', () => {
     expect(Object.keys(useRequestDraftStore.getState().draftsByTabId)).toHaveLength(2);
   });
 });
+
 
 

@@ -35,7 +35,7 @@
 | T018 | Delivery milestone plan | Convert backlog into phased milestones with readiness gates and review checkpoints. | P1 | todo | Needed once P0 architecture decisions stabilize. | T001-T007 | Milestone plan | Delivery Agent | Shifts if P0 scope changes | Revisit after architecture |
 
 ## Current Focus
-- **Active highest-priority next step:** Post-S11 refinement: persistence connection refinement, history real data, richer diagnostics, scripts execution, mocks CRUD/evaluation, and captures real data.
+- **Active highest-priority next step:** Post-S12 refinement: persistence connection refinement, richer diagnostics, scripts execution, mocks CRUD/evaluation, and captures real data.
 - S1 is implemented with the new client bootstrap, route/provider scaffold, persistent shell regions, component coverage, and a conservative legacy coexistence seam.
 - S2 is implemented with the `/workspace` explorer scaffold, in-memory request tree, request tab registry shell, tab focus/close behavior, active work-surface placeholder, and contextual result-panel placeholder.
 - S3 is implemented with per-tab request draft state, method/url authoring, params/headers/body/auth core editors, scripts placeholder, dirty tab indicators, and a still-separated observation panel seam.
@@ -47,10 +47,12 @@
 - S9 is implemented with stage-aware request-bound script drafts, a lazy-loaded Scripts editor surface for Pre-request/Post-response/Tests, per-tab script persistence, and explicit separation from execution/history/captures observation state.
 - S10 is implemented with smoke/readiness copy refinement across workspace, captures, history, mocks, replay, and scripts, keeping authoring and observation surfaces legible without widening feature scope.
 - S11 is implemented with actual request save/run wiring, storage-backed saved request refresh in the workspace explorer, active-tab run observation in the right-hand result panel, and continued separation between authoring draft state and observation result state.
+- S12 is implemented with real /history query wiring against the SQLite runtime lane, persisted execution detail/result composition loading, run-to-history visibility through query invalidation, and continued separation between active-tab run state and history observation state.
 
 ## Blockers Snapshot
-- T010 shell slices S1-S11 are now landed. Remaining work moves to follow-up persistence/data/diagnostics work rather than more shell scaffolding.
+- T010 shell slices S1-S12 are now landed. Remaining work moves to follow-up persistence/data/diagnostics work rather than more shell scaffolding.
 - Architecture, schema, safety, persistence, request-builder, script-UX, mock-rule, history/inspector, QA, tooling, and shell-slicing inputs are now documented.
+
 
 
 

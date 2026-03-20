@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { AppRouter } from '@client/app/router/AppRouter';
+import { defaultHistoryFixtureScenario } from '@client/features/history/data/history-fixtures';
 import { renderApp } from '@client/shared/test/render-app';
 
 function createApiResponse(data: unknown, status = 200) {
@@ -242,12 +243,21 @@ describe('Request builder save/run wiring', () => {
 
   it('saves a replay-created draft without overwriting replay bridge behavior', async () => {
     const user = userEvent.setup();
+    const historyReplayRecord = defaultHistoryFixtureScenario.listItems[0]!;
 
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = getUrl(input);
 
       if (url === '/api/workspaces/local-workspace/requests' && (!init || init.method === undefined)) {
         return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/execution-histories' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [historyReplayRecord] });
+      }
+
+      if (url === `/api/execution-histories/${historyReplayRecord.id}` && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ history: historyReplayRecord });
       }
 
       if (url === '/api/workspaces/local-workspace/requests' && init?.method === 'POST') {
@@ -305,9 +315,4 @@ describe('Request builder save/run wiring', () => {
     expect(screen.getByRole('button', { name: 'Open Replay of Create user' })).toBeInTheDocument();
   });
 });
-
-
-
-
-
 

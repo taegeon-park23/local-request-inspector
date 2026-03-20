@@ -171,6 +171,371 @@ function createExecutionObservation({
   };
 }
 
+const SENSITIVE_FIELD_PATTERN = /authorization|cookie|token|secret|password|api[-_]?key|session|credential|bearer/i;
+
+function truncatePreview(value, maxLength = 400) {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  return value.length > maxLength ? `${value.slice(0, maxLength)}…` : value;
+}
+
+function isSensitiveFieldName(name = '') {
+  return SENSITIVE_FIELD_PATTERN.test(name);
+}
+
+function sanitizeFieldValue(name, value) {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  return isSensitiveFieldName(name) ? '[redacted]' : truncatePreview(value, 240);
+}
+
+function createSanitizedRows(rows = []) {
+  return (rows || [])
+    .filter((row) => row && row.enabled !== false && typeof row.key === 'string' && row.key.trim().length > 0)
+    .map((row) => ({
+      key: row.key,
+      value: sanitizeFieldValue(row.key, typeof row.value === 'string' ? row.value : ''),
+    }));
+}
+
+function redactStructuredJson(value, keyHint = '') {
+  if (Array.isArray(value)) {
+    return value.map((item) => redactStructuredJson(item, keyHint));
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, nestedValue]) => [
+        key,
+        redactStructuredJson(nestedValue, key),
+      ]),
+    );
+  }
+
+  if (typeof value === 'string') {
+    return sanitizeFieldValue(keyHint, value);
+  }
+
+  return value;
+}
+
+function createPersistedBodyPreview(request) {
+  switch (request.bodyMode) {
+    case 'json': {
+      const bodyText = typeof request.bodyText === 'string' ? request.bodyText.trim() : '';
+
+      if (bodyText.length === 0) {
+        return '';
+      }
+
+      try {
+        const parsedJson = JSON.parse(bodyText);
+        return truncatePreview(JSON.stringify(redactStructuredJson(parsedJson), null, 2), 2000);
+      } catch {
+        return 'JSON body preview is unavailable because the persisted runtime snapshot keeps only bounded redacted summaries.';
+      }
+    }
+    case 'text':
+      return typeof request.bodyText === 'string' && request.bodyText.trim().length > 0
+        ? 'Text body preview is omitted by redacted-only runtime persistence.'
+        : '';
+    case 'form-urlencoded':
+      return createSanitizedRows(request.formBody)
+        .map((row) => `${row.key}=${row.value}`)
+        .join('\n');
+    case 'multipart-form-data':
+      return createSanitizedRows(request.multipartBody)
+        .map((row) => `${row.key}=${row.value}`)
+        .join('\n');
+    default:
+      return '';
+  }
+}
+
+function createPersistedAuthSnapshot(auth = {}) {
+  const type = auth.type || 'none';
+
+  if (type === 'bearer') {
+    return {
+      type,
+      bearerToken: auth.bearerToken ? '[redacted]' : '',
+      basicUsername: '',
+      basicPassword: '',
+      apiKeyName: '',
+      apiKeyValue: '',
+      apiKeyPlacement: 'header',
+    };
+  }
+
+  if (type === 'basic') {
+    return {
+      type,
+      bearerToken: '',
+      basicUsername: auth.basicUsername ? truncatePreview(auth.basicUsername, 120) : '',
+      basicPassword: auth.basicPassword ? '[redacted]' : '',
+      apiKeyName: '',
+      apiKeyValue: '',
+      apiKeyPlacement: 'header',
+    };
+  }
+
+  if (type === 'api-key') {
+    return {
+      type,
+      bearerToken: '',
+      basicUsername: '',
+      basicPassword: '',
+      apiKeyName: auth.apiKeyName || '',
+      apiKeyValue: auth.apiKeyValue ? '[redacted]' : '',
+      apiKeyPlacement: auth.apiKeyPlacement || 'header',
+    };
+  }
+
+  return {
+    type: 'none',
+    bearerToken: '',
+    basicUsername: '',
+    basicPassword: '',
+    apiKeyName: '',
+    apiKeyValue: '',
+    apiKeyPlacement: 'header',
+  };
+}
+
+function createPersistedRequestSnapshot(request, targetUrl) {
+  const persistedUrl = new URL(targetUrl.toString());
+  const persistedParams = Array.from(persistedUrl.searchParams.entries()).map(([key, value]) => ({
+    key,
+    value: sanitizeFieldValue(key, value),
+  }));
+  const persistedSearch = new URLSearchParams();
+
+  for (const row of persistedParams) {
+    persistedSearch.append(row.key, row.value);
+  }
+
+  persistedUrl.search = persistedSearch.toString();
+  persistedUrl.hash = '';
+
+  return {
+    name: typeof request.name === 'string' && request.name.trim().length > 0
+      ? request.name.trim()
+      : createRequestSummary(request.method, request.url),
+    method: request.method,
+    url: persistedUrl.toString(),
+    params: persistedParams,
+    headers: createSanitizedRows(request.headers),
+    bodyMode: request.bodyMode || 'none',
+    bodyText: createPersistedBodyPreview(request),
+    auth: createPersistedAuthSnapshot(request.auth),
+    sourceLabel: request.id ? 'Saved request snapshot' : 'Ad hoc request snapshot',
+  };
+}
+
+function createExecutionOutcomeLabel(status, cancellationOutcome) {
+  switch (status) {
+    case 'succeeded':
+      return 'Succeeded';
+    case 'timed_out':
+      return 'Timed out';
+    case 'cancelled':
+      return 'Cancelled';
+    case 'blocked':
+      return 'Blocked';
+    default:
+      return cancellationOutcome === 'blocked' ? 'Blocked' : 'Failed';
+  }
+}
+
+function createTransportOutcomeLabel(responseStatus, executionOutcome) {
+  if (responseStatus === 200) {
+    return '200 OK';
+  }
+
+  if (responseStatus === 404) {
+    return '404 Not Found';
+  }
+
+  if (responseStatus === 503) {
+    return '503 Service Unavailable';
+  }
+
+  if (typeof responseStatus === 'number') {
+    return `HTTP ${responseStatus}`;
+  }
+
+  return executionOutcome === 'Blocked' ? 'Blocked before transport' : 'No response';
+}
+
+function createTestSummary(assertionCount, failedAssertions, skippedAssertions) {
+  if (assertionCount === 0 && skippedAssertions > 0) {
+    return {
+      outcome: 'Tests skipped',
+      label: 'Tests skipped',
+      summary: 'Tests were skipped before a persisted assertion summary was recorded.',
+      preview: ['Tests were skipped before persisted assertions were available.'],
+    };
+  }
+
+  if (assertionCount === 0) {
+    return {
+      outcome: 'No tests',
+      label: 'No tests persisted',
+      summary: 'No persisted test assertions are available for this execution.',
+      preview: ['No persisted test assertions are available for this execution.'],
+    };
+  }
+
+  if (failedAssertions > 0) {
+    return {
+      outcome: 'Some tests failed',
+      label: `${failedAssertions} / ${assertionCount} tests failed`,
+      summary: 'Persisted assertion summary shows at least one failed test.',
+      preview: [`${assertionCount - failedAssertions} assertions passed.`, `${failedAssertions} assertions failed.`],
+    };
+  }
+
+  return {
+    outcome: 'All tests passed',
+    label: `${assertionCount} / ${assertionCount} tests passed`,
+    summary: 'All persisted assertions passed.',
+    preview: ['All persisted assertions passed.'],
+  };
+}
+
+function createHostPathHint(url) {
+  try {
+    const parsedUrl = new URL(url);
+    return `${parsedUrl.host}${parsedUrl.pathname}`;
+  } catch {
+    return url;
+  }
+}
+
+function createHistoryTimelineEntries(historyRecord) {
+  const transportSummary = historyRecord.transportStatusCode === null
+    ? 'No persisted transport response was recorded for this execution.'
+    : `Persisted transport summary recorded ${historyRecord.transportOutcome}.`;
+
+  const entries = [
+    {
+      id: `${historyRecord.executionId}-prepared`,
+      title: 'Request prepared',
+      summary: `Prepared ${historyRecord.method} ${historyRecord.hostPathHint} from a redacted request snapshot.`,
+    },
+    {
+      id: `${historyRecord.executionId}-transport`,
+      title: historyRecord.transportStatusCode === null ? 'Transport summary' : 'Transport completed',
+      summary: transportSummary,
+    },
+  ];
+
+  if (historyRecord.assertionCount > 0) {
+    entries.push({
+      id: `${historyRecord.executionId}-tests`,
+      title: 'Tests completed',
+      summary: historyRecord.testsSummary,
+    });
+  }
+
+  entries.push({
+    id: `${historyRecord.executionId}-finalized`,
+    title: 'Result finalized',
+    summary: 'Persisted history keeps redacted response, console, tests, and execution metadata summaries.',
+  });
+
+  return entries;
+}
+
+function createHistoryRecord(runtimeRecord) {
+  const requestSnapshot = runtimeRecord.requestSnapshot || {};
+  const method = typeof requestSnapshot.method === 'string' && requestSnapshot.method.length > 0
+    ? requestSnapshot.method
+    : 'GET';
+  const url = typeof requestSnapshot.url === 'string' && requestSnapshot.url.length > 0
+    ? requestSnapshot.url
+    : 'http://localhost/request-snapshot-unavailable';
+  const requestLabel = typeof requestSnapshot.name === 'string' && requestSnapshot.name.length > 0
+    ? requestSnapshot.name
+    : `${method} request`;
+  const executionOutcome = createExecutionOutcomeLabel(runtimeRecord.status, runtimeRecord.cancellationOutcome);
+  const transportOutcome = createTransportOutcomeLabel(runtimeRecord.responseStatus, executionOutcome);
+  const responseHeaders = Array.isArray(runtimeRecord.responseHeaders) ? runtimeRecord.responseHeaders : [];
+  const consoleLogCount = Number(runtimeRecord.logSummary?.consoleEntries || 0);
+  const consoleWarningCount = Number(runtimeRecord.logSummary?.consoleWarnings || runtimeRecord.logSummary?.warnings || 0);
+  const tests = createTestSummary(
+    runtimeRecord.assertionCount,
+    runtimeRecord.failedAssertions,
+    runtimeRecord.skippedAssertions,
+  );
+
+  const historyRecord = {
+    id: runtimeRecord.executionId,
+    executionId: runtimeRecord.executionId,
+    requestLabel,
+    method,
+    url,
+    hostPathHint: createHostPathHint(url),
+    executedAtLabel: runtimeRecord.completedAt || runtimeRecord.startedAt,
+    durationLabel:
+      typeof runtimeRecord.durationMs === 'number'
+        ? `${runtimeRecord.durationMs} ms`
+        : 'No persisted duration',
+    durationMs: typeof runtimeRecord.durationMs === 'number' ? runtimeRecord.durationMs : 0,
+    executionOutcome,
+    transportOutcome,
+    transportStatusCode: runtimeRecord.responseStatus ?? null,
+    testOutcome: tests.outcome,
+    testSummaryLabel: tests.label,
+    requestSnapshotSummary: `${method} ${url} was persisted as a bounded redacted request snapshot for history review.`,
+    requestParams: Array.isArray(requestSnapshot.params) ? requestSnapshot.params : [],
+    requestHeaders: Array.isArray(requestSnapshot.headers) ? requestSnapshot.headers : [],
+    requestBodyMode: requestSnapshot.bodyMode || 'none',
+    requestBodyText: requestSnapshot.bodyText || '',
+    requestAuth: requestSnapshot.auth || createPersistedAuthSnapshot(),
+    responseSummary:
+      runtimeRecord.responseStatus === null
+        ? 'Persisted history does not include a transport response body for this execution.'
+        : `Persisted history captured ${transportOutcome} and a bounded response preview.`,
+    headersSummary:
+      responseHeaders.length > 0
+        ? `${responseHeaders.length} response headers persisted in redacted summary form.`
+        : 'No response headers were persisted for this execution.',
+    bodyHint:
+      typeof runtimeRecord.responseBodyPreview === 'string' && runtimeRecord.responseBodyPreview.length > 0
+        ? `${runtimeRecord.responseBodyPreview.length} characters captured from the persisted response preview.`
+        : 'No response body preview was persisted for this execution.',
+    bodyPreview:
+      runtimeRecord.responseBodyPreview && runtimeRecord.responseBodyPreview.length > 0
+        ? runtimeRecord.responseBodyPreview
+        : 'No persisted response body preview is available for this execution.',
+    consoleSummary:
+      consoleLogCount > 0
+        ? `${consoleLogCount} persisted console summaries are available for this execution.`
+        : 'No console entries were persisted. Live script-linked console remains deferred.',
+    consolePreview: [],
+    consoleLogCount,
+    consoleWarningCount,
+    testsSummary: tests.summary,
+    assertionCount: runtimeRecord.assertionCount,
+    passedAssertions: runtimeRecord.passedAssertions,
+    failedAssertions: runtimeRecord.failedAssertions,
+    testsPreview: tests.preview,
+    startedAtLabel: runtimeRecord.startedAt,
+    completedAtLabel: runtimeRecord.completedAt || runtimeRecord.startedAt,
+    environmentLabel: runtimeRecord.environmentId || 'No environment persisted',
+    sourceLabel: requestSnapshot.sourceLabel || 'Runtime request snapshot',
+    timelineEntries: [],
+  };
+
+  historyRecord.timelineEntries = createHistoryTimelineEntries(historyRecord);
+  return historyRecord;
+}
+
 function createExecutionRequestTarget(url, params, auth) {
   const target = new URL(url);
 
@@ -335,6 +700,7 @@ app.post('/api/executions/run', async (req, res) => {
     const target = createExecutionRequestTarget(input.url, input.params, input.auth);
     const headers = createExecutionHeaders(input.headers, input.auth);
     const body = createExecutionBody(input, headers);
+    const requestSnapshot = createPersistedRequestSnapshot(input, target);
     const response = await fetch(target.toString(), {
       method: input.method,
       headers,
@@ -377,6 +743,7 @@ app.post('/api/executions/run', async (req, res) => {
       responseBodyRedacted: true,
       stageStatusJson: JSON.stringify({ scripts: 'deferred', tests: 'deferred' }),
       logSummaryJson: JSON.stringify({ consoleEntries: 0, tests: 0 }),
+      requestSnapshotJson: JSON.stringify(requestSnapshot),
       redactionApplied: true,
     });
 
@@ -384,6 +751,15 @@ app.post('/api/executions/run', async (req, res) => {
   } catch (error) {
     const completedAt = new Date().toISOString();
     const durationMs = Date.now() - startedAtMs;
+    let requestSnapshotJson = '{}';
+
+    try {
+      const failureTarget = createExecutionRequestTarget(input.url, input.params, input.auth);
+      requestSnapshotJson = JSON.stringify(createPersistedRequestSnapshot(input, failureTarget));
+    } catch {
+      requestSnapshotJson = '{}';
+    }
+
     const execution = createExecutionObservation({
       executionId,
       executionOutcome: 'Failed',
@@ -418,6 +794,7 @@ app.post('/api/executions/run', async (req, res) => {
         responseBodyRedacted: true,
         stageStatusJson: JSON.stringify({ scripts: 'deferred', tests: 'deferred' }),
         logSummaryJson: JSON.stringify({ consoleEntries: 0, tests: 0 }),
+        requestSnapshotJson,
         redactionApplied: true,
       });
     } catch (storageError) {
@@ -429,6 +806,33 @@ app.post('/api/executions/run', async (req, res) => {
       startedAt: execution.startedAt,
       completedAt: execution.completedAt,
       durationMs: execution.durationMs,
+    });
+  }
+});
+
+app.get('/api/execution-histories', (req, res) => {
+  try {
+    const items = runtimeStorage.listExecutionHistories().map(createHistoryRecord);
+    return sendData(res, { items });
+  } catch (error) {
+    return sendError(res, 500, 'execution_history_list_failed', error.message);
+  }
+});
+
+app.get('/api/execution-histories/:executionId', (req, res) => {
+  try {
+    const history = runtimeStorage.readExecutionHistory(req.params.executionId);
+
+    if (!history) {
+      return sendError(res, 404, 'execution_history_not_found', 'Execution history was not found.', {
+        executionId: req.params.executionId,
+      });
+    }
+
+    return sendData(res, { history: createHistoryRecord(history) });
+  } catch (error) {
+    return sendError(res, 500, 'execution_history_detail_failed', error.message, {
+      executionId: req.params.executionId,
     });
   }
 });

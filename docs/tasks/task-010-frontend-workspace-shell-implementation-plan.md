@@ -60,6 +60,7 @@ This task is done when all of the following are true:
 - **Implementation follow-up (2026-03-19):** S9 is now delivered in code with a stage-aware Scripts authoring surface, lazy-loaded editor boundary, per-tab pre-request/post-response/tests draft content, and explicit separation between request-bound script authoring state and execution/history/captures observation state.
 - **Implementation follow-up (2026-03-20):** S10 is now delivered in code with smoke/readiness copy refinement across workspace, captures, history, mocks, replay, and scripts, improving empty/degraded/loading/deferred messaging without widening feature scope.
 - **Implementation follow-up (2026-03-20):** S11 is now delivered in code with actual request definition save wiring, active-tab run wiring, storage-backed workspace explorer refresh, separate run observation state for the active request tab, and maintained separation between authoring drafts and observation results.
+- **Implementation follow-up (2026-03-20):** S12 is now delivered in code with real /history query wiring against the SQLite runtime lane, persisted execution list/detail loading, run-to-history visibility via query invalidation, and maintained separation between active request-tab result state and history observation state.
 
 ## 7. Key Decisions
 1. The frontend rewrite should proceed **shell-first with incremental feature slices**, not route-first and not all-at-once.
@@ -89,7 +90,8 @@ This task is done when all of the following are true:
 - Secondary reviewers: Backend Lead + QA / Senior Engineer
 
 ## 11. Closure Decision
-T010 can stay closed as **done** at the planning/documentation level, and the linked implementation slices S1-S11 are now landed. The next work should move to follow-up refinement around persistence integration, history real data, richer diagnostics, script execution, mocks CRUD/evaluation, and captures real data rather than widening the shell itself.
+T010 can stay closed as **done** at the planning/documentation level, and the linked implementation slices S1-S11 are now landed. The next work should move to follow-up refinement around persistence integration, richer diagnostics, script execution, mocks CRUD/evaluation, and captures real data rather than widening the shell itself.
+
 
 
 

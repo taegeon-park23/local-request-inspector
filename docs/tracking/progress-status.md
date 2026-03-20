@@ -29,12 +29,13 @@
 - T010 slice S9 scripts lazy editor path: **done**
 - T010 slice S10 smoke / readiness refinement: **done**
 - T010 slice S11 request save/run wiring: **done**
+- T010 slice S12 history real data integration: **done**
 
 ## Current Next Action
-Use the landed MVP shell plus S11 save/run wiring as the baseline for follow-up implementation axes: persistence connection refinement, history real data, richer diagnostics, scripts execution, mocks CRUD/evaluation, and captures real data.
+Use the landed MVP shell plus S11/S12 save-run-and-history integration as the baseline for follow-up implementation axes: persistence connection refinement, richer diagnostics, scripts execution, mocks CRUD/evaluation, and captures real data.
 
 ## Open Blockers
-- No blocker remains inside T010. The remaining work is post-S11 refinement around persistence, real data, diagnostics, and execution expansion.
+- No blocker remains inside T010. The remaining work is post-S12 refinement around persistence, diagnostics, scripts execution, mocks work, and captures real data.
 - Major planning dependencies for request behavior, script UX, mock behavior, runtime observation, QA strategy, tooling baseline, and shell slicing are now documented.
 
 ## Notes for Next Contributor
@@ -44,6 +45,7 @@ Use the landed MVP shell plus S11 save/run wiring as the baseline for follow-up 
 4. Open `../tasks/task-017-developer-environment-and-tooling-baseline.md` for the tooling, fixture, bootstrap, and script baseline
 5. Open `../tasks/task-010-frontend-workspace-shell-implementation-plan.md` for the shell-first slice sequence and current slice handoff notes
 6. Use T011/T012/T013/T014/T016/T017/T010 handoff notes when preparing implementation prompts and PR slices
+
 
 
 
