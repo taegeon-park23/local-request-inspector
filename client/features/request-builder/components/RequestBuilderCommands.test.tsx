@@ -14,25 +14,6 @@ function createApiResponse(data: unknown, status = 200) {
   });
 }
 
-function createApiError(message: string, details: Record<string, unknown>, status = 500) {
-  return new Response(
-    JSON.stringify({
-      error: {
-        code: 'request_builder_failure',
-        message,
-        details,
-        retryable: false,
-      },
-    }),
-    {
-      status,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    },
-  );
-}
-
 function getUrl(input: RequestInfo | URL) {
   if (typeof input === 'string') {
     return input;
@@ -144,14 +125,14 @@ describe('Request builder save/run wiring', () => {
     expect(savePayload.request.bodyText).toContain('sku');
   });
 
-  it('runs an unsaved draft, shows pending state, and renders response output without clearing dirty state', async () => {
+  it('runs an unsaved draft, sends script content, and renders stage-aware diagnostics without clearing dirty state', async () => {
     const user = userEvent.setup();
     let resolveRun!: (value: Response) => void;
 
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = getUrl(input);
 
-      if (url === '/api/workspaces/local-workspace/requests' && (!init || init.method === undefined)) {
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
         return Promise.resolve(createApiResponse({ items: [] }));
       }
 
@@ -170,6 +151,16 @@ describe('Request builder save/run wiring', () => {
     await openNewRequest(user);
     await user.type(screen.getByLabelText('Request name'), 'Runtime probe');
     await user.type(screen.getByLabelText('Request URL'), 'https://api.example.com/runtime');
+
+    const mainSurface = screen.getByLabelText('Main work surface');
+    await user.click(within(mainSurface).getByRole('button', { name: 'Scripts' }));
+    await screen.findByLabelText('Pre-request script');
+    await user.type(screen.getByLabelText('Pre-request script'), "request.headers.set('x-trace-id', 'runtime-1'); console.log('prepared request');");
+    const scriptStages = screen.getByRole('tablist', { name: 'Script stages' });
+    await user.click(within(scriptStages).getByRole('tab', { name: 'Post-response' }));
+    await user.type(screen.getByLabelText('Post-response script'), "console.log('captured response');");
+    await user.click(within(scriptStages).getByRole('tab', { name: 'Tests' }));
+    await user.type(screen.getByLabelText('Tests script'), "assert(response.status === 201, 'response status is 201');");
 
     await user.click(screen.getByRole('button', { name: 'Run' }));
     expect(screen.getByRole('button', { name: 'Running...' })).toBeDisabled();
@@ -191,46 +182,163 @@ describe('Request builder save/run wiring', () => {
           startedAt: '2026-03-20T10:02:00.000Z',
           completedAt: '2026-03-20T10:02:00.120Z',
           durationMs: 120,
-          consoleSummary: 'No console entries were captured. Script execution is not wired yet.',
-          consoleEntries: [],
-          consoleLogCount: 0,
+          consoleSummary: '2 bounded console entries captured across script stages.',
+          consoleEntries: [
+            '[pre-request] prepared request',
+            '[post-response] captured response',
+          ],
+          consoleLogCount: 2,
           consoleWarningCount: 0,
-          testsSummary: 'No tests ran. Script execution is not wired yet.',
-          testEntries: [],
-          requestSnapshotSummary: 'GET https://api.example.com/runtime executed from the active workspace draft with 0 params · 0 headers · No body · No auth.',
-          requestInputSummary: '0 params · 0 headers · No body · No auth',
-          requestHeaderCount: 0,
+          testsSummary: '1 assertion passed. No failures.',
+          testEntries: ['PASS response status is 201'],
+          requestSnapshotSummary: 'GET https://api.example.com/runtime executed from the active workspace draft with 0 params · 1 headers · No body · No auth.',
+          requestInputSummary: '0 params · 1 headers · No body · No auth',
+          requestHeaderCount: 1,
           requestParamCount: 0,
           requestBodyMode: 'none',
           authSummary: 'No auth',
+          stageSummaries: [
+            {
+              stageId: 'pre-request',
+              label: 'Pre-request',
+              status: 'Succeeded',
+              summary: 'Added trace header to the outbound request snapshot.',
+            },
+            {
+              stageId: 'transport',
+              label: 'Transport',
+              status: 'Succeeded',
+              summary: 'Transport completed and returned HTTP 201.',
+            },
+            {
+              stageId: 'post-response',
+              label: 'Post-response',
+              status: 'Succeeded',
+              summary: 'Recorded a bounded response note after transport.',
+            },
+            {
+              stageId: 'tests',
+              label: 'Tests',
+              status: 'Succeeded',
+              summary: '1 assertion passed. No failures.',
+            },
+          ],
         },
       }),
     );
 
-    await waitFor(() => expect(screen.getByTestId('request-response-preview')).toHaveTextContent('"ok":true'));
+    await waitFor(() => expect(screen.getByTestId('request-response-preview')).toHaveTextContent('demo-1'));
     expect(screen.getByText('HTTP 201')).toBeInTheDocument();
     expect(screen.getByText('31 B response body')).toBeInTheDocument();
     expect(screen.getByText(/Preview is bounded before richer diagnostics/i)).toBeInTheDocument();
     expect(screen.getByLabelText('Runtime probe has unsaved changes')).toBeInTheDocument();
     expect(screen.getByTestId('run-command-status')).toHaveTextContent('Request run completed.');
+
+    await user.click(screen.getByRole('tab', { name: 'Console' }));
+    expect(screen.getByText('2 bounded console entries captured across script stages.')).toBeInTheDocument();
+    expect(screen.getByText('[pre-request] prepared request')).toBeInTheDocument();
+    expect(screen.getByText('[post-response] captured response')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: 'Tests' }));
+    expect(screen.getByText('PASS response status is 201')).toBeInTheDocument();
+    expect(screen.getByText('1 assertion passed. No failures.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: 'Execution Info' }));
+    const stageSummary = screen.getByLabelText('Execution stage summary');
+    expect(within(stageSummary).getByText(/Pre-request/i)).toBeInTheDocument();
+    expect(within(stageSummary).getByText(/Added trace header to the outbound request snapshot./i)).toBeInTheDocument();
+    expect(screen.getByText('0 params · 1 headers · No body · No auth')).toBeInTheDocument();
+
+    const runCall = fetchMock.mock.calls.find(
+      ([input, init]) => getUrl(input as RequestInfo | URL) === '/api/executions/run' && init?.method === 'POST',
+    );
+
+    expect(runCall).toBeDefined();
+
+    const runPayload = JSON.parse(String(runCall?.[1]?.body)) as {
+      request: {
+        scripts: {
+          preRequest: string;
+          postResponse: string;
+          tests: string;
+        };
+      };
+    };
+
+    expect(runPayload.request.scripts.preRequest).toContain('x-trace-id');
+    expect(runPayload.request.scripts.postResponse).toContain('captured response');
+    expect(runPayload.request.scripts.tests).toContain('assert');
   });
 
-  it('shows execution failure details in the observation panel when a run fails', async () => {
+  it('shows blocked stage diagnostics when pre-request execution stops the run before transport', async () => {
     const user = userEvent.setup();
 
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = getUrl(input);
 
-      if (url === '/api/workspaces/local-workspace/requests' && (!init || init.method === undefined)) {
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
         return createApiResponse({ items: [] });
       }
 
       if (url === '/api/executions/run' && init?.method === 'POST') {
-        return createApiError('Connection refused', {
-          executionId: 'execution-error-1',
-          startedAt: '2026-03-20T10:03:00.000Z',
-          completedAt: '2026-03-20T10:03:00.050Z',
-          durationMs: 50,
+        return createApiResponse({
+          execution: {
+            executionId: 'execution-blocked-1',
+            executionOutcome: 'Blocked',
+            responseStatus: null,
+            responseStatusLabel: 'No response',
+            responseHeaders: [],
+            responseHeadersSummary: 'No response headers were captured.',
+            responseBodyPreview: '',
+            responseBodyHint: 'No response payload is available because transport never started.',
+            responsePreviewSizeLabel: 'No preview stored',
+            responsePreviewPolicy: 'Transport did not run because the pre-request stage was blocked before send.',
+            startedAt: '2026-03-20T10:03:00.000Z',
+            completedAt: '2026-03-20T10:03:00.050Z',
+            durationMs: 50,
+            consoleSummary: 'No console preview was persisted because the blocked stage returned before bounded logs were emitted.',
+            consoleEntries: [],
+            consoleLogCount: 0,
+            consoleWarningCount: 0,
+            testsSummary: 'Tests stage was skipped because pre-request blocked the run.',
+            testEntries: [],
+            requestSnapshotSummary: 'GET https://api.example.com/failure executed from the active workspace draft with 0 params · 0 headers · No body · No auth.',
+            requestInputSummary: '0 params · 0 headers · No body · No auth',
+            requestHeaderCount: 0,
+            requestParamCount: 0,
+            requestBodyMode: 'none',
+            authSummary: 'No auth',
+            errorCode: 'script_blocked_capability',
+            errorSummary: 'Blocked token process is not available in the bounded script runtime.',
+            stageSummaries: [
+              {
+                stageId: 'pre-request',
+                label: 'Pre-request',
+                status: 'Blocked',
+                summary: 'Blocked token process is not available in the bounded script runtime.',
+                errorCode: 'script_blocked_capability',
+                errorSummary: 'Blocked token process is not available in the bounded script runtime.',
+              },
+              {
+                stageId: 'transport',
+                label: 'Transport',
+                status: 'Skipped',
+                summary: 'Transport did not run because pre-request blocked the execution.',
+              },
+              {
+                stageId: 'post-response',
+                label: 'Post-response',
+                status: 'Skipped',
+                summary: 'Post-response did not run because no transport response was available.',
+              },
+              {
+                stageId: 'tests',
+                label: 'Tests',
+                status: 'Skipped',
+                summary: 'Tests did not run because transport never completed.',
+              },
+            ],
+          },
         });
       }
 
@@ -241,18 +349,28 @@ describe('Request builder save/run wiring', () => {
     renderApp(<AppRouter />);
 
     await openNewRequest(user);
-    await user.type(screen.getByLabelText('Request name'), 'Broken runtime');
+    await user.type(screen.getByLabelText('Request name'), 'Blocked runtime');
     await user.type(screen.getByLabelText('Request URL'), 'https://api.example.com/failure');
+
+    const mainSurface = screen.getByLabelText('Main work surface');
+    await user.click(within(mainSurface).getByRole('button', { name: 'Scripts' }));
+    await screen.findByLabelText('Pre-request script');
+    await user.type(screen.getByLabelText('Pre-request script'), 'console.log(process.env.SECRET);');
 
     await user.click(screen.getByRole('button', { name: 'Run' }));
 
-    await waitFor(() => expect(screen.getByTestId('run-command-status')).toHaveTextContent('Connection refused'));
-    await user.click(screen.getByRole('tab', { name: 'Execution Info' }));
-    expect(screen.getByText('Failed')).toBeInTheDocument();
-    expect(screen.getByText('Connection refused')).toBeInTheDocument();
-    expect(screen.getByText('request_builder_failure')).toBeInTheDocument();
-    expect(screen.getByText(/GET https:\/\/api.example.com\/failure executed from the active workspace draft/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('run-command-status')).toHaveTextContent('Request run was blocked before completion.'));
     expect(screen.getByText('No response')).toBeInTheDocument();
+    expect(screen.getByText(/Transport did not run because the pre-request stage was blocked before send/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: 'Execution Info' }));
+    expect(screen.getByText('Blocked')).toBeInTheDocument();
+    expect(screen.getByText('script_blocked_capability')).toBeInTheDocument();
+    expect(screen.getByText('Blocked token process is not available in the bounded script runtime.')).toBeInTheDocument();
+    const stageSummary = screen.getByLabelText('Execution stage summary');
+    expect(within(stageSummary).getByText(/Transport/i)).toBeInTheDocument();
+    expect(within(stageSummary).getByText(/Transport did not run because pre-request blocked the execution./i)).toBeInTheDocument();
+    expect(screen.getByLabelText('Blocked runtime has unsaved changes')).toBeInTheDocument();
   });
 
   it('saves a replay-created draft without overwriting replay bridge behavior', async () => {
@@ -262,7 +380,7 @@ describe('Request builder save/run wiring', () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = getUrl(input);
 
-      if (url === '/api/workspaces/local-workspace/requests' && (!init || init.method === undefined)) {
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
         return createApiResponse({ items: [] });
       }
 

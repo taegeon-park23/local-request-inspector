@@ -58,6 +58,39 @@ describe('History S12 real data integration', () => {
       requestInputSummary: '0 params · 3 headers · json body · bearer',
       requestParamCount: 0,
       requestHeaderCount: 3,
+      consoleSummary: '2 bounded console entries were persisted across pre-request and post-response stages.',
+      consolePreview: [
+        '[pre-request] prepared request headers',
+        '[post-response] stored bounded response summary',
+      ],
+      testsSummary: '1 assertion passed. No failures.',
+      testsPreview: ['PASS response status is 200'],
+      stageSummaries: [
+        {
+          stageId: 'pre-request',
+          label: 'Pre-request',
+          status: 'Succeeded' as const,
+          summary: 'Prepared request headers before transport.',
+        },
+        {
+          stageId: 'transport',
+          label: 'Transport',
+          status: 'Succeeded' as const,
+          summary: 'Transport completed and returned HTTP 200.',
+        },
+        {
+          stageId: 'post-response',
+          label: 'Post-response',
+          status: 'Succeeded' as const,
+          summary: 'Stored a bounded response note after transport.',
+        },
+        {
+          stageId: 'tests',
+          label: 'Tests',
+          status: 'Succeeded' as const,
+          summary: '1 assertion passed. No failures.',
+        },
+      ],
     };
     const secondHistory = {
       ...baseSecondHistory,
@@ -68,6 +101,38 @@ describe('History S12 real data integration', () => {
       requestHeaderCount: 2,
       errorCode: 'upstream_503',
       errorSummary: 'Transport returned a retryable 503 summary.',
+      consoleSummary: '1 bounded warning was persisted before transport failure handling completed.',
+      consolePreview: ['[post-response] flagged retry-after guidance'],
+      testsSummary: '1 assertion failed after the bounded response summary was stored.',
+      testsPreview: ['FAIL service remains healthy'],
+      stageSummaries: [
+        {
+          stageId: 'pre-request',
+          label: 'Pre-request',
+          status: 'Succeeded' as const,
+          summary: 'Prepared retry-aware request headers before transport.',
+        },
+        {
+          stageId: 'transport',
+          label: 'Transport',
+          status: 'Failed' as const,
+          summary: 'Transport returned a retryable 503 summary.',
+          errorCode: 'upstream_503',
+          errorSummary: 'Transport returned a retryable 503 summary.',
+        },
+        {
+          stageId: 'post-response',
+          label: 'Post-response',
+          status: 'Succeeded' as const,
+          summary: 'Recorded retry-after guidance in bounded diagnostics.',
+        },
+        {
+          stageId: 'tests',
+          label: 'Tests',
+          status: 'Failed' as const,
+          summary: '1 assertion failed after the bounded response summary was stored.',
+        },
+      ],
     };
 
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -129,14 +194,17 @@ describe('History S12 real data integration', () => {
 
     await user.click(screen.getByRole('tab', { name: 'Console' }));
     expect(screen.getByRole('heading', { name: 'Console summary' })).toBeInTheDocument();
+    expect(screen.getByText('[post-response] flagged retry-after guidance')).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Tests' }));
     expect(screen.getByRole('heading', { name: 'Tests summary' })).toBeInTheDocument();
+    expect(screen.getByText('FAIL service remains healthy')).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Execution Info' }));
     expect(screen.getByRole('heading', { name: 'Execution info' })).toBeInTheDocument();
     expect(screen.getByText('upstream_503')).toBeInTheDocument();
     expect(screen.getByText('Transport returned a retryable 503 summary.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Execution stage summary')).toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([input]) => getUrl(input as RequestInfo | URL) === '/api/execution-histories')).toBe(true);
     expect(
       fetchMock.mock.calls.some(([input]) => getUrl(input as RequestInfo | URL) === `/api/execution-histories/${secondHistory.id}`),
@@ -207,8 +275,8 @@ describe('History S12 real data integration', () => {
       executionOutcome: 'Succeeded' as const,
       transportOutcome: 'HTTP 201',
       transportStatusCode: 201,
-      testOutcome: 'No tests' as const,
-      testSummaryLabel: 'No tests persisted',
+      testOutcome: 'All tests passed' as const,
+      testSummaryLabel: '1 / 1 tests passed',
       responseSummary: 'Persisted history captured HTTP 201 and a bounded response preview.',
       headersSummary: '1 response header persisted in redacted summary form.',
       bodyHint: '30 characters captured from the persisted response preview.',
@@ -227,17 +295,43 @@ describe('History S12 real data integration', () => {
         apiKeyValue: '',
         apiKeyPlacement: 'header' as const,
       },
-      consoleSummary: 'No console entries were persisted. Live script-linked console remains deferred.',
-      consolePreview: [],
+      consoleSummary: '2 bounded console entries were persisted across pre-request and post-response stages.',
+      consolePreview: ['[post-response] stored bounded response summary'],
       consoleLogCount: 0,
       consoleWarningCount: 0,
-      testsSummary: 'No persisted test assertions are available for this execution.',
-      assertionCount: 0,
-      passedAssertions: 0,
+      testsSummary: '1 assertion passed. No failures.',
+      assertionCount: 1,
+      passedAssertions: 1,
       failedAssertions: 0,
-      testsPreview: ['No persisted test assertions are available for this execution.'],
+      testsPreview: ['PASS runtime probe returned 201'],
       environmentLabel: 'No environment persisted',
       sourceLabel: 'Ad hoc request snapshot',
+      stageSummaries: [
+        {
+          stageId: 'pre-request' as const,
+          label: 'Pre-request',
+          status: 'Succeeded' as const,
+          summary: 'Added trace header before transport.',
+        },
+        {
+          stageId: 'transport' as const,
+          label: 'Transport',
+          status: 'Succeeded' as const,
+          summary: 'Transport completed and returned HTTP 201.',
+        },
+        {
+          stageId: 'post-response' as const,
+          label: 'Post-response',
+          status: 'Succeeded' as const,
+          summary: 'Stored a bounded response note after transport.',
+        },
+        {
+          stageId: 'tests' as const,
+          label: 'Tests',
+          status: 'Succeeded' as const,
+          summary: '1 assertion passed. No failures.',
+        },
+      ],
       timelineEntries: [
         {
           id: 'runtime-prepared',
@@ -278,14 +372,51 @@ describe('History S12 real data integration', () => {
             responseBodyPreview: '{"ok":true,"requestId":"demo-1"}',
             responseBodyHint: '30 characters captured from the latest run.',
             startedAt: '2026-03-20T10:02:00.000Z',
-            completedAt: '2026-03-20T10:02:00.120Z',
-            durationMs: 120,
-            consoleSummary: 'No console entries were captured. Script execution is not wired yet.',
-            consoleEntries: [],
-            testsSummary: 'No tests ran. Script execution is not wired yet.',
-            testEntries: [],
-          },
-        });
+          completedAt: '2026-03-20T10:02:00.120Z',
+          durationMs: 120,
+          consoleSummary: '2 bounded console entries captured across script stages.',
+          consoleEntries: [
+            '[pre-request] prepared request',
+            '[post-response] stored bounded response summary',
+          ],
+          consoleLogCount: 2,
+          consoleWarningCount: 0,
+          testsSummary: '1 assertion passed. No failures.',
+          testEntries: ['PASS runtime probe returned 201'],
+          requestSnapshotSummary: 'GET https://api.example.com/runtime executed from the active workspace draft with 0 params · 1 headers · No body · No auth.',
+          requestInputSummary: '0 params · 1 headers · No body · No auth',
+          requestHeaderCount: 1,
+          requestParamCount: 0,
+          requestBodyMode: 'none',
+          authSummary: 'No auth',
+          stageSummaries: [
+            {
+              stageId: 'pre-request',
+              label: 'Pre-request',
+              status: 'Succeeded',
+              summary: 'Added trace header before transport.',
+            },
+            {
+              stageId: 'transport',
+              label: 'Transport',
+              status: 'Succeeded',
+              summary: 'Transport completed and returned HTTP 201.',
+            },
+            {
+              stageId: 'post-response',
+              label: 'Post-response',
+              status: 'Succeeded',
+              summary: 'Stored a bounded response note after transport.',
+            },
+            {
+              stageId: 'tests',
+              label: 'Tests',
+              status: 'Succeeded',
+              summary: '1 assertion passed. No failures.',
+            },
+          ],
+        },
+      });
       }
 
       if (url === '/api/execution-histories' && (!init || !init.method || init.method === 'GET')) {
@@ -319,7 +450,7 @@ describe('History S12 real data integration', () => {
     expect(await screen.findByRole('button', { name: 'Open history Runtime probe' })).toBeInTheDocument();
     expect(screen.getByText(/GET https:\/\/api.example.com\/runtime was persisted as a bounded redacted request snapshot/i)).toBeInTheDocument();
     expect(screen.getAllByText('HTTP 201', { selector: '[data-kind="transportOutcome"]' }).length).toBeGreaterThan(0);
-    expect(screen.getByText('No tests persisted')).toBeInTheDocument();
+    expect(screen.getByText('1 assertion passed. No failures.')).toBeInTheDocument();
     expect(useHistoryStore.getState().selectedHistoryId).toBe(null);
     expect(Object.keys(useRequestDraftStore.getState().draftsByTabId)).toHaveLength(1);
   });

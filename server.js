@@ -146,6 +146,13 @@ function createExecutionObservation({
   completedAt,
   durationMs,
   requestSnapshot,
+  consoleSummary,
+  consoleEntries,
+  consoleLogCount,
+  consoleWarningCount,
+  testsSummary,
+  testEntries,
+  stageSummaries,
   errorCode,
   errorSummary,
 }) {
@@ -178,25 +185,26 @@ function createExecutionObservation({
       preview: responseBodyPreview,
       redactionApplied: false,
       previewTruncated: responsePreviewTruncated,
-      absentSummary: executionOutcome === 'Failed'
-        ? 'No response preview is available because the run failed before transport completed.'
-        : 'No response preview is available for this execution.',
+      absentSummary: executionOutcome === 'Succeeded'
+        ? 'No response preview is available for this execution.'
+        : `No response preview is available because the run ended as ${executionOutcome.toLowerCase()} before transport completed cleanly.`,
     }),
     startedAt,
     completedAt,
     durationMs,
-    consoleSummary: 'No console entries were captured. Script execution is not wired yet.',
-    consoleEntries: [],
-    consoleLogCount: 0,
-    consoleWarningCount: 0,
-    testsSummary: 'No tests ran. Script execution is not wired yet.',
-    testEntries: [],
+    consoleSummary: consoleSummary || 'No console entries were captured for this run.',
+    consoleEntries: consoleEntries || [],
+    consoleLogCount: typeof consoleLogCount === 'number' ? consoleLogCount : (consoleEntries || []).length,
+    consoleWarningCount: typeof consoleWarningCount === 'number' ? consoleWarningCount : 0,
+    testsSummary: testsSummary || 'No tests were recorded for this run.',
+    testEntries: testEntries || [],
     requestSnapshotSummary: createRequestSnapshotSummary(requestSnapshot),
     requestInputSummary: createRequestInputSummary(requestSnapshot),
     requestHeaderCount,
     requestParamCount,
     requestBodyMode: requestSnapshot?.bodyMode || 'none',
     authSummary: createAuthSummary(requestSnapshot?.auth),
+    stageSummaries: stageSummaries || [],
     ...(errorCode ? { errorCode } : {}),
     ...(errorSummary ? { errorSummary } : {}),
   };
@@ -444,6 +452,796 @@ function createResponsePreviewPolicy({
   return 'Preview is bounded before richer diagnostics and raw payload inspection are added.';
 }
 
+const SCRIPT_TIMEOUT_MS = 250;
+const SCRIPT_CONSOLE_PREVIEW_LIMIT = 8;
+const SCRIPT_TEST_PREVIEW_LIMIT = 8;
+const SCRIPT_MESSAGE_LIMIT = 240;
+const FORBIDDEN_SCRIPT_TOKEN_PATTERN = /\b(?:process|require|module|exports|__dirname|__filename|globalThis|global|fs|path|child_process)\b/;
+
+class ScriptStageExecutionError extends Error {
+  constructor(code, message, status = 'failed') {
+    super(message);
+    this.name = 'ScriptStageExecutionError';
+    this.code = code;
+    this.stageStatus = status;
+  }
+}
+
+function redactFreeformText(value) {
+  const normalizedValue = typeof value === 'string' ? value : String(value ?? '');
+
+  return truncatePreview(
+    normalizedValue
+      .replace(/(Bearer\s+)[^\s'"]+/gi, '$1[redacted]')
+      .replace(/((?:token|secret|password|api[-_]?key)\s*[:=]\s*)[^\s,;]+/gi, '$1[redacted]'),
+    SCRIPT_MESSAGE_LIMIT,
+  );
+}
+
+function createPersistedRequestSnapshotSafely(request, targetUrl) {
+  try {
+    return createPersistedRequestSnapshot(request, targetUrl);
+  } catch {
+    return {
+      name: typeof request?.name === 'string' && request.name.trim().length > 0
+        ? request.name.trim()
+        : createRequestSummary(request?.method || 'GET', request?.url || ''),
+      method: request?.method || 'GET',
+      url: typeof request?.url === 'string' && request.url.trim().length > 0
+        ? truncatePreview(request.url.trim(), 2000)
+        : 'request snapshot unavailable',
+      params: createSanitizedRows(request?.params),
+      headers: createSanitizedRows(request?.headers),
+      bodyMode: request?.bodyMode || 'none',
+      bodyText: createPersistedBodyPreview(request || {}),
+      auth: createPersistedAuthSnapshot(request?.auth),
+      sourceLabel: request?.id ? 'Saved request snapshot' : 'Ad hoc request snapshot',
+    };
+  }
+}
+
+function createExecutionRequestSeed(input) {
+  return {
+    id: input.id || null,
+    workspaceId: input.workspaceId || null,
+    name: input.name,
+    method: input.method,
+    url: input.url,
+    params: cloneRows(input.params),
+    headers: cloneRows(input.headers),
+    bodyMode: input.bodyMode || 'none',
+    bodyText: input.bodyText || '',
+    formBody: cloneRows(input.formBody),
+    multipartBody: cloneRows(input.multipartBody),
+    auth: cloneAuth(input.auth),
+    scripts: cloneScripts(input.scripts),
+  };
+}
+
+function normalizeScriptStageStatus(status) {
+  switch (status) {
+    case 'blocked':
+      return 'Blocked';
+    case 'timed_out':
+      return 'Timed out';
+    case 'failed':
+      return 'Failed';
+    case 'succeeded':
+      return 'Succeeded';
+    default:
+      return 'Skipped';
+  }
+}
+
+function createStageLabel(stageId) {
+  switch (stageId) {
+    case 'pre-request':
+      return 'Pre-request';
+    case 'post-response':
+      return 'Post-response';
+    case 'tests':
+      return 'Tests';
+    default:
+      return 'Transport';
+  }
+}
+
+function createFriendlyStageSummary(stageId, stageResult) {
+  return {
+    stageId,
+    label: createStageLabel(stageId),
+    status: normalizeScriptStageStatus(stageResult?.status),
+    summary: stageResult?.summary || `${createStageLabel(stageId)} did not run.`,
+    ...(stageResult?.errorCode ? { errorCode: stageResult.errorCode } : {}),
+    ...(stageResult?.errorSummary ? { errorSummary: stageResult.errorSummary } : {}),
+  };
+}
+
+function createStageStatusRecord(stageId, status, summary, options = {}) {
+  return {
+    stageId,
+    status,
+    summary: redactFreeformText(summary),
+    ...(options.errorCode ? { errorCode: options.errorCode } : {}),
+    ...(options.errorSummary ? { errorSummary: redactFreeformText(options.errorSummary) } : {}),
+  };
+}
+
+function createEmptyScriptStageResult(stageId, summary) {
+  return {
+    ...createStageStatusRecord(stageId, 'skipped', summary),
+    consoleEntries: [],
+    consoleLogCount: 0,
+    consoleWarningCount: 0,
+    testResults: [],
+  };
+}
+
+function createScriptStageTimeoutResult(stageId) {
+  return {
+    ...createStageStatusRecord(
+      stageId,
+      'timed_out',
+      `${createStageLabel(stageId)} exceeded the bounded ${SCRIPT_TIMEOUT_MS} ms timeout.`,
+      {
+        errorCode: 'script_timed_out',
+        errorSummary: `${createStageLabel(stageId)} exceeded the bounded execution timeout.`,
+      },
+    ),
+    consoleEntries: [],
+    consoleLogCount: 0,
+    consoleWarningCount: 0,
+    testResults: [],
+  };
+}
+
+function createScriptStageBlockedResult(stageId, message, errorCode = 'script_capability_blocked') {
+  return {
+    ...createStageStatusRecord(stageId, 'blocked', message, {
+      errorCode,
+      errorSummary: message,
+    }),
+    consoleEntries: [],
+    consoleLogCount: 0,
+    consoleWarningCount: 0,
+    testResults: [],
+  };
+}
+
+function createScriptStageFailureResult(stageId, message, errorCode = 'script_stage_failed', consoleEntries = [], consoleWarningCount = 0) {
+  return {
+    ...createStageStatusRecord(stageId, 'failed', message, {
+      errorCode,
+      errorSummary: message,
+    }),
+    consoleEntries,
+    consoleLogCount: consoleEntries.length,
+    consoleWarningCount,
+    testResults: [],
+  };
+}
+
+function createMutableRowCollection(rows) {
+  const findRowIndex = (key) =>
+    rows.findIndex((row) => row.enabled !== false && typeof row.key === 'string' && row.key.toLowerCase() === String(key).toLowerCase());
+
+  return {
+    get(name) {
+      const index = findRowIndex(name);
+      return index >= 0 ? rows[index].value : undefined;
+    },
+    set(name, value) {
+      const normalizedName = String(name ?? '').trim();
+      if (normalizedName.length === 0) {
+        throw new ScriptStageExecutionError('script_mutation_blocked', 'Empty keys are not supported in request mutations.', 'blocked');
+      }
+
+      const index = findRowIndex(normalizedName);
+      if (index >= 0) {
+        rows[index].value = String(value ?? '');
+        rows[index].enabled = true;
+        return;
+      }
+
+      rows.push({
+        id: randomUUID(),
+        key: normalizedName,
+        value: String(value ?? ''),
+        enabled: true,
+      });
+    },
+    delete(name) {
+      const index = findRowIndex(name);
+      if (index >= 0) {
+        rows.splice(index, 1);
+      }
+    },
+    entries() {
+      return rows
+        .filter((row) => row.enabled !== false && typeof row.key === 'string' && row.key.trim().length > 0)
+        .map((row) => [row.key, row.value]);
+    },
+  };
+}
+
+function createMutableRequestContext(executionRequest) {
+  const headers = createMutableRowCollection(executionRequest.headers);
+  const params = createMutableRowCollection(executionRequest.params);
+
+  return {
+    get method() {
+      return executionRequest.method;
+    },
+    set method(nextMethod) {
+      executionRequest.method = String(nextMethod || executionRequest.method || 'GET').toUpperCase();
+    },
+    get url() {
+      return executionRequest.url;
+    },
+    set url(nextUrl) {
+      executionRequest.url = String(nextUrl || '');
+    },
+    headers,
+    params,
+    body: {
+      get mode() {
+        return executionRequest.bodyMode;
+      },
+      get text() {
+        return executionRequest.bodyText || '';
+      },
+      setText(nextBodyText) {
+        if (executionRequest.bodyMode === 'form-urlencoded' || executionRequest.bodyMode === 'multipart-form-data') {
+          throw new ScriptStageExecutionError(
+            'script_mutation_blocked',
+            'Pre-request body text mutation is limited to none, text, or json modes in this slice.',
+            'blocked',
+          );
+        }
+
+        executionRequest.bodyMode = executionRequest.bodyMode === 'none' ? 'text' : executionRequest.bodyMode;
+        executionRequest.bodyText = String(nextBodyText ?? '');
+      },
+      clear() {
+        executionRequest.bodyMode = 'none';
+        executionRequest.bodyText = '';
+        executionRequest.formBody = [];
+        executionRequest.multipartBody = [];
+      },
+    },
+    auth: {
+      get type() {
+        return executionRequest.auth.type;
+      },
+      setBearerToken(token) {
+        executionRequest.auth = {
+          ...cloneAuth(executionRequest.auth),
+          type: 'bearer',
+          bearerToken: String(token ?? ''),
+        };
+      },
+      clear() {
+        executionRequest.auth = cloneAuth({ type: 'none' });
+      },
+      setBasic() {
+        throw new ScriptStageExecutionError(
+          'script_mutation_blocked',
+          'Basic auth mutation is not available in this bounded script slice.',
+          'blocked',
+        );
+      },
+      setApiKey() {
+        throw new ScriptStageExecutionError(
+          'script_mutation_blocked',
+          'API key auth mutation is not available in this bounded script slice.',
+          'blocked',
+        );
+      },
+    },
+  };
+}
+
+function createReadonlyHeadersContext(headerEntries) {
+  const headersMap = new Map(
+    (headerEntries || []).map((header) => [String(header.name || header.key).toLowerCase(), String(header.value || '')]),
+  );
+
+  return {
+    get(name) {
+      return headersMap.get(String(name).toLowerCase());
+    },
+    entries() {
+      return Array.from(headersMap.entries());
+    },
+  };
+}
+
+function createReadonlyRequestContext(executionRequest, target) {
+  const normalizedTarget = target ? new URL(target.toString()) : new URL(executionRequest.url);
+  const headers = createExecutionHeaders(executionRequest.headers, executionRequest.auth);
+
+  return {
+    method: executionRequest.method,
+    url: normalizedTarget.toString(),
+    headers: createReadonlyHeadersContext(
+      Array.from(headers.entries()).map(([name, value]) => ({ name, value })),
+    ),
+    params: Array.from(normalizedTarget.searchParams.entries()).map(([key, value]) => ({ key, value })),
+    bodyMode: executionRequest.bodyMode,
+    bodyText: executionRequest.bodyText || '',
+    authSummary: createAuthSummary(executionRequest.auth),
+  };
+}
+
+function createReadonlyResponseContext(responseStatus, responseHeaders, responseBodyText) {
+  let parsedJson;
+  let parsedJsonReady = false;
+
+  return {
+    status: responseStatus,
+    ok: typeof responseStatus === 'number' && responseStatus >= 200 && responseStatus < 300,
+    headers: createReadonlyHeadersContext(responseHeaders),
+    body: {
+      text: responseBodyText,
+      preview: truncatePreview(responseBodyText, 4000),
+      json() {
+        if (!parsedJsonReady) {
+          parsedJson = JSON.parse(responseBodyText);
+          parsedJsonReady = true;
+        }
+
+        return redactStructuredJson(parsedJson);
+      },
+    },
+  };
+}
+
+function formatConsoleArgument(value) {
+  if (typeof value === 'string') {
+    return redactFreeformText(value);
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+
+  if (value === null || value === undefined) {
+    return String(value);
+  }
+
+  try {
+    return truncatePreview(JSON.stringify(redactStructuredJson(value), null, 2), SCRIPT_MESSAGE_LIMIT);
+  } catch {
+    return redactFreeformText(String(value));
+  }
+}
+
+function createConsoleSink(stageId) {
+  const stageLabel = createStageLabel(stageId);
+  const previewEntries = [];
+  let entryCount = 0;
+  let warningCount = 0;
+
+  const pushEntry = (level, args) => {
+    const message = args.map((value) => formatConsoleArgument(value)).join(' ');
+    const prefixedMessage = `[${stageLabel}] ${message}`;
+
+    entryCount += 1;
+    if (level !== 'log') {
+      warningCount += 1;
+    }
+
+    if (previewEntries.length < SCRIPT_CONSOLE_PREVIEW_LIMIT) {
+      previewEntries.push(prefixedMessage);
+    }
+  };
+
+  return {
+    previewEntries,
+    get entryCount() {
+      return entryCount;
+    },
+    get warningCount() {
+      return warningCount;
+    },
+    consoleApi: {
+      log(...args) {
+        pushEntry('log', args);
+      },
+      warn(...args) {
+        pushEntry('warn', args);
+      },
+      error(...args) {
+        pushEntry('error', args);
+      },
+    },
+  };
+}
+
+function createStageSummaryController() {
+  let currentSummary = '';
+
+  return {
+    stageSummaryApi: {
+      set(nextSummary) {
+        currentSummary = redactFreeformText(nextSummary);
+      },
+      clear() {
+        currentSummary = '';
+      },
+    },
+    readSummary() {
+      return currentSummary;
+    },
+  };
+}
+
+function createTestsApi() {
+  const testResults = [];
+  let currentTestName = null;
+  let assertionSequence = 1;
+
+  const pushResult = (name, status, message) => {
+    testResults.push({
+      id: randomUUID(),
+      name,
+      status,
+      message: redactFreeformText(message),
+    });
+  };
+
+  const assertionApi = {
+    assert(condition, message = 'Assertion failed.') {
+      const testName = currentTestName || `Assertion ${assertionSequence++}`;
+      if (condition) {
+        pushResult(testName, 'passed', message);
+        return true;
+      }
+
+      pushResult(testName, 'failed', message);
+      throw new ScriptStageExecutionError('script_assertion_failed', message, 'failed');
+    },
+    test(name, callback) {
+      const normalizedName = redactFreeformText(name || `Assertion ${assertionSequence}`);
+      const previousTestName = currentTestName;
+      currentTestName = normalizedName;
+      const beforeCount = testResults.length;
+
+      try {
+        callback();
+
+        if (testResults.length === beforeCount) {
+          pushResult(normalizedName, 'passed', `${normalizedName} passed.`);
+        }
+      } catch (error) {
+        if (testResults.length === beforeCount) {
+          pushResult(
+            normalizedName,
+            'failed',
+            error instanceof Error ? error.message : `${normalizedName} failed.`,
+          );
+        }
+      } finally {
+        currentTestName = previousTestName;
+      }
+    },
+    readResults() {
+      return testResults.slice(0, SCRIPT_TEST_PREVIEW_LIMIT);
+    },
+  };
+
+  return assertionApi;
+}
+
+function createScriptContext(stageId, options) {
+  const consoleSink = createConsoleSink(stageId);
+  const summaryController = createStageSummaryController();
+  const baseContext = {
+    console: consoleSink.consoleApi,
+    summary: summaryController.stageSummaryApi,
+  };
+
+  if (stageId === 'pre-request') {
+    return {
+      context: {
+        ...baseContext,
+        request: createMutableRequestContext(options.executionRequest),
+      },
+      consoleSink,
+      summaryController,
+      testsApi: null,
+    };
+  }
+
+  const sharedContext = {
+    ...baseContext,
+    request: createReadonlyRequestContext(options.executionRequest, options.target),
+    response: createReadonlyResponseContext(
+      options.responseStatus,
+      options.responseHeaders,
+      options.responseBodyText,
+    ),
+  };
+
+  if (stageId === 'tests') {
+    const testsApi = createTestsApi();
+    return {
+      context: {
+        ...sharedContext,
+        assert: testsApi.assert,
+        test: testsApi.test,
+      },
+      consoleSink,
+      summaryController,
+      testsApi,
+    };
+  }
+
+  return {
+    context: sharedContext,
+    consoleSink,
+    summaryController,
+    testsApi: null,
+  };
+}
+
+function executeScriptStage(stageId, scriptSource, options) {
+  const normalizedSource = typeof scriptSource === 'string' ? scriptSource.trim() : '';
+
+  if (normalizedSource.length === 0) {
+    return createEmptyScriptStageResult(stageId, `No ${createStageLabel(stageId)} script was saved for this request.`);
+  }
+
+  if (FORBIDDEN_SCRIPT_TOKEN_PATTERN.test(normalizedSource)) {
+    return createScriptStageBlockedResult(
+      stageId,
+      `${createStageLabel(stageId)} attempted to use a blocked runtime capability. Only bounded request, response, console, summary, and test helpers are available in this slice.`,
+    );
+  }
+
+  const { context, consoleSink, summaryController, testsApi } = createScriptContext(stageId, options);
+
+  try {
+    const script = new vm.Script(normalizedSource, {
+      displayErrors: true,
+      filename: `${stageId}-script.js`,
+    });
+
+    script.runInNewContext(context, { timeout: SCRIPT_TIMEOUT_MS });
+  } catch (error) {
+    if (error?.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT' || /timed out/i.test(error?.message || '')) {
+      return createScriptStageTimeoutResult(stageId);
+    }
+
+    if (error instanceof ScriptStageExecutionError && error.stageStatus === 'blocked') {
+      return {
+        ...createScriptStageBlockedResult(stageId, error.message, error.code),
+        consoleEntries: consoleSink.previewEntries,
+        consoleLogCount: consoleSink.entryCount,
+        consoleWarningCount: consoleSink.warningCount,
+      };
+    }
+
+    const message = error instanceof Error ? error.message : `${createStageLabel(stageId)} failed.`;
+    return {
+      ...createScriptStageFailureResult(
+        stageId,
+        message,
+        error?.code || 'script_stage_failed',
+        consoleSink.previewEntries,
+        consoleSink.warningCount,
+      ),
+      testResults: testsApi ? testsApi.readResults() : [],
+    };
+  }
+
+  if (stageId === 'pre-request') {
+    const summary = summaryController.readSummary() || 'Pre-request script completed before transport.';
+    return {
+      ...createStageStatusRecord(stageId, 'succeeded', summary),
+      consoleEntries: consoleSink.previewEntries,
+      consoleLogCount: consoleSink.entryCount,
+      consoleWarningCount: consoleSink.warningCount,
+      testResults: [],
+    };
+  }
+
+  if (stageId === 'post-response') {
+    const summary = summaryController.readSummary()
+      || (consoleSink.entryCount > 0
+        ? 'Post-response script completed and emitted bounded console diagnostics.'
+        : 'Post-response script completed without derived diagnostics.');
+
+    return {
+      ...createStageStatusRecord(stageId, 'succeeded', summary),
+      consoleEntries: consoleSink.previewEntries,
+      consoleLogCount: consoleSink.entryCount,
+      consoleWarningCount: consoleSink.warningCount,
+      testResults: [],
+    };
+  }
+
+  const testResults = testsApi ? testsApi.readResults() : [];
+  const failedAssertions = testResults.filter((result) => result.status === 'failed').length;
+  const passedAssertions = testResults.filter((result) => result.status === 'passed').length;
+  const testsSummary = failedAssertions > 0
+    ? `${failedAssertions} assertion(s) failed in Tests.`
+    : testResults.length > 0
+      ? `${passedAssertions} assertion(s) passed in Tests.`
+      : 'Tests script completed without recording assertions.';
+
+  return {
+    ...createStageStatusRecord(stageId, failedAssertions > 0 ? 'failed' : 'succeeded', summaryController.readSummary() || testsSummary, {
+      ...(failedAssertions > 0 ? { errorCode: 'script_assertion_failed', errorSummary: testsSummary } : {}),
+    }),
+    consoleEntries: consoleSink.previewEntries,
+    consoleLogCount: consoleSink.entryCount,
+    consoleWarningCount: consoleSink.warningCount,
+    testResults,
+  };
+}
+
+function createTransportStageResult(responseStatus, hostPathHint) {
+  return createStageStatusRecord(
+    'transport',
+    'succeeded',
+    `Transport completed with HTTP ${responseStatus} against ${hostPathHint}.`,
+  );
+}
+
+function createTransportFailureStageResult(error) {
+  return createStageStatusRecord('transport', 'failed', 'Transport failed before a response was received.', {
+    errorCode: error?.code || error?.cause?.code || 'transport_failed',
+    errorSummary: error?.message || 'Transport failed before a response was received.',
+  });
+}
+
+function createTransportSkippedStageResult(reason) {
+  return createStageStatusRecord('transport', 'skipped', reason);
+}
+
+function createSkippedScriptStageAfterTransport(stageId, reason) {
+  return createEmptyScriptStageResult(stageId, reason);
+}
+
+function deriveExecutionOutcome(stageResults) {
+  const normalizedResults = Object.values(stageResults || {}).filter(Boolean);
+
+  if (normalizedResults.some((result) => result.status === 'blocked')) {
+    return 'Blocked';
+  }
+
+  if (normalizedResults.some((result) => result.status === 'timed_out')) {
+    return 'Timed out';
+  }
+
+  if (normalizedResults.some((result) => result.status === 'failed')) {
+    return 'Failed';
+  }
+
+  return 'Succeeded';
+}
+
+function createObservationConsoleSummary(stageResults, consoleEntries, warningCount) {
+  if (consoleEntries.length === 0) {
+    if (stageResults['post-response']?.status === 'succeeded') {
+      return stageResults['post-response'].summary;
+    }
+
+    if (stageResults.tests?.status === 'failed') {
+      return 'No console entries were captured. Tests failed without emitting bounded console output.';
+    }
+
+    return 'No console entries were captured. Script stages were skipped or completed without console output.';
+  }
+
+  return `${consoleEntries.length} console preview entr${consoleEntries.length === 1 ? 'y is' : 'ies are'} available${warningCount > 0 ? `, including ${warningCount} warning(s).` : '.'}`;
+}
+
+function createObservationTestsSummary(stageResults) {
+  const testsResult = stageResults.tests;
+  const testResults = Array.isArray(testsResult?.testResults) ? testsResult.testResults : [];
+  const failedAssertions = testResults.filter((result) => result.status === 'failed').length;
+
+  if (testResults.length === 0) {
+    return testsResult?.summary || 'No tests were recorded for this run.';
+  }
+
+  if (failedAssertions > 0) {
+    return `${failedAssertions} assertion(s) failed and ${testResults.length - failedAssertions} passed.`;
+  }
+
+  return `${testResults.length} assertion(s) passed.`;
+}
+
+function createObservationTestEntries(stageResults) {
+  const testResults = Array.isArray(stageResults.tests?.testResults) ? stageResults.tests.testResults : [];
+
+  return testResults.map((result) => `${result.status === 'passed' ? 'Passed' : 'Failed'}: ${result.name} - ${result.message}`);
+}
+
+function createObservationStageSummaries(stageResults) {
+  return ['pre-request', 'transport', 'post-response', 'tests']
+    .map((stageId) => {
+      const stageResult = stageResults[stageId];
+      return stageResult ? createFriendlyStageSummary(stageId, stageResult) : null;
+    })
+    .filter(Boolean);
+}
+
+function createCombinedConsoleEntries(stageResults) {
+  return ['pre-request', 'post-response', 'tests']
+    .flatMap((stageId) => Array.isArray(stageResults[stageId]?.consoleEntries) ? stageResults[stageId].consoleEntries : [])
+    .slice(0, SCRIPT_CONSOLE_PREVIEW_LIMIT);
+}
+
+function countConsoleEntries(stageResults) {
+  return ['pre-request', 'post-response', 'tests']
+    .reduce((count, stageId) => count + Number(stageResults[stageId]?.consoleLogCount || 0), 0);
+}
+
+function countConsoleWarnings(stageResults) {
+  return ['pre-request', 'post-response', 'tests']
+    .reduce((count, stageId) => count + Number(stageResults[stageId]?.consoleWarningCount || 0), 0);
+}
+
+function createPersistedLogSummary(stageResults) {
+  return {
+    consoleEntries: countConsoleEntries(stageResults),
+    consoleWarnings: countConsoleWarnings(stageResults),
+    consolePreview: createCombinedConsoleEntries(stageResults),
+  };
+}
+
+function createPersistedTestResultRecords(executionId, testsStageResult) {
+  if (!Array.isArray(testsStageResult?.testResults) || testsStageResult.testResults.length === 0) {
+    return [];
+  }
+
+  const recordedAt = new Date().toISOString();
+
+  return testsStageResult.testResults.map((result) => ({
+    id: result.id || randomUUID(),
+    executionId,
+    testName: result.name,
+    status: result.status,
+    message: result.message,
+    detailsJson: JSON.stringify({ stage: 'tests' }),
+    recordedAt,
+  }));
+}
+
+function createExecutionErrorMetadata(stageResults, fallbackError) {
+  const failureStage = ['pre-request', 'transport', 'post-response', 'tests']
+    .map((stageId) => stageResults[stageId])
+    .find((stageResult) => stageResult && stageResult.status !== 'succeeded' && stageResult.status !== 'skipped');
+
+  if (!failureStage) {
+    return {
+      errorCode: fallbackError?.code || fallbackError?.cause?.code || null,
+      errorSummary: fallbackError?.message || null,
+    };
+  }
+
+  return {
+    errorCode: failureStage.errorCode || fallbackError?.code || fallbackError?.cause?.code || null,
+    errorSummary: failureStage.errorSummary || failureStage.summary || fallbackError?.message || null,
+  };
+}
+
+function createPersistedExecutionStatus(executionOutcome) {
+  switch (executionOutcome) {
+    case 'Succeeded':
+      return 'succeeded';
+    case 'Blocked':
+      return 'blocked';
+    case 'Timed out':
+      return 'timed_out';
+    default:
+      return 'failed';
+  }
+}
+
 function createCaptureBodyPreviewPolicy(preview, wasRedacted) {
   if (typeof preview !== 'string' || preview.length === 0) {
     return 'No request body preview was persisted for this capture.';
@@ -497,7 +1295,133 @@ function createTransportOutcomeLabel(responseStatus, executionOutcome) {
   return executionOutcome === 'Blocked' ? 'Blocked before transport' : 'No response';
 }
 
-function createTestSummary(assertionCount, failedAssertions, skippedAssertions) {
+function createPersistedTransportStageResult(runtimeRecord, executionOutcome, transportOutcome) {
+  if (runtimeRecord.responseStatus === null) {
+    if (executionOutcome === 'Blocked') {
+      return createStageStatusRecord(
+        'transport',
+        'blocked',
+        'Transport was blocked before any upstream request was sent.',
+        {
+          errorCode: runtimeRecord.errorCode || 'transport_blocked',
+          errorSummary: runtimeRecord.errorMessage || 'Transport was blocked before any upstream request was sent.',
+        },
+      );
+    }
+
+    if (executionOutcome === 'Timed out') {
+      return createStageStatusRecord(
+        'transport',
+        'timed_out',
+        'Transport timed out before a persisted response summary was available.',
+        {
+          errorCode: runtimeRecord.errorCode || 'transport_timed_out',
+          errorSummary: runtimeRecord.errorMessage || 'Transport timed out before a persisted response summary was available.',
+        },
+      );
+    }
+
+    return createStageStatusRecord(
+      'transport',
+      'failed',
+      'Transport failed before a persisted response summary was available.',
+      {
+        errorCode: runtimeRecord.errorCode || 'transport_failed',
+        errorSummary: runtimeRecord.errorMessage || 'Transport failed before a persisted response summary was available.',
+      },
+    );
+  }
+
+  return createStageStatusRecord(
+    'transport',
+    'succeeded',
+    `Transport completed with ${transportOutcome}.`,
+  );
+}
+
+function createPersistedStageResults(runtimeRecord, executionOutcome, transportOutcome) {
+  const rawStageStatus = runtimeRecord.stageStatus || {};
+
+  if (rawStageStatus.preRequest || rawStageStatus.transport || rawStageStatus.postResponse || rawStageStatus.tests) {
+    return {
+      preRequest: rawStageStatus.preRequest || createEmptyScriptStageResult(
+        'pre-request',
+        'No persisted Pre-request stage summary is available for this execution.',
+      ),
+      transport: rawStageStatus.transport || createPersistedTransportStageResult(runtimeRecord, executionOutcome, transportOutcome),
+      postResponse: rawStageStatus.postResponse || createEmptyScriptStageResult(
+        'post-response',
+        'No persisted Post-response stage summary is available for this execution.',
+      ),
+      tests: rawStageStatus.tests || createEmptyScriptStageResult(
+        'tests',
+        'No persisted Tests stage summary is available for this execution.',
+      ),
+    };
+  }
+
+  return {
+    preRequest: createEmptyScriptStageResult(
+      'pre-request',
+      rawStageStatus.scripts === 'deferred'
+        ? 'Persisted history predates Pre-request diagnostics wiring.'
+        : 'No Pre-request script was saved for this request.',
+    ),
+    transport: createPersistedTransportStageResult(runtimeRecord, executionOutcome, transportOutcome),
+    postResponse: createEmptyScriptStageResult(
+      'post-response',
+      rawStageStatus.scripts === 'deferred'
+        ? 'Persisted history predates Post-response diagnostics wiring.'
+        : 'No Post-response script was saved for this request.',
+    ),
+    tests: createEmptyScriptStageResult(
+      'tests',
+      rawStageStatus.tests === 'deferred'
+        ? 'Persisted history predates Tests diagnostics wiring.'
+        : 'No Tests script was saved for this request.',
+    ),
+  };
+}
+
+function createTestSummary(assertionCount, failedAssertions, skippedAssertions, testsStageResult, testResults = []) {
+  if (Array.isArray(testResults) && testResults.length > 0) {
+    if (failedAssertions > 0) {
+      return {
+        outcome: 'Some tests failed',
+        label: `${failedAssertions} / ${assertionCount} tests failed`,
+        summary: testsStageResult?.summary || 'Persisted assertion summary shows at least one failed test.',
+        preview: testResults.map((result) => `${result.status === 'passed' ? 'Passed' : 'Failed'}: ${result.testName} - ${result.message}`),
+      };
+    }
+
+    return {
+      outcome: 'All tests passed',
+      label: `${assertionCount} / ${assertionCount} tests passed`,
+      summary: testsStageResult?.summary || 'All persisted assertions passed.',
+      preview: testResults.map((result) => `Passed: ${result.testName} - ${result.message}`),
+    };
+  }
+
+  if (testsStageResult?.status === 'failed' || testsStageResult?.status === 'blocked' || testsStageResult?.status === 'timed_out') {
+    return {
+      outcome: 'Some tests failed',
+      label: 'Tests stage failed',
+      summary: testsStageResult.summary,
+      preview: [testsStageResult.summary],
+    };
+  }
+
+  if (testsStageResult?.status === 'skipped') {
+    const shouldTreatAsSkipped = /transport|response|blocked|timed out/i.test(testsStageResult.summary);
+
+    return {
+      outcome: shouldTreatAsSkipped ? 'Tests skipped' : 'No tests',
+      label: shouldTreatAsSkipped ? 'Tests skipped' : 'No tests persisted',
+      summary: testsStageResult.summary,
+      preview: [testsStageResult.summary],
+    };
+  }
+
   if (assertionCount === 0 && skippedAssertions > 0) {
     return {
       outcome: 'Tests skipped',
@@ -543,28 +1467,38 @@ function createHostPathHint(url) {
 }
 
 function createHistoryTimelineEntries(historyRecord) {
-  const transportSummary = historyRecord.transportStatusCode === null
-    ? 'No persisted transport response was recorded for this execution.'
-    : `Persisted transport summary recorded ${historyRecord.transportOutcome}.`;
-
   const entries = [
     {
       id: `${historyRecord.executionId}-prepared`,
       title: 'Request prepared',
-      summary: `Prepared ${historyRecord.method} ${historyRecord.hostPathHint} from a redacted request snapshot.`,
+      summary: historyRecord.stageSummaries?.find((entry) => entry.stageId === 'pre-request')?.summary
+        || `Prepared ${historyRecord.method} ${historyRecord.hostPathHint} from a redacted request snapshot.`,
     },
     {
       id: `${historyRecord.executionId}-transport`,
       title: historyRecord.transportStatusCode === null ? 'Transport summary' : 'Transport completed',
-      summary: transportSummary,
+      summary: historyRecord.stageSummaries?.find((entry) => entry.stageId === 'transport')?.summary
+        || (historyRecord.transportStatusCode === null
+          ? 'No persisted transport response was recorded for this execution.'
+          : `Persisted transport summary recorded ${historyRecord.transportOutcome}.`),
     },
   ];
 
-  if (historyRecord.assertionCount > 0) {
+  const postResponseStage = historyRecord.stageSummaries?.find((entry) => entry.stageId === 'post-response');
+  if (postResponseStage && postResponseStage.status !== 'Skipped') {
+    entries.push({
+      id: `${historyRecord.executionId}-post-response`,
+      title: 'Post-response summary',
+      summary: postResponseStage.summary,
+    });
+  }
+
+  const testsStage = historyRecord.stageSummaries?.find((entry) => entry.stageId === 'tests');
+  if (historyRecord.assertionCount > 0 || (testsStage && testsStage.status !== 'Skipped')) {
     entries.push({
       id: `${historyRecord.executionId}-tests`,
       title: 'Tests completed',
-      summary: historyRecord.testsSummary,
+      summary: testsStage?.summary || historyRecord.testsSummary,
     });
   }
 
@@ -594,12 +1528,19 @@ function createHistoryRecord(runtimeRecord) {
   const requestParams = Array.isArray(requestSnapshot.params) ? requestSnapshot.params : [];
   const requestHeaders = Array.isArray(requestSnapshot.headers) ? requestSnapshot.headers : [];
   const responseBodyPreview = typeof runtimeRecord.responseBodyPreview === 'string' ? runtimeRecord.responseBodyPreview : '';
+  const persistedStageResults = createPersistedStageResults(runtimeRecord, executionOutcome, transportOutcome);
+  const stageSummaries = createObservationStageSummaries(persistedStageResults);
   const consoleLogCount = Number(runtimeRecord.logSummary?.consoleEntries || 0);
   const consoleWarningCount = Number(runtimeRecord.logSummary?.consoleWarnings || runtimeRecord.logSummary?.warnings || 0);
+  const consolePreview = Array.isArray(runtimeRecord.logSummary?.consolePreview)
+    ? runtimeRecord.logSummary.consolePreview
+    : [];
   const tests = createTestSummary(
     runtimeRecord.assertionCount,
     runtimeRecord.failedAssertions,
     runtimeRecord.skippedAssertions,
+    persistedStageResults.tests,
+    runtimeRecord.testResults,
   );
 
   const historyRecord = {
@@ -657,9 +1598,9 @@ function createHistoryRecord(runtimeRecord) {
     }),
     consoleSummary:
       consoleLogCount > 0
-        ? `${consoleLogCount} persisted console summaries are available${consoleWarningCount > 0 ? `, including ${consoleWarningCount} warning(s).` : '.'}`
-        : 'No console entries were persisted. Live script-linked console remains deferred.',
-    consolePreview: [],
+        ? `${consoleLogCount} persisted console entr${consoleLogCount === 1 ? 'y is' : 'ies are'} available${consoleWarningCount > 0 ? `, including ${consoleWarningCount} warning(s).` : '.'}`
+        : persistedStageResults['post-response']?.summary || persistedStageResults['pre-request']?.summary || 'No console entries were persisted for this execution.',
+    consolePreview,
     consoleLogCount,
     consoleWarningCount,
     testsSummary: tests.summary,
@@ -673,6 +1614,7 @@ function createHistoryRecord(runtimeRecord) {
     sourceLabel: requestSnapshot.sourceLabel || 'Runtime request snapshot',
     errorCode: runtimeRecord.errorCode || null,
     errorSummary: runtimeRecord.errorMessage || 'No execution error was reported.',
+    stageSummaries,
     timelineEntries: [],
   };
 
@@ -1087,32 +2029,107 @@ app.post('/api/executions/run', async (req, res) => {
   const startedAtMs = Date.now();
 
   try {
-    const target = createExecutionRequestTarget(input.url, input.params, input.auth);
-    const headers = createExecutionHeaders(input.headers, input.auth);
-    const body = createExecutionBody(input, headers);
-    const requestSnapshot = createPersistedRequestSnapshot(input, target);
-    const response = await fetch(target.toString(), {
-      method: input.method,
-      headers,
-      ...(body !== undefined ? { body } : {}),
+    const executionRequest = createExecutionRequestSeed(input);
+    const stageResults = {};
+    let target = null;
+    let responseStatus = null;
+    let responseHeaders = [];
+    let responseBodyText = '';
+
+    stageResults['pre-request'] = executeScriptStage('pre-request', executionRequest.scripts.preRequest, {
+      executionRequest,
     });
 
-    const responseBodyText = await response.text();
+    if (stageResults['pre-request'].status === 'blocked'
+      || stageResults['pre-request'].status === 'failed'
+      || stageResults['pre-request'].status === 'timed_out') {
+      stageResults.transport = createTransportSkippedStageResult(
+        'Transport did not start because the Pre-request stage did not complete successfully.',
+      );
+      stageResults['post-response'] = createSkippedScriptStageAfterTransport(
+        'post-response',
+        'Post-response did not run because transport never started.',
+      );
+      stageResults.tests = createSkippedScriptStageAfterTransport(
+        'tests',
+        'Tests did not run because transport never started.',
+      );
+    } else {
+      try {
+        target = createExecutionRequestTarget(executionRequest.url, executionRequest.params, executionRequest.auth);
+        const headers = createExecutionHeaders(executionRequest.headers, executionRequest.auth);
+        const body = createExecutionBody(executionRequest, headers);
+        const response = await fetch(target.toString(), {
+          method: executionRequest.method,
+          headers,
+          ...(body !== undefined ? { body } : {}),
+        });
+
+        responseStatus = response.status;
+        responseBodyText = await response.text();
+        responseHeaders = Array.from(response.headers.entries()).map(([name, value]) => ({ name, value }));
+        stageResults.transport = createTransportStageResult(
+          response.status,
+          createHostPathHint(target.toString()),
+        );
+        stageResults['post-response'] = executeScriptStage('post-response', executionRequest.scripts.postResponse, {
+          executionRequest,
+          target,
+          responseStatus,
+          responseHeaders,
+          responseBodyText,
+        });
+        stageResults.tests = executeScriptStage('tests', executionRequest.scripts.tests, {
+          executionRequest,
+          target,
+          responseStatus,
+          responseHeaders,
+          responseBodyText,
+        });
+      } catch (error) {
+        stageResults.transport = createTransportFailureStageResult(error);
+        stageResults['post-response'] = createSkippedScriptStageAfterTransport(
+          'post-response',
+          'Post-response did not run because transport failed before a response snapshot was available.',
+        );
+        stageResults.tests = createSkippedScriptStageAfterTransport(
+          'tests',
+          'Tests did not run because transport failed before a response snapshot was available.',
+        );
+      }
+    }
+
     const completedAt = new Date().toISOString();
     const durationMs = Date.now() - startedAtMs;
-    const responseHeaders = Array.from(response.headers.entries()).map(([name, value]) => ({ name, value }));
+    const requestSnapshot = createPersistedRequestSnapshotSafely(executionRequest, target);
+    const responseBodyPreview = responseBodyText.slice(0, 4000);
+    const executionOutcome = deriveExecutionOutcome(stageResults);
+    const consoleEntries = createCombinedConsoleEntries(stageResults);
+    const consoleWarningCount = countConsoleWarnings(stageResults);
+    const testsSummary = createObservationTestsSummary(stageResults);
+    const testEntries = createObservationTestEntries(stageResults);
+    const { errorCode, errorSummary } = createExecutionErrorMetadata(stageResults);
     const execution = createExecutionObservation({
       executionId,
-      executionOutcome: 'Succeeded',
-      responseStatus: response.status,
+      executionOutcome,
+      responseStatus,
       responseHeaders,
-      responseBodyPreview: responseBodyText.slice(0, 4000),
-      responsePreviewLength: Buffer.byteLength(responseBodyText, 'utf8'),
+      responseBodyPreview,
+      responsePreviewLength: responseBodyText.length > 0 ? Buffer.byteLength(responseBodyText, 'utf8') : 0,
       responsePreviewTruncated: responseBodyText.length > 4000,
       startedAt,
       completedAt,
       durationMs,
       requestSnapshot,
+      consoleSummary: createObservationConsoleSummary(stageResults, consoleEntries, consoleWarningCount),
+      consoleEntries,
+      consoleLogCount: countConsoleEntries(stageResults),
+      consoleWarningCount,
+      testsSummary,
+      testEntries,
+      stageSummaries: createObservationStageSummaries(stageResults),
+      ...(errorCode ? { errorCode } : {}),
+      ...(errorSummary ? { errorSummary } : {}),
     });
 
     runtimeStorage.insertExecutionHistory({
@@ -1120,41 +2137,37 @@ app.post('/api/executions/run', async (req, res) => {
       workspaceId: input.workspaceId || null,
       requestId: input.id || null,
       environmentId: null,
-      status: 'succeeded',
+      status: createPersistedExecutionStatus(executionOutcome),
       cancellationOutcome: null,
       startedAt,
       completedAt,
       durationMs,
-      errorCode: null,
-      errorMessage: null,
+      errorCode: errorCode || null,
+      errorMessage: errorSummary || null,
     });
     runtimeStorage.insertExecutionResult({
       executionId,
-      responseStatus: response.status,
+      responseStatus,
       responseHeadersJson: JSON.stringify(responseHeaders),
-      responseBodyPreview: execution.responseBodyPreview,
+      responseBodyPreview,
       responseBodyRedacted: true,
-      stageStatusJson: JSON.stringify({ scripts: 'deferred', tests: 'deferred' }),
-      logSummaryJson: JSON.stringify({ consoleEntries: 0, tests: 0 }),
+      stageStatusJson: JSON.stringify({
+        preRequest: stageResults['pre-request'],
+        transport: stageResults.transport,
+        postResponse: stageResults['post-response'],
+        tests: stageResults.tests,
+      }),
+      logSummaryJson: JSON.stringify(createPersistedLogSummary(stageResults)),
       requestSnapshotJson: JSON.stringify(requestSnapshot),
       redactionApplied: true,
     });
+    runtimeStorage.insertTestResults(createPersistedTestResultRecords(executionId, stageResults.tests));
 
     return sendData(res, { execution });
   } catch (error) {
     const completedAt = new Date().toISOString();
     const durationMs = Date.now() - startedAtMs;
-    let requestSnapshot = {};
-    let requestSnapshotJson = '{}';
-
-    try {
-      const failureTarget = createExecutionRequestTarget(input.url, input.params, input.auth);
-      requestSnapshot = createPersistedRequestSnapshot(input, failureTarget);
-      requestSnapshotJson = JSON.stringify(requestSnapshot);
-    } catch {
-      requestSnapshot = {};
-      requestSnapshotJson = '{}';
-    }
+    const requestSnapshot = createPersistedRequestSnapshotSafely(input, null);
 
     const execution = createExecutionObservation({
       executionId,
@@ -1168,6 +2181,15 @@ app.post('/api/executions/run', async (req, res) => {
       completedAt,
       durationMs,
       requestSnapshot,
+      consoleSummary: 'No console entries were captured because the run lane itself failed before script diagnostics could be summarized.',
+      consoleEntries: [],
+      consoleLogCount: 0,
+      consoleWarningCount: 0,
+      testsSummary: 'No tests were recorded because the run lane failed before execution could complete.',
+      testEntries: [],
+      stageSummaries: [
+        createFriendlyStageSummary('transport', createTransportFailureStageResult(error)),
+      ],
       errorCode: error?.code || error?.cause?.code || 'execution_failed',
       errorSummary: error.message,
     });
@@ -1192,21 +2214,18 @@ app.post('/api/executions/run', async (req, res) => {
         responseHeadersJson: '[]',
         responseBodyPreview: '',
         responseBodyRedacted: true,
-        stageStatusJson: JSON.stringify({ scripts: 'deferred', tests: 'deferred' }),
-        logSummaryJson: JSON.stringify({ consoleEntries: 0, tests: 0 }),
-        requestSnapshotJson,
+        stageStatusJson: JSON.stringify({
+          transport: createTransportFailureStageResult(error),
+        }),
+        logSummaryJson: JSON.stringify({ consoleEntries: 0, consoleWarnings: 0, consolePreview: [] }),
+        requestSnapshotJson: JSON.stringify(requestSnapshot),
         redactionApplied: true,
       });
     } catch (storageError) {
       console.error('Execution persistence error:', storageError);
     }
 
-    return sendError(res, 500, 'execution_failed', error.message, {
-      executionId: execution.executionId,
-      startedAt: execution.startedAt,
-      completedAt: execution.completedAt,
-      durationMs: execution.durationMs,
-    });
+    return sendData(res, { execution });
   }
 });
 

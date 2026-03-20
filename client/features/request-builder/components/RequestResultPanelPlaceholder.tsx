@@ -41,6 +41,21 @@ function getTransportOutcomeLabel(responseStatus: number | null) {
   return `HTTP ${responseStatus}`;
 }
 
+function getStageStatus(
+  executionStageSummaries: NonNullable<ReturnType<typeof useRequestCommandStore.getState>['byTabId'][string]['run']['latestExecution']>['stageSummaries'],
+  stageId: 'pre-request' | 'post-response' | 'tests',
+) {
+  return executionStageSummaries?.find((summary) => summary.stageId === stageId)?.status ?? 'Skipped';
+}
+
+function getStageSummary(
+  executionStageSummaries: NonNullable<ReturnType<typeof useRequestCommandStore.getState>['byTabId'][string]['run']['latestExecution']>['stageSummaries'],
+  stageId: 'pre-request' | 'post-response' | 'tests',
+  fallback: string,
+) {
+  return executionStageSummaries?.find((summary) => summary.stageId === stageId)?.summary ?? fallback;
+}
+
 export function RequestResultPanelPlaceholder({
   activeTab,
 }: RequestResultPanelPlaceholderProps) {
@@ -54,6 +69,7 @@ export function RequestResultPanelPlaceholder({
     latestExecution: null,
   };
   const execution = runStatus.latestExecution;
+  const executionStageSummaries = execution?.stageSummaries ?? [];
 
   if (!activeTab) {
     return (
@@ -146,7 +162,7 @@ export function RequestResultPanelPlaceholder({
       {activeResultTab === 'console' ? (
         <DetailViewerSection
           title="Console detail"
-          description="Console stays observation-only. Script execution is still deferred, so this tab explains what was or was not captured instead of inventing logs."
+          description="Console stays observation-only and shows bounded stage-aware output when scripts run. Missing entries are explained explicitly instead of being fabricated."
           tone="muted"
         >
           {execution ? (
@@ -155,6 +171,8 @@ export function RequestResultPanelPlaceholder({
                 items={[
                   { label: 'Log lines', value: execution.consoleLogCount ?? execution.consoleEntries.length },
                   { label: 'Warnings', value: execution.consoleWarningCount ?? 0 },
+                  { label: 'Pre-request stage', value: getStageStatus(executionStageSummaries, 'pre-request') },
+                  { label: 'Post-response stage', value: getStageStatus(executionStageSummaries, 'post-response') },
                   { label: 'Summary', value: execution.consoleSummary },
                 ]}
               />
@@ -167,14 +185,14 @@ export function RequestResultPanelPlaceholder({
               ) : (
                 <EmptyStateCallout
                   title="No console entries for this run"
-                  description={execution.consoleSummary}
+                  description={getStageSummary(executionStageSummaries, 'post-response', execution.consoleSummary)}
                 />
               )}
             </>
           ) : (
             <EmptyStateCallout
               title="Console waits for an execution"
-              description="Run the current request to associate console output with this tab. Script-linked console diagnostics remain deferred in this slice."
+              description="Run the current request to associate bounded pre-request and post-response console summaries with this tab. Empty stages stay explicitly explained here."
             />
           )}
         </DetailViewerSection>
@@ -183,7 +201,7 @@ export function RequestResultPanelPlaceholder({
       {activeResultTab === 'tests' ? (
         <DetailViewerSection
           title="Tests detail"
-          description="Tests are reserved for execution-linked assertions. Script execution is not wired in this slice, so this slot stays explicitly deferred instead of fabricating results."
+          description="Tests stays observation-only and shows bounded assertion summaries from the tests stage when present. Missing assertions stay explicit instead of being invented."
           tone="muted"
         >
           {execution ? (
@@ -192,6 +210,7 @@ export function RequestResultPanelPlaceholder({
                 items={[
                   { label: 'Summary', value: execution.testsSummary },
                   { label: 'Entries', value: execution.testEntries.length },
+                  { label: 'Tests stage', value: getStageStatus(executionStageSummaries, 'tests') },
                 ]}
               />
               {execution.testEntries.length > 0 ? (
@@ -203,14 +222,14 @@ export function RequestResultPanelPlaceholder({
               ) : (
                 <EmptyStateCallout
                   title="No tests ran for this execution"
-                  description={execution.testsSummary}
+                  description={getStageSummary(executionStageSummaries, 'tests', execution.testsSummary)}
                 />
               )}
             </>
           ) : (
             <EmptyStateCallout
-              title="Tests remain deferred"
-              description="Running the request will populate execution metadata first. Script-backed tests and richer diagnostics stay for later slices."
+              title="Tests wait for an execution"
+              description="Run the current request to record bounded assertion summaries. If no tests script exists, the tests stage is skipped and explained here."
             />
           )}
         </DetailViewerSection>
@@ -240,6 +259,15 @@ export function RequestResultPanelPlaceholder({
                   { label: 'Request input', value: execution.requestInputSummary ?? 'Request snapshot summary was not returned.' },
                 ]}
               />
+              {executionStageSummaries.length > 0 ? (
+                <ul className="history-preview-list" aria-label="Execution stage summary">
+                  {executionStageSummaries.map((summary) => (
+                    <li key={`${execution.executionId}-${summary.stageId}`}>
+                      <strong>{summary.label}</strong>: {summary.status} - {summary.summary}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
               {execution.requestSnapshotSummary ? <p className="shared-readiness-note">{execution.requestSnapshotSummary}</p> : null}
               {runStatus.message ? <p className="shared-readiness-note">{runStatus.message}</p> : null}
             </>

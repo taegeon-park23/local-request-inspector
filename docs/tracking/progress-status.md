@@ -32,12 +32,13 @@
 - T010 slice S12 history real data integration: **done**
 - T010 slice S13 captures real data integration: **done**
 - T010 slice S14 richer diagnostics: **done**
+- T010 slice S15 scripts execution: **done**
 
 ## Current Next Action
-Use the landed MVP shell plus S11-S14 save-run/history/captures/diagnostics integration as the baseline for follow-up implementation axes: scripts execution, mocks CRUD/evaluation, and persistence refinement.
+Use the landed MVP shell plus S11-S15 save-run/history/captures/diagnostics/scripts integration as the baseline for follow-up implementation axes: mocks CRUD/evaluation, persistence refinement, and captures/history fidelity polish.
 
 ## Open Blockers
-- No blocker remains inside T010. The remaining work is post-S14 refinement around scripts execution, mocks work, and persistence refinement.
+- No blocker remains inside T010. The remaining work is post-S15 refinement around mocks work, persistence refinement, and captures/history fidelity polish.
 - Major planning dependencies for request behavior, script UX, mock behavior, runtime observation, QA strategy, tooling baseline, and shell slicing are now documented.
 
 ## Notes for Next Contributor

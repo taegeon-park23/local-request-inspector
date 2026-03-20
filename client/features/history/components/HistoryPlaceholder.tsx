@@ -96,6 +96,7 @@ export function HistoryPlaceholder() {
     : historyDetailQuery.error instanceof Error
       ? historyDetailQuery.error.message
       : 'Runtime execution history is temporarily unavailable.';
+  const selectedStageSummaries = selectedHistory?.stageSummaries ?? [];
 
   const handleOpenReplayDraft = () => {
     if (!selectedHistory) {
@@ -355,15 +356,16 @@ export function HistoryPlaceholder() {
                 title="Console summary"
                 description={selectedHistory.consoleSummary}
               >
-                <KeyValueMetaList
-                  items={[
-                    { label: 'Log lines', value: selectedHistory.consoleLogCount },
-                    { label: 'Warnings', value: selectedHistory.consoleWarningCount },
-                    { label: 'Persistence policy', value: 'Redacted summary only' },
-                  ]}
-                />
-                {selectedHistory.consolePreview.length > 0 ? (
-                  <ul className="history-preview-list" aria-label="Console preview">
+              <KeyValueMetaList
+                items={[
+                  { label: 'Log lines', value: selectedHistory.consoleLogCount },
+                  { label: 'Warnings', value: selectedHistory.consoleWarningCount },
+                  { label: 'Post-response stage', value: selectedStageSummaries.find((entry) => entry.stageId === 'post-response')?.status ?? 'Skipped' },
+                  { label: 'Persistence policy', value: 'Redacted summary only' },
+                ]}
+              />
+              {selectedHistory.consolePreview.length > 0 ? (
+                <ul className="history-preview-list" aria-label="Console preview">
                     {selectedHistory.consolePreview.map((entry) => (
                       <li key={entry}>{entry}</li>
                     ))}
@@ -371,7 +373,7 @@ export function HistoryPlaceholder() {
                 ) : (
                   <EmptyStateCallout
                     title="No persisted console preview"
-                    description="Console stays bounded in persisted history. Live script-linked logs and richer diagnostics remain deferred."
+                    description={selectedStageSummaries.find((entry) => entry.stageId === 'post-response')?.summary ?? selectedHistory.consoleSummary}
                   />
                 )}
               </DetailViewerSection>
@@ -390,13 +392,21 @@ export function HistoryPlaceholder() {
                     { label: 'Assertions', value: selectedHistory.assertionCount },
                     { label: 'Passed', value: selectedHistory.passedAssertions },
                     { label: 'Failed', value: selectedHistory.failedAssertions },
+                    { label: 'Tests stage', value: selectedStageSummaries.find((entry) => entry.stageId === 'tests')?.status ?? 'Skipped' },
                   ]}
                 />
-                <ul className="history-preview-list" aria-label="Tests preview">
-                  {selectedHistory.testsPreview.map((entry) => (
-                    <li key={entry}>{entry}</li>
-                  ))}
-                </ul>
+                {selectedHistory.testsPreview.length > 0 ? (
+                  <ul className="history-preview-list" aria-label="Tests preview">
+                    {selectedHistory.testsPreview.map((entry) => (
+                      <li key={entry}>{entry}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <EmptyStateCallout
+                    title="No persisted test preview"
+                    description={selectedHistory.testsSummary}
+                  />
+                )}
                 <EmptyStateCallout
                   title="Per-assertion drilldown is deferred"
                   description="History stops at bounded persisted test summaries and does not add script execution or deep diagnostics composition yet."
@@ -424,6 +434,15 @@ export function HistoryPlaceholder() {
                     { label: 'Request input', value: selectedHistory.requestInputSummary ?? createFallbackRequestInputSummary(selectedHistory) },
                   ]}
                 />
+                {selectedStageSummaries.length > 0 ? (
+                  <ul className="history-preview-list" aria-label="Execution stage summary">
+                    {selectedStageSummaries.map((summary) => (
+                      <li key={`${selectedHistory.executionId}-${summary.stageId}`}>
+                        <strong>{summary.label}</strong>: {summary.status} - {summary.summary}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
                 <EmptyStateCallout
                   title="Advanced execution diagnostics are deferred"
                   description="Cancellation controls, live stage streams, and diff viewers remain outside this history richer-diagnostics slice."

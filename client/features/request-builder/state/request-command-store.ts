@@ -50,6 +50,19 @@ function createEmptyRequestCommandEntry(): RequestCommandEntry {
   };
 }
 
+function createRunStatusMessage(execution: RequestRunObservation) {
+  switch (execution.executionOutcome) {
+    case 'Succeeded':
+      return 'Request run completed.';
+    case 'Blocked':
+      return 'Request run was blocked before completion.';
+    case 'Timed out':
+      return 'Request run timed out.';
+    default:
+      return 'Request run failed.';
+  }
+}
+
 function withEntry(
   state: RequestCommandStoreState,
   tabId: string,
@@ -117,7 +130,7 @@ export const useRequestCommandStore = create<RequestCommandStoreState>((set) => 
         ...entry,
         run: {
           status: 'success',
-          message: execution.executionOutcome === 'Succeeded' ? 'Request run completed.' : 'Request run failed.',
+          message: createRunStatusMessage(execution),
           latestExecution: execution,
         },
       })),
@@ -151,3 +164,4 @@ export const useRequestCommandStore = create<RequestCommandStoreState>((set) => 
 export function resetRequestCommandStore() {
   useRequestCommandStore.setState(initialRequestCommandStoreState);
 }
+

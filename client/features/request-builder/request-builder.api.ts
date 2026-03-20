@@ -59,9 +59,22 @@ export interface SavedRequestResourceRecord extends RequestDefinitionInput {
   updatedAt: string;
 }
 
+export type RequestExecutionOutcome = 'Succeeded' | 'Failed' | 'Blocked' | 'Timed out';
+export type RequestScriptStageOutcome = 'Succeeded' | 'Failed' | 'Blocked' | 'Timed out' | 'Skipped';
+export type RequestExecutionStageId = 'pre-request' | 'transport' | 'post-response' | 'tests';
+
+export interface RequestExecutionStageSummary {
+  stageId: RequestExecutionStageId;
+  label: string;
+  status: RequestScriptStageOutcome;
+  summary: string;
+  errorCode?: string;
+  errorSummary?: string;
+}
+
 export interface RequestRunObservation {
   executionId: string;
-  executionOutcome: 'Succeeded' | 'Failed';
+  executionOutcome: RequestExecutionOutcome;
   responseStatus: number | null;
   responseStatusLabel: string;
   responseHeaders: Array<{ name: string; value: string }>;
@@ -87,6 +100,7 @@ export interface RequestRunObservation {
   authSummary?: string;
   errorCode?: string;
   errorSummary?: string;
+  stageSummaries?: RequestExecutionStageSummary[];
 }
 
 export class RequestBuilderApiError extends Error {
@@ -237,3 +251,10 @@ export async function runRequestDefinition(input: RequestDefinitionInput) {
 
   return parseJsonResponse<{ execution: RequestRunObservation }>(response).then((payload) => payload.execution);
 }
+
+
+
+
+
+
+

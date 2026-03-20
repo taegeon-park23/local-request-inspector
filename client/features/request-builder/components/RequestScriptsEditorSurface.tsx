@@ -24,7 +24,7 @@ const scriptStageDefinitions: ScriptStageDefinition[] = [
     description: 'Use this stage for request-bound setup such as deriving headers, shaping body text, or preparing ad hoc values before send.',
     helperItems: [
       'Keep work scoped to request preparation rather than response inspection.',
-      'Execution-time capabilities and runtime safety enforcement stay deferred to a later slice.',
+      'Only bounded request mutation and explicit runtime helpers are available here. Broader capability expansion stays deferred.',
       'Replay source cues remain metadata only and do not become script globals in this slice.',
     ],
     exampleLabel: 'Typical use',
@@ -35,7 +35,7 @@ const scriptStageDefinitions: ScriptStageDefinition[] = [
     label: 'Post-response',
     eyebrow: 'After transport',
     title: 'Summarize response handling intent',
-    description: 'Use this stage for lightweight post-response logic planning. Response-linked console output and diagnostics stay wired off until a later slice.',
+    description: 'Use this stage for lightweight post-response diagnostics. Bounded console summary and derived execution notes run after transport, while richer diagnostics stay deferred.',
     helperItems: [
       'Capture summary logic or redaction notes you want after a response arrives.',
       'Do not expect history or result-panel data to flow into this authoring state yet.',
@@ -49,7 +49,7 @@ const scriptStageDefinitions: ScriptStageDefinition[] = [
     label: 'Tests',
     eyebrow: 'Assertions later',
     title: 'Plan request-bound assertions',
-    description: 'Use this stage for assertion authoring. Pass/fail execution, detailed diagnostics, and persisted test summaries remain deferred in this shell.',
+    description: 'Use this stage for assertion authoring. Bounded pass/fail summaries now flow into the result panel and persisted history, while richer diagnostics remain deferred.',
     helperItems: [
       'Keep assertions request-bound instead of coupling them to history or capture detail panels.',
       'Reusable script templates and shared libraries remain deferred.',
@@ -97,7 +97,7 @@ export default function RequestScriptsEditorSurface({
         <div>
           <h3>Scripts</h3>
           <p>
-            Scripts stays request-bound and draft-owned. Execution output, capability enforcement, and richer diagnostics remain deferred so this surface stays authoring-only.
+            Scripts stays request-bound and draft-owned. This surface stays authoring-owned, but Run now executes bounded stage-aware scripts and sends redacted summaries to observation panels and persisted history.
           </p>
         </div>
       </header>
@@ -153,7 +153,7 @@ export default function RequestScriptsEditorSurface({
 
           <div className="request-script-editor__meta">
             <p>
-              This editor path is loaded on demand so the rest of the request builder stays responsive when Scripts is not active.
+              This editor path is loaded on demand so the rest of the request builder stays responsive when Scripts is not active, even after stage execution wiring landed.
             </p>
             <div className="request-script-example">
               <span>{activeStageDefinition.exampleLabel}</span>
@@ -166,10 +166,12 @@ export default function RequestScriptsEditorSurface({
       <footer className="request-script-footer workspace-surface-card workspace-surface-card--muted">
         <h4>Deferred in later slices</h4>
         <p>
-          Reusable script management, execution-linked console or tests wiring, richer diagnostics, and Monaco or intellisense expansion remain explicitly later-slice work.
+          Reusable script management, richer diagnostics, broader capability surfaces, and Monaco or intellisense expansion remain explicitly later-slice work.
         </p>
       </footer>
     </section>
   );
 }
+
+
 

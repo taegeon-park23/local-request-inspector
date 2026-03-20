@@ -208,6 +208,61 @@ class SqliteRuntimeStorage {
     );
   }
 
+  insertTestResults(records) {
+    if (!Array.isArray(records) || records.length === 0) {
+      return;
+    }
+
+    const statement = this.database.prepare(`
+      INSERT INTO test_results (
+        id, execution_id, test_name, status, message, details_json, recorded_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const insertMany = this.database.transaction((items) => {
+      for (const record of items) {
+        statement.run(
+          record.id,
+          record.executionId,
+          record.testName,
+          record.status,
+          record.message || null,
+          record.detailsJson || '{}',
+          record.recordedAt,
+        );
+      }
+    });
+
+    insertMany(records);
+  }
+
+  listExecutionTestResults(executionId, limit = 8) {
+    const statement = this.database.prepare(`
+      SELECT
+        id,
+        execution_id,
+        test_name,
+        status,
+        message,
+        details_json,
+        recorded_at
+      FROM test_results
+      WHERE execution_id = ?
+      ORDER BY recorded_at ASC
+      LIMIT ?
+    `);
+
+    return statement.all(executionId, limit).map((row) => ({
+      id: row.id,
+      executionId: row.execution_id,
+      testName: row.test_name,
+      status: row.status,
+      message: row.message,
+      details: parseJsonColumn(row.details_json, {}),
+      recordedAt: row.recorded_at,
+    }));
+  }
+
   mapExecutionHistoryRow(row) {
     if (!row) {
       return null;
@@ -295,7 +350,16 @@ class SqliteRuntimeStorage {
       this.createExecutionHistorySelectSql('WHERE histories.id = ?'),
     );
 
-    return this.mapExecutionHistoryRow(statement.get(executionId));
+    const historyRecord = this.mapExecutionHistoryRow(statement.get(executionId));
+
+    if (!historyRecord) {
+      return null;
+    }
+
+    return {
+      ...historyRecord,
+      testResults: this.listExecutionTestResults(executionId),
+    };
   }
 }
 

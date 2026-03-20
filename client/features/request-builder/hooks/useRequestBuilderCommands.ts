@@ -95,15 +95,15 @@ function createFailedExecutionObservation(
     responseBodyPreview: '',
     responseBodyHint: 'No response payload is available for this failed run.',
     responsePreviewSizeLabel: 'No preview stored',
-    responsePreviewPolicy: 'No response preview is available because the run failed before transport completed.',
+    responsePreviewPolicy: 'No response preview is available because the run lane failed before transport completed.',
     startedAt: typeof details.startedAt === 'string' ? details.startedAt : now,
     completedAt: typeof details.completedAt === 'string' ? details.completedAt : now,
     durationMs: typeof details.durationMs === 'number' ? details.durationMs : 0,
-    consoleSummary: 'No console entries were captured. Script execution is not wired yet.',
+    consoleSummary: 'No console entries were captured because the run lane failed before bounded script diagnostics could be summarized.',
     consoleEntries: [],
     consoleLogCount: 0,
     consoleWarningCount: 0,
-    testsSummary: 'No tests ran. Script execution is not wired yet.',
+    testsSummary: 'No tests were recorded because the run lane failed before the tests stage could complete.',
     testEntries: [],
     requestSnapshotSummary: createDraftRequestSnapshotSummary(draft),
     requestInputSummary: createDraftRequestInputSummary(draft),
@@ -113,6 +113,16 @@ function createFailedExecutionObservation(
     authSummary: createAuthSummary(draft),
     errorCode: error instanceof RequestBuilderApiError ? error.code : 'execution_failed',
     errorSummary: error.message,
+    stageSummaries: [
+      {
+        stageId: 'transport',
+        label: 'Transport',
+        status: 'Failed',
+        summary: 'Transport failed before the run endpoint could return bounded diagnostics.',
+        errorCode: error instanceof RequestBuilderApiError ? error.code : 'execution_failed',
+        errorSummary: error.message,
+      },
+    ],
   };
 }
 
@@ -282,3 +292,5 @@ export function useRequestBuilderCommands(
     },
   };
 }
+
+

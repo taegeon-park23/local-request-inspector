@@ -7,6 +7,7 @@ export type HistoryResultTabId = 'response' | 'console' | 'tests' | 'execution-i
 export type HistoryRequestBodyMode = 'none' | 'json' | 'text' | 'form-urlencoded' | 'multipart-form-data';
 export type HistoryRequestAuthType = 'none' | 'bearer' | 'basic' | 'api-key';
 export type HistoryApiKeyPlacement = 'header' | 'query';
+export type HistoryStageOutcome = 'Succeeded' | 'Failed' | 'Blocked' | 'Timed out' | 'Skipped';
 
 export interface HistoryRequestInputItem {
   key: string;
@@ -27,6 +28,15 @@ export interface HistoryTimelineEntry {
   id: string;
   title: string;
   summary: string;
+}
+
+export interface HistoryStageSummary {
+  stageId: 'pre-request' | 'transport' | 'post-response' | 'tests';
+  label: string;
+  status: HistoryStageOutcome;
+  summary: string;
+  errorCode?: string;
+  errorSummary?: string;
 }
 
 export interface HistoryRecord {
@@ -74,6 +84,7 @@ export interface HistoryRecord {
   sourceLabel: string;
   errorCode?: string | null;
   errorSummary?: string;
+  stageSummaries?: HistoryStageSummary[];
   timelineEntries: HistoryTimelineEntry[];
 }
 
