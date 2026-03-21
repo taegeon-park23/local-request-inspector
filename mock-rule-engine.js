@@ -1,4 +1,8 @@
 const { randomUUID } = require('node:crypto');
+const {
+  MOCK_RULE_RESOURCE_SCHEMA_VERSION,
+  RESOURCE_RECORD_KINDS,
+} = require('./storage/shared/constants');
 
 const DEFAULT_WORKSPACE_ID = 'local-workspace';
 const MAX_MOCK_DELAY_MS = 2000;
@@ -200,6 +204,8 @@ function createMockRuleRecord(input, existingRecord, workspaceId = DEFAULT_WORKS
 
   return {
     ...baseRecord,
+    resourceKind: RESOURCE_RECORD_KINDS.MOCK_RULE,
+    resourceSchemaVersion: MOCK_RULE_RESOURCE_SCHEMA_VERSION,
     ruleState: enabled ? 'Enabled' : 'Disabled',
     matcherSummary: createMatcherSummary(baseRecord),
     responseSummary: createResponseSummary(baseRecord),

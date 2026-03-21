@@ -35,7 +35,7 @@
 | T018 | Delivery milestone plan | Convert backlog into phased milestones with readiness gates and review checkpoints. | P1 | todo | Needed once P0 architecture decisions stabilize. | T001-T007 | Milestone plan | Delivery Agent | Shifts if P0 scope changes | Revisit after architecture |
 
 ## Current Focus
-- **Active highest-priority next step:** Post-S20 follow-up: migration-ready cleanup, repo/tooling cleanup if later justified, and optional future import/export extensions.
+- **Active highest-priority next step:** Post-S21 follow-up: repo/tooling cleanup if later justified, optional future import/export extensions, and future migration-engine considerations once seam cleanup proves stable.
 - S1 is implemented with the new client bootstrap, route/provider scaffold, persistent shell regions, component coverage, and a conservative legacy coexistence seam.
 - S2 is implemented with the `/workspace` explorer scaffold, in-memory request tree, request tab registry shell, tab focus/close behavior, active work-surface placeholder, and contextual result-panel placeholder.
 - S3 is implemented with per-tab request draft state, method/url authoring, params/headers/body/auth core editors, scripts placeholder, dirty tab indicators, and a still-separated observation panel seam.
@@ -56,9 +56,10 @@
 - S18 is implemented with captures/history snapshot fidelity refinement, clearer bounded-vs-redacted preview wording, tighter selection fallback after filter/refresh changes, and better cross-surface observation summary consistency without changing state ownership.
 - S19 is implemented with wording and diagnostics polish across the request result panel, scripts authoring surface, captures, history, mocks, and replay cues, aligning bounded/redacted/deferred copy without changing semantics or state ownership.
 - S20 is implemented with authored resource-lane import/export for saved request definitions and mock rules, a safe new-identity import policy, workspace explorer import/export entrypoints, and no runtime lane history/captures artifact transfer.
+- S21 is implemented with explicit resource/runtime schema markers, deterministic resource manifest/serialization helpers, stricter authored-resource bundle validation, runtime metadata compatibility checks, and low-level storage seam tests without changing save/run/history/captures/mocks semantics.
 
 ## Blockers Snapshot
-- T010 shell slices S1-S20 are now landed. Remaining work moves to migration-ready cleanup, repo/tooling cleanup if later justified, and optional future import/export extensions rather than more shell scaffolding.
+- T010 shell slices S1-S21 are now landed. Remaining work moves to repo/tooling cleanup if later justified, optional future import/export extensions, and future migration-engine considerations rather than more shell scaffolding.
 - Architecture, schema, safety, persistence, request-builder, script-UX, mock-rule, history/inspector, QA, tooling, and shell-slicing inputs are now documented.
 
 

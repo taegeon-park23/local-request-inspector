@@ -1,7 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 const { DatabaseSync } = require('node:sqlite');
-const { STORAGE_SCHEMA_VERSION } = require('../shared/constants');
+const {
+  RUNTIME_CAPTURE_SUMMARY_SCHEMA_VERSION,
+  RUNTIME_METADATA_SCHEMA_VERSION,
+  RUNTIME_PERSISTENCE_POLICY,
+  RUNTIME_REQUEST_SNAPSHOT_SCHEMA_VERSION,
+  RUNTIME_SCHEMA_VERSION,
+  RUNTIME_STORAGE_KIND,
+} = require('../shared/constants');
 
 function parseJsonColumn(value, fallbackValue) {
   if (typeof value !== 'string' || value.trim().length === 0) {
@@ -13,6 +20,44 @@ function parseJsonColumn(value, fallbackValue) {
   } catch {
     return fallbackValue;
   }
+}
+
+function createExpectedRuntimeMetadata() {
+  return {
+    schemaVersion: String(RUNTIME_SCHEMA_VERSION),
+    runtimeMetadataSchemaVersion: String(RUNTIME_METADATA_SCHEMA_VERSION),
+    runtimeStorageKind: RUNTIME_STORAGE_KIND,
+    runtimePersistenceMode: RUNTIME_PERSISTENCE_POLICY,
+    requestSnapshotSchemaVersion: String(RUNTIME_REQUEST_SNAPSHOT_SCHEMA_VERSION),
+    capturedRequestSummarySchemaVersion: String(RUNTIME_CAPTURE_SUMMARY_SCHEMA_VERSION),
+  };
+}
+
+function validateRuntimeMetadataMap(metadataMap) {
+  const expectedMetadata = createExpectedRuntimeMetadata();
+
+  for (const [key, expectedValue] of Object.entries(expectedMetadata)) {
+    const currentValue = metadataMap[key];
+
+    if (currentValue == null || currentValue === '') {
+      continue;
+    }
+
+    if (String(currentValue) !== String(expectedValue)) {
+      const error = new Error(
+        `Runtime storage metadata mismatch for ${key}: expected ${expectedValue}, received ${currentValue}.`,
+      );
+      error.code = 'runtime_storage_metadata_mismatch';
+      error.details = {
+        key,
+        expectedValue,
+        currentValue,
+      };
+      throw error;
+    }
+  }
+
+  return expectedMetadata;
 }
 
 class SqliteRuntimeStorage {
@@ -30,8 +75,7 @@ class SqliteRuntimeStorage {
     this.applyBootstrapMigration();
     this.ensureExecutionResultColumns();
     this.ensureCapturedRequestColumns();
-    this.upsertMetadata('schemaVersion', String(STORAGE_SCHEMA_VERSION));
-    this.upsertMetadata('runtimePersistenceMode', 'redacted-only');
+    this.ensureMetadataCompatibility();
   }
 
   applyBootstrapMigration() {
@@ -70,6 +114,27 @@ class SqliteRuntimeStorage {
     `);
 
     statement.run(key, value, new Date().toISOString());
+  }
+
+  readMetadataMap() {
+    const statement = this.database.prepare(`
+      SELECT key, value
+      FROM runtime_metadata
+    `);
+
+    return statement.all().reduce((accumulator, row) => {
+      accumulator[row.key] = row.value;
+      return accumulator;
+    }, {});
+  }
+
+  ensureMetadataCompatibility() {
+    const existingMetadata = this.readMetadataMap();
+    const expectedMetadata = validateRuntimeMetadataMap(existingMetadata);
+
+    for (const [key, value] of Object.entries(expectedMetadata)) {
+      this.upsertMetadata(key, value);
+    }
   }
 
   insertCapturedRequest(record) {
@@ -373,8 +438,17 @@ class SqliteRuntimeStorage {
       testResults: this.listExecutionTestResults(executionId),
     };
   }
+
+  close() {
+    if (this.database) {
+      this.database.close();
+      this.database = null;
+    }
+  }
 }
 
 module.exports = {
   SqliteRuntimeStorage,
+  createExpectedRuntimeMetadata,
+  validateRuntimeMetadataMap,
 };

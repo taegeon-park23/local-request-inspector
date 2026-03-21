@@ -46,6 +46,55 @@ const {
     (error) => error && error.code === 'resource_bundle_unsupported_schema',
   );
 
+  assert.throws(
+    () => parseAuthoredResourceBundleText(JSON.stringify({
+      schemaVersion: AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION,
+      resourceKind: AUTHORED_RESOURCE_BUNDLE_KIND,
+      workspaceId: '',
+      exportedAt: '',
+      requests: [],
+      mockRules: [],
+    })),
+    (error) => error && error.code === 'resource_bundle_invalid_exported_at',
+  );
+
+  assert.throws(
+    () => parseAuthoredResourceBundleText(JSON.stringify({
+      schemaVersion: AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION,
+      resourceKind: AUTHORED_RESOURCE_BUNDLE_KIND,
+      workspaceId: 'local-workspace',
+      exportedAt: '2026-03-21T00:00:00.000Z',
+      requests: [
+        {
+          id: 'request-1',
+          name: 'Health check',
+          resourceKind: 'mock-rule',
+        },
+      ],
+      mockRules: [],
+    })),
+    (error) => error && error.code === 'resource_bundle_unsupported_resource_kind',
+  );
+
+  assert.throws(
+    () => parseAuthoredResourceBundleText(JSON.stringify({
+      schemaVersion: AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION,
+      resourceKind: AUTHORED_RESOURCE_BUNDLE_KIND,
+      workspaceId: 'local-workspace',
+      exportedAt: '2026-03-21T00:00:00.000Z',
+      requests: [],
+      mockRules: [
+        {
+          id: 'mock-rule-1',
+          name: 'Health mock',
+          resourceKind: 'mock-rule',
+          resourceSchemaVersion: 99,
+        },
+      ],
+    })),
+    (error) => error && error.code === 'resource_bundle_unsupported_resource_schema',
+  );
+
   const usedNames = new Set(['health check']);
   assert.equal(createImportedResourceName('New request', usedNames), 'New request');
   assert.equal(createImportedResourceName('Health check', usedNames), 'Health check (Imported)');

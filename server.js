@@ -15,6 +15,12 @@ const {
   parseAuthoredResourceBundleText,
   createImportedResourceName,
 } = require('./storage/resource/authored-resource-bundle');
+const {
+  MOCK_RULE_RESOURCE_SCHEMA_VERSION,
+  REQUEST_RESOURCE_SCHEMA_VERSION,
+  RESOURCE_RECORD_KINDS,
+  RUNTIME_REQUEST_SNAPSHOT_SCHEMA_VERSION,
+} = require('./storage/shared/constants');
 
 const app = express();
 const PORT = 5671;
@@ -124,6 +130,8 @@ function normalizeSavedRequest(input, existingRecord, workspaceId) {
   const collectionName = input.collectionName || existingRecord?.collectionName || 'Saved Requests';
 
   return {
+    resourceKind: RESOURCE_RECORD_KINDS.REQUEST,
+    resourceSchemaVersion: REQUEST_RESOURCE_SCHEMA_VERSION,
     id: recordId,
     workspaceId,
     name: input.name.trim(),
@@ -143,6 +151,48 @@ function normalizeSavedRequest(input, existingRecord, workspaceId) {
     createdAt: existingRecord?.createdAt || now,
     updatedAt: now,
   };
+}
+
+function normalizePersistedRequestRecord(record) {
+  if (!record || typeof record !== 'object') {
+    return record;
+  }
+
+  return {
+    ...record,
+    resourceKind: RESOURCE_RECORD_KINDS.REQUEST,
+    resourceSchemaVersion: REQUEST_RESOURCE_SCHEMA_VERSION,
+    collectionName: record.collectionName || 'Saved Requests',
+    summary: record.summary || createRequestSummary(record.method, record.url),
+  };
+}
+
+function normalizePersistedMockRuleRecord(record) {
+  if (!record || typeof record !== 'object') {
+    return record;
+  }
+
+  return {
+    ...record,
+    resourceKind: RESOURCE_RECORD_KINDS.MOCK_RULE,
+    resourceSchemaVersion: MOCK_RULE_RESOURCE_SCHEMA_VERSION,
+  };
+}
+
+function validateImportedResourceCompatibility(input, expectedKind, supportedSchemaVersion) {
+  if (!input || typeof input !== 'object') {
+    return null;
+  }
+
+  if (typeof input.resourceKind === 'string' && input.resourceKind !== expectedKind) {
+    return `Imported resource kind ${input.resourceKind} is not supported for ${expectedKind}.`;
+  }
+
+  if (input.resourceSchemaVersion != null && input.resourceSchemaVersion !== supportedSchemaVersion) {
+    return `Imported ${expectedKind} resource schema version ${input.resourceSchemaVersion} is not supported.`;
+  }
+
+  return null;
 }
 
 function compareIsoDescending(left, right) {
@@ -438,6 +488,8 @@ function createPersistedRequestSnapshot(request, targetUrl) {
   persistedUrl.hash = '';
 
   return {
+    snapshotKind: 'execution-request',
+    snapshotSchemaVersion: RUNTIME_REQUEST_SNAPSHOT_SCHEMA_VERSION,
     name: typeof request.name === 'string' && request.name.trim().length > 0
       ? request.name.trim()
       : createRequestSummary(request.method, request.url),
@@ -563,6 +615,8 @@ function createPersistedRequestSnapshotSafely(request, targetUrl) {
     return createPersistedRequestSnapshot(request, targetUrl);
   } catch {
     return {
+      snapshotKind: 'execution-request',
+      snapshotSchemaVersion: RUNTIME_REQUEST_SNAPSHOT_SCHEMA_VERSION,
       name: typeof request?.name === 'string' && request.name.trim().length > 0
         ? request.name.trim()
         : createRequestSummary(request?.method || 'GET', request?.url || ''),
@@ -2100,6 +2154,7 @@ app.use(express.text({ type: '*/*' }));
 function listWorkspaceSavedRequestRecords(workspaceId) {
   return resourceStorage
     .list('request')
+    .map((record) => normalizePersistedRequestRecord(record))
     .filter((record) => record.workspaceId === workspaceId)
     .sort(compareSavedRequestRecords);
 }
@@ -2107,6 +2162,7 @@ function listWorkspaceSavedRequestRecords(workspaceId) {
 function listWorkspaceMockRuleRecords(workspaceId) {
   return resourceStorage
     .list('mock-rule')
+    .map((record) => normalizePersistedMockRuleRecord(record))
     .filter((record) => record.workspaceId === workspaceId)
     .sort(compareMockRuleRecords);
 }
@@ -2120,6 +2176,18 @@ function createImportedResourceRejection(kind, reason, name) {
 }
 
 function createImportedRequestRecord(input, workspaceId, usedNames) {
+  const compatibilityError = validateImportedResourceCompatibility(
+    input,
+    RESOURCE_RECORD_KINDS.REQUEST,
+    REQUEST_RESOURCE_SCHEMA_VERSION,
+  );
+
+  if (compatibilityError) {
+    return {
+      rejection: createImportedResourceRejection('request', compatibilityError, input?.name),
+    };
+  }
+
   const validationError = validateRequestDefinition(input);
 
   if (validationError) {
@@ -2143,6 +2211,18 @@ function createImportedRequestRecord(input, workspaceId, usedNames) {
 }
 
 function createImportedMockRuleResource(input, workspaceId, usedNames) {
+  const compatibilityError = validateImportedResourceCompatibility(
+    input,
+    RESOURCE_RECORD_KINDS.MOCK_RULE,
+    MOCK_RULE_RESOURCE_SCHEMA_VERSION,
+  );
+
+  if (compatibilityError) {
+    return {
+      rejection: createImportedResourceRejection('mock-rule', compatibilityError, input?.name),
+    };
+  }
+
   const validationError = validateMockRuleInput(input);
 
   if (validationError) {
@@ -2206,7 +2286,9 @@ app.patch('/api/requests/:requestId', (req, res) => {
   }
 
   try {
-    const existingRecord = resourceStorage.read('request', req.params.requestId);
+    const existingRecord = normalizePersistedRequestRecord(
+      resourceStorage.read('request', req.params.requestId),
+    );
 
     if (!existingRecord) {
       return sendError(res, 404, 'request_not_found', 'Saved request was not found.', {
@@ -2346,7 +2428,9 @@ app.post('/api/workspaces/:workspaceId/mock-rules', (req, res) => {
 
 app.get('/api/mock-rules/:mockRuleId', (req, res) => {
   try {
-    const rule = resourceStorage.read('mock-rule', req.params.mockRuleId);
+    const rule = normalizePersistedMockRuleRecord(
+      resourceStorage.read('mock-rule', req.params.mockRuleId),
+    );
 
     if (!rule) {
       return sendError(res, 404, 'mock_rule_not_found', 'Mock rule was not found.', {
@@ -2373,7 +2457,9 @@ app.patch('/api/mock-rules/:mockRuleId', (req, res) => {
   }
 
   try {
-    const existingRule = resourceStorage.read('mock-rule', req.params.mockRuleId);
+    const existingRule = normalizePersistedMockRuleRecord(
+      resourceStorage.read('mock-rule', req.params.mockRuleId),
+    );
 
     if (!existingRule) {
       return sendError(res, 404, 'mock_rule_not_found', 'Mock rule was not found.', {
@@ -2411,7 +2497,9 @@ app.delete('/api/mock-rules/:mockRuleId', (req, res) => {
 
 app.post('/api/mock-rules/:mockRuleId/enable', (req, res) => {
   try {
-    const existingRule = resourceStorage.read('mock-rule', req.params.mockRuleId);
+    const existingRule = normalizePersistedMockRuleRecord(
+      resourceStorage.read('mock-rule', req.params.mockRuleId),
+    );
 
     if (!existingRule) {
       return sendError(res, 404, 'mock_rule_not_found', 'Mock rule was not found.', {
@@ -2438,7 +2526,9 @@ app.post('/api/mock-rules/:mockRuleId/enable', (req, res) => {
 
 app.post('/api/mock-rules/:mockRuleId/disable', (req, res) => {
   try {
-    const existingRule = resourceStorage.read('mock-rule', req.params.mockRuleId);
+    const existingRule = normalizePersistedMockRuleRecord(
+      resourceStorage.read('mock-rule', req.params.mockRuleId),
+    );
 
     if (!existingRule) {
       return sendError(res, 404, 'mock_rule_not_found', 'Mock rule was not found.', {

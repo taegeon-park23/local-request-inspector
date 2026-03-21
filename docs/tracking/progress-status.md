@@ -38,12 +38,13 @@
 - T010 slice S18 captures / history fidelity refinement: **done**
 - T010 slice S19 wording / diagnostics polish: **done**
 - T010 slice S20 optional import/export: **done**
+- T010 slice S21 migration-ready cleanup: **done**
 
 ## Current Next Action
-Use the landed MVP shell plus S11-S20 save-run/history/captures/diagnostics/scripts/mocks/persistence/fidelity/polish/import-export refinement as the baseline for follow-up implementation axes: migration-ready cleanup, repo/tooling cleanup if later justified, and optional future import/export extensions.
+Use the landed MVP shell plus S11-S21 save-run/history/captures/diagnostics/scripts/mocks/persistence/fidelity/polish/import-export/migration-ready cleanup as the baseline for follow-up implementation axes: repo/tooling cleanup if later justified, optional future import/export extensions, and future migration-engine considerations.
 
 ## Open Blockers
-- No blocker remains inside T010. The remaining work is post-S20 follow-up around migration-ready cleanup, repo/tooling cleanup if later justified, and optional future import/export extensions.
+- No blocker remains inside T010. The remaining work is post-S21 follow-up around repo/tooling cleanup if later justified, optional future import/export extensions, and future migration-engine considerations.
 - Major planning dependencies for request behavior, script UX, mock behavior, runtime observation, QA strategy, tooling baseline, and shell slicing are now documented.
 
 ## Notes for Next Contributor

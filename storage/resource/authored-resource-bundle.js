@@ -1,5 +1,10 @@
-const AUTHORED_RESOURCE_BUNDLE_KIND = 'local-request-inspector-authored-resource-bundle';
-const AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION = 1;
+const {
+  AUTHORED_RESOURCE_BUNDLE_KIND,
+  AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION,
+  MOCK_RULE_RESOURCE_SCHEMA_VERSION,
+  REQUEST_RESOURCE_SCHEMA_VERSION,
+  RESOURCE_RECORD_KINDS,
+} = require('../shared/constants');
 
 function createBundleError(code, message, details = {}) {
   const error = new Error(message);
@@ -10,6 +15,52 @@ function createBundleError(code, message, details = {}) {
 
 function cloneValue(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function validateBundledResourceRecord(record, options) {
+  const {
+    arrayName,
+    expectedKind,
+    supportedSchemaVersion,
+  } = options;
+
+  if (!record || typeof record !== 'object' || Array.isArray(record)) {
+    throw createBundleError(
+      'resource_bundle_invalid_resource',
+      `Import file contains a malformed ${arrayName} entry.`,
+      { arrayName },
+    );
+  }
+
+  if (typeof record.resourceKind === 'string' && record.resourceKind !== expectedKind) {
+    throw createBundleError(
+      'resource_bundle_unsupported_resource_kind',
+      `Import file contains a ${arrayName} entry with unsupported resource kind "${record.resourceKind}".`,
+      {
+        arrayName,
+        resourceKind: record.resourceKind,
+        expectedResourceKind: expectedKind,
+      },
+    );
+  }
+
+  if (record.resourceSchemaVersion != null && record.resourceSchemaVersion !== supportedSchemaVersion) {
+    throw createBundleError(
+      'resource_bundle_unsupported_resource_schema',
+      `Import file contains a ${arrayName} entry with unsupported resource schema version ${record.resourceSchemaVersion}.`,
+      {
+        arrayName,
+        resourceSchemaVersion: record.resourceSchemaVersion,
+        supportedSchemaVersion,
+      },
+    );
+  }
+}
+
+function validateBundledResourceArray(records, options) {
+  for (const record of records) {
+    validateBundledResourceRecord(record, options);
+  }
 }
 
 function buildAuthoredResourceBundle({ workspaceId, requests, mockRules, exportedAt = new Date().toISOString() }) {
@@ -44,6 +95,20 @@ function validateAuthoredResourceBundlePayload(payload) {
     );
   }
 
+  if (typeof payload.exportedAt !== 'string' || payload.exportedAt.trim().length === 0) {
+    throw createBundleError(
+      'resource_bundle_invalid_exported_at',
+      'Import file must include an exportedAt timestamp.',
+    );
+  }
+
+  if (typeof payload.workspaceId !== 'string' || payload.workspaceId.trim().length === 0) {
+    throw createBundleError(
+      'resource_bundle_invalid_workspace',
+      'Import file must include a workspaceId hint.',
+    );
+  }
+
   if (!Array.isArray(payload.requests)) {
     throw createBundleError('resource_bundle_invalid_requests', 'Import file must include a requests array.');
   }
@@ -51,6 +116,17 @@ function validateAuthoredResourceBundlePayload(payload) {
   if (!Array.isArray(payload.mockRules)) {
     throw createBundleError('resource_bundle_invalid_mock_rules', 'Import file must include a mockRules array.');
   }
+
+  validateBundledResourceArray(payload.requests, {
+    arrayName: 'request',
+    expectedKind: RESOURCE_RECORD_KINDS.REQUEST,
+    supportedSchemaVersion: REQUEST_RESOURCE_SCHEMA_VERSION,
+  });
+  validateBundledResourceArray(payload.mockRules, {
+    arrayName: 'mock-rule',
+    expectedKind: RESOURCE_RECORD_KINDS.MOCK_RULE,
+    supportedSchemaVersion: MOCK_RULE_RESOURCE_SCHEMA_VERSION,
+  });
 
   return payload;
 }
@@ -101,4 +177,5 @@ module.exports = {
   validateAuthoredResourceBundlePayload,
   parseAuthoredResourceBundleText,
   createImportedResourceName,
+  validateBundledResourceRecord,
 };

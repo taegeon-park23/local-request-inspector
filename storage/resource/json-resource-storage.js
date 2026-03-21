@@ -1,6 +1,78 @@
 const fs = require('fs');
 const path = require('path');
-const { RESOURCE_ENTITY_TYPES, STORAGE_SCHEMA_VERSION } = require('../shared/constants');
+const {
+  AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION,
+  MOCK_RULE_RESOURCE_SCHEMA_VERSION,
+  REQUEST_RESOURCE_SCHEMA_VERSION,
+  RESOURCE_ENTITY_TYPES,
+  RESOURCE_MANIFEST_SCHEMA_VERSION,
+  RESOURCE_STORAGE_KIND,
+} = require('../shared/constants');
+
+function sortJsonValue(value) {
+  if (Array.isArray(value)) {
+    return value.map((entry) => sortJsonValue(entry));
+  }
+
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+
+  return Object.keys(value)
+    .sort((left, right) => left.localeCompare(right))
+    .reduce((accumulator, key) => {
+      accumulator[key] = sortJsonValue(value[key]);
+      return accumulator;
+    }, {});
+}
+
+function serializeJsonDeterministically(value) {
+  return JSON.stringify(sortJsonValue(value), null, 2);
+}
+
+function buildResourceManifestPayload() {
+  return {
+    schemaVersion: RESOURCE_MANIFEST_SCHEMA_VERSION,
+    storageKind: RESOURCE_STORAGE_KIND,
+    entityTypes: RESOURCE_ENTITY_TYPES,
+    recordSchemaVersions: {
+      request: REQUEST_RESOURCE_SCHEMA_VERSION,
+      'mock-rule': MOCK_RULE_RESOURCE_SCHEMA_VERSION,
+    },
+    bundleSchemaVersion: AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION,
+    note: 'Bootstrap manifest for JSON resource storage. Authored resource files are canonical here. Runtime observation artifacts belong in the SQLite runtime lane.',
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function readJsonFileSafely(filePath) {
+  if (!fs.existsSync(filePath)) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function parseResourceRecordFile(entityType, filePath) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (error) {
+    const wrappedError = new Error(
+      `Resource record ${path.basename(filePath)} in ${entityType} storage is not valid JSON.`,
+    );
+    wrappedError.code = 'resource_record_invalid_json';
+    wrappedError.cause = error;
+    wrappedError.details = {
+      entityType,
+      filePath,
+    };
+    throw wrappedError;
+  }
+}
 
 class JsonResourceStorage {
   constructor(options) {
@@ -8,6 +80,7 @@ class JsonResourceStorage {
   }
 
   ensureStructure() {
+    fs.mkdirSync(this.layout.metadataDir, { recursive: true });
     fs.mkdirSync(this.layout.resourcesDir, { recursive: true });
 
     for (const entityType of RESOURCE_ENTITY_TYPES) {
@@ -16,18 +89,17 @@ class JsonResourceStorage {
       });
     }
 
-    if (!fs.existsSync(this.layout.resourceManifestPath)) {
+    const existingManifest = readJsonFileSafely(this.layout.resourceManifestPath);
+    const hasCompatibleManifest = Boolean(
+      existingManifest
+      && existingManifest.schemaVersion === RESOURCE_MANIFEST_SCHEMA_VERSION
+      && existingManifest.storageKind === RESOURCE_STORAGE_KIND,
+    );
+
+    if (!hasCompatibleManifest) {
       fs.writeFileSync(
         this.layout.resourceManifestPath,
-        JSON.stringify(
-          {
-            schemaVersion: STORAGE_SCHEMA_VERSION,
-            entityTypes: RESOURCE_ENTITY_TYPES,
-            note: 'Bootstrap manifest for JSON resource storage. Secret raw values must not be persisted as ordinary resource fields.',
-          },
-          null,
-          2,
-        ),
+        serializeJsonDeterministically(buildResourceManifestPayload()),
       );
     }
   }
@@ -46,7 +118,7 @@ class JsonResourceStorage {
     }
 
     const entityPath = this.getEntityPath(entityType, entity.id);
-    fs.writeFileSync(entityPath, JSON.stringify(entity, null, 2));
+    fs.writeFileSync(entityPath, serializeJsonDeterministically(entity));
     return entityPath;
   }
 
@@ -56,7 +128,7 @@ class JsonResourceStorage {
       return null;
     }
 
-    return JSON.parse(fs.readFileSync(entityPath, 'utf8'));
+    return parseResourceRecordFile(entityType, entityPath);
   }
 
   delete(entityType, entityId) {
@@ -85,10 +157,12 @@ class JsonResourceStorage {
       .readdirSync(entityDir)
       .filter((fileName) => fileName.endsWith('.json'))
       .sort((left, right) => left.localeCompare(right))
-      .map((fileName) => JSON.parse(fs.readFileSync(path.join(entityDir, fileName), 'utf8')));
+      .map((fileName) => parseResourceRecordFile(entityType, path.join(entityDir, fileName)));
   }
 }
 
 module.exports = {
   JsonResourceStorage,
+  buildResourceManifestPayload,
+  serializeJsonDeterministically,
 };
