@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   executionHistoryDetailQueryKey,
@@ -30,7 +30,7 @@ const historyResultTabs = [
 
 const observationHealthCopy = {
   ready: 'History reads persisted execution summaries from the runtime lane. Select a row to inspect bounded result composition or open a replay draft into Workspace.',
-  degraded: 'History query is degraded. Persisted execution summaries may be unavailable until the runtime lane responds again.',
+  degraded: 'History observation is degraded. Persisted execution summaries may be unavailable until the runtime lane responds again.',
 } as const;
 
 function createFallbackPreviewSizeLabel(history: HistoryRecord) {
@@ -41,8 +41,58 @@ function createFallbackPreviewSizeLabel(history: HistoryRecord) {
   return `${new TextEncoder().encode(history.bodyPreview).length} B preview`;
 }
 
+function formatObservedPlacement(collectionName?: string, folderName?: string) {
+  if (!collectionName) {
+    return 'No saved placement recorded';
+  }
+
+  return folderName ? `${collectionName} / ${folderName}` : collectionName;
+}
+
+function createFallbackBodyModeSummary(bodyMode: HistoryRecord['requestBodyMode']) {
+  switch (bodyMode) {
+    case 'json':
+      return 'JSON body';
+    case 'text':
+      return 'Text body';
+    case 'form-urlencoded':
+      return 'Form body';
+    case 'multipart-form-data':
+      return 'Multipart body';
+    default:
+      return 'No body';
+  }
+}
+
+function createFallbackAuthSummary(history: HistoryRecord) {
+  switch (history.requestAuth.type) {
+    case 'bearer':
+      return 'Bearer auth';
+    case 'basic':
+      return 'Basic auth';
+    case 'api-key':
+      return history.requestAuth.apiKeyPlacement === 'query' ? 'API key in query' : 'API key in header';
+    default:
+      return 'No auth';
+  }
+}
+
 function createFallbackRequestInputSummary(history: HistoryRecord) {
-  return `${history.requestParams.length} params · ${history.requestHeaders.length} headers · ${history.requestBodyMode === 'none' ? 'No body' : `${history.requestBodyMode} body`} · ${history.requestAuth.type === 'none' ? 'No auth' : history.requestAuth.type}`;
+  return `${history.requestParams.length} params · ${history.requestHeaders.length} headers · ${createFallbackBodyModeSummary(history.requestBodyMode)} · ${createFallbackAuthSummary(history)}`;
+}
+
+function formatHistoryRequestLinkage(history: HistoryRecord) {
+  if (history.requestResourceId) {
+    return history.requestResourceId;
+  }
+
+  if (history.requestCollectionName) {
+    return history.sourceLabel === 'Saved request snapshot'
+      ? formatObservedPlacement(history.requestCollectionName, history.requestFolderName)
+      : `Draft save placement: ${formatObservedPlacement(history.requestCollectionName, history.requestFolderName)}`;
+  }
+
+  return 'No linked saved request';
 }
 
 function createFallbackResponsePreviewPolicy(history: HistoryRecord) {
@@ -77,6 +127,12 @@ export function HistoryPlaceholder() {
   const effectiveSelectedHistoryId = filteredHistory.some((history) => history.id === selectedHistoryId)
     ? selectedHistoryId
     : filteredHistory[0]?.id ?? null;
+  useEffect(() => {
+    if (selectedHistoryId !== effectiveSelectedHistoryId) {
+      selectHistory(effectiveSelectedHistoryId);
+    }
+  }, [effectiveSelectedHistoryId, selectHistory, selectedHistoryId]);
+
   const historyDetailQuery = useQuery({
     queryKey: executionHistoryDetailQueryKey(effectiveSelectedHistoryId),
     queryFn: () => readExecutionHistory(effectiveSelectedHistoryId!),
@@ -299,16 +355,17 @@ export function HistoryPlaceholder() {
 
               <DetailViewerSection
                 title="Request snapshot"
-                description="History shows the persisted request snapshot used during execution, not the live request draft currently open in Workspace."
+                description="History shows the persisted outbound request snapshot used during execution, not the live request draft currently open in Workspace."
                 className="history-summary-card"
               >
                 <KeyValueMetaList
                   items={[
                     { label: 'Request label', value: selectedHistory.requestLabel },
+                    { label: 'Snapshot source', value: selectedHistory.sourceLabel },
+                    { label: 'Linked request', value: formatHistoryRequestLinkage(selectedHistory) },
+                    { label: 'Placement', value: formatObservedPlacement(selectedHistory.requestCollectionName, selectedHistory.requestFolderName) },
                     { label: 'URL', value: selectedHistory.url },
                     { label: 'Request input', value: selectedHistory.requestInputSummary ?? createFallbackRequestInputSummary(selectedHistory) },
-                    { label: 'Environment', value: selectedHistory.environmentLabel },
-                    { label: 'Source', value: selectedHistory.sourceLabel },
                   ]}
                 />
               </DetailViewerSection>
@@ -338,6 +395,7 @@ export function HistoryPlaceholder() {
                     },
                     { label: 'Duration', value: selectedHistory.durationLabel },
                     { label: 'Preview size', value: selectedHistory.responsePreviewSizeLabel ?? createFallbackPreviewSizeLabel(selectedHistory) },
+                    { label: 'Preview policy', value: selectedHistory.responsePreviewPolicy ?? createFallbackResponsePreviewPolicy(selectedHistory) },
                     { label: 'Headers summary', value: selectedHistory.headersSummary },
                     { label: 'Body hint', value: selectedHistory.bodyHint },
                   ]}
@@ -345,7 +403,7 @@ export function HistoryPlaceholder() {
                 <p className="shared-readiness-note">{selectedHistory.responsePreviewPolicy ?? createFallbackResponsePreviewPolicy(selectedHistory)}</p>
                 <pre className="history-preview-block">{selectedHistory.bodyPreview}</pre>
                 <EmptyStateCallout
-                  title="Persisted response detail is bounded"
+                  title="Persisted response detail stays bounded"
                   description="Saved history shows redacted runtime summaries. Rich JSON viewers, diff, and full raw payload inspection stay deferred for a later slice."
                 />
               </DetailViewerSection>
@@ -361,7 +419,7 @@ export function HistoryPlaceholder() {
                   { label: 'Log lines', value: selectedHistory.consoleLogCount },
                   { label: 'Warnings', value: selectedHistory.consoleWarningCount },
                   { label: 'Post-response stage', value: selectedStageSummaries.find((entry) => entry.stageId === 'post-response')?.status ?? 'Skipped' },
-                  { label: 'Persistence policy', value: 'Redacted summary only' },
+                  { label: 'Stored summary', value: 'Redacted summary only' },
                 ]}
               />
               {selectedHistory.consolePreview.length > 0 ? (
@@ -372,7 +430,7 @@ export function HistoryPlaceholder() {
                   </ul>
                 ) : (
                   <EmptyStateCallout
-                    title="No persisted console preview"
+                    title="No persisted console summary"
                     description={selectedStageSummaries.find((entry) => entry.stageId === 'post-response')?.summary ?? selectedHistory.consoleSummary}
                   />
                 )}
@@ -403,7 +461,7 @@ export function HistoryPlaceholder() {
                   </ul>
                 ) : (
                   <EmptyStateCallout
-                    title="No persisted test preview"
+                    title="No persisted tests summary"
                     description={selectedHistory.testsSummary}
                   />
                 )}
@@ -445,7 +503,7 @@ export function HistoryPlaceholder() {
                 ) : null}
                 <EmptyStateCallout
                   title="Advanced execution diagnostics are deferred"
-                  description="Cancellation controls, live stage streams, and diff viewers remain outside this history richer-diagnostics slice."
+                  description="Cancellation controls, live stage streams, and diff viewers remain outside this history observation slice."
                 />
               </DetailViewerSection>
             ) : null}
@@ -500,3 +558,11 @@ export function HistoryPlaceholder() {
     </>
   );
 }
+
+
+
+
+
+
+
+

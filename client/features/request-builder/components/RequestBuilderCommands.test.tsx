@@ -125,6 +125,111 @@ describe('Request builder save/run wiring', () => {
     expect(savePayload.request.bodyText).toContain('sku');
   });
 
+  it('updates a persisted saved request via the update route and keeps explorer identity stable', async () => {
+    const user = userEvent.setup();
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || init.method === undefined)) {
+        return createApiResponse({
+          items: [
+            {
+              id: 'request-health-check-live',
+              workspaceId: 'local-workspace',
+              name: 'Health check',
+              method: 'GET',
+              url: 'http://localhost:5671/health',
+              params: [],
+              headers: [{ id: 'health-accept', key: 'Accept', value: 'application/json', enabled: true }],
+              bodyMode: 'none',
+              bodyText: '',
+              formBody: [],
+              multipartBody: [],
+              auth: {
+                type: 'none',
+                bearerToken: '',
+                basicUsername: '',
+                basicPassword: '',
+                apiKeyName: '',
+                apiKeyValue: '',
+                apiKeyPlacement: 'header',
+              },
+              scripts: {
+                activeStage: 'pre-request',
+                preRequest: '',
+                postResponse: '',
+                tests: '',
+              },
+              summary: 'GET http://localhost:5671/health',
+              collectionName: 'Saved Requests',
+              createdAt: '2026-03-20T09:58:00.000Z',
+              updatedAt: '2026-03-20T10:00:00.000Z',
+            },
+          ],
+        });
+      }
+
+      if (url === '/api/requests/request-health-check-live' && init?.method === 'PATCH') {
+        return createApiResponse({
+          request: {
+            id: 'request-health-check-live',
+            workspaceId: 'local-workspace',
+            name: 'Health check updated',
+            method: 'GET',
+            url: 'http://localhost:5671/health?mode=full',
+            params: [{ id: 'health-mode', key: 'mode', value: 'full', enabled: true }],
+            headers: [{ id: 'health-accept', key: 'Accept', value: 'application/json', enabled: true }],
+            bodyMode: 'none',
+            bodyText: '',
+            formBody: [],
+            multipartBody: [],
+            auth: {
+              type: 'none',
+              bearerToken: '',
+              basicUsername: '',
+              basicPassword: '',
+              apiKeyName: '',
+              apiKeyValue: '',
+              apiKeyPlacement: 'header',
+            },
+            scripts: {
+              activeStage: 'pre-request',
+              preRequest: '',
+              postResponse: '',
+              tests: '',
+            },
+            summary: 'GET http://localhost:5671/health?mode=full',
+            collectionName: 'Saved Requests',
+            createdAt: '2026-03-20T09:58:00.000Z',
+            updatedAt: '2026-03-20T10:06:00.000Z',
+          },
+        });
+      }
+
+      throw new Error('Unexpected fetch call: ' + url);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    const explorer = screen.getByLabelText('Section explorer');
+    await user.click(await within(explorer).findByRole('button', { name: 'Open Health check' }));
+    expect(screen.getByText('Saved Requests')).toBeInTheDocument();
+
+    await user.clear(screen.getByLabelText('Request name'));
+    await user.type(screen.getByLabelText('Request name'), 'Health check updated');
+    await user.type(screen.getByLabelText('Request URL'), '?mode=full');
+
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(screen.getByTestId('save-command-status')).toHaveTextContent(/Saved request definition/i));
+    expect(screen.queryByLabelText('Health check updated has unsaved changes')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open Health check updated' })).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([input, init]) => getUrl(input as RequestInfo | URL) === '/api/requests/request-health-check-live' && init?.method === 'PATCH')).toBe(true);
+    expect(fetchMock.mock.calls.some(([input, init]) => getUrl(input as RequestInfo | URL) === '/api/workspaces/local-workspace/requests' && init?.method === 'POST')).toBe(false);
+  });
+
   it('runs an unsaved draft, sends script content, and renders stage-aware diagnostics without clearing dirty state', async () => {
     const user = userEvent.setup();
     let resolveRun!: (value: Response) => void;
@@ -228,6 +333,8 @@ describe('Request builder save/run wiring', () => {
     );
 
     await waitFor(() => expect(screen.getByTestId('request-response-preview')).toHaveTextContent('demo-1'));
+    expect(screen.getByText(/This right-hand panel is reserved for run observation only/i)).toBeInTheDocument();
+    expect(screen.getByText(/Run does not save automatically and does not clear unsaved authoring changes\./i)).toBeInTheDocument();
     expect(screen.getByText('HTTP 201')).toBeInTheDocument();
     expect(screen.getByText('31 B response body')).toBeInTheDocument();
     expect(screen.getByText(/Preview is bounded before richer diagnostics/i)).toBeInTheDocument();
@@ -247,6 +354,9 @@ describe('Request builder save/run wiring', () => {
     const stageSummary = screen.getByLabelText('Execution stage summary');
     expect(within(stageSummary).getByText(/Pre-request/i)).toBeInTheDocument();
     expect(within(stageSummary).getByText(/Added trace header to the outbound request snapshot./i)).toBeInTheDocument();
+    expect(screen.getByText('Runtime request snapshot')).toBeInTheDocument();
+    expect(screen.getByText('No linked saved request')).toBeInTheDocument();
+    expect(screen.getByText('No saved placement recorded')).toBeInTheDocument();
     expect(screen.getByText('0 params · 1 headers · No body · No auth')).toBeInTheDocument();
 
     const runCall = fetchMock.mock.calls.find(
@@ -429,6 +539,43 @@ describe('Request builder save/run wiring', () => {
         });
       }
 
+      if (url === '/api/requests/request-replay-create-user' && init?.method === 'PATCH') {
+        return createApiResponse({
+          request: {
+            id: 'request-replay-create-user',
+            workspaceId: 'local-workspace',
+            name: 'Replay of Create user refined',
+            method: 'POST',
+            url: 'https://api.example.com/users',
+            params: [],
+            headers: [],
+            bodyMode: 'json',
+            bodyText: '{"name":"Morgan Lee"}',
+            formBody: [],
+            multipartBody: [],
+            auth: {
+              type: 'bearer',
+              bearerToken: 'qa-token-104',
+              basicUsername: '',
+              basicPassword: '',
+              apiKeyName: '',
+              apiKeyValue: '',
+              apiKeyPlacement: 'header',
+            },
+            scripts: {
+              activeStage: 'pre-request',
+              preRequest: '',
+              postResponse: '',
+              tests: '',
+            },
+            summary: 'POST https://api.example.com/users',
+            collectionName: 'Saved Requests',
+            createdAt: '2026-03-20T10:04:00.000Z',
+            updatedAt: '2026-03-20T10:05:00.000Z',
+          },
+        });
+      }
+
       throw new Error(`Unexpected fetch call: ${url}`);
     });
 
@@ -445,6 +592,34 @@ describe('Request builder save/run wiring', () => {
     expect(screen.queryByText('Opened from history')).not.toBeInTheDocument();
     expect(screen.getByText('Saved Requests')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Open Replay of Create user' })).toBeInTheDocument();
+
+    await user.clear(screen.getByLabelText('Request name'));
+    await user.type(screen.getByLabelText('Request name'), 'Replay of Create user refined');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Open Replay of Create user refined' })).toBeInTheDocument());
+    expect(fetchMock.mock.calls.some(([input, init]) => getUrl(input as RequestInfo | URL) === '/api/workspaces/local-workspace/requests' && init?.method === 'POST')).toBe(true);
+    expect(fetchMock.mock.calls.some(([input, init]) => getUrl(input as RequestInfo | URL) === '/api/requests/request-replay-create-user' && init?.method === 'PATCH')).toBe(true);
+
+    const createCall = fetchMock.mock.calls.find(
+      ([input, init]) => getUrl(input as RequestInfo | URL) === '/api/workspaces/local-workspace/requests' && init?.method === 'POST',
+    );
+    const updateCall = fetchMock.mock.calls.find(
+      ([input, init]) => getUrl(input as RequestInfo | URL) === '/api/requests/request-replay-create-user' && init?.method === 'PATCH',
+    );
+
+    expect(createCall).toBeDefined();
+    expect(updateCall).toBeDefined();
+
+    const createPayload = JSON.parse(String(createCall?.[1]?.body)) as { request: { id?: string; name: string } };
+    const updatePayload = JSON.parse(String(updateCall?.[1]?.body)) as { request: { id?: string; name: string } };
+
+    expect(createPayload.request.id).toBeUndefined();
+    expect(createPayload.request.name).toBe('Replay of Create user');
+    expect(updatePayload.request.id).toBe('request-replay-create-user');
+    expect(updatePayload.request.name).toBe('Replay of Create user refined');
   });
 });
+
+
 

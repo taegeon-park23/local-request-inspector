@@ -26,7 +26,7 @@ export function WorkspaceExplorer({
         <p className="section-placeholder__eyebrow">Workspace explorer</p>
         <h2>Collections</h2>
         <p>
-          Fixture-backed collections stay visible, and storage-backed saved requests are overlaid as they are persisted. New saves fall into a default collection until richer placement UX lands.
+          Persisted saved requests are the canonical explorer source. Starter fixtures only appear until the first real request definitions are stored in the resource lane.
         </p>
         <button type="button" className="workspace-button" onClick={onCreateRequest}>
           New Request

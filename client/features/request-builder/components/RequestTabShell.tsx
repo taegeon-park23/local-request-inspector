@@ -19,7 +19,7 @@ export function RequestTabShell({
     <div className="request-tab-shell">
       <div className="request-tab-shell__strip" role="tablist" aria-label="Request tab strip">
         {tabs.length === 0 ? (
-          <p className="request-tab-shell__strip-empty">No request tabs are open yet. Start a new draft or open a saved request from the explorer.</p>
+          <p className="request-tab-shell__strip-empty">No request tabs are open yet. Start a new draft or open a saved request from the workspace explorer.</p>
         ) : null}
 
         {tabs.map((tab) => {
@@ -67,5 +67,6 @@ export function RequestTabShell({
     </div>
   );
 }
+
 
 

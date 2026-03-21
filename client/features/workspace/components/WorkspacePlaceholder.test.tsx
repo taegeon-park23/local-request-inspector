@@ -1,7 +1,29 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
 import { AppRouter } from '@client/app/router/AppRouter';
 import { renderApp } from '@client/shared/test/render-app';
+
+function createApiResponse(data: unknown, status = 200) {
+  return new Response(JSON.stringify({ data }), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
+function getUrl(input: RequestInfo | URL) {
+  if (typeof input === 'string') {
+    return input;
+  }
+
+  if (input instanceof URL) {
+    return input.toString();
+  }
+
+  return input.url;
+}
 
 async function openNewRequest(user: ReturnType<typeof userEvent.setup>) {
   const explorer = screen.getByLabelText('Section explorer');
@@ -14,6 +36,7 @@ describe('Workspace request builder authoring shell', () => {
     renderApp(<AppRouter />);
 
     await openNewRequest(user);
+    expect(screen.getByText(/Workspace remains the authoring surface/i)).toBeInTheDocument();
 
     expect(screen.getByLabelText('Request method')).toBeInTheDocument();
     expect(screen.getByLabelText('Request URL')).toBeInTheDocument();
@@ -174,6 +197,105 @@ describe('Workspace request builder authoring shell', () => {
     expect(screen.getByLabelText('Pre-request script')).toHaveValue("request.headers.set('x-health-check', '1');");
   });
 
+  it('prefers persisted saved requests over starter fixtures and keeps canonical ordering stable', async () => {
+    const user = userEvent.setup();
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+      const method = init?.method ?? 'GET';
+
+      if (url === '/api/workspaces/local-workspace/requests' && method === 'GET') {
+        return createApiResponse({
+          items: [
+            {
+              id: 'request-alpha-persisted',
+              workspaceId: 'local-workspace',
+              name: 'Alpha persisted',
+              method: 'GET',
+              url: 'http://localhost:5671/alpha',
+              params: [],
+              headers: [],
+              bodyMode: 'none',
+              bodyText: '',
+              formBody: [],
+              multipartBody: [],
+              auth: {
+                type: 'none',
+                bearerToken: '',
+                basicUsername: '',
+                basicPassword: '',
+                apiKeyName: '',
+                apiKeyValue: '',
+                apiKeyPlacement: 'header',
+              },
+              scripts: {
+                activeStage: 'pre-request',
+                preRequest: '',
+                postResponse: '',
+                tests: '',
+              },
+              summary: 'Persisted alpha request',
+              collectionName: 'Saved Requests',
+              createdAt: '2026-03-20T09:00:00.000Z',
+              updatedAt: '2026-03-20T09:30:00.000Z',
+            },
+            {
+              id: 'request-zeta-persisted',
+              workspaceId: 'local-workspace',
+              name: 'Zeta persisted',
+              method: 'POST',
+              url: 'http://localhost:5671/zeta',
+              params: [],
+              headers: [],
+              bodyMode: 'json',
+              bodyText: '{"ok":true}',
+              formBody: [],
+              multipartBody: [],
+              auth: {
+                type: 'none',
+                bearerToken: '',
+                basicUsername: '',
+                basicPassword: '',
+                apiKeyName: '',
+                apiKeyValue: '',
+                apiKeyPlacement: 'header',
+              },
+              scripts: {
+                activeStage: 'pre-request',
+                preRequest: '',
+                postResponse: '',
+                tests: '',
+              },
+              summary: 'Persisted zeta request',
+              collectionName: 'Saved Requests',
+              createdAt: '2026-03-20T08:00:00.000Z',
+              updatedAt: '2026-03-20T10:30:00.000Z',
+            },
+          ],
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    const explorer = screen.getByLabelText('Section explorer');
+    const persistedButtons = await within(explorer).findAllByRole('button', { name: /^Open / });
+
+    expect(persistedButtons.map((button) => button.getAttribute('aria-label'))).toEqual([
+      'Open Zeta persisted',
+      'Open Alpha persisted',
+    ]);
+    expect(within(explorer).queryByRole('button', { name: 'Open Health check' })).not.toBeInTheDocument();
+
+    await user.click(persistedButtons[0]!);
+
+    expect(screen.getByLabelText('Request name')).toHaveValue('Zeta persisted');
+    expect(screen.getByText('Saved request')).toBeInTheDocument();
+  });
+
   it('renders scripts stage copy inside replay drafts without breaking shell composition', async () => {
     const user = userEvent.setup();
     renderApp(<AppRouter />, { initialEntries: ['/history'] });
@@ -188,6 +310,7 @@ describe('Workspace request builder authoring shell', () => {
     expect(screen.getByText('Deferred in later slices')).toBeInTheDocument();
   });
 });
+
 
 
 

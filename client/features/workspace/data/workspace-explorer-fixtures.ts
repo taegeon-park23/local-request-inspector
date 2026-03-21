@@ -1,4 +1,4 @@
-﻿import type { SavedWorkspaceRequestSeed } from '@client/features/request-builder/request-tab.types';
+import type { SavedWorkspaceRequestSeed } from '@client/features/request-builder/request-tab.types';
 import type { RequestDraftSeed } from '@client/features/request-builder/request-draft.types';
 
 interface WorkspaceExplorerNodeBase {
@@ -7,6 +7,7 @@ interface WorkspaceExplorerNodeBase {
 }
 
 export interface WorkspaceSavedRequestSeed extends SavedWorkspaceRequestSeed {
+  resourceKind: 'persisted' | 'starter';
   draftSeed?: RequestDraftSeed;
 }
 
@@ -44,11 +45,15 @@ export const workspaceExplorerTree: WorkspaceExplorerNode[] = [
           id: 'request-health-check',
           name: 'Health check',
           methodLabel: 'GET',
-          summary: 'Baseline service probe for the local runtime.',
+          summary: 'Starter request for the local runtime health endpoint.',
           collectionName: 'Core APIs',
+          resourceKind: 'starter',
           draftSeed: {
+            name: 'Health check',
+            method: 'GET',
             url: 'http://localhost:5671/health',
             headers: [{ id: 'health-accept', key: 'Accept', value: 'application/json', enabled: true }],
+            collectionName: 'Core APIs',
           },
         },
       },
@@ -65,16 +70,21 @@ export const workspaceExplorerTree: WorkspaceExplorerNode[] = [
               id: 'request-list-users',
               name: 'List users',
               methodLabel: 'GET',
-              summary: 'Saved request placeholder for list retrieval.',
+              summary: 'Starter request scaffold for list retrieval.',
               collectionName: 'Core APIs',
               folderName: 'User flows',
+              resourceKind: 'starter',
               draftSeed: {
+                name: 'List users',
+                method: 'GET',
                 url: 'http://localhost:5671/api/users',
                 params: [
                   { id: 'users-page', key: 'page', value: '1', enabled: true },
                   { id: 'users-limit', key: 'limit', value: '20', enabled: true },
                 ],
                 headers: [{ id: 'users-accept', key: 'Accept', value: 'application/json', enabled: true }],
+                collectionName: 'Core APIs',
+                folderName: 'User flows',
               },
             },
           },
@@ -86,16 +96,21 @@ export const workspaceExplorerTree: WorkspaceExplorerNode[] = [
               id: 'request-create-session',
               name: 'Create session',
               methodLabel: 'POST',
-              summary: 'Saved request placeholder for authentication flow scaffolding.',
+              summary: 'Starter request scaffold for authentication flow scaffolding.',
               collectionName: 'Core APIs',
               folderName: 'User flows',
+              resourceKind: 'starter',
               draftSeed: {
+                name: 'Create session',
+                method: 'POST',
                 url: 'http://localhost:5671/api/sessions',
                 headers: [
                   { id: 'session-content-type', key: 'Content-Type', value: 'application/json', enabled: true },
                 ],
                 bodyMode: 'json',
                 bodyText: '{\n  "email": "demo@example.com",\n  "password": "secret"\n}',
+                collectionName: 'Core APIs',
+                folderName: 'User flows',
               },
             },
           },
@@ -116,9 +131,12 @@ export const workspaceExplorerTree: WorkspaceExplorerNode[] = [
           id: 'request-runtime-echo',
           name: 'Runtime echo',
           methodLabel: 'POST',
-          summary: 'Placeholder request for request and response panel layout work.',
+          summary: 'Starter request for request and response panel layout work.',
           collectionName: 'Diagnostics',
+          resourceKind: 'starter',
           draftSeed: {
+            name: 'Runtime echo',
+            method: 'POST',
             url: 'http://localhost:5671/echo',
             bodyMode: 'text',
             bodyText: 'echo-payload',
@@ -128,6 +146,7 @@ export const workspaceExplorerTree: WorkspaceExplorerNode[] = [
               apiKeyValue: 'demo-key',
               apiKeyPlacement: 'header',
             },
+            collectionName: 'Diagnostics',
           },
         },
       },

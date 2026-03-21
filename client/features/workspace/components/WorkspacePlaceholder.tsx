@@ -8,6 +8,7 @@ import { RequestTabShell } from '@client/features/request-builder/components/Req
 import { RequestWorkSurfacePlaceholder } from '@client/features/request-builder/components/RequestWorkSurfacePlaceholder';
 import { useRequestCommandStore } from '@client/features/request-builder/state/request-command-store';
 import { useRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
+import type { RequestDraftSeed } from '@client/features/request-builder/request-draft.types';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
 import { WorkspaceExplorer } from '@client/features/workspace/components/WorkspaceExplorer';
 import { buildWorkspaceExplorerTree } from '@client/features/workspace/data/workspace-explorer-data';
@@ -59,7 +60,7 @@ export function WorkspacePlaceholder() {
   const activeTab = resolvedTabs.find((tab) => tab.id === activeTabId) ?? null;
   const activeTabKey = activeTab?.id ?? 'empty';
 
-  const handleCreateRequest = () => {
+  const openDraftFromSeed = (draftSeed?: RequestDraftSeed) => {
     const previousTabIds = new Set(useWorkspaceShellStore.getState().tabs.map((tab) => tab.id));
     openNewRequest();
     const nextTab = useWorkspaceShellStore
@@ -67,11 +68,26 @@ export function WorkspacePlaceholder() {
       .tabs.find((tab) => !previousTabIds.has(tab.id));
 
     if (nextTab) {
-      ensureDraftForTab(nextTab);
+      ensureDraftForTab(nextTab, draftSeed);
     }
   };
 
+  const handleCreateRequest = () => {
+    openDraftFromSeed();
+  };
+
   const handleOpenSavedRequest = (request: WorkspaceSavedRequestSeed) => {
+    if (request.resourceKind === 'starter') {
+      openDraftFromSeed({
+        name: request.name,
+        method: request.methodLabel,
+        ...(request.draftSeed ?? {}),
+        collectionName: request.collectionName,
+        ...(request.folderName ? { folderName: request.folderName } : {}),
+      });
+      return;
+    }
+
     const existingTab = useWorkspaceShellStore
       .getState()
       .tabs.find((tab) => tab.sourceKey === `saved-${request.id}`);
@@ -114,7 +130,7 @@ export function WorkspacePlaceholder() {
           <p className="section-placeholder__eyebrow">Top-level section</p>
           <h1>Workspace</h1>
           <p>
-            Workspace remains the authoring surface for saved requests, new drafts, replay drafts, and the lazy-loaded Scripts path. Save updates request definitions, while Run writes observation only into the right-hand result surface.
+            Workspace remains the authoring surface for saved requests, starter request drafts, replay drafts, and the lazy-loaded Scripts path. Save updates request definitions, while Run writes observation only into the right-hand result surface.
           </p>
         </header>
 

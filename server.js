@@ -140,6 +140,66 @@ function normalizeSavedRequest(input, existingRecord, workspaceId) {
   };
 }
 
+function compareIsoDescending(left, right) {
+  return String(right || '').localeCompare(String(left || ''));
+}
+
+function compareSavedRequestRecords(left, right) {
+  const updatedAtDiff = compareIsoDescending(left.updatedAt, right.updatedAt);
+  if (updatedAtDiff !== 0) {
+    return updatedAtDiff;
+  }
+
+  const createdAtDiff = compareIsoDescending(left.createdAt, right.createdAt);
+  if (createdAtDiff !== 0) {
+    return createdAtDiff;
+  }
+
+  const collectionDiff = String(left.collectionName || 'Saved Requests').localeCompare(String(right.collectionName || 'Saved Requests'));
+  if (collectionDiff !== 0) {
+    return collectionDiff;
+  }
+
+  const folderDiff = String(left.folderName || '').localeCompare(String(right.folderName || ''));
+  if (folderDiff !== 0) {
+    return folderDiff;
+  }
+
+  const nameDiff = String(left.name || '').localeCompare(String(right.name || ''));
+  if (nameDiff !== 0) {
+    return nameDiff;
+  }
+
+  return String(left.id || '').localeCompare(String(right.id || ''));
+}
+
+function compareMockRuleRecords(left, right) {
+  if (Boolean(left.enabled) !== Boolean(right.enabled)) {
+    return left.enabled ? -1 : 1;
+  }
+
+  if ((right.priority || 0) !== (left.priority || 0)) {
+    return (right.priority || 0) - (left.priority || 0);
+  }
+
+  const updatedAtDiff = compareIsoDescending(left.updatedAt, right.updatedAt);
+  if (updatedAtDiff !== 0) {
+    return updatedAtDiff;
+  }
+
+  const createdAtDiff = compareIsoDescending(left.createdAt, right.createdAt);
+  if (createdAtDiff !== 0) {
+    return createdAtDiff;
+  }
+
+  const nameDiff = String(left.name || '').localeCompare(String(right.name || ''));
+  if (nameDiff !== 0) {
+    return nameDiff;
+  }
+
+  return String(left.id || '').localeCompare(String(right.id || ''));
+}
+
 function createExecutionObservation({
   executionId,
   executionOutcome,
@@ -210,6 +270,12 @@ function createExecutionObservation({
     requestParamCount,
     requestBodyMode: requestSnapshot?.bodyMode || 'none',
     authSummary: createAuthSummary(requestSnapshot?.auth),
+    requestResourceId: typeof requestSnapshot?.requestId === 'string' && requestSnapshot.requestId.length > 0
+      ? requestSnapshot.requestId
+      : null,
+    requestCollectionName: requestSnapshot?.collectionName || undefined,
+    requestFolderName: requestSnapshot?.folderName || undefined,
+    requestSourceLabel: requestSnapshot?.sourceLabel || 'Runtime request snapshot',
     stageSummaries: stageSummaries || [],
     ...(errorCode ? { errorCode } : {}),
     ...(errorSummary ? { errorSummary } : {}),
@@ -377,6 +443,9 @@ function createPersistedRequestSnapshot(request, targetUrl) {
     bodyMode: request.bodyMode || 'none',
     bodyText: createPersistedBodyPreview(request),
     auth: createPersistedAuthSnapshot(request.auth),
+    requestId: request.id || null,
+    collectionName: typeof request.collectionName === 'string' ? request.collectionName : '',
+    folderName: typeof request.folderName === 'string' ? request.folderName : '',
     sourceLabel: request.id ? 'Saved request snapshot' : 'Ad hoc request snapshot',
   };
 }
@@ -448,11 +517,11 @@ function createResponsePreviewPolicy({
   }
 
   if (previewTruncated) {
-    return 'Preview was truncated at the bounded diagnostics limit before richer inspection is added.';
+    return 'Preview is truncated at the bounded diagnostics limit before richer inspection is added.';
   }
 
   if (redactionApplied) {
-    return 'Preview is bounded and redacted before persistence and downstream diagnostics surfaces.';
+    return 'Preview is redacted and bounded before persistence and downstream diagnostics surfaces.';
   }
 
   return 'Preview is bounded before richer diagnostics and raw payload inspection are added.';
@@ -501,6 +570,9 @@ function createPersistedRequestSnapshotSafely(request, targetUrl) {
       bodyMode: request?.bodyMode || 'none',
       bodyText: createPersistedBodyPreview(request || {}),
       auth: createPersistedAuthSnapshot(request?.auth),
+      requestId: request?.id || null,
+      collectionName: typeof request?.collectionName === 'string' ? request.collectionName : '',
+      folderName: typeof request?.folderName === 'string' ? request.folderName : '',
       sourceLabel: request?.id ? 'Saved request snapshot' : 'Ad hoc request snapshot',
     };
   }
@@ -521,6 +593,8 @@ function createExecutionRequestSeed(input) {
     multipartBody: cloneRows(input.multipartBody),
     auth: cloneAuth(input.auth),
     scripts: cloneScripts(input.scripts),
+    collectionName: input.collectionName || null,
+    folderName: input.folderName || null,
   };
 }
 
@@ -1250,20 +1324,20 @@ function createPersistedExecutionStatus(executionOutcome) {
 
 function createCaptureBodyPreviewPolicy(preview, wasRedacted) {
   if (typeof preview !== 'string' || preview.length === 0) {
-    return 'No request body preview was persisted for this capture.';
+    return 'No request body preview was stored for this inbound capture.';
   }
 
   return wasRedacted
-    ? 'Captured request body preview is redacted and bounded before persistence.'
-    : 'Captured request body preview is bounded before persistence.';
+    ? 'Request body preview is redacted and bounded before capture persistence.'
+    : 'Request body preview is bounded before capture persistence.';
 }
 
 function createCaptureStorageSummary(headerCount, bodyPreview) {
   if (typeof bodyPreview === 'string' && bodyPreview.length > 0) {
-    return `Persisted capture keeps ${headerCount} header(s) and a bounded request-body preview for observation and replay.`;
+    return `Persisted capture keeps ${headerCount} header(s) and one bounded request-body preview for observation and replay.`;
   }
 
-  return `Persisted capture keeps ${headerCount} header(s) and no request body preview for this inbound request.`;
+  return `Persisted capture keeps ${headerCount} header(s) and no request-body preview for this inbound capture.`;
 }
 
 function createExecutionOutcomeLabel(status, cancellationOutcome) {
@@ -1576,6 +1650,9 @@ function createHistoryRecord(runtimeRecord) {
     requestBodyMode: requestSnapshot.bodyMode || 'none',
     requestBodyText: requestSnapshot.bodyText || '',
     requestAuth: requestSnapshot.auth || createPersistedAuthSnapshot(),
+    requestResourceId: runtimeRecord.requestId || requestSnapshot.requestId || null,
+    requestCollectionName: requestSnapshot.collectionName || undefined,
+    requestFolderName: requestSnapshot.folderName || undefined,
     responseSummary:
       runtimeRecord.responseStatus === null
         ? 'Persisted history does not include a transport response body for this execution.'
@@ -1730,14 +1807,14 @@ function createPersistedCapturedRequestRecord(req, evaluationResult) {
 
 function createCaptureBodyHint(bodyModeHint, bodyPreview) {
   if (bodyModeHint === 'json' && bodyPreview.length > 0) {
-    return `JSON body · ${bodyPreview.length} characters captured in bounded summary form.`;
+    return `JSON body · ${bodyPreview.length} characters persisted in bounded summary form.`;
   }
 
   if (bodyModeHint === 'text' && bodyPreview.length > 0) {
-    return 'Text body · bounded redacted summary';
+    return 'Text body · bounded redacted preview';
   }
 
-  return 'No request body payload was persisted for this capture.';
+  return 'No request body preview was stored for this inbound capture.';
 }
 
 function createCaptureHeadersSummary(headers) {
@@ -1854,11 +1931,11 @@ function createCapturedRequestRecord(runtimeRecord) {
     receivedAtLabel,
     statusCode: runtimeRecord.statusCode ?? null,
     bodyHint: createCaptureBodyHint(bodyModeHint, requestBodyPreview),
-    requestSummary: `${runtimeRecord.method} ${path} reached ${host} as an inbound capture.`,
+    requestSummary: `${runtimeRecord.method} ${path} was observed at ${host} as an inbound capture.`,
     headersSummary: createCaptureHeadersSummary(requestHeaders),
     bodyPreview: requestBodyPreview.length > 0
       ? requestBodyPreview
-      : 'No request body payload was captured for this request.',
+      : 'No request body preview was stored for this inbound capture.',
     bodyPreviewPolicy: createCaptureBodyPreviewPolicy(requestBodyPreview, runtimeRecord.requestBodyRedacted),
     storageSummary: createCaptureStorageSummary(requestHeaderCount, requestBodyPreview),
     bodyModeHint,
@@ -2020,7 +2097,7 @@ app.get('/api/workspaces/:workspaceId/requests', (req, res) => {
     const items = resourceStorage
       .list('request')
       .filter((record) => record.workspaceId === req.params.workspaceId)
-      .sort((left, right) => String(right.updatedAt || '').localeCompare(String(left.updatedAt || '')));
+      .sort(compareSavedRequestRecords);
 
     return sendData(res, { items });
   } catch (error) {
@@ -2036,13 +2113,54 @@ app.post('/api/workspaces/:workspaceId/requests', (req, res) => {
     return sendError(res, 400, 'invalid_request_definition', validationError);
   }
 
+  if (typeof input?.id === 'string' && input.id.trim().length > 0) {
+    return sendError(res, 400, 'request_create_requires_new_identity', 'Use the update route for an existing saved request id.', {
+      requestId: input.id,
+    });
+  }
+
   try {
-    const existingRecord = input.id ? resourceStorage.read('request', input.id) : null;
-    const record = normalizeSavedRequest(input, existingRecord, req.params.workspaceId);
+    const record = normalizeSavedRequest(input, null, req.params.workspaceId);
+    resourceStorage.save('request', record);
+    return sendData(res, { request: record }, 201);
+  } catch (error) {
+    return sendError(res, 500, 'request_save_failed', error.message);
+  }
+});
+
+app.patch('/api/requests/:requestId', (req, res) => {
+  const input = req.body?.request;
+  const validationError = validateRequestDefinition(input);
+
+  if (validationError) {
+    return sendError(res, 400, 'invalid_request_definition', validationError, {
+      requestId: req.params.requestId,
+    });
+  }
+
+  try {
+    const existingRecord = resourceStorage.read('request', req.params.requestId);
+
+    if (!existingRecord) {
+      return sendError(res, 404, 'request_not_found', 'Saved request was not found.', {
+        requestId: req.params.requestId,
+      });
+    }
+
+    const record = normalizeSavedRequest(
+      {
+        ...input,
+        id: req.params.requestId,
+      },
+      existingRecord,
+      existingRecord.workspaceId || req.body?.request?.workspaceId || DEFAULT_WORKSPACE_ID,
+    );
     resourceStorage.save('request', record);
     return sendData(res, { request: record });
   } catch (error) {
-    return sendError(res, 500, 'request_save_failed', error.message);
+    return sendError(res, 500, 'request_update_failed', error.message, {
+      requestId: req.params.requestId,
+    });
   }
 });
 
@@ -2051,13 +2169,7 @@ app.get('/api/workspaces/:workspaceId/mock-rules', (req, res) => {
     const items = resourceStorage
       .list('mock-rule')
       .filter((record) => record.workspaceId === req.params.workspaceId)
-      .sort((left, right) => {
-        if ((right.priority || 0) !== (left.priority || 0)) {
-          return (right.priority || 0) - (left.priority || 0);
-        }
-
-        return String(right.updatedAt || '').localeCompare(String(left.updatedAt || ''));
-      });
+      .sort(compareMockRuleRecords);
 
     return sendData(res, { items });
   } catch (error) {
@@ -2716,6 +2828,8 @@ app.all(/.*/, async (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`[Ready] http://localhost:${PORT}`));
+
+
 
 
 

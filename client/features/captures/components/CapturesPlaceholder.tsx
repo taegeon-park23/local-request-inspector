@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   capturedRequestDetailQueryKey,
@@ -33,10 +33,10 @@ type CaptureDetailTabId = (typeof captureDetailTabs)[number]['id'];
 
 const connectionCopyByHealth = {
   idle: 'Capture observation is idle until the runtime adapter starts and the persisted capture list is queried.',
-  connecting: 'Connecting to the runtime capture feed while loading the latest persisted capture summaries.',
-  connected: 'Persisted capture summaries are available. Select a row to inspect it or open a replay draft without mutating the capture record.',
-  degraded: 'Capture observation is degraded. Existing persisted summaries may still be visible while refresh and deeper diagnostics remain limited.',
-  offline: 'Capture observation is offline. Persisted rows remain queryable, but no new inbound capture events can trigger refresh right now.',
+  connecting: 'Connecting to the runtime capture feed while loading the latest persisted inbound capture summaries.',
+  connected: 'Persisted inbound capture summaries are available. Select a row to inspect it or open a replay draft without mutating the capture record.',
+  degraded: 'Capture observation is degraded. Existing persisted inbound summaries may still be visible while refresh and deeper diagnostics remain limited.',
+  offline: 'Capture observation is offline. Persisted inbound capture rows remain queryable, but no new runtime events can trigger refresh right now.',
 } as const;
 
 function captureMatchesSearch(capture: CaptureRecord, searchText: string) {
@@ -78,6 +78,10 @@ function getCaptureStatusSummary(capture: CaptureRecord) {
   return capture.statusCode === null ? 'No response status summary' : `HTTP ${capture.statusCode}`;
 }
 
+function getCaptureObservationSourceLabel() {
+  return 'Inbound request snapshot';
+}
+
 export function CapturesPlaceholder() {
   const navigate = useNavigate();
   const [activeDetailTab, setActiveDetailTab] = useState<CaptureDetailTabId>('timeline');
@@ -104,6 +108,12 @@ export function CapturesPlaceholder() {
   const effectiveSelectedCaptureId = filteredCaptures.some((capture) => capture.id === selectedCaptureId)
     ? selectedCaptureId
     : filteredCaptures[0]?.id ?? null;
+  useEffect(() => {
+    if (selectedCaptureId !== effectiveSelectedCaptureId) {
+      selectCapture(effectiveSelectedCaptureId);
+    }
+  }, [effectiveSelectedCaptureId, selectCapture, selectedCaptureId]);
+
   const captureDetailQuery = useQuery({
     queryKey: capturedRequestDetailQueryKey(effectiveSelectedCaptureId),
     queryFn: () => readCapturedRequest(effectiveSelectedCaptureId!),
@@ -177,7 +187,7 @@ export function CapturesPlaceholder() {
           {isLoading ? (
             <EmptyStateCallout
               title="Loading persisted captures"
-              description="Waiting for the runtime lane to return the latest inbound capture summaries. Runtime events will refresh this list when new captures arrive."
+              description="Waiting for the runtime lane to return the latest inbound capture summaries. Runtime events refresh this list when new captures arrive."
               className="captures-empty-state"
             />
           ) : null}
@@ -255,7 +265,7 @@ export function CapturesPlaceholder() {
           <div className="request-work-surface request-work-surface--empty">
             <EmptyStateCallout
               title="No capture selected"
-              description="Pick a capture row to inspect persisted request summaries, mock outcome vocabulary, and the compact timeline scaffold. Replay opens a separate authoring draft in Workspace."
+              description="Pick a capture row to inspect the persisted inbound request snapshot, mock outcome vocabulary, and the compact timeline scaffold. Replay opens a separate authoring draft in Workspace."
             />
           </div>
         ) : isDetailLoading ? (
@@ -308,31 +318,33 @@ export function CapturesPlaceholder() {
 
             <div className="captures-summary-grid">
               <DetailViewerSection
-                title="Request summary"
-                description="Captured request metadata remains owned by the captures observation feature."
+                title="Request snapshot"
+                description="Inbound request snapshots stay separate from outbound execution history and editable request drafts."
                 className="capture-summary-card"
               >
                 <KeyValueMetaList
                   items={[
-                    { label: 'Scope', value: selectedCapture.scopeLabel },
+                    { label: 'Snapshot source', value: getCaptureObservationSourceLabel() },
                     { label: 'Host/path', value: `${selectedCapture.host}${selectedCapture.path}` },
-                    { label: 'Received', value: selectedCapture.receivedAtLabel },
+                    { label: 'Observed at', value: selectedCapture.receivedAtLabel },
+                    { label: 'Scope', value: selectedCapture.scopeLabel },
                     { label: 'Headers', value: selectedCapture.requestHeaderCount ?? selectedCapture.requestHeaders.length },
                   ]}
                 />
                 <p>{selectedCapture.requestSummary}</p>
-                <p className="shared-readiness-note">{getCaptureStorageSummary(selectedCapture)}</p>
               </DetailViewerSection>
 
               <DetailViewerSection
-                title="Headers preview"
-                description="Persisted capture headers stay bounded and redacted where needed."
+                title="Persistence summary"
+                description="Stored capture headers and body previews remain bounded and redacted where needed before replay or deeper diagnostics are considered."
                 className="capture-summary-card"
               >
                 <KeyValueMetaList
                   items={[
                     { label: 'Headers summary', value: selectedCapture.headersSummary },
-                    { label: 'Storage policy', value: getCaptureStorageSummary(selectedCapture) },
+                    { label: 'Body hint', value: selectedCapture.bodyHint },
+                    { label: 'Stored summary', value: getCaptureStorageSummary(selectedCapture) },
+                    { label: 'Preview policy', value: getCaptureBodyPreviewPolicy(selectedCapture) },
                   ]}
                 />
               </DetailViewerSection>
@@ -352,7 +364,7 @@ export function CapturesPlaceholder() {
               </DetailViewerSection>
 
               <DetailViewerSection
-                title="Mock outcome"
+                title="Mock handling"
                 description="Mock outcome family stays separate from connection, execution, and transport vocabulary."
                 className="capture-summary-card"
               >
@@ -361,7 +373,7 @@ export function CapturesPlaceholder() {
                 <KeyValueMetaList
                   items={[
                     { label: 'Summary', value: selectedCapture.mockSummary },
-                    { label: 'Handling', value: selectedCapture.responseSummary },
+                    { label: 'Handling summary', value: selectedCapture.responseSummary },
                     ...(selectedCapture.mockRuleName ? [{ label: 'Rule', value: selectedCapture.mockRuleName }] : []),
                     ...(selectedCapture.delayLabel ? [{ label: 'Delay', value: selectedCapture.delayLabel }] : []),
                   ]}
@@ -419,8 +431,8 @@ export function CapturesPlaceholder() {
                 <KeyValueMetaList
                   items={[
                     { label: 'Mock outcome', value: selectedCapture.mockOutcome },
-                    { label: 'Response summary', value: selectedCapture.responseSummary },
-                    { label: 'Storage policy', value: getCaptureStorageSummary(selectedCapture) },
+                    { label: 'Handling summary', value: selectedCapture.responseSummary },
+                    { label: 'Stored summary', value: getCaptureStorageSummary(selectedCapture) },
                     { label: 'Preview policy', value: getCaptureBodyPreviewPolicy(selectedCapture) },
                   ]}
                 />
@@ -436,3 +448,15 @@ export function CapturesPlaceholder() {
     </>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+

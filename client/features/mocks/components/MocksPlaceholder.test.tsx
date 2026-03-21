@@ -243,7 +243,8 @@ describe('Mocks S16 persisted CRUD surface', () => {
     expect(screen.getByLabelText('Rule state filter')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: 'Open mock rule Stripe webhook accepted' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save rule' })).toBeEnabled();
-    expect(screen.getByText(/Persisted workspace rules live here/i)).toBeInTheDocument();
+    expect(screen.getByText(/Persisted authored rules live here/i)).toBeInTheDocument();
+    expect(screen.getByText(/Runtime mock outcomes remain in Captures/i)).toBeInTheDocument();
     expect(screen.getAllByText('Enabled', { selector: '[data-kind="neutral"]' }).length).toBeGreaterThan(0);
     expect(screen.queryByText('Mocked', { selector: '[data-kind="mockOutcome"]' })).not.toBeInTheDocument();
   });
@@ -278,25 +279,44 @@ describe('Mocks S16 persisted CRUD surface', () => {
     expect(fetchMock.mock.calls.some(([input, init]) => getUrl(input as RequestInfo | URL).includes('/api/mock-rules/') && init?.method === 'PATCH')).toBe(true);
   });
 
-  it('supports enable, disable, and delete for persisted rules', async () => {
+  it('supports enable, disable, and delete for persisted rules with stable ordering and selection fallback', async () => {
     const user = userEvent.setup();
     vi.stubGlobal('fetch', createMockRulesFetch());
     renderApp(<AppRouter />, { initialEntries: ['/mocks'] });
 
+    const rulesList = screen.getByLabelText('Mock rules list');
     await screen.findByRole('button', { name: 'Open mock rule Stripe webhook accepted' });
+
+    const getRuleOrder = () => within(rulesList)
+      .getAllByRole('button', { name: /^Open mock rule / })
+      .map((button) => button.getAttribute('aria-label'));
+
+    expect(getRuleOrder()).toEqual([
+      'Open mock rule Stripe webhook accepted',
+      'Open mock rule Maintenance banner fallback',
+    ]);
+
     await user.click(screen.getByRole('button', { name: 'Disable rule' }));
     expect(await screen.findAllByText('Disabled', { selector: '[data-kind="neutral"]' })).not.toHaveLength(0);
     expect(screen.getByRole('button', { name: 'Enable rule' })).toBeEnabled();
+    expect(getRuleOrder()).toEqual([
+      'Open mock rule Maintenance banner fallback',
+      'Open mock rule Stripe webhook accepted',
+    ]);
 
     await user.click(screen.getByRole('button', { name: 'Enable rule' }));
     expect(await screen.findAllByText('Enabled', { selector: '[data-kind="neutral"]' })).not.toHaveLength(0);
+    expect(getRuleOrder()).toEqual([
+      'Open mock rule Stripe webhook accepted',
+      'Open mock rule Maintenance banner fallback',
+    ]);
 
-    const rulesList = screen.getByLabelText('Mock rules list');
     await user.click(within(rulesList).getByRole('button', { name: 'Open mock rule Maintenance banner fallback' }));
     await user.click(screen.getByRole('button', { name: 'Delete rule' }));
 
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Open mock rule Maintenance banner fallback' })).not.toBeInTheDocument());
-    expect(screen.getByRole('button', { name: 'Open mock rule Stripe webhook accepted' })).toBeInTheDocument();
+    expect(getRuleOrder()).toEqual(['Open mock rule Stripe webhook accepted']);
+    expect(screen.getByText('Stripe webhook accepted')).toBeInTheDocument();
   });
 
   it('shows the empty state from the real query seam', async () => {
@@ -360,3 +380,4 @@ describe('Mocks S16 persisted CRUD surface', () => {
     expect(useHistoryStore.getState().selectedHistoryId).toBe(initialHistorySelection);
   });
 });
+

@@ -98,6 +98,10 @@ export interface RequestRunObservation {
   requestParamCount?: number;
   requestBodyMode?: RequestDraftState['bodyMode'];
   authSummary?: string;
+  requestResourceId?: string | null;
+  requestCollectionName?: string;
+  requestFolderName?: string;
+  requestSourceLabel?: string;
   errorCode?: string;
   errorSummary?: string;
   stageSummaries?: RequestExecutionStageSummary[];
@@ -141,6 +145,44 @@ function cloneScripts(scripts: RequestDraftScriptsState): RequestDraftScriptsSta
   };
 }
 
+function compareIsoDescending(left: string | undefined, right: string | undefined) {
+  return String(right ?? '').localeCompare(String(left ?? ''));
+}
+
+export function compareSavedRequestResources(left: SavedRequestResourceRecord, right: SavedRequestResourceRecord) {
+  const updatedAtDiff = compareIsoDescending(left.updatedAt, right.updatedAt);
+  if (updatedAtDiff !== 0) {
+    return updatedAtDiff;
+  }
+
+  const createdAtDiff = compareIsoDescending(left.createdAt, right.createdAt);
+  if (createdAtDiff !== 0) {
+    return createdAtDiff;
+  }
+
+  const collectionDiff = String(left.collectionName || DEFAULT_REQUEST_COLLECTION_NAME).localeCompare(
+    String(right.collectionName || DEFAULT_REQUEST_COLLECTION_NAME),
+  );
+  if (collectionDiff !== 0) {
+    return collectionDiff;
+  }
+
+  const folderDiff = String(left.folderName || '').localeCompare(String(right.folderName || ''));
+  if (folderDiff !== 0) {
+    return folderDiff;
+  }
+
+  const nameDiff = left.name.localeCompare(right.name);
+  if (nameDiff !== 0) {
+    return nameDiff;
+  }
+
+  return left.id.localeCompare(right.id);
+}
+
+export function sortSavedRequestResources(records: SavedRequestResourceRecord[]) {
+  return [...records].sort(compareSavedRequestResources);
+}
 
 async function parseJsonResponse<TData>(response: Response): Promise<TData> {
   const responseText = await response.text();
@@ -198,6 +240,7 @@ export function mapSavedRequestResourceToWorkspaceSeed(
     methodLabel: record.method,
     summary: record.summary,
     collectionName: record.collectionName,
+    resourceKind: 'persisted',
     ...(record.folderName ? { folderName: record.folderName } : {}),
     draftSeed: {
       name: record.name,
@@ -211,6 +254,8 @@ export function mapSavedRequestResourceToWorkspaceSeed(
       multipartBody: cloneRows(record.multipartBody),
       auth: cloneAuth(record.auth),
       scripts: cloneScripts(record.scripts),
+      collectionName: record.collectionName,
+      ...(record.folderName ? { folderName: record.folderName } : {}),
     },
   };
 }
@@ -220,22 +265,27 @@ export function upsertSavedRequestResource(
   nextRecord: SavedRequestResourceRecord,
 ) {
   const nextRecords = records.filter((record) => record.id !== nextRecord.id);
-  return [nextRecord, ...nextRecords];
+  return sortSavedRequestResources([nextRecord, ...nextRecords]);
 }
 
 export async function listWorkspaceSavedRequests() {
   const response = await fetch(`/api/workspaces/${DEFAULT_WORKSPACE_ID}/requests`);
-  return parseJsonResponse<{ items: SavedRequestResourceRecord[] }>(response).then((payload) => payload.items);
+  return parseJsonResponse<{ items: SavedRequestResourceRecord[] }>(response)
+    .then((payload) => sortSavedRequestResources(payload.items));
 }
 
 export async function saveRequestDefinition(input: RequestDefinitionInput) {
-  const response = await fetch(`/api/workspaces/${DEFAULT_WORKSPACE_ID}/requests`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
+  const isUpdate = typeof input.id === 'string' && input.id.trim().length > 0;
+  const response = await fetch(
+    isUpdate ? `/api/requests/${input.id}` : `/api/workspaces/${DEFAULT_WORKSPACE_ID}/requests`,
+    {
+      method: isUpdate ? 'PATCH' : 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ request: input }),
     },
-    body: JSON.stringify({ request: input }),
-  });
+  );
 
   return parseJsonResponse<{ request: SavedRequestResourceRecord }>(response).then((payload) => payload.request);
 }
@@ -251,10 +301,3 @@ export async function runRequestDefinition(input: RequestDefinitionInput) {
 
   return parseJsonResponse<{ execution: RequestRunObservation }>(response).then((payload) => payload.execution);
 }
-
-
-
-
-
-
-

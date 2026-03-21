@@ -54,7 +54,7 @@ const connectedAdapterFactory = () =>
     terminalConnectionHealth: 'connected',
   });
 
-describe('Captures S13 real data integration', () => {
+describe('Captures S18 fidelity refinement', () => {
   it('renders persisted captures from the query seam and preserves mock outcome family detail', async () => {
     const firstCapture = defaultCaptureFixtureRecords[0]!;
     const secondCapture = defaultCaptureFixtureRecords[1]!;
@@ -97,9 +97,16 @@ describe('Captures S13 real data integration', () => {
     expect(screen.getByRole('heading', { name: 'Capture detail' })).toBeInTheDocument();
     expect(screen.getByRole('tablist', { name: 'Capture detail tabs' })).toBeInTheDocument();
     expect(screen.getByText(/Real capture data now drives this route/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Request snapshot' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Persistence summary' })).toBeInTheDocument();
+    expect(screen.getByText('Inbound request snapshot')).toBeInTheDocument();
     expect(screen.getByText(/Persisted capture keeps/i)).toBeInTheDocument();
-    expect(screen.getByText(/bounded request-body preview/i)).toBeInTheDocument();
+    expect(screen.getByText(/one bounded request-body preview/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Preview policy/i).length).toBeGreaterThan(0);
+    expect(screen.getByText('Stored summary')).toBeInTheDocument();
+    expect(screen.getByText('Handling summary')).toBeInTheDocument();
     expect(screen.getByText('Stripe webhook success')).toBeInTheDocument();
+    expect(screen.getByText(/POST \/webhooks\/stripe was observed at localhost:5671 as an inbound capture/i)).toBeInTheDocument();
     expect(screen.getByText('Mocked', { selector: '[data-kind="mockOutcome"]' })).toHaveAttribute('data-kind', 'mockOutcome');
     expect(screen.queryByText('Succeeded', { selector: '[data-kind="executionOutcome"]' })).not.toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([input]) => getUrl(input as RequestInfo | URL) === '/api/captured-requests')).toBe(true);
@@ -141,8 +148,8 @@ describe('Captures S13 real data integration', () => {
     const capturesList = await screen.findByLabelText('Captures list');
     await user.click(within(capturesList).getByRole('button', { name: /Open capture GET \/health/i }));
 
-    expect(await screen.findByText(/GET \/health reached localhost:5671 as an inbound capture/i)).toBeInTheDocument();
-    expect(screen.getByText('No request body preview was stored for this capture.')).toBeInTheDocument();
+    expect(await screen.findByText(/GET \/health was observed at localhost:5671 as an inbound capture/i)).toBeInTheDocument();
+    expect(screen.getByText('No request body preview was stored for this inbound capture.')).toBeInTheDocument();
     expect(screen.getAllByText('Bypassed', { selector: '[data-kind="mockOutcome"]' }).length).toBeGreaterThan(0);
     expect(useCapturesStore.getState().selectedCaptureId).toBe(secondCapture.id);
   });
@@ -227,7 +234,7 @@ describe('Captures S13 real data integration', () => {
     expect(screen.getByText(/SQLite capture query failed/i)).toBeInTheDocument();
   });
 
-  it('refreshes persisted captures after a runtime event invalidates the query seam', async () => {
+  it('refreshes persisted captures after a runtime event invalidates the query seam and drops stale detail when the selected row disappears', async () => {
     const firstCapture = defaultCaptureFixtureRecords[1]!;
     const refreshedCapture = defaultCaptureFixtureRecords[0]!;
     let listCallCount = 0;
@@ -241,7 +248,7 @@ describe('Captures S13 real data integration', () => {
 
       if (url === '/api/captured-requests' && (!init || !init.method || init.method === 'GET')) {
         listCallCount += 1;
-        return createApiResponse({ items: listCallCount === 1 ? [firstCapture] : [refreshedCapture, firstCapture] });
+        return createApiResponse({ items: listCallCount === 1 ? [firstCapture] : [refreshedCapture] });
       }
 
       if (url === `/api/captured-requests/${firstCapture.id}` && (!init || !init.method || init.method === 'GET')) {
@@ -266,8 +273,10 @@ describe('Captures S13 real data integration', () => {
     });
 
     expect(await screen.findByRole('button', { name: /Open capture GET \/health/i })).toBeInTheDocument();
+    expect(screen.getByText(/GET \/health was observed at localhost:5671 as an inbound capture/i)).toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole('button', { name: /Open capture POST \/webhooks\/stripe/i })).toBeInTheDocument());
-    expect(screen.getByText(/POST \/webhooks\/stripe reached localhost:5671 as an inbound capture/i)).toBeInTheDocument();
+    expect(await screen.findByText(/POST \/webhooks\/stripe was observed at localhost:5671 as an inbound capture/i)).toBeInTheDocument();
+    expect(useCapturesStore.getState().selectedCaptureId).toBe(refreshedCapture.id);
     expect(listCallCount).toBeGreaterThanOrEqual(2);
   });
 
@@ -310,4 +319,7 @@ describe('Captures S13 real data integration', () => {
     expect(Object.keys(useRequestDraftStore.getState().draftsByTabId)).toHaveLength(1);
   });
 });
+
+
+
 

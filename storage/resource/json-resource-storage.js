@@ -84,6 +84,7 @@ class JsonResourceStorage {
     return fs
       .readdirSync(entityDir)
       .filter((fileName) => fileName.endsWith('.json'))
+      .sort((left, right) => left.localeCompare(right))
       .map((fileName) => JSON.parse(fs.readFileSync(path.join(entityDir, fileName), 'utf8')));
   }
 }

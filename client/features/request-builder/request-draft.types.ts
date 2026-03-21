@@ -76,4 +76,6 @@ export interface RequestDraftSeed {
   multipartBody?: RequestKeyValueRow[];
   auth?: Partial<RequestDraftAuthState>;
   scripts?: RequestDraftScriptsSeed;
+  collectionName?: string;
+  folderName?: string;
 }

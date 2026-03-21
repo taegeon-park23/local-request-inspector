@@ -7,6 +7,7 @@ import {
   mockRuleDetailQueryKey,
   readMockRule,
   setMockRuleEnabled,
+  sortMockRuleRecords,
   updateMockRule,
   workspaceMockRulesQueryKey,
 } from '@client/features/mocks/mock-rules.api';
@@ -113,16 +114,7 @@ function createRuleState(enabled: boolean): MockRuleStateLabel {
 }
 
 function sortRules(records: MockRuleRecord[]) {
-  return [...records].sort((left, right) => {
-    if (left.enabled !== right.enabled) {
-      return left.enabled ? -1 : 1;
-    }
-    if (left.priority !== right.priority) {
-      return right.priority - left.priority;
-    }
-    const updatedAtDiff = String(right.updatedAt).localeCompare(String(left.updatedAt));
-    return updatedAtDiff !== 0 ? updatedAtDiff : left.name.localeCompare(right.name);
-  });
+  return sortMockRuleRecords(records);
 }
 
 function summarizeMatcherRows(rows: MockRuleMatcherRow[], emptyLabel: string) {
@@ -495,7 +487,7 @@ export function MocksPlaceholder() {
             <div>
               <p className="section-placeholder__eyebrow">Rule management</p>
               <h2>Mock rules</h2>
-              <p>Persisted workspace rules live here. Captures still owns runtime mock outcomes after evaluation.</p>
+              <p>Persisted authored rules live here. Captures still owns runtime mock outcomes after evaluation.</p>
             </div>
             <button type="button" className="workspace-button" onClick={() => startCreatingRule()}>
               New Rule
@@ -560,7 +552,7 @@ export function MocksPlaceholder() {
         <header className="section-placeholder__header">
           <p className="section-placeholder__eyebrow">Top-level section</p>
           <h1>Mocks</h1>
-          <p>Mocks is the authored rule management route. It persists matcher and response definitions while captures continues to show runtime outcomes.</p>
+          <p>Mocks is the authored rule management route. It persists matcher and response definitions while captures shows runtime outcomes after evaluation.</p>
         </header>
 
         {isListLoading && !isCreatingRule ? (
@@ -596,7 +588,7 @@ export function MocksPlaceholder() {
 
             <DetailViewerSection
               title="Persistence boundary"
-              description="Create and Save update authored rule definitions only. Runtime outcomes remain in Captures."
+              description="Create and Save update authored rule definitions only. Runtime mock outcomes remain in Captures."
               actions={(
                 <div className="request-work-surface__future-actions">
                   <button type="button" className="workspace-button workspace-button--secondary" onClick={handleSaveRule} disabled={saveDisabledReason !== null}>
@@ -843,3 +835,6 @@ export function MocksPlaceholder() {
     </>
   );
 }
+
+
+

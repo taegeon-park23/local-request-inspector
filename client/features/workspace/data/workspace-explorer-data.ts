@@ -1,5 +1,7 @@
 import {
+  DEFAULT_REQUEST_COLLECTION_NAME,
   mapSavedRequestResourceToWorkspaceSeed,
+  sortSavedRequestResources,
   type SavedRequestResourceRecord,
 } from '@client/features/request-builder/request-builder.api';
 import {
@@ -10,8 +12,8 @@ import {
   workspaceExplorerTree,
 } from '@client/features/workspace/data/workspace-explorer-fixtures';
 
-function cloneRequestNode(node: WorkspaceRequestNode, record?: SavedRequestResourceRecord): WorkspaceRequestNode {
-  if (!record) {
+function cloneFixtureNode(node: WorkspaceExplorerNode): WorkspaceExplorerNode {
+  if (node.kind === 'request') {
     return {
       ...node,
       request: {
@@ -29,44 +31,8 @@ function cloneRequestNode(node: WorkspaceRequestNode, record?: SavedRequestResou
 
   return {
     ...node,
-    name: record.name,
-    request: mapSavedRequestResourceToWorkspaceSeed(record),
+    children: node.children.map((child) => cloneFixtureNode(child)),
   };
-}
-
-function cloneFolderNode(node: WorkspaceFolderNode, recordsById: Map<string, SavedRequestResourceRecord>): WorkspaceFolderNode {
-  return {
-    ...node,
-    children: node.children.map((child) => cloneExplorerNode(child, recordsById)),
-  };
-}
-
-function cloneCollectionNode(
-  node: WorkspaceCollectionNode,
-  recordsById: Map<string, SavedRequestResourceRecord>,
-): WorkspaceCollectionNode {
-  return {
-    ...node,
-    children: node.children.map((child) => cloneExplorerNode(child, recordsById)),
-  };
-}
-
-function cloneExplorerNode(node: WorkspaceExplorerNode, recordsById: Map<string, SavedRequestResourceRecord>): WorkspaceExplorerNode {
-  if (node.kind === 'request') {
-    const persistedRecord = recordsById.get(node.request.id);
-
-    if (persistedRecord) {
-      recordsById.delete(node.request.id);
-    }
-
-    return cloneRequestNode(node, persistedRecord);
-  }
-
-  if (node.kind === 'folder') {
-    return cloneFolderNode(node, recordsById);
-  }
-
-  return cloneCollectionNode(node, recordsById);
 }
 
 function createWorkspaceRequestNode(record: SavedRequestResourceRecord): WorkspaceRequestNode {
@@ -78,54 +44,69 @@ function createWorkspaceRequestNode(record: SavedRequestResourceRecord): Workspa
   };
 }
 
-export function buildWorkspaceExplorerTree(savedRequests: SavedRequestResourceRecord[]) {
-  const recordsById = new Map(savedRequests.map((record) => [record.id, record]));
-  const mergedFixtureTree = workspaceExplorerTree.map((node) => cloneExplorerNode(node, recordsById));
+function createCollectionNodeId(collectionName: string) {
+  return `collection-live-${collectionName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+}
 
-  if (recordsById.size === 0) {
-    return mergedFixtureTree;
+function createFolderNodeId(collectionName: string, folderName: string) {
+  return `folder-live-${collectionName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${folderName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+}
+
+export function buildWorkspaceExplorerTree(savedRequests: SavedRequestResourceRecord[]) {
+  const persistedRequests = sortSavedRequestResources(savedRequests);
+
+  if (persistedRequests.length === 0) {
+    return workspaceExplorerTree.map((node) => cloneFixtureNode(node));
   }
 
-  const extraRecords = [...recordsById.values()].sort((left, right) => left.name.localeCompare(right.name));
-  const collectionsByName = new Map<string, WorkspaceCollectionNode>();
+  const collectionMap = new Map<string, {
+    rootRequests: SavedRequestResourceRecord[];
+    folders: Map<string, SavedRequestResourceRecord[]>;
+  }>();
 
-  for (const record of extraRecords) {
-    const collectionName = record.collectionName || 'Saved Requests';
-    const collectionNode = collectionsByName.get(collectionName) ?? {
-      id: `collection-live-${collectionName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
-      kind: 'collection',
-      name: collectionName,
-      children: [],
+  for (const record of persistedRequests) {
+    const collectionName = record.collectionName || DEFAULT_REQUEST_COLLECTION_NAME;
+    const collectionEntry = collectionMap.get(collectionName) ?? {
+      rootRequests: [],
+      folders: new Map<string, SavedRequestResourceRecord[]>(),
     };
 
-    if (!collectionsByName.has(collectionName)) {
-      collectionsByName.set(collectionName, collectionNode);
+    if (!collectionMap.has(collectionName)) {
+      collectionMap.set(collectionName, collectionEntry);
     }
 
     if (record.folderName) {
-      const existingFolder = collectionNode.children.find(
-        (node): node is WorkspaceFolderNode => node.kind === 'folder' && node.name === record.folderName,
-      );
-
-      const targetFolder = existingFolder ?? {
-        id: `folder-live-${collectionName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${record.folderName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
-        kind: 'folder',
-        name: record.folderName,
-        children: [],
-      };
-
-      if (!existingFolder) {
-        collectionNode.children.push(targetFolder);
-      }
-
-      targetFolder.children.push(createWorkspaceRequestNode(record));
+      const folderRecords = collectionEntry.folders.get(record.folderName) ?? [];
+      folderRecords.push(record);
+      collectionEntry.folders.set(record.folderName, folderRecords);
       continue;
     }
 
-    collectionNode.children.push(createWorkspaceRequestNode(record));
+    collectionEntry.rootRequests.push(record);
   }
 
-  return [...mergedFixtureTree, ...collectionsByName.values()];
+  return [...collectionMap.entries()]
+    .sort(([leftCollectionName], [rightCollectionName]) => leftCollectionName.localeCompare(rightCollectionName))
+    .map(([collectionName, collectionEntry]) => {
+      const folderChildren: WorkspaceFolderNode[] = [...collectionEntry.folders.entries()]
+        .sort(([leftFolderName], [rightFolderName]) => leftFolderName.localeCompare(rightFolderName))
+        .map(([folderName, folderRecords]) => ({
+          id: createFolderNodeId(collectionName, folderName),
+          kind: 'folder',
+          name: folderName,
+          children: sortSavedRequestResources(folderRecords).map((record) => createWorkspaceRequestNode(record)),
+        }));
+
+      const collectionNode: WorkspaceCollectionNode = {
+        id: createCollectionNodeId(collectionName),
+        kind: 'collection',
+        name: collectionName,
+        children: [
+          ...sortSavedRequestResources(collectionEntry.rootRequests).map((record) => createWorkspaceRequestNode(record)),
+          ...folderChildren,
+        ],
+      };
+
+      return collectionNode;
+    });
 }
-
-

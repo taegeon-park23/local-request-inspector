@@ -8,7 +8,7 @@ interface HistoryStoreState {
   selectedHistoryId: string | null;
   searchText: string;
   executionOutcomeFilter: HistoryOutcomeFilter;
-  selectHistory: (historyId: string) => void;
+  selectHistory: (historyId: string | null) => void;
   setSearchText: (searchText: string) => void;
   setExecutionOutcomeFilter: (executionOutcomeFilter: HistoryOutcomeFilter) => void;
 }

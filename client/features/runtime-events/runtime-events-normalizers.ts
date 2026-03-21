@@ -53,7 +53,7 @@ function createBodyPreview(event: RuntimeCaptureTransportEvent) {
     return event.rawBody;
   }
 
-  return 'No request body payload was captured for this request.';
+  return 'No request body preview was stored for this inbound capture.';
 }
 
 function createBodyModeHint(event: RuntimeCaptureTransportEvent): CaptureReplayBodyModeHint {
@@ -119,10 +119,10 @@ function createResponseSummary(mockOutcome: CaptureMockOutcome) {
 
 function createBodyPreviewPolicy(event: RuntimeCaptureTransportEvent) {
   if (!event.rawBody || event.rawBody === 'No Body or Binary') {
-    return 'No request body preview was stored for this capture.';
+    return 'No request body preview was stored for this inbound capture.';
   }
 
-  return 'Capture detail keeps a bounded request-body preview only. Full raw payload inspection and deeper transport traces remain deferred.';
+  return 'Request body preview is bounded before capture persistence. Full raw payload inspection and deeper transport traces remain deferred.';
 }
 
 function createStorageSummary(headers: Record<string, string>, event: RuntimeCaptureTransportEvent) {
@@ -130,10 +130,10 @@ function createStorageSummary(headers: Record<string, string>, event: RuntimeCap
   const hasBodyPreview = Boolean(event.rawBody && event.rawBody !== 'No Body or Binary');
 
   if (hasBodyPreview) {
-    return `Persisted capture keeps ${headerCount} header(s) and a bounded body preview for observation and replay.`;
+    return `Persisted capture keeps ${headerCount} header(s) and one bounded request-body preview for observation and replay.`;
   }
 
-  return `Persisted capture keeps ${headerCount} header(s) and no request body preview for this inbound request.`;
+  return `Persisted capture keeps ${headerCount} header(s) and no request-body preview for this inbound capture.`;
 }
 
 export function normalizeRuntimeCaptureEvent(event: RuntimeCaptureTransportEvent): CaptureRecord {
@@ -158,7 +158,7 @@ export function normalizeRuntimeCaptureEvent(event: RuntimeCaptureTransportEvent
     receivedAtLabel,
     statusCode: typeof event.statusCode === 'number' ? event.statusCode : null,
     bodyHint: createBodyHint(event),
-    requestSummary: `${event.method.toUpperCase()} ${path} reached ${normalizedUrl.host} as an inbound capture.`,
+    requestSummary: `${event.method.toUpperCase()} ${path} was observed at ${normalizedUrl.host} as an inbound capture.`,
     headersSummary: createHeadersSummary(headers),
     bodyPreview: createBodyPreview(event),
     bodyPreviewPolicy: createBodyPreviewPolicy(event),
@@ -190,3 +190,5 @@ export function normalizeRuntimeCaptureEvent(event: RuntimeCaptureTransportEvent
     ...(event.mockRuleName ? { mockRuleName: event.mockRuleName } : {}),
   };
 }
+
+

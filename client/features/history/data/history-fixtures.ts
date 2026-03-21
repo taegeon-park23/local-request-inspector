@@ -50,7 +50,7 @@ const historyRecords: HistoryRecord[] = [
     startedAtLabel: '2026-03-19 10:14',
     completedAtLabel: '2026-03-19 10:14',
     environmentLabel: 'QA environment',
-    sourceLabel: 'Saved request',
+    sourceLabel: 'Saved request snapshot',
     timelineEntries: [
       { id: 'h1-stage-1', title: 'Request prepared', summary: 'Resolved the saved request snapshot with the QA environment.' },
       { id: 'h1-stage-2', title: 'Transport completed', summary: 'Received 200 OK from api.example.com in 184 ms.' },
@@ -109,7 +109,7 @@ const historyRecords: HistoryRecord[] = [
     startedAtLabel: '2026-03-19 10:05',
     completedAtLabel: '2026-03-19 10:05',
     environmentLabel: 'Staging environment',
-    sourceLabel: 'Ad hoc draft',
+    sourceLabel: 'Ad hoc request snapshot',
     timelineEntries: [
       { id: 'h2-stage-1', title: 'Request prepared', summary: 'Draft request snapshot was packaged with staging headers.' },
       { id: 'h2-stage-2', title: 'Transport completed', summary: 'Received 503 Service Unavailable in 622 ms.' },
@@ -165,7 +165,7 @@ const historyRecords: HistoryRecord[] = [
     startedAtLabel: '2026-03-19 09:49',
     completedAtLabel: '2026-03-19 09:49',
     environmentLabel: 'Local environment',
-    sourceLabel: 'Saved request',
+    sourceLabel: 'Saved request snapshot',
     timelineEntries: [
       { id: 'h3-stage-1', title: 'Request prepared', summary: 'Resolved request snapshot against local environment variables.' },
       { id: 'h3-stage-2', title: 'Transport timed out', summary: 'Execution hit the configured timeout boundary at 5.0 s.' },
@@ -219,7 +219,7 @@ const historyRecords: HistoryRecord[] = [
     startedAtLabel: '2026-03-19 09:24',
     completedAtLabel: '2026-03-19 09:24',
     environmentLabel: 'Production safety profile',
-    sourceLabel: 'Saved request',
+    sourceLabel: 'Saved request snapshot',
     timelineEntries: [
       { id: 'h4-stage-1', title: 'Request prepared', summary: 'Loaded the saved request snapshot with production safety profile metadata.' },
       { id: 'h4-stage-2', title: 'Execution blocked', summary: 'Policy denied transport before any network request was sent.' },
@@ -239,3 +239,4 @@ export const degradedEmptyHistoryFixtureScenario: HistoryFixtureScenario = {
   listItems: [],
   selectedHistoryId: null,
 };
+

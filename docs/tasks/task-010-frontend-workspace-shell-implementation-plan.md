@@ -2,7 +2,7 @@
 
 - **Purpose:** Define the incremental implementation plan for the React + Vite + TypeScript frontend shell so the team can begin coding with clear route, shell, provider, state, and slice boundaries.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-20
+- **Last Updated:** 2026-03-21
 - **Related Documents:** `task-006-frontend-stack-and-application-shell-decision.md`, `task-011-request-builder-mvp-design.md`, `task-012-script-editor-and-automation-ux-spec.md`, `task-013-mock-engine-rules-spec.md`, `task-014-history-inspector-behavior-spec.md`, `task-016-testing-and-qa-strategy.md`, `task-017-developer-environment-and-tooling-baseline.md`, `../architecture/frontend-workspace-shell-implementation-plan.md`, `../tracking/master-task-board.md`
 - **Status:** done
 - **Priority:** P1
@@ -65,6 +65,9 @@ This task is done when all of the following are true:
 - **Implementation follow-up (2026-03-20):** S14 is now delivered in code with richer bounded diagnostics across the active request result panel, persisted history detail, and persisted captures detail, while keeping family-aware outcome badges and authoring-versus-observation state boundaries intact.
 - **Implementation follow-up (2026-03-20):** S15 is now delivered in code with bounded pre-request/post-response/tests script execution in the run lane, structured redacted stage summaries in the active request result panel, and persisted script diagnostics summaries in history while keeping request authoring state separate from runtime observation state.
 - **Implementation follow-up (2026-03-20):** S16 is now delivered in code with persisted mock-rule CRUD, query-driven /mocks management UI, enabled/priority-based inbound mock evaluation, and capture-side mock outcome summaries that remain separate from authored rule state.
+- **Implementation follow-up (2026-03-20):** S17 is now delivered in code with clarified request create/update persistence semantics, replay draft save stabilization, persisted-first workspace explorer ordering, predictable persisted mock-rule ordering, and bounded runtime request snapshot linkage metadata that keeps resource and runtime lanes distinct.
+- **Implementation follow-up (2026-03-21):** S18 is now delivered in code with refined inbound-capture vs persisted-history request snapshot wording, clearer bounded/truncated/redacted preview policy copy, tighter selection fallback after filter/refresh changes, and better cross-surface summary consistency without merging observation state ownership.
+- **Implementation follow-up (2026-03-21):** S19 is now delivered in code with wording and diagnostics polish across request result, scripts, captures, history, mocks, replay cues, and workspace authoring copy, aligning bounded/redacted/deferred messaging without changing semantics or state ownership.
 
 ## 7. Key Decisions
 1. The frontend rewrite should proceed **shell-first with incremental feature slices**, not route-first and not all-at-once.
@@ -94,7 +97,11 @@ This task is done when all of the following are true:
 - Secondary reviewers: Backend Lead + QA / Senior Engineer
 
 ## 11. Closure Decision
-T010 can stay closed as **done** at the planning/documentation level, and the linked implementation slices S1-S16 are now landed. The next work should move to follow-up refinement around persistence integration, captures/history fidelity, and wording/diagnostics polish rather than widening the shell itself.
+T010 can stay closed as **done** at the planning/documentation level, and the linked implementation slices S1-S19 are now landed. The next work should move to optional import/export, migration-ready cleanup, and repo/tooling cleanup only if later justified rather than widening the shell itself.
+
+
+
+
 
 
 

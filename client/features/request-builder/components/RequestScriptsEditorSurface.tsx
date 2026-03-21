@@ -35,7 +35,7 @@ const scriptStageDefinitions: ScriptStageDefinition[] = [
     label: 'Post-response',
     eyebrow: 'After transport',
     title: 'Summarize response handling intent',
-    description: 'Use this stage for lightweight post-response diagnostics. Bounded console summary and derived execution notes run after transport, while richer diagnostics stay deferred.',
+    description: 'Use this stage for lightweight post-response diagnostics. Bounded console summaries and derived execution notes run after transport, while richer diagnostics stay deferred.',
     helperItems: [
       'Capture summary logic or redaction notes you want after a response arrives.',
       'Do not expect history or result-panel data to flow into this authoring state yet.',
@@ -49,7 +49,7 @@ const scriptStageDefinitions: ScriptStageDefinition[] = [
     label: 'Tests',
     eyebrow: 'Assertions later',
     title: 'Plan request-bound assertions',
-    description: 'Use this stage for assertion authoring. Bounded pass/fail summaries now flow into the result panel and persisted history, while richer diagnostics remain deferred.',
+    description: 'Use this stage for assertion authoring. Bounded pass/fail summaries flow into the result panel and persisted history, while richer diagnostics remain deferred.',
     helperItems: [
       'Keep assertions request-bound instead of coupling them to history or capture detail panels.',
       'Reusable script templates and shared libraries remain deferred.',
@@ -97,7 +97,7 @@ export default function RequestScriptsEditorSurface({
         <div>
           <h3>Scripts</h3>
           <p>
-            Scripts stays request-bound and draft-owned. This surface stays authoring-owned, but Run now executes bounded stage-aware scripts and sends redacted summaries to observation panels and persisted history.
+            Scripts stays request-bound and draft-owned. This surface remains authoring-owned, while Run executes bounded stage-aware scripts and sends redacted summaries to observation panels and persisted history.
           </p>
         </div>
       </header>
@@ -172,6 +172,9 @@ export default function RequestScriptsEditorSurface({
     </section>
   );
 }
+
+
+
 
 
 

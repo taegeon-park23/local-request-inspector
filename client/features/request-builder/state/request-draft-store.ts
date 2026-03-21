@@ -130,8 +130,8 @@ function createDraftFromTab(tab: RequestTabRecord, explicitDraftSeed?: RequestDr
     scripts: createDefaultScriptsState(draftSeed?.scripts),
     activeEditorTab: 'params',
     dirty: false,
-    ...(tab.collectionName ? { collectionName: tab.collectionName } : {}),
-    ...(tab.folderName ? { folderName: tab.folderName } : {}),
+    ...(draftSeed?.collectionName || tab.collectionName ? { collectionName: draftSeed?.collectionName ?? tab.collectionName } : {}),
+    ...(draftSeed?.folderName || tab.folderName ? { folderName: draftSeed?.folderName ?? tab.folderName } : {}),
   };
 }
 

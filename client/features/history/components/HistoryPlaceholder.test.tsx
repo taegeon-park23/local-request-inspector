@@ -47,12 +47,16 @@ function getUrl(input: RequestInfo | URL) {
   return input.url;
 }
 
-describe('History S12 real data integration', () => {
+describe('History S18 fidelity refinement', () => {
   it('renders persisted execution history from the query seam and switches detail composition by row selection', async () => {
     const user = userEvent.setup();
     const [baseFirstHistory, baseSecondHistory] = defaultHistoryFixtureScenario.listItems as [typeof defaultHistoryFixtureScenario.listItems[number], typeof defaultHistoryFixtureScenario.listItems[number]];
     const firstHistory = {
       ...baseFirstHistory,
+      sourceLabel: 'Saved request snapshot',
+      requestResourceId: 'request-create-user',
+      requestCollectionName: 'Saved Requests',
+      requestFolderName: 'Core Flows',
       responsePreviewSizeLabel: '73 B preview',
       responsePreviewPolicy: 'Persisted response preview is bounded and redacted before deeper diagnostics are added.',
       requestInputSummary: '0 params · 3 headers · json body · bearer',
@@ -94,6 +98,8 @@ describe('History S12 real data integration', () => {
     };
     const secondHistory = {
       ...baseSecondHistory,
+      sourceLabel: 'Ad hoc request snapshot',
+      requestCollectionName: 'Draft Scratchpad',
       responsePreviewSizeLabel: '56 B preview',
       responsePreviewPolicy: 'Persisted response preview is bounded and redacted before deeper diagnostics are added.',
       requestInputSummary: '2 params · 2 headers · No body · No auth',
@@ -169,6 +175,11 @@ describe('History S12 real data integration', () => {
     expect(screen.getByRole('tablist', { name: 'History result tabs' })).toBeInTheDocument();
     expect(screen.getByText('73 B preview')).toBeInTheDocument();
     expect(screen.getByText(/bounded and redacted before deeper diagnostics/i)).toBeInTheDocument();
+    expect(screen.getByText('Saved request snapshot')).toBeInTheDocument();
+    expect(screen.getByText('request-create-user')).toBeInTheDocument();
+    expect(screen.getByText('Saved Requests / Core Flows')).toBeInTheDocument();
+    expect(screen.getByText('0 params · 3 headers · json body · bearer')).toBeInTheDocument();
+    expect(screen.getByText('Persisted response detail stays bounded')).toBeInTheDocument();
 
     expect(screen.getByText('Succeeded', { selector: '[data-kind="executionOutcome"]' })).toHaveAttribute(
       'data-kind',
@@ -189,11 +200,14 @@ describe('History S12 real data integration', () => {
 
     expect(screen.getByText(/GET https:\/\/api.example.com\/dashboard ran from an ad hoc tab/i)).toBeInTheDocument();
     expect(screen.getByText('56 B preview')).toBeInTheDocument();
+    expect(screen.getAllByText('Ad hoc request snapshot').length).toBeGreaterThan(0);
+    expect(screen.getByText('Draft save placement: Draft Scratchpad')).toBeInTheDocument();
     expect(screen.getAllByText('503 Service Unavailable', { selector: '[data-kind="transportOutcome"]' }).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Some tests failed', { selector: '[data-kind="testSummary"]' }).length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole('tab', { name: 'Console' }));
     expect(screen.getByRole('heading', { name: 'Console summary' })).toBeInTheDocument();
+    expect(screen.getByText('Stored summary')).toBeInTheDocument();
     expect(screen.getByText('[post-response] flagged retry-after guidance')).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Tests' }));
@@ -209,6 +223,47 @@ describe('History S12 real data integration', () => {
     expect(
       fetchMock.mock.calls.some(([input]) => getUrl(input as RequestInfo | URL) === `/api/execution-histories/${secondHistory.id}`),
     ).toBe(true);
+  });
+
+  it('keeps detail selection aligned with the filtered list and resets stale selection to the next visible persisted row', async () => {
+    const user = userEvent.setup();
+    const [firstHistory, secondHistory] = defaultHistoryFixtureScenario.listItems as [typeof defaultHistoryFixtureScenario.listItems[number], typeof defaultHistoryFixtureScenario.listItems[number]];
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/execution-histories' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [firstHistory, secondHistory] });
+      }
+
+      if (url === `/api/execution-histories/${firstHistory.id}` && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ history: firstHistory });
+      }
+
+      if (url === `/api/execution-histories/${secondHistory.id}` && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ history: secondHistory });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />, { initialEntries: ['/history'] });
+
+    const historyList = await screen.findByLabelText('History list');
+    await user.click(within(historyList).getByRole('button', { name: 'Open history Load dashboard' }));
+    expect(await screen.findByText(/GET https:\/\/api.example.com\/dashboard ran from an ad hoc tab/i)).toBeInTheDocument();
+    expect(useHistoryStore.getState().selectedHistoryId).toBe(secondHistory.id);
+
+    await user.selectOptions(screen.getByLabelText('Execution outcome filter'), 'Succeeded');
+
+    await waitFor(() => expect(screen.getByText(/POST https:\/\/api.example.com\/users ran with the QA environment snapshot/i)).toBeInTheDocument());
+    expect(screen.queryByText(/GET https:\/\/api.example.com\/dashboard ran from an ad hoc tab/i)).not.toBeInTheDocument();
+    expect(useHistoryStore.getState().selectedHistoryId).toBe(firstHistory.id);
   });
 
   it('shows empty state when the persisted history query returns no executions', async () => {
@@ -451,8 +506,9 @@ describe('History S12 real data integration', () => {
     expect(screen.getByText(/GET https:\/\/api.example.com\/runtime was persisted as a bounded redacted request snapshot/i)).toBeInTheDocument();
     expect(screen.getAllByText('HTTP 201', { selector: '[data-kind="transportOutcome"]' }).length).toBeGreaterThan(0);
     expect(screen.getByText('1 assertion passed. No failures.')).toBeInTheDocument();
-    expect(useHistoryStore.getState().selectedHistoryId).toBe(null);
+    expect(useHistoryStore.getState().selectedHistoryId).toBe(runtimeProbeHistory.id);
     expect(Object.keys(useRequestDraftStore.getState().draftsByTabId)).toHaveLength(1);
   });
 });
+
 

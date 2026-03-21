@@ -63,6 +63,9 @@ export interface HistoryRecord {
   requestBodyMode: HistoryRequestBodyMode;
   requestBodyText: string;
   requestAuth: HistoryRequestAuthSnapshot;
+  requestResourceId?: string | null;
+  requestCollectionName?: string;
+  requestFolderName?: string;
   responseSummary: string;
   headersSummary: string;
   bodyHint: string;

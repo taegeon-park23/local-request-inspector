@@ -8,7 +8,7 @@ interface CapturesStoreState {
   searchText: string;
   outcomeFilter: CaptureOutcomeFilter;
   setConnectionHealth: (connectionHealth: RuntimeConnectionHealth) => void;
-  selectCapture: (captureId: string) => void;
+  selectCapture: (captureId: string | null) => void;
   setSearchText: (searchText: string) => void;
   setOutcomeFilter: (outcomeFilter: CaptureOutcomeFilter) => void;
 }

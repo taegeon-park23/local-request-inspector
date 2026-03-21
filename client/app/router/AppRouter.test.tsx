@@ -42,7 +42,7 @@ describe('AppRouter shell bootstrap', () => {
     const workspaceMainSurface = screen.getByLabelText('Main work surface');
 
     await user.click(within(workspaceExplorer).getByRole('button', { name: 'New Request' }));
-    expect(screen.getByText(/Save updates the request definition\. Run does not save automatically and does not clear unsaved changes\./i)).toBeInTheDocument();
+    expect(screen.getByText(/Save updates the request definition\. Run does not save automatically and does not clear unsaved authoring changes\./i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Run' })).toBeDisabled();
 
@@ -57,7 +57,7 @@ describe('AppRouter shell bootstrap', () => {
 
     await user.click(screen.getByRole('link', { name: /history/i }));
     expect(screen.getByRole('heading', { name: 'History' })).toBeInTheDocument();
-    expect(screen.getByText(/Run Replay Now stays disabled in this slice because replay is still edit-first/i)).toBeInTheDocument();
+    expect(screen.getByText(/Run Replay Now stays disabled in this slice because replay remains edit-first/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Open Replay Draft' }));
     expect(await screen.findByRole('heading', { name: 'Workspace' })).toBeInTheDocument();
@@ -70,7 +70,10 @@ describe('AppRouter shell bootstrap', () => {
 
     await user.click(screen.getByRole('link', { name: /mocks/i }));
     expect(screen.getByRole('heading', { name: 'Mocks' })).toBeInTheDocument();
-    expect(screen.getByText(/Persisted workspace rules live here/i)).toBeInTheDocument();
+    expect(screen.getByText(/Persisted authored rules live here/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save rule' })).toBeEnabled();
   });
 });
+
+
+

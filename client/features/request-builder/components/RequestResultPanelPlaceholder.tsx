@@ -41,6 +41,33 @@ function getTransportOutcomeLabel(responseStatus: number | null) {
   return `HTTP ${responseStatus}`;
 }
 
+function formatObservedPlacement(collectionName?: string, folderName?: string) {
+  if (!collectionName) {
+    return 'No saved placement recorded';
+  }
+
+  return folderName ? `${collectionName} / ${folderName}` : collectionName;
+}
+
+function formatObservedLinkage(
+  requestResourceId?: string | null,
+  sourceLabel?: string,
+  collectionName?: string,
+  folderName?: string,
+) {
+  if (requestResourceId) {
+    return requestResourceId;
+  }
+
+  if (collectionName) {
+    return sourceLabel === 'Saved request snapshot'
+      ? formatObservedPlacement(collectionName, folderName)
+      : `Draft save placement: ${formatObservedPlacement(collectionName, folderName)}`;
+  }
+
+  return 'No linked saved request';
+}
+
 function getStageStatus(
   executionStageSummaries: NonNullable<ReturnType<typeof useRequestCommandStore.getState>['byTabId'][string]['run']['latestExecution']>['stageSummaries'],
   stageId: 'pre-request' | 'post-response' | 'tests',
@@ -75,8 +102,8 @@ export function RequestResultPanelPlaceholder({
     return (
       <div className="workspace-detail-panel workspace-detail-panel--empty">
         <EmptyStateCallout
-          title="Observation panel is waiting for an active draft"
-          description="Open a request tab first. Save updates request definitions in the center authoring surface, and Run sends execution results here without turning this panel into editable state."
+          title="Observation panel is waiting for an active request tab"
+          description="Open a request tab first. The center panel owns authoring state, while Save updates request definitions and Run sends bounded observation here without turning this panel into editable state."
         />
       </div>
     );
@@ -91,7 +118,7 @@ export function RequestResultPanelPlaceholder({
           <p className="section-placeholder__eyebrow">Observation surface</p>
           <h2>Observation for {activeTab.title}</h2>
           <p>
-            This right-hand panel is reserved for run observation only. Save never updates it, and request authoring stays in the center workspace surface.
+            This right-hand panel is reserved for run observation only. Save never updates it, and request authoring stays in the center authoring surface.
           </p>
         </div>
       </header>
@@ -105,7 +132,7 @@ export function RequestResultPanelPlaceholder({
 
       <DetailViewerSection
         title={`${activeResultTabLabel} summary`}
-        description="Observation stays separate from the editable request draft. Run creates execution output here without clearing unsaved changes in the center panel."
+        description="Observation stays separate from the editable request draft. Run creates execution output here without clearing unsaved changes in the center authoring panel."
         actions={
           execution ? <StatusBadge kind="executionOutcome" value={execution.executionOutcome} /> : null
         }
@@ -124,13 +151,13 @@ export function RequestResultPanelPlaceholder({
       {activeResultTab === 'response' ? (
         <DetailViewerSection
           title="Response detail"
-          description="Response preview belongs to the latest run for this active tab only. It remains bounded here and does not rewrite the request draft."
+          description="Response detail belongs to the latest run for this active tab only. Preview stays bounded here, and truncation or redaction notes stay explicit instead of expanding the payload surface."
           tone="muted"
         >
           {runStatus.status === 'pending' && !execution ? (
             <EmptyStateCallout
               title="Running request"
-              description="The request is in flight. Response headers, preview size, and body preview will appear here when the current run settles."
+              description="The request is in flight. Response headers, bounded preview size, and body preview will appear here when the current run settles."
             />
           ) : execution ? (
             <>
@@ -143,17 +170,18 @@ export function RequestResultPanelPlaceholder({
                   { label: 'HTTP status', value: execution.responseStatusLabel },
                   { label: 'Duration', value: `${execution.durationMs} ms` },
                   { label: 'Preview size', value: execution.responsePreviewSizeLabel ?? 'No preview stored' },
+                  { label: 'Preview policy', value: execution.responsePreviewPolicy ?? 'Preview is bounded before richer diagnostics and raw payload inspection are added.' },
                   { label: 'Headers summary', value: execution.responseHeadersSummary },
                   { label: 'Body hint', value: execution.responseBodyHint },
                 ]}
               />
-              <p className="shared-readiness-note">{execution.responsePreviewPolicy ?? 'Response preview stays bounded in this surface while richer inspection remains deferred.'}</p>
+              <p className="shared-readiness-note">{execution.responsePreviewPolicy ?? 'Preview stays bounded in this observation surface while richer inspection remains deferred.'}</p>
               <pre className="history-preview-block" data-testid="request-response-preview">{execution.responseBodyPreview || 'No response body preview was captured.'}</pre>
             </>
           ) : (
             <EmptyStateCallout
               title="Run this request to populate Response"
-              description="Save only updates the request definition. Use Run to execute the current draft and load response status, preview size, headers, and body preview here."
+              description="Save only updates the request definition. Use Run to execute the current draft and load response status, bounded preview metadata, headers, and body preview here."
             />
           )}
         </DetailViewerSection>
@@ -238,13 +266,13 @@ export function RequestResultPanelPlaceholder({
       {activeResultTab === 'execution-info' ? (
         <DetailViewerSection
           title="Execution info"
-          description="Execution metadata belongs to the latest run and stays separate from saved request definitions and inbound observation routes."
+          description="Execution metadata belongs to the latest run and stays separate from saved request definitions, inbound captures, and persisted history."
           tone="muted"
         >
           {runStatus.status === 'pending' && !execution ? (
             <EmptyStateCallout
               title="Execution is starting"
-              description="A local run id, timing data, and bounded request snapshot summary will appear here once the current request settles."
+              description="A local run id, timing data, and a bounded request snapshot summary will appear here once the current request settles."
             />
           ) : execution ? (
             <>
@@ -254,6 +282,9 @@ export function RequestResultPanelPlaceholder({
                   { label: 'Started at', value: execution.startedAt },
                   { label: 'Completed at', value: execution.completedAt },
                   { label: 'Outcome', value: execution.executionOutcome },
+                  { label: 'Snapshot source', value: execution.requestSourceLabel ?? 'Runtime request snapshot' },
+                  { label: 'Linked request', value: formatObservedLinkage(execution.requestResourceId, execution.requestSourceLabel, execution.requestCollectionName, execution.requestFolderName) },
+                  { label: 'Placement', value: formatObservedPlacement(execution.requestCollectionName, execution.requestFolderName) },
                   { label: 'Error code', value: execution.errorCode ?? 'No execution error code' },
                   { label: 'Error summary', value: execution.errorSummary ?? 'No execution error was reported.' },
                   { label: 'Request input', value: execution.requestInputSummary ?? 'Request snapshot summary was not returned.' },
@@ -274,7 +305,7 @@ export function RequestResultPanelPlaceholder({
           ) : (
             <EmptyStateCallout
               title="No execution info yet"
-              description="Use Run to create a fresh execution record for this tab. Save success does not populate execution info."
+              description="Use Run to create a fresh execution record for this tab. Save success does not populate execution info in this observation panel."
             />
           )}
         </DetailViewerSection>
@@ -282,3 +313,14 @@ export function RequestResultPanelPlaceholder({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

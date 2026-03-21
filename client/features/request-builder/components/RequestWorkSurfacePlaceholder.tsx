@@ -76,7 +76,7 @@ export function RequestWorkSurfacePlaceholder({
       <div className="request-work-surface request-work-surface--empty" data-testid="request-tab-empty-state">
         <h2>No request tab selected</h2>
         <p>
-          Open a saved request or create a draft to begin authoring. Response, history, captures, and mocks stay in separate observation or management routes until wiring lands.
+          Open a saved request or create a draft to begin authoring. Response stays in the right-hand observation panel, while history, captures, and mocks remain separate observation or rule-management routes.
         </p>
         <button type="button" className="workspace-button" onClick={onCreateRequest}>
           Create Draft Request
@@ -89,7 +89,7 @@ export function RequestWorkSurfacePlaceholder({
     return (
       <div className="request-work-surface request-work-surface--empty">
         <h2>Preparing request draft</h2>
-        <p>This tab is creating a fresh authoring context. Replay and observation records are always copied into a new draft instead of being edited in place.</p>
+        <p>This tab is creating a fresh authoring context. Replay and other observation records are always copied into a new draft instead of being edited in place.</p>
       </div>
     );
   }
@@ -98,9 +98,11 @@ export function RequestWorkSurfacePlaceholder({
   const replaySource = activeTab.source === 'replay' ? activeTab.replaySource ?? null : null;
   const locationSummary = replaySource
     ? replaySource.description
-    : draft.collectionName
+    : activeTab.source === 'saved'
       ? `${draft.collectionName}${draft.folderName ? ` / ${draft.folderName}` : ''}`
-      : 'Unsaved draft';
+      : draft.collectionName
+        ? `Default save placement: ${draft.collectionName}${draft.folderName ? ` / ${draft.folderName}` : ''}`
+        : 'Unsaved draft';
   const saveStatusCopy = saveStatus.status === 'success'
     ? formatSavedAt(saveStatus.savedAt)
     : saveStatus.message ?? (saveDisabledReason ?? 'Save updates the request definition only.');
@@ -119,7 +121,7 @@ export function RequestWorkSurfacePlaceholder({
           {replaySource ? (
             <span className="workspace-chip workspace-chip--replay">{replaySource.label}</span>
           ) : (
-            <span className="workspace-chip">{draft.collectionName ? 'Saved request' : 'New draft'}</span>
+            <span className="workspace-chip">{activeTab.source === 'saved' ? 'Saved request' : 'New draft'}</span>
           )}
           {draft.dirty ? <span className="workspace-chip workspace-chip--accent">Dirty</span> : null}
         </div>
@@ -162,12 +164,12 @@ export function RequestWorkSurfacePlaceholder({
           <div className="request-builder-core__command-copy-group">
             <p className="request-builder-core__command-copy">
               {replaySource
-                ? 'Replay drafts still open in edit-first mode. Saving creates a request definition, while Run creates separate observation for this draft only.'
-                : 'Save updates the request definition. Run does not save automatically and does not clear unsaved changes.'}
+                ? 'Replay drafts still open in edit-first mode. Save creates or updates a request definition, while Run creates separate observation for this draft only.'
+                : 'Save updates the request definition. Run does not save automatically and does not clear unsaved authoring changes.'}
             </p>
             <p className="shared-readiness-note" data-testid="save-command-status">{saveStatusCopy}</p>
             <p className="shared-readiness-note" data-testid="run-command-status">{runStatusCopy}</p>
-            <p className="shared-readiness-note">Duplicate stays deferred until saved-request copy semantics land in a later slice.</p>
+            <p className="shared-readiness-note">Duplicate stays deferred until saved-request copy semantics are added in a later slice.</p>
           </div>
         </div>
       </div>
@@ -249,7 +251,7 @@ export function RequestWorkSurfacePlaceholder({
             <header className="request-editor-card__header">
               <div>
                 <h3>Body</h3>
-                <p>Choose a lightweight authoring mode. Save persists body inputs, while Run sends the current authored body without pulling result state back into the draft.</p>
+                <p>Choose a lightweight authoring mode. Save persists body inputs, while Run sends the current authored body without pulling observation state back into the draft.</p>
               </div>
             </header>
 
@@ -412,7 +414,7 @@ export function RequestWorkSurfacePlaceholder({
                   <div>
                     <h3>Scripts</h3>
                     <p>
-                      Loading the stage-aware script editor on demand so Params, Headers, Body, and Auth stay responsive while the heavy editor path initializes.
+                      Loading the stage-aware script editor on demand so Params, Headers, Body, and Auth stay responsive while the heavier authoring path initializes.
                     </p>
                   </div>
                 </header>
@@ -420,7 +422,7 @@ export function RequestWorkSurfacePlaceholder({
                   <article className="workspace-surface-card workspace-surface-card--muted">
                     <h4>Lazy editor path</h4>
                     <p>
-                      This fallback explains the wait: the script editor bundle is loaded only when Scripts is active. Monaco, execution wiring, and richer diagnostics still arrive in later slices.
+                      This fallback explains the wait: the script editor bundle is loaded only when Scripts is active. Advanced editor assistance remains deferred even though bounded script execution already writes observation summaries elsewhere.
                     </p>
                   </article>
                 </div>
@@ -438,3 +440,11 @@ export function RequestWorkSurfacePlaceholder({
     </div>
   );
 }
+
+
+
+
+
+
+
+
