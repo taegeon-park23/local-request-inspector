@@ -10,6 +10,11 @@ const {
   validateMockRuleInput,
 } = require('./mock-rule-engine');
 const { bootstrapPersistence } = require('./storage');
+const {
+  buildAuthoredResourceBundle,
+  parseAuthoredResourceBundleText,
+  createImportedResourceName,
+} = require('./storage/resource/authored-resource-bundle');
 
 const app = express();
 const PORT = 5671;
@@ -2092,13 +2097,75 @@ app.use(express.json({ verify: captureRawBody }));
 app.use(express.urlencoded({ extended: true, verify: captureRawBody }));
 app.use(express.text({ type: '*/*' }));
 
+function listWorkspaceSavedRequestRecords(workspaceId) {
+  return resourceStorage
+    .list('request')
+    .filter((record) => record.workspaceId === workspaceId)
+    .sort(compareSavedRequestRecords);
+}
+
+function listWorkspaceMockRuleRecords(workspaceId) {
+  return resourceStorage
+    .list('mock-rule')
+    .filter((record) => record.workspaceId === workspaceId)
+    .sort(compareMockRuleRecords);
+}
+
+function createImportedResourceRejection(kind, reason, name) {
+  return {
+    kind,
+    reason,
+    ...(typeof name === 'string' && name.trim().length > 0 ? { name: name.trim() } : {}),
+  };
+}
+
+function createImportedRequestRecord(input, workspaceId, usedNames) {
+  const validationError = validateRequestDefinition(input);
+
+  if (validationError) {
+    return {
+      rejection: createImportedResourceRejection('request', validationError, input?.name),
+    };
+  }
+
+  return {
+    record: normalizeSavedRequest(
+      {
+        ...input,
+        id: randomUUID(),
+        workspaceId,
+        name: createImportedResourceName(input.name, usedNames),
+      },
+      null,
+      workspaceId,
+    ),
+  };
+}
+
+function createImportedMockRuleResource(input, workspaceId, usedNames) {
+  const validationError = validateMockRuleInput(input);
+
+  if (validationError) {
+    return {
+      rejection: createImportedResourceRejection('mock-rule', validationError, input?.name),
+    };
+  }
+
+  return {
+    rule: createMockRuleRecord(
+      {
+        ...input,
+        id: randomUUID(),
+        name: createImportedResourceName(input.name, usedNames),
+      },
+      null,
+      workspaceId,
+    ),
+  };
+}
 app.get('/api/workspaces/:workspaceId/requests', (req, res) => {
   try {
-    const items = resourceStorage
-      .list('request')
-      .filter((record) => record.workspaceId === req.params.workspaceId)
-      .sort(compareSavedRequestRecords);
-
+    const items = listWorkspaceSavedRequestRecords(req.params.workspaceId);
     return sendData(res, { items });
   } catch (error) {
     return sendError(res, 500, 'request_list_failed', error.message);
@@ -2164,13 +2231,96 @@ app.patch('/api/requests/:requestId', (req, res) => {
   }
 });
 
+app.get('/api/workspaces/:workspaceId/resource-bundle', (req, res) => {
+  try {
+    const bundle = buildAuthoredResourceBundle({
+      workspaceId: req.params.workspaceId,
+      requests: listWorkspaceSavedRequestRecords(req.params.workspaceId),
+      mockRules: listWorkspaceMockRuleRecords(req.params.workspaceId),
+    });
+
+    return sendData(res, { bundle });
+  } catch (error) {
+    return sendError(res, 500, 'resource_bundle_export_failed', error.message, {
+      workspaceId: req.params.workspaceId,
+    });
+  }
+});
+
+app.post('/api/workspaces/:workspaceId/resource-bundle/import', (req, res) => {
+  const bundleText = req.body?.bundleText;
+
+  if (typeof bundleText !== 'string') {
+    return sendError(res, 400, 'resource_bundle_invalid_json', 'Import request must include bundle JSON text.', {
+      workspaceId: req.params.workspaceId,
+    });
+  }
+
+  let bundle;
+  try {
+    bundle = parseAuthoredResourceBundleText(bundleText);
+  } catch (error) {
+    return sendError(
+      res,
+      400,
+      error.code || 'resource_bundle_import_failed',
+      error.message,
+      {
+        workspaceId: req.params.workspaceId,
+        ...(error.details || {}),
+      },
+    );
+  }
+
+  try {
+    const existingRequests = listWorkspaceSavedRequestRecords(req.params.workspaceId);
+    const existingMockRules = listWorkspaceMockRuleRecords(req.params.workspaceId);
+    const usedRequestNames = new Set(existingRequests.map((record) => String(record.name || '').trim().toLowerCase()).filter(Boolean));
+    const usedMockRuleNames = new Set(existingMockRules.map((record) => String(record.name || '').trim().toLowerCase()).filter(Boolean));
+    const acceptedRequests = [];
+    const acceptedMockRules = [];
+    const rejected = [];
+
+    for (const requestResource of bundle.requests) {
+      const importResult = createImportedRequestRecord(requestResource, req.params.workspaceId, usedRequestNames);
+
+      if (importResult.rejection) {
+        rejected.push(importResult.rejection);
+        continue;
+      }
+
+      resourceStorage.save('request', importResult.record);
+      acceptedRequests.push(importResult.record);
+    }
+
+    for (const mockRuleResource of bundle.mockRules) {
+      const importResult = createImportedMockRuleResource(mockRuleResource, req.params.workspaceId, usedMockRuleNames);
+
+      if (importResult.rejection) {
+        rejected.push(importResult.rejection);
+        continue;
+      }
+
+      resourceStorage.save('mock-rule', importResult.rule);
+      acceptedMockRules.push(importResult.rule);
+    }
+
+    return sendData(res, {
+      result: {
+        acceptedRequests: acceptedRequests.sort(compareSavedRequestRecords),
+        acceptedMockRules: acceptedMockRules.sort(compareMockRuleRecords),
+        rejected,
+      },
+    });
+  } catch (error) {
+    return sendError(res, 500, 'resource_bundle_import_failed', error.message, {
+      workspaceId: req.params.workspaceId,
+    });
+  }
+});
 app.get('/api/workspaces/:workspaceId/mock-rules', (req, res) => {
   try {
-    const items = resourceStorage
-      .list('mock-rule')
-      .filter((record) => record.workspaceId === req.params.workspaceId)
-      .sort(compareMockRuleRecords);
-
+    const items = listWorkspaceMockRuleRecords(req.params.workspaceId);
     return sendData(res, { items });
   } catch (error) {
     return sendError(res, 500, 'mock_rule_list_failed', error.message);
@@ -2828,6 +2978,10 @@ app.all(/.*/, async (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`[Ready] http://localhost:${PORT}`));
+
+
+
+
 
 
 

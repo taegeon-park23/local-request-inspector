@@ -45,6 +45,37 @@ body { margin: 0; min-height: 100vh; background: #020617; }
 .workspace-button--ghost { background: transparent; border-color: #334155; color: #cbd5e1; }
 .workspace-explorer { display: grid; gap: 1rem; }
 .workspace-explorer__header { display: grid; gap: 0.75rem; }
+.workspace-explorer__header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.workspace-explorer__import-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.workspace-explorer__file-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.workspace-explorer__status {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.workspace-explorer__status--success {
+  color: #86efac;
+}
+.workspace-explorer__status--error {
+  color: #fca5a5;
+}
+.workspace-explorer__status--info {
+  color: #93c5fd;
+}
 .workspace-explorer__header h2,
 .request-work-surface h2,
 .workspace-detail-panel h2,
@@ -934,6 +965,7 @@ body { margin: 0; min-height: 100vh; background: #020617; }
 .request-builder-core__source-copy {
   margin: 0;
 }
+
 
 
 

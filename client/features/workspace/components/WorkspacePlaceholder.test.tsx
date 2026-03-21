@@ -309,7 +309,362 @@ describe('Workspace request builder authoring shell', () => {
     expect(await screen.findByLabelText('Pre-request script')).toBeInTheDocument();
     expect(screen.getByText('Deferred in later slices')).toBeInTheDocument();
   });
+  it('exports authored resource bundles without runtime observation artifacts', async () => {
+    const user = userEvent.setup();
+    const createObjectURLSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:authored-resource-bundle');
+    const revokeObjectURLSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const linkClickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+      const method = init?.method ?? 'GET';
+
+      if (url === '/api/workspaces/local-workspace/requests' && method === 'GET') {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/resource-bundle' && method === 'GET') {
+        return createApiResponse({
+          bundle: {
+            schemaVersion: 1,
+            resourceKind: 'local-request-inspector-authored-resource-bundle',
+            exportedAt: '2026-03-21T12:00:00.000Z',
+            workspaceId: 'local-workspace',
+            requests: [
+              {
+                id: 'request-exported-1',
+                workspaceId: 'local-workspace',
+                name: 'Exported request',
+                method: 'GET',
+                url: 'http://localhost:5671/exported',
+                params: [],
+                headers: [],
+                bodyMode: 'none',
+                bodyText: '',
+                formBody: [],
+                multipartBody: [],
+                auth: {
+                  type: 'none',
+                  bearerToken: '',
+                  basicUsername: '',
+                  basicPassword: '',
+                  apiKeyName: '',
+                  apiKeyValue: '',
+                  apiKeyPlacement: 'header',
+                },
+                scripts: {
+                  activeStage: 'pre-request',
+                  preRequest: '',
+                  postResponse: '',
+                  tests: '',
+                },
+                summary: 'Exported request definition',
+                collectionName: 'Saved Requests',
+                createdAt: '2026-03-21T10:00:00.000Z',
+                updatedAt: '2026-03-21T11:00:00.000Z',
+              },
+            ],
+            mockRules: [
+              {
+                id: 'mock-rule-exported-1',
+                workspaceId: 'local-workspace',
+                name: 'Exported rule',
+                enabled: true,
+                priority: 500,
+                methodMode: 'exact',
+                method: 'GET',
+                pathMode: 'exact',
+                pathValue: '/exported',
+                queryMatchers: [],
+                headerMatchers: [],
+                bodyMatcherMode: 'none',
+                bodyMatcherValue: '',
+                responseStatusCode: 200,
+                responseHeaders: [],
+                responseBody: '{"ok":true}',
+                fixedDelayMs: 0,
+                createdAt: '2026-03-21T10:00:00.000Z',
+                updatedAt: '2026-03-21T11:00:00.000Z',
+                ruleState: 'Enabled',
+                matcherSummary: 'Method exact: GET with Path exact: /exported with No query matcher with No header matcher with No body matcher',
+                responseSummary: 'Static 200 response.',
+                methodSummary: 'Method exact: GET',
+                pathSummary: 'Path exact: /exported',
+                querySummary: 'No query matcher',
+                headerSummary: 'No header matcher',
+                bodySummary: 'No body matcher',
+                responseStatusSummary: '200 OK',
+                responseHeadersSummary: 'No static response headers',
+                responseBodyPreview: '{"ok":true}',
+                fixedDelayLabel: 'No fixed delay',
+                diagnosticsSummary: 'Rules are evaluated by enabled state first.',
+                deferredSummary: 'Advanced diagnostics remain deferred.',
+                sourceLabel: 'Persisted workspace rule',
+              },
+            ],
+          },
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    const explorer = screen.getByLabelText('Section explorer');
+    await user.click(within(explorer).getByRole('button', { name: 'Export Resources' }));
+
+    expect(await within(explorer).findByText(/Exported 1 saved request definition and 1 mock rule from the resource lane/i)).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith('/api/workspaces/local-workspace/resource-bundle');
+    expect(createObjectURLSpy).toHaveBeenCalledTimes(1);
+    expect(linkClickSpy).toHaveBeenCalledTimes(1);
+    expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:authored-resource-bundle');
+
+    const exportedBlob = createObjectURLSpy.mock.calls[0]?.[0];
+    expect(exportedBlob).toBeInstanceOf(Blob);
+
+    if (!(exportedBlob instanceof Blob)) {
+      throw new Error('Exported bundle did not create a Blob.');
+    }
+
+    const exportedText = await exportedBlob.text();
+    expect(exportedText).toContain('"requests"');
+    expect(exportedText).toContain('"mockRules"');
+    expect(exportedText).not.toContain('executionHistories');
+    expect(exportedText).not.toContain('capturedRequests');
+  });
+
+  it('imports authored resources as new identities and refreshes explorer plus mocks lists', async () => {
+    const user = userEvent.setup();
+    const persistedRequests = [
+      {
+        id: 'request-existing-health',
+        workspaceId: 'local-workspace',
+        name: 'Health check',
+        method: 'GET',
+        url: 'http://localhost:5671/health',
+        params: [],
+        headers: [],
+        bodyMode: 'none',
+        bodyText: '',
+        formBody: [],
+        multipartBody: [],
+        auth: {
+          type: 'none',
+          bearerToken: '',
+          basicUsername: '',
+          basicPassword: '',
+          apiKeyName: '',
+          apiKeyValue: '',
+          apiKeyPlacement: 'header',
+        },
+        scripts: {
+          activeStage: 'pre-request',
+          preRequest: '',
+          postResponse: '',
+          tests: '',
+        },
+        summary: 'Existing health request',
+        collectionName: 'Saved Requests',
+        createdAt: '2026-03-20T09:00:00.000Z',
+        updatedAt: '2026-03-20T09:30:00.000Z',
+      },
+    ];
+    const persistedMockRules = [
+      {
+        id: 'mock-rule-existing-latency',
+        workspaceId: 'local-workspace',
+        name: 'Latency guard',
+        enabled: true,
+        priority: 300,
+        methodMode: 'exact',
+        method: 'GET',
+        pathMode: 'exact',
+        pathValue: '/health',
+        queryMatchers: [],
+        headerMatchers: [],
+        bodyMatcherMode: 'none',
+        bodyMatcherValue: '',
+        responseStatusCode: 200,
+        responseHeaders: [],
+        responseBody: '{"ok":true}',
+        fixedDelayMs: 0,
+        createdAt: '2026-03-20T09:00:00.000Z',
+        updatedAt: '2026-03-20T09:30:00.000Z',
+        ruleState: 'Enabled',
+        matcherSummary: 'Method exact: GET with Path exact: /health with No query matcher with No header matcher with No body matcher',
+        responseSummary: 'Static 200 response.',
+        methodSummary: 'Method exact: GET',
+        pathSummary: 'Path exact: /health',
+        querySummary: 'No query matcher',
+        headerSummary: 'No header matcher',
+        bodySummary: 'No body matcher',
+        responseStatusSummary: '200 OK',
+        responseHeadersSummary: 'No static response headers',
+        responseBodyPreview: '{"ok":true}',
+        fixedDelayLabel: 'No fixed delay',
+        diagnosticsSummary: 'Rules are evaluated by enabled state first.',
+        deferredSummary: 'Advanced diagnostics remain deferred.',
+        sourceLabel: 'Persisted workspace rule',
+      },
+    ];
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+      const method = init?.method ?? 'GET';
+
+      if (url === '/api/workspaces/local-workspace/requests' && method === 'GET') {
+        return createApiResponse({ items: persistedRequests });
+      }
+
+      if (url === '/api/workspaces/local-workspace/mock-rules' && method === 'GET') {
+        return createApiResponse({ items: persistedMockRules });
+      }
+
+      if (url === '/api/workspaces/local-workspace/resource-bundle/import' && method === 'POST') {
+        const payload = JSON.parse(String(init?.body ?? '{}')) as { bundleText: string };
+        const bundle = JSON.parse(payload.bundleText) as {
+          requests: Array<{ id: string; name: string; method: string; url: string }>;
+          mockRules: Array<{ id: string; name: string; priority: number }>;
+        };
+
+        const importedRequest: (typeof persistedRequests)[number] = {
+          ...persistedRequests[0]!,
+          ...bundle.requests[0]!,
+          id: 'request-imported-health',
+          name: 'Health check (Imported)',
+          summary: 'Imported request definition',
+          createdAt: '2026-03-21T12:00:00.000Z',
+          updatedAt: '2026-03-21T12:00:00.000Z',
+        };
+        const importedRule: (typeof persistedMockRules)[number] = {
+          ...persistedMockRules[0]!,
+          ...bundle.mockRules[0]!,
+          id: 'mock-rule-imported-latency',
+          name: 'Latency guard (Imported)',
+          createdAt: '2026-03-21T12:00:00.000Z',
+          updatedAt: '2026-03-21T12:00:00.000Z',
+        };
+
+        persistedRequests.push(importedRequest);
+        persistedMockRules.push(importedRule);
+
+        return createApiResponse({
+          result: {
+            acceptedRequests: [importedRequest],
+            acceptedMockRules: [importedRule],
+            rejected: [],
+          },
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    const explorer = screen.getByLabelText('Section explorer');
+    expect(await within(explorer).findByRole('button', { name: 'Open Health check' })).toBeInTheDocument();
+
+    const importFile = new File([
+      JSON.stringify({
+        schemaVersion: 1,
+        resourceKind: 'local-request-inspector-authored-resource-bundle',
+        exportedAt: '2026-03-21T11:59:00.000Z',
+        workspaceId: 'other-workspace',
+        requests: [
+          {
+            id: 'request-original-health',
+            workspaceId: 'other-workspace',
+            name: 'Health check',
+            method: 'GET',
+            url: 'http://localhost:5671/health',
+            params: [],
+            headers: [],
+            bodyMode: 'none',
+            bodyText: '',
+            formBody: [],
+            multipartBody: [],
+            auth: {
+              type: 'none',
+              bearerToken: '',
+              basicUsername: '',
+              basicPassword: '',
+              apiKeyName: '',
+              apiKeyValue: '',
+              apiKeyPlacement: 'header',
+            },
+            scripts: {
+              activeStage: 'pre-request',
+              preRequest: '',
+              postResponse: '',
+              tests: '',
+            },
+            summary: 'Imported health request',
+            collectionName: 'Saved Requests',
+            createdAt: '2026-03-21T11:00:00.000Z',
+            updatedAt: '2026-03-21T11:00:00.000Z',
+          },
+        ],
+        mockRules: [
+          {
+            id: 'mock-rule-original-latency',
+            workspaceId: 'other-workspace',
+            name: 'Latency guard',
+            enabled: true,
+            priority: 300,
+            methodMode: 'exact',
+            method: 'GET',
+            pathMode: 'exact',
+            pathValue: '/health',
+            queryMatchers: [],
+            headerMatchers: [],
+            bodyMatcherMode: 'none',
+            bodyMatcherValue: '',
+            responseStatusCode: 200,
+            responseHeaders: [],
+            responseBody: '{"ok":true}',
+            fixedDelayMs: 0,
+            createdAt: '2026-03-21T11:00:00.000Z',
+            updatedAt: '2026-03-21T11:00:00.000Z',
+            ruleState: 'Enabled',
+            matcherSummary: 'Method exact: GET with Path exact: /health with No query matcher with No header matcher with No body matcher',
+            responseSummary: 'Static 200 response.',
+            methodSummary: 'Method exact: GET',
+            pathSummary: 'Path exact: /health',
+            querySummary: 'No query matcher',
+            headerSummary: 'No header matcher',
+            bodySummary: 'No body matcher',
+            responseStatusSummary: '200 OK',
+            responseHeadersSummary: 'No static response headers',
+            responseBodyPreview: '{"ok":true}',
+            fixedDelayLabel: 'No fixed delay',
+            diagnosticsSummary: 'Rules are evaluated by enabled state first.',
+            deferredSummary: 'Advanced diagnostics remain deferred.',
+            sourceLabel: 'Persisted workspace rule',
+          },
+        ],
+      }),
+    ], 'authored-resources.json', { type: 'application/json' });
+
+    await user.upload(screen.getByLabelText('Import authored resources'), importFile);
+
+    expect(await within(explorer).findByText(/Imported resources received new identities so existing saved resources were not overwritten/i)).toBeInTheDocument();
+    expect(await within(explorer).findByRole('button', { name: 'Open Health check (Imported)' })).toBeInTheDocument();
+    expect(within(explorer).getByRole('button', { name: 'Open Health check' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('link', { name: /mocks/i }));
+    expect(await screen.findByRole('button', { name: 'Open mock rule Latency guard (Imported)' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open mock rule Latency guard' })).toBeInTheDocument();
+  });
 });
+
+
+
+
+
 
 
 

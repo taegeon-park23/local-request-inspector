@@ -59,6 +59,29 @@ beforeEach(() => {
       return createApiResponse({ items: [] });
     }
 
+    if (url === '/api/workspaces/local-workspace/resource-bundle' && (!init || !init.method || init.method === 'GET')) {
+      return createApiResponse({
+        bundle: {
+          schemaVersion: 1,
+          resourceKind: 'local-request-inspector-authored-resource-bundle',
+          exportedAt: '2026-03-21T00:00:00.000Z',
+          workspaceId: 'local-workspace',
+          requests: [],
+          mockRules: defaultMockRuleFixtureRecords,
+        },
+      });
+    }
+
+    if (url === '/api/workspaces/local-workspace/resource-bundle/import' && init?.method === 'POST') {
+      return createApiResponse({
+        result: {
+          acceptedRequests: [],
+          acceptedMockRules: [],
+          rejected: [],
+        },
+      });
+    }
+
     if (url === '/api/captured-requests' && (!init || !init.method || init.method === 'GET')) {
       return createApiResponse({ items: defaultCaptureFixtureRecords });
     }
@@ -116,3 +139,4 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
+

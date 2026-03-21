@@ -1,10 +1,18 @@
 import type { WorkspaceSavedRequestSeed, WorkspaceExplorerNode } from '@client/features/workspace/data/workspace-explorer-fixtures';
 
+type ResourceTransferTone = 'success' | 'error' | 'info';
+
 interface WorkspaceExplorerProps {
   tree: WorkspaceExplorerNode[];
   selectedRequestId: string | null;
   onCreateRequest: () => void;
   onOpenSavedRequest: (request: WorkspaceSavedRequestSeed) => void;
+  onExportResources: () => void;
+  onImportResources: (file: File) => void;
+  transferStatusMessage: string | null;
+  transferStatusTone?: ResourceTransferTone | undefined;
+  isExporting: boolean;
+  isImporting: boolean;
 }
 
 interface WorkspaceExplorerNodeListProps {
@@ -19,6 +27,12 @@ export function WorkspaceExplorer({
   selectedRequestId,
   onCreateRequest,
   onOpenSavedRequest,
+  onExportResources,
+  onImportResources,
+  transferStatusMessage,
+  transferStatusTone = 'info',
+  isExporting,
+  isImporting,
 }: WorkspaceExplorerProps) {
   return (
     <div className="workspace-explorer">
@@ -28,9 +42,48 @@ export function WorkspaceExplorer({
         <p>
           Persisted saved requests are the canonical explorer source. Starter fixtures only appear until the first real request definitions are stored in the resource lane.
         </p>
-        <button type="button" className="workspace-button" onClick={onCreateRequest}>
-          New Request
-        </button>
+        <div className="workspace-explorer__header-actions">
+          <button type="button" className="workspace-button" onClick={onCreateRequest}>
+            New Request
+          </button>
+          <button
+            type="button"
+            className="workspace-button workspace-button--secondary"
+            onClick={onExportResources}
+            disabled={isExporting || isImporting}
+          >
+            {isExporting ? 'Exporting resources' : 'Export Resources'}
+          </button>
+          <label className="workspace-button workspace-button--secondary workspace-explorer__import-label">
+            <span>{isImporting ? 'Importing resources' : 'Import Resources'}</span>
+            <input
+              aria-label="Import authored resources"
+              className="workspace-explorer__file-input"
+              type="file"
+              accept="application/json,.json"
+              onChange={(event) => {
+                const file = event.currentTarget.files?.[0];
+                if (!file) {
+                  return;
+                }
+
+                onImportResources(file);
+                event.currentTarget.value = '';
+              }}
+            />
+          </label>
+        </div>
+        <p className="shared-readiness-note">
+          Export and import stay limited to authored request definitions and mock rules. Runtime history, captures, and execution artifacts remain outside this bundle.
+        </p>
+        {transferStatusMessage ? (
+          <p
+            className={`workspace-explorer__status workspace-explorer__status--${transferStatusTone}`}
+            role={transferStatusTone === 'error' ? 'alert' : 'status'}
+          >
+            {transferStatusMessage}
+          </p>
+        ) : null}
       </header>
       <WorkspaceExplorerNodeList
         nodes={tree}
@@ -91,3 +144,4 @@ function WorkspaceExplorerNodeList({
     </ul>
   );
 }
+
