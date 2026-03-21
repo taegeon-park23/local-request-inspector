@@ -70,6 +70,7 @@ This task is done when all of the following are true:
 - **Implementation follow-up (2026-03-21):** S19 is now delivered in code with wording and diagnostics polish across request result, scripts, captures, history, mocks, replay cues, and workspace authoring copy, aligning bounded/redacted/deferred messaging without changing semantics or state ownership.
 - **Implementation follow-up (2026-03-21):** S20 is now delivered in code with authored resource-lane import/export for saved request definitions and mock rules, a safe create-new-identity import policy, workspace explorer import/export entrypoints, and explicit exclusion of runtime history/captures artifacts from transfer scope.
 - **Implementation follow-up (2026-03-21):** S21 is now delivered in code with explicit resource/runtime schema markers, deterministic resource manifest and JSON serialization helpers, stricter authored-resource bundle validation, runtime metadata compatibility checks, and low-level storage seam tests without changing save/run/history/captures/mocks/import-export behavior.
+- **Implementation follow-up (2026-03-21):** S22 is now delivered in code with bounded repo/tooling cleanup: split lint/test scripts, CommonJS-aware ESLint overrides, normalized Node seam-test entrypoints, `.mjs` Vite/Vitest config files, and a safer Vitest startup path that now fails later at TS transform `esbuild` boundaries instead of config-load `EPERM`.
 
 ## 7. Key Decisions
 1. The frontend rewrite should proceed **shell-first with incremental feature slices**, not route-first and not all-at-once.
@@ -99,7 +100,7 @@ This task is done when all of the following are true:
 - Secondary reviewers: Backend Lead + QA / Senior Engineer
 
 ## 11. Closure Decision
-T010 can stay closed as **done** at the planning/documentation level, and the linked implementation slices S1-S21 are now landed. The next work should move to repo/tooling cleanup if later justified, optional future import/export extensions, and future migration-engine considerations rather than widening the shell itself.
+T010 can stay closed as **done** at the planning/documentation level, and the linked implementation slices S1-S22 are now landed. The next work should move to optional future import/export extensions, future migration-engine considerations, and packaging/dev-experience improvements rather than widening the shell itself.
 
 
 

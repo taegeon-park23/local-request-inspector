@@ -6,9 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint .",
+    "lint": "npm run lint:client && npm run lint:cjs && npm run lint:scripts",
+    "lint:client": "eslint \"client/**/*.{ts,tsx}\" \"mock-rule-engine.test.js\" \"vite.config.mjs\" \"vitest.config.mjs\"",
+    "lint:cjs": "eslint \"server.js\" \"mock-rule-engine.js\" \"storage/**/*.js\"",
+    "lint:scripts": "eslint \"scripts/**/*.mjs\"",
     "typecheck": "tsc --project tsconfig.json",
-    "test": "vitest run",
+    "test": "npm run test:node && npm run test:ui",
+    "test:node": "node scripts/run-node-seam-tests.mjs",
+    "test:ui": "node scripts/run-vitest.mjs run",
     "bootstrap:storage": "node -e \"require('./storage').bootstrapPersistence()\""
   },
   "keywords": [],

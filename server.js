@@ -2935,7 +2935,7 @@ app.post('/__inspector/execute', async (req, res) => {
     const resText = await initialRes.text();
     try {
       responseData = JSON.parse(resText);
-    } catch (e) {
+    } catch {
       responseData = resText;
     }
     logs.push(`[System] 1차 응답 수신 완료 (Status: ${initialRes.status})`);

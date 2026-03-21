@@ -23,5 +23,5 @@
     },
     "types": ["vitest/globals"]
   },
-  "include": ["client", "vite.config.ts", "vitest.config.ts"]
+  "include": ["client"]
 }
