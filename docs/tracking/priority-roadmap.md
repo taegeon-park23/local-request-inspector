@@ -42,7 +42,7 @@ Tasks are prioritized using these criteria:
 ### Phase D — Active Follow-Up
 19. **M3-F1** Material 3 visual-only pass for placeholder/secondary surfaces and remaining shell affordances
 20. **M3-F2** Material 3 visual-only accessibility, contrast, focus, and density polish
-21. **M3-F3** Conditional TSX presentation refinement only if the sandbox-refresh blocker is cleared
+21. **M3-F3** TSX presentation refinement plus local-verification handoff
 
 ### Phase E — Promoted Post-M3 Follow-Up
 22. **T019** Server-backed pre-import preview for the current saved-request/mock-rule authored-resource bundle scope — complete
@@ -94,15 +94,15 @@ Recently completed foundation work:
 
 Ready to start now:
 - M3-F1 and M3-F2 are landed; keep them closed as visual-only slices
-- `M3-F3` now has its bounded wrapper/CSS patch applied in code, a user-verified non-sandbox `npm.cmd run test:ui` passed all 47 tests on 2026-03-22, and same-day `npm.cmd run check` passed in this sandbox, but the latest direct `npm.cmd run check:m3f3-gate` and direct `npm.cmd run test:ui` reruns here still failed on `env_blocked_transform` / `sandbox_esbuild_transform_blocked`, so the slice still needs official closeout reruns in one non-blocked environment
-- `T024` remains the canonical exact-patch reference plus blocker-refresh record for what landed in `M3-F3`, so future contributors can resume validation without repeating the scope audit
-- `T026` is landed: blocker triage confirmed that the current repo already covers the main wrapper/config mitigations, so the remaining closeout problem is environment-level esbuild worker startup rather than one more repo-side packaging tweak
+- `M3-F3` is landed in tracking: its bounded wrapper/CSS patch is applied in code, a user-verified non-sandbox `npm.cmd run test:ui` passed all 47 tests on 2026-03-22, and same-day `npm.cmd run check` passed in this sandbox
+- `T024` remains the canonical exact-patch reference plus local-verification handoff record for what landed in `M3-F3`, so future contributors can resume validation without repeating the scope audit
+- `T026` is landed: blocker triage confirmed that the current repo already covers the main wrapper/config mitigations, so future sandbox-blocked confirmation should be requested locally rather than reopened as repo-side packaging work
 - T019 is landed: the workspace import surface now performs a server-backed no-write preview before explicit confirm and preserves the existing request/mock bundle import semantics after commit
 - T020 is landed: Candidate B now has a concrete gap inventory and stronger future lane without promoting migration implementation prematurely
 - T021 is landed: Candidate C now has a concrete packaging/startup gap inventory without promoting packaging implementation prematurely
 - T022 is landed: the repo now records an explicit no-promotion decision after T021 instead of implying that another implementation task should follow automatically
 - T023 is landed: the stronger Candidate B authored-resource import lane now has a chosen future approach, but it still lacks one explicit transform contract and remains parked
-- No additional post-M3 implementation task or `T025`-style closure review should be activated right now; rerun `npm.cmd run check:m3f3-gate`, `npm.cmd run check`, and `npm.cmd run test:ui` first in one non-blocked environment, then return to post-m3-reactivation-guide.md for later Candidate A/B/C reactivation rules
+- No additional post-M3 implementation task is activated automatically in this pass; use `post-m3-reactivation-guide.md` for later Candidate A/B/C reactivation rules, and request local commands when sandbox-blocked verification is the only missing confirmation
 - Use `post-m3-reactivation-guide.md` before promoting any parked post-M3 work so the decision is based on the documented gate and promotion triggers rather than ad hoc momentum
 - Use `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md` before proposing any extra repo-side blocker work so the next contributor starts from the confirmed preflight boundary instead of retrying already-landed runner or Windows-specific mitigations
 

@@ -56,18 +56,16 @@
 - Material 3 adoption plan plus initial token/theme, shell chrome, top-bar role legend, route-role cues, first-pass shared-surface materialization, role-specific panel accents, role-specific tab/header treatments, feature-level list/detail/contextual role strips, and `M3-F2` accessibility/contrast/focus/density polish: **done**
 
 ## Current Next Action
-Use the landed MVP shell plus the reconciled T015/T018/T019/T020/T021/T022/T023/T024/T026 baseline to rerun the full `M3-F3` closeout trio in one non-blocked environment. A user-verified non-sandbox local `npm.cmd run test:ui` passed all 47 tests on 2026-03-22 and same-day `npm.cmd run check` passed in this sandbox, but the latest direct `npm.cmd run check:m3f3-gate` and direct `npm.cmd run test:ui` reruns here still failed on `env_blocked_transform` / `sandbox_esbuild_transform_blocked` because Vite/esbuild worker startup hit `spawn EPERM`. Use `m3-f3-implementation-handoff.md` as the applied patch record, use `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md` as the blocker-boundary note, and do not open `T025` or promote Candidate 2 / Candidate B / Candidate C until the official closeout trio all pass together.
+No active `M3-F3` blocker remains in tracking. If a future confirmation step is blocked by the sandbox rather than by repo behavior, ask for a local rerun with exact commands and expected results per `AGENTS.md`. Use `m3-f3-implementation-handoff.md` as the applied patch record, use `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md` as the blocker-boundary note, and use the candidate readiness/tracking docs before promoting any new post-M3 workstream.
 
 ## Open Blockers
-- No blocker remains inside T010, but `M3-F3` is still official-closeout-blocked in the current sandbox after the code patch landed.
+- No active delivery blocker remains inside T010 or `M3-F3`.
 - `npm.cmd run typecheck` passed against `client/features/request-builder/components/RequestWorkSurfacePlaceholder.tsx` and `client/features/request-builder/components/RequestResultPanelPlaceholder.tsx` on 2026-03-22.
 - A user-verified non-sandbox local `npm.cmd run test:ui` passed all 47 tests on 2026-03-22.
 - A same-day `npm.cmd run check` rerun in this sandbox passed.
-- A fresh direct `npm.cmd run check:m3f3-gate` on 2026-03-22 returned `env_blocked_transform`: root HTML still served, but `/app/bootstrap/main.tsx` and both gated TSX module transforms failed before completion because Vite/esbuild worker startup hit `spawn EPERM`.
-- A fresh direct `npm.cmd run test:ui` on 2026-03-22 in this sandbox still failed preflight with `sandbox_esbuild_transform_blocked` / `spawn EPERM`.
-- `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md` confirms that the current repo already covers direct esbuild preflight classification, config-loader runner enforcement, Windows `net use` patching, fail-fast wrapper messaging, and transformed-module gate probes, so the remaining blocker should be treated as environment-level until the official trio is rerun elsewhere.
-- Because the official closeout trio did not all clear in one environment, M3-F3 is not formally closed and no T025 post-M3-F3 priority review task was created in this pass.
-- **확실하지 않음:** whether live refresh on those specific TSX surfaces is fully healthy remains unverified because the official transform gate is currently blocked again in this sandbox.
+- Direct sandbox reruns of `npm.cmd run check:m3f3-gate` and `npm.cmd run test:ui` on 2026-03-22 still hit environment-level esbuild startup failure, but that is now treated as a local-verification handoff case rather than as an open blocker.
+- `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md` confirms that the current repo already covers direct esbuild preflight classification, config-loader runner enforcement, Windows `net use` patching, fail-fast wrapper messaging, and transformed-module gate probes.
+- **확실하지 않음:** whether live refresh on those specific TSX surfaces is fully healthy remains unverified, but that uncertainty no longer keeps the completed `M3-F3` slice open in tracking.
 - `../tasks/task-019-server-backed-pre-import-preview.md` is landed as the current bounded Candidate A delivery: the workspace import surface now requests a server-backed no-write preview before confirm, then preserves the existing request/mock bundle import semantics after commit.
 - Additional authored-resource tooling beyond `T019` remains parked because the shipped request/mock transfer baseline already covers the current documented scope, and the remaining increments still need a narrower task boundary.
 - Candidate 2 remains parked after `T019` because the repo still treats import as a workspace-level mixed-bundle flow; `/mocks` has local export affordance, but not a clearly separate local import ownership model yet.
@@ -87,7 +85,7 @@ Use the landed MVP shell plus the reconciled T015/T018/T019/T020/T021/T022/T023/
 ## Notes for Next Contributor
 1. Read `../prd/overview.md`
 2. Read `master-task-board.md` and `priority-roadmap.md`
-3. Read `post-m3-reactivation-guide.md` before retrying `M3-F3` or promoting optional backlog work
+3. Read `post-m3-reactivation-guide.md` before requesting extra local confirmation of `M3-F3` or promoting optional backlog work
 4. Read `candidate-a-promotion-readiness.md` before proposing any authored-resource follow-up task
 5. Read `candidate-a-gap-inventory.md` before deciding whether a proposed authored-resource gap is covered, broad, or plausibly narrow
 6. Read `candidate-a-narrow-candidate-comparison.md` before reopening Candidate 2 or proposing Candidate A work beyond `T019`
@@ -98,14 +96,14 @@ Use the landed MVP shell plus the reconciled T015/T018/T019/T020/T021/T022/T023/
 11. Open `../tasks/task-019-server-backed-pre-import-preview.md` for the landed preview/confirm authored-resource import workflow
 12. Open `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md` for the current Candidate B narrowing result
 13. Open `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md` for the current Candidate C narrowing result
-14. Open `../tasks/task-018-delivery-milestone-plan.md` for the current milestone order and `M3-F1` / `M3-F2` / `M3-F3` gate
+14. Open `../tasks/task-018-delivery-milestone-plan.md` for the current milestone order and `M3-F1` / `M3-F2` / `M3-F3` completion flow
 15. Open `../architecture/material-3-adoption-plan.md` for the active visual-only guardrails and bounded follow-up slices
 16. Open `../tasks/task-015-import-export-strategy.md` for the reconciled import/export baseline and deferred interoperability scope
 17. Open `../tasks/task-016-testing-and-qa-strategy.md` and `../tasks/task-017-developer-environment-and-tooling-baseline.md` for regression and tooling guardrails
 18. Open `../tasks/task-022-post-t021-priority-review.md` for the latest explicit no-promotion decision after `T021`
 19. Open `../tasks/task-023-candidate-b-import-migration-approach-decision.md` for the current authored-resource import migration framing inside Candidate B
-20. Open `m3-f3-implementation-handoff.md` before resuming the active `M3-F3` request-builder/result-panel wrapper cleanup
-21. Open `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md` before proposing any extra repo-side fix for the remaining `M3-F3` blocker
+20. Open `m3-f3-implementation-handoff.md` before asking for any future local confirmation of the landed `M3-F3` request-builder/result-panel changes
+21. Open `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md` before proposing any extra repo-side fix for a sandbox-blocked verification result
 22. Use T010/T015/T016/T017/T018/T019/T020/T021/T022/T023/T024/T026 handoff notes when preparing Material 3 or other follow-up prompts
 
 

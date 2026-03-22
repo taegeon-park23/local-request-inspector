@@ -8,7 +8,7 @@
 - **Priority:** P2
 
 ## 1. Summary
-T026 investigated the remaining `M3-F3` official-closeout blocker after same-day evidence split into two lanes: a user-verified non-sandbox local `npm.cmd run test:ui` pass, and still-blocked direct sandbox reruns of `npm.cmd run check:m3f3-gate` and `npm.cmd run test:ui`. The result confirms that the current repo already applies the main bounded mitigations available at the wrapper layer. The remaining failure occurs at bare `esbuild.transform(...)` worker startup, before normal Vite/Vitest transform work can proceed, so the blocker is now best treated as environment-level validation restriction rather than as an unowned repo-side packaging gap.
+T026 investigated the remaining `M3-F3` official-closeout blocker after same-day evidence split into two lanes: a user-verified non-sandbox local `npm.cmd run test:ui` pass, and still-blocked direct sandbox reruns of `npm.cmd run check:m3f3-gate` and `npm.cmd run test:ui`. The result confirms that the current repo already applies the main bounded mitigations available at the wrapper layer. The remaining failure occurs at bare `esbuild.transform(...)` worker startup, before normal Vite/Vitest transform work can proceed, so the blocker is best treated as environment-level validation restriction rather than as an unowned repo-side packaging gap. Going forward, sandbox-blocked confirmation should be handled by giving the user exact local commands and expected results rather than by keeping `M3-F3` open in tracking.
 
 ## 2. Why This Task Matters Now
 - Without this triage step, contributors can keep reopening the same question about whether another local wrapper tweak, config-loader change, or Windows-specific workaround is still missing.
@@ -48,11 +48,11 @@ This task is done when all of the following are true:
 1. The remaining `M3-F3` official-closeout blocker is now treated as environment-level validation restriction, not as an unidentified repo-side wrapper gap.
 2. No new repo-side mitigation task is promoted from this investigation.
 3. Candidate C remains parked because this triage did not reveal one new startup/packaging seam missing from the shipped `check:app`, wrapper, and `/api/app-shell-status` baseline.
-4. `T025` remains reserved for the future post-`M3-F3` closure review concept and must not be repurposed while the closeout trio is still blocked.
-5. The highest-priority next step remains unchanged: rerun `npm.cmd run check:m3f3-gate`, `npm.cmd run check`, and `npm.cmd run test:ui` together in one non-blocked environment.
+4. Future sandbox-blocked verification should be resolved through local command handoff with expected results, not through repeated repo-side wrapper churn.
+5. `T025` remains unassigned in this pass; sandbox-only verification churn should not create a new post-closeout review task by itself.
 
 ## 8. Open Questions
-1. Whether one non-blocked environment will clear the full official closeout trio soon enough to close `M3-F3` remains **확실하지 않음**.
+1. Whether future contributors will still want to rerun the full local command set for extra assurance remains **확실하지 않음**.
 2. Whether a future structured readiness artifact should unify `check:app` and `/api/app-shell-status` remains **확실하지 않음**.
 3. Whether live refresh on the gated TSX files is fully healthy remains **확실하지 않음** until the official trio clears in one environment.
 
@@ -67,4 +67,4 @@ This task is done when all of the following are true:
 - Secondary reviewer: QA / Verification Agent
 
 ## 11. Closure Decision
-T026 is complete as a documentation and blocker-triage task. It does not close `M3-F3`, and it does not change the canonical closeout rule. Instead, it records that the current repo already applies the main bounded mitigation work it can justify today: direct esbuild preflight classification, fail-fast Vite/Vitest wrappers, config-loader runner enforcement, Windows `net use` patching, and packaging/startup status reporting. Because the remaining failing point is still bare esbuild worker startup in this sandbox, the correct next step is to rerun the official closeout trio in one non-blocked environment rather than to open a new repo-side packaging or toolchain task.
+T026 is complete as a documentation and blocker-triage task. It closes the question of whether one more repo-side wrapper/config change is still missing for `M3-F3`; the answer is no, not based on current evidence. The repo already applies the bounded mitigation work it can justify today: direct esbuild preflight classification, fail-fast Vite/Vitest wrappers, config-loader runner enforcement, Windows `net use` patching, and packaging/startup status reporting. When the same sandbox restriction appears again, the correct response is to hand off exact local commands and expected results rather than to reopen a new repo-side packaging or toolchain task.

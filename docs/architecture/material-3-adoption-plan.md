@@ -173,15 +173,15 @@ Use a **token-first custom implementation**:
 - Guardrails: use the existing smoke/readiness flows as regression checks and keep all save/run/history/captures/mocks/scripts/replay semantics stable.
 - Status: done on 2026-03-22 as a bounded CSS-only refinement pass; no TSX restructuring was included.
 
-### M3-F3 — Conditional TSX presentation refinement
+### M3-F3 — TSX presentation refinement
 - Scope: request-builder and active request observation wrapper hierarchy only.
-- Gate: start only after a non-mutating check confirms the sandbox-refresh issue no longer blocks safe TSX edits in the affected files.
-- Fallback: if the blocker persists, record the slice as blocked/deferred and stop the active sequence after `M3-F2`.
+- Gate: the slice is already applied in code; use local verification handoff when sandboxed confirmation cannot run.
+- Fallback: if sandboxed verification is blocked, request exact local commands and compare against expected results instead of reopening the slice as blocked/deferred.
 - Official gate procedure: run `npm run check:m3f3-gate`. The check requires `typecheck`, a real dev-transform probe against `/`, `/app/bootstrap/main.tsx`, `RequestWorkSurfacePlaceholder.tsx`, and `RequestResultPanelPlaceholder.tsx`, plus bounded build/test preflight reporting. Dev-server startup or root HTML alone never clears the gate.
-- Hold-state reference: use `../tracking/post-m3-reactivation-guide.md` before retrying `M3-F3` or promoting any optional post-M3 backlog item.
+- Hold-state reference: use `../tracking/post-m3-reactivation-guide.md` before requesting extra local confirmation of `M3-F3` or promoting any optional post-M3 backlog item.
 - Re-check note (2026-03-22): the gated TSX surfaces remain `client/features/request-builder/components/RequestWorkSurfacePlaceholder.tsx` and `client/features/request-builder/components/RequestResultPanelPlaceholder.tsx`.
-- Validation note (2026-03-22): `npm.cmd run typecheck` passes after the wrapper/CSS patch, but a fresh direct `npm.cmd run check:m3f3-gate` in this sandbox now reports `env_blocked_transform` because Vite/esbuild worker startup hits `spawn EPERM` on `/app/bootstrap/main.tsx`, `RequestWorkSurfacePlaceholder.tsx`, and `RequestResultPanelPlaceholder.tsx`.
-- Status: implementation applied / validation blocked on 2026-03-22. `M3-F3` now has the intended request-builder/result-panel wrapper cleanup in code, but the official repo-native transform check must be rerun in a non-blocked environment before the slice can be treated as fully revalidated.
+- Validation note (2026-03-22): `npm.cmd run typecheck` passes after the wrapper/CSS patch, a user-verified non-sandbox local `npm.cmd run test:ui` passed all 47 tests, and sandbox-only reruns of the gate remain environment-blocked because Vite/esbuild worker startup hits `spawn EPERM` on `/app/bootstrap/main.tsx`, `RequestWorkSurfacePlaceholder.tsx`, and `RequestResultPanelPlaceholder.tsx`.
+- Status: done in tracking on 2026-03-22. `M3-F3` has the intended request-builder/result-panel wrapper cleanup in code, and future sandbox-blocked confirmation should be handled through local command handoff rather than as an active milestone blocker.
 
 ### Explicitly Deferred Beyond This Sequence
 - light theme activation

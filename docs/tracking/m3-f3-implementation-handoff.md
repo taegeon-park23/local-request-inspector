@@ -12,8 +12,8 @@
 - `npm.cmd run typecheck` passed on 2026-03-22 after the patch landed.
 - A user-verified non-sandbox local `npm.cmd run test:ui` passed all 47 tests on 2026-03-22.
 - A same-day `npm.cmd run check` rerun in this sandbox passed.
-- The latest direct `npm.cmd run check:m3f3-gate` in this sandbox still returned `env_blocked_transform`, and direct `npm.cmd run test:ui` here still failed preflight with `sandbox_esbuild_transform_blocked`, because Vite/esbuild worker startup hit `spawn EPERM` for `/app/bootstrap/main.tsx` and the two gated TSX modules.
-- This note now serves as the canonical applied-patch reference plus the blocker-refresh handoff for a non-blocked environment.
+- Direct sandbox reruns of `npm.cmd run check:m3f3-gate` and `npm.cmd run test:ui` still hit environment-level esbuild worker startup failure, but that sandbox-only result no longer keeps `M3-F3` open in tracking.
+- This note now serves as the canonical applied-patch reference plus the local-verification handoff guide when sandboxed checks cannot run.
 
 ## 2. Scope Anchor
 ### In Scope
@@ -107,19 +107,21 @@ Latest validation on 2026-03-22:
 2. `npm.cmd run test:node` - passed, including a static M3-F3 wrapper/CSS shape guard for the two TSX files and `material-theme.css`
 3. user-verified non-sandbox local `npm.cmd run test:ui` - passed all 47 tests
 4. `npm.cmd run check` - passed in this sandbox
-5. `npm.cmd run check:m3f3-gate` - `env_blocked_transform` in this sandbox because esbuild worker startup hit `spawn EPERM`
-6. direct `npm.cmd run test:ui` - failed preflight in this sandbox with `sandbox_esbuild_transform_blocked` / `spawn EPERM`
-7. direct in-app inspection - not completed in this sandbox because the official transform gate is currently blocked
-What remains to verify elsewhere:
-- no TSX ownership/behavior changes, only wrapper hierarchy cleanup
-- request-builder header/identity/command copy now reads as distinct groups
-- result-panel header meta and response/execution detail now scan as summary-first support-second groupings
-- no regression to save/run/result semantics
+5. direct sandbox reruns of `npm.cmd run check:m3f3-gate` and `npm.cmd run test:ui` - still environment-blocked by esbuild worker startup
+6. direct in-app inspection - not completed in this sandbox
+
+If a future contributor wants local confirmation outside the sandbox, use:
+1. `npm.cmd run check:m3f3-gate`
+   Expected result: exit code `0` and `Gate status: gate_clear`
+2. `npm.cmd run check`
+   Expected result: exit code `0`
+3. `npm.cmd run test:ui`
+   Expected result: `Test Files  8 passed (8)` and `Tests  47 passed (47)`
 
 ## 6. If Tooling Fails Again
-- If a contributor reruns the gate in a non-blocked environment and it reports `gate_clear`, do not re-scope M3-F3; use this note to confirm the intended wrapper/CSS shape that is already in code.
-- If the gate still reports an environment-bound transform failure, keep the slice in validation-blocked state rather than reopening roadmap or feature scope discussion.
-- If a standalone unsandboxed `npm.cmd run test:ui` rerun passes but the official gate still fails elsewhere, treat that as useful evidence rather than as final closeout; the same closeout trio still needs to clear in one non-blocked environment.
+- If a contributor reruns the gate locally and it reports `gate_clear`, do not re-scope M3-F3; use this note to confirm the intended wrapper/CSS shape that is already in code.
+- If sandboxed tooling still reports an environment-bound transform failure, request the local command set above and compare the result there instead of reopening roadmap or feature scope discussion.
+- If a standalone unsandboxed `npm.cmd run test:ui` rerun passes while sandbox reruns still fail, keep the local result as the authoritative verification signal for that turn.
 
 ## 7. Explicit Uncertainties / 확실하지 않음
 - **확실하지 않음:** whether one tiny extra wrapper will be needed after direct local UI inspection, but the current intended patch should start with the classes listed above only.

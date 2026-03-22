@@ -2,7 +2,7 @@
 
 - **Purpose:** Define collaboration rules, role ownership, and update expectations for this repository.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-18
+- **Last Updated:** 2026-03-22
 - **Related Documents:** `docs/tracking/master-task-board.md`, `docs/tracking/priority-roadmap.md`, `skills/common-workflow.md`
 - **Update Rule:** Update this file whenever team roles, delivery workflow, or decision policy changes.
 
@@ -47,6 +47,7 @@ This file applies to the entire repository unless a deeper `AGENTS.md` overrides
 5. **Traceability first:** Every architecture or implementation change should link back to at least one task ID.
 6. **Smallest useful increment:** Prefer preparing decisions and interfaces before implementation of large vertical slices.
 7. **Do not skip readiness criteria:** P0 work should not start until dependencies and definition of done are documented.
+8. **Sandbox-blocked verification handoff:** If required verification is blocked by the Codex sandbox rather than by a repo issue, do not keep the work artificially open just to wait on sandbox clearance. Instead, instruct the user to run the exact local command(s), state the expected success result, and record that local-verification handoff in the linked task/tracking docs.
 
 ## Documentation Rules
 - Use clear section headings and keep file names stable.
@@ -81,6 +82,11 @@ This file applies to the entire repository unless a deeper `AGENTS.md` overrides
   - file naming consistency
   - task ID consistency across docs
 - Implementation changes must document tests or explain why they are not yet possible.
+- If sandbox restrictions block a needed verification step, provide:
+  - the exact local command(s) to run
+  - the expected success signal or output summary
+  - the follow-up interpretation the contributor should use if the command passes or fails
+- Sandbox-only verification limits should be documented explicitly, but once implementation and handoff are otherwise complete they should not keep a task in pseudo-active limbo by themselves.
 
 ## Decision Principles
 - Prioritize work that reduces uncertainty for many downstream tasks.
