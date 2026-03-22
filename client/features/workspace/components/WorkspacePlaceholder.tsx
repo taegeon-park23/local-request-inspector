@@ -9,6 +9,7 @@ import {
   workspaceSavedRequestsQueryKey,
 } from '@client/features/request-builder/request-builder.api';
 import { RequestResultPanelPlaceholder } from '@client/features/request-builder/components/RequestResultPanelPlaceholder';
+import { useI18n } from '@client/app/providers/useI18n';
 import { RequestTabShell } from '@client/features/request-builder/components/RequestTabShell';
 import { RequestWorkSurfacePlaceholder } from '@client/features/request-builder/components/RequestWorkSurfacePlaceholder';
 import { useRequestCommandStore } from '@client/features/request-builder/state/request-command-store';
@@ -169,9 +170,9 @@ function resolveSeededEnvironmentId(draftSeed: RequestDraftSeed | undefined, def
 
   return defaultEnvironmentId;
 }
-
 export function WorkspacePlaceholder() {
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const [resourceTransferStatus, setResourceTransferStatus] = useState<ResourceTransferStatus | null>(null);
   const [pendingImportPreview, setPendingImportPreview] = useState<PendingImportPreview | null>(null);
   const tabs = useWorkspaceShellStore((state) => state.tabs);
@@ -422,15 +423,15 @@ export function WorkspacePlaceholder() {
 
       <section className="shell-panel shell-panel--main" aria-label="Main work surface">
         <SectionHeading
-          icon="workspace"
-          title="Workspace"
-          summary="Workspace remains the authoring surface for saved requests, starter request drafts, replay drafts, and the lazy-loaded Scripts path. Save updates request definitions, while Run writes observation only into the right-hand result surface."
-        >
-          <div className="workspace-explorer__role-strip" aria-label="Workspace surface role">
-            <span className="workspace-chip">Authoring</span>
-            <span className="workspace-chip workspace-chip--secondary">Resource lane</span>
-          </div>
-        </SectionHeading>
+            icon="workspace"
+            title={t('routes.workspace.title')}
+            summary={t('routes.workspace.summary')}
+          >
+            <div className="workspace-explorer__role-strip" aria-label="Workspace surface role">
+              <span className="workspace-chip">{t('roles.authoring')}</span>
+              <span className="workspace-chip workspace-chip--secondary">{t('routes.workspace.contextChip')}</span>
+            </div>
+          </SectionHeading>
 
         <RequestTabShell
           tabs={resolvedTabs}

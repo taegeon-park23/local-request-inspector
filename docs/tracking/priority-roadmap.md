@@ -3,7 +3,7 @@
 - **Purpose:** Explain sequencing logic and show which work should happen first, next, and later.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `master-task-board.md`, `post-m3-reactivation-guide.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `environment-follow-up-lane-comparison.md`, `resolved-preview-sub-lane-comparison.md`, `../architecture/request-environment-resolution-summary-contract.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md`, `../tasks/task-032-post-t030-environment-follow-up-lane-comparison.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../tasks/task-034-post-t033-resolution-summary-contract.md`, `../tasks/task-035-compact-shell-header-and-material-icon-usability-refresh.md`, `../tasks/task-036-button-badge-and-radius-visual-hierarchy-refinement.md`, `../prd/overview.md`, `../tasks/task-001-foundation-architecture.md`
+- **Related Documents:** `master-task-board.md`, `post-m3-reactivation-guide.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `environment-follow-up-lane-comparison.md`, `resolved-preview-sub-lane-comparison.md`, `../architecture/request-environment-resolution-summary-contract.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md`, `../tasks/task-032-post-t030-environment-follow-up-lane-comparison.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../tasks/task-034-post-t033-resolution-summary-contract.md`, `../tasks/task-035-compact-shell-header-and-material-icon-usability-refresh.md`, `../tasks/task-036-button-badge-and-radius-visual-hierarchy-refinement.md`, `../architecture/client-i18n-foundation.md`, `../tasks/task-037-client-i18n-foundation-and-korean-locale-bootstrap.md`, `../tasks/task-038-environments-and-scripts-route-localization-pass.md`, `../prd/overview.md`, `../tasks/task-001-foundation-architecture.md`
 - **Update Rule:** Update when priorities, dependencies, or milestone assumptions change.
 
 ## Priority Principles
@@ -84,16 +84,19 @@ Tasks are prioritized using these criteria:
 ### Phase O — Control Hierarchy Refinement
 39. **T036** Button, badge, and radius visual hierarchy refinement — complete
 
-### Phase P — Parked Optional Future Work
-40. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule bundle scope
-41. Later write-time migration-engine work if compatibility pressure justifies it
-42. Bounded packaging polish only if a delivery milestone identifies a concrete readiness gap
-39. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule bundle scope
-40. Later write-time migration-engine work if compatibility pressure justifies it
-41. Bounded packaging polish only if a delivery milestone identifies a concrete readiness gap
+### Phase P — Client I18n Foundation
+40. **T037** Client i18n foundation and Korean locale bootstrap — complete
+
+### Phase Q — First Post-Foundation Route Localization Slice
+41. **T038** Environments and Scripts route localization pass — complete
+
+### Phase R — Parked Optional Future Work
+42. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule bundle scope
+43. Later write-time migration-engine work if compatibility pressure justifies it
+44. Bounded packaging polish only if a delivery milestone identifies a concrete readiness gap
 
 ## Why T001 Is First
-`T001` is the first execution task because it has the highest leverage:
+T001 is the first execution task because it has the highest leverage:
 - It clarifies the product’s target architecture before coding begins.
 - It defines core entities needed by storage, APIs, UI, and automation.
 - It exposes risky trade-offs early, especially around modularization and refactor depth.
@@ -127,6 +130,8 @@ Recently completed foundation work:
 - `T018` Delivery milestone plan
 
 Ready to start now:
+- `T038` is landed: Environments and Scripts route internals now localize client-owned management copy, empty states, validation text, and primary actions through the shared i18n layer while preserving English-default contracts and leaving runtime payload translation for later slices
+- `T037` is landed: the app now has a shared i18n provider with locale persistence, English fallback plus Korean catalogs, translation and formatting helpers, shell and top-level header localization, and a settings locale switch for future translation QA
 - `T036` is landed: buttons now use tighter corners and stronger filled affordance, passive badges/chips are flatter and lighter, and shared tabs now use tighter segmented geometry without changing semantics or ownership
 - `T035` is landed: the shell header is now compact and route-only, nav monograms are replaced with local SVG icons, and shared primitives plus major route headers/actions now use bounded icon support without changing semantics or ownership
 - M3-F1 and M3-F2 are landed; keep them closed as visual-only slices

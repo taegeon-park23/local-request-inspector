@@ -1,69 +1,64 @@
 import type { AppIconName } from '@client/shared/ui/AppIcon';
 
+export type AppSectionId =
+  | 'workspace'
+  | 'captures'
+  | 'history'
+  | 'mocks'
+  | 'environments'
+  | 'scripts'
+  | 'settings';
+
+export type AppSectionRole = 'authoring' | 'observation' | 'management' | 'placeholder';
+
 export interface AppSection {
-  label: string;
+  id: AppSectionId;
   path: string;
-  summary: string;
-  role: 'Authoring' | 'Observation' | 'Management' | 'Placeholder';
+  role: AppSectionRole;
   icon: AppIconName;
-  breadcrumbLabel: string;
 }
 
 export const appSections: AppSection[] = [
   {
-    label: 'Workspace',
+    id: 'workspace',
     path: '/workspace',
-    summary: 'Request authoring, saved definitions, and active result observation.',
-    role: 'Authoring',
+    role: 'authoring',
     icon: 'workspace',
-    breadcrumbLabel: 'Workspace',
   },
   {
-    label: 'Captures',
+    id: 'captures',
     path: '/captures',
-    summary: 'Inbound request observation with replay bridge and bounded handling detail.',
-    role: 'Observation',
+    role: 'observation',
     icon: 'captures',
-    breadcrumbLabel: 'Captures',
   },
   {
-    label: 'History',
+    id: 'history',
     path: '/history',
-    summary: 'Persisted execution observation with response, console, tests, and stage summary.',
-    role: 'Observation',
+    role: 'observation',
     icon: 'history',
-    breadcrumbLabel: 'History',
   },
   {
-    label: 'Mocks',
+    id: 'mocks',
     path: '/mocks',
-    summary: 'Persisted mock rule management with bounded matcher and static response editing.',
-    role: 'Management',
+    role: 'management',
     icon: 'mocks',
-    breadcrumbLabel: 'Mocks',
   },
   {
-    label: 'Environments',
+    id: 'environments',
     path: '/environments',
-    summary: 'Persisted environment and secret management with default-environment guardrails.',
-    role: 'Authoring',
+    role: 'authoring',
     icon: 'environments',
-    breadcrumbLabel: 'Environments',
   },
   {
-    label: 'Scripts',
+    id: 'scripts',
     path: '/scripts',
-    summary: 'Standalone saved script library with read-only starter templates.',
-    role: 'Authoring',
+    role: 'authoring',
     icon: 'scripts',
-    breadcrumbLabel: 'Scripts',
   },
   {
-    label: 'Settings',
+    id: 'settings',
     path: '/settings',
-    summary: 'Read-only diagnostics hub for app shell, storage, and local command guidance.',
-    role: 'Management',
+    role: 'management',
     icon: 'settings',
-    breadcrumbLabel: 'Settings',
   },
 ];

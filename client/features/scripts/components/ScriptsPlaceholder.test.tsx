@@ -145,4 +145,13 @@ describe('Scripts MVP route', () => {
     const templatesList = screen.getByLabelText('Script templates list');
     expect(within(templatesList).getByRole('button', { name: 'Use Trace ID starter' })).toBeInTheDocument();
   });
+  it('renders the scripts route copy in Korean when the locale is switched', async () => {
+    vi.stubGlobal('fetch', createScriptsFetch());
+    renderApp(<AppRouter />, { initialEntries: ['/scripts'], initialLocale: 'ko' });
+
+    expect(screen.getByRole('heading', { name: '스크립트' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '스크립트 목록' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '새 스크립트' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Open script Health status assertions' })).toBeInTheDocument();
+  });
 });

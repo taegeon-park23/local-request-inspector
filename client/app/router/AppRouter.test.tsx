@@ -1,4 +1,4 @@
-﻿import { screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AppRouter } from '@client/app/router/AppRouter';
 import { renderApp } from '@client/shared/test/render-app';
@@ -20,6 +20,16 @@ describe('AppRouter shell bootstrap', () => {
     for (const label of ['Workspace', 'Captures', 'History', 'Mocks', 'Environments', 'Scripts', 'Settings']) {
       expect(within(navigationRail).getByText(label)).toBeInTheDocument();
     }
+  });
+
+  it('renders translated shell copy when the initial locale is Korean', () => {
+    renderApp(<AppRouter />, { initialLocale: 'ko' });
+
+    expect(screen.getByLabelText('Current section breadcrumb')).toHaveTextContent('워크벤치');
+    expect(screen.getByLabelText('Current section breadcrumb')).toHaveTextContent('작업공간');
+    expect(screen.getByText('런타임 연결')).toBeInTheDocument();
+    expect(screen.getByText('작업공간')).toBeInTheDocument();
+    expect(screen.getByText('설정')).toBeInTheDocument();
   });
 
   it('switches top-level placeholder sections from the navigation rail', async () => {

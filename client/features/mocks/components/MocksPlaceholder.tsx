@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useReducer, useState } from 'react';
+import { useI18n } from '@client/app/providers/useI18n';
 import {
   createMockRule,
   deleteMockRule,
@@ -313,6 +314,7 @@ function MatcherEditor({ title, description, addLabel, rowPrefix, rows, onChange
 
 export function MocksPlaceholder() {
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const [activeDetailTab, setActiveDetailTab] = useState<MockRuleDetailTabId>('overview');
   const [resourceTransferStatus, setResourceTransferStatus] = useState<MockResourceTransferStatus | null>(null);
   const [draft, draftDispatch] = useReducer(mockRuleDraftReducer, defaultNewMockRuleInput, createDraft);
@@ -575,15 +577,15 @@ export function MocksPlaceholder() {
 
       <section className="shell-panel shell-panel--main" aria-label="Main work surface">
         <SectionHeading
-          icon="mocks"
-          title="Mocks"
-          summary="Mocks is the authored rule management route. It persists matcher and response definitions while captures shows runtime outcomes after evaluation."
-        >
-          <div className="workspace-explorer__role-strip" aria-label="Mocks route role">
-            <span className="workspace-chip">Management</span>
-            <span className="workspace-chip workspace-chip--secondary">Authored rules</span>
-          </div>
-        </SectionHeading>
+            icon="mocks"
+            title={t('routes.mocks.title')}
+            summary={t('routes.mocks.summary')}
+          >
+            <div className="workspace-explorer__role-strip" aria-label="Mocks route role">
+              <span className="workspace-chip">{t('roles.management')}</span>
+              <span className="workspace-chip workspace-chip--secondary">{t('routes.mocks.contextChip')}</span>
+            </div>
+          </SectionHeading>
 
         {isListLoading && !isCreatingRule ? (
           <div className="request-work-surface request-work-surface--empty">
@@ -890,6 +892,4 @@ export function MocksPlaceholder() {
     </>
   );
 }
-
-
 

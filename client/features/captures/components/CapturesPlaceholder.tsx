@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import { useI18n } from '@client/app/providers/useI18n';
 import { useNavigate } from 'react-router-dom';
 import {
   capturedRequestDetailQueryKey,
@@ -86,6 +87,7 @@ function getCaptureObservationSourceLabel() {
 
 export function CapturesPlaceholder() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [activeDetailTab, setActiveDetailTab] = useState<CaptureDetailTabId>('timeline');
   const connectionHealth = useCapturesStore((state) => state.connectionHealth);
   const selectedCaptureId = useCapturesStore((state) => state.selectedCaptureId);
@@ -255,15 +257,15 @@ export function CapturesPlaceholder() {
 
       <section className="shell-panel shell-panel--main" aria-label="Main work surface">
         <SectionHeading
-          icon="captures"
-          title="Captures"
-          summary="Captures is an observation route for inbound traffic. It reads persisted capture summaries from the runtime lane and keeps replay as an explicit edit-first bridge into Workspace."
-        >
-          <div className="workspace-explorer__role-strip" aria-label="Captures route role">
-            <span className="workspace-chip">Observation</span>
-            <span className="workspace-chip workspace-chip--secondary">Replay bridge</span>
-          </div>
-        </SectionHeading>
+            icon="captures"
+            title={t('routes.captures.title')}
+            summary={t('routes.captures.summary')}
+          >
+            <div className="workspace-explorer__role-strip" aria-label="Captures route role">
+              <span className="workspace-chip">{t('roles.observation')}</span>
+              <span className="workspace-chip workspace-chip--secondary">{t('routes.captures.contextChip')}</span>
+            </div>
+          </SectionHeading>
 
         {isLoading ? (
           <div className="request-work-surface request-work-surface--empty">
@@ -470,15 +472,4 @@ export function CapturesPlaceholder() {
     </>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
 

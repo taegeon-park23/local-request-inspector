@@ -194,4 +194,13 @@ describe('Environments MVP route', () => {
     await user.click(screen.getByRole('button', { name: 'Delete environment' }));
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Open environment Stage copy updated' })).not.toBeInTheDocument());
   });
+  it('renders the environments route copy in Korean when the locale is switched', async () => {
+    vi.stubGlobal('fetch', createEnvironmentsFetch());
+    renderApp(<AppRouter />, { initialEntries: ['/environments'], initialLocale: 'ko' });
+
+    expect(screen.getByRole('heading', { name: '환경' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '환경 목록' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '새 환경' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Open environment Local API' })).toBeInTheDocument();
+  });
 });

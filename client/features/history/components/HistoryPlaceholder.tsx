@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import { useI18n } from '@client/app/providers/useI18n';
 import { useNavigate } from 'react-router-dom';
 import {
   executionHistoryDetailQueryKey,
@@ -107,6 +108,7 @@ function createFallbackResponsePreviewPolicy(history: HistoryRecord) {
 
 export function HistoryPlaceholder() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [activeResultTab, setActiveResultTab] = useState<HistoryResultTabId>('response');
   const selectedHistoryId = useHistoryStore((state) => state.selectedHistoryId);
   const searchText = useHistoryStore((state) => state.searchText);
@@ -275,15 +277,15 @@ export function HistoryPlaceholder() {
 
       <section className="shell-panel shell-panel--main" aria-label="Main work surface">
         <SectionHeading
-          icon="history"
-          title="History"
-          summary="History is an observation route for persisted outbound executions. It reads redacted runtime summaries from SQLite without reusing active request-tab result state."
-        >
-          <div className="workspace-explorer__role-strip" aria-label="History route role">
-            <span className="workspace-chip">Observation</span>
-            <span className="workspace-chip workspace-chip--secondary">Persisted execution</span>
-          </div>
-        </SectionHeading>
+            icon="history"
+            title={t('routes.history.title')}
+            summary={t('routes.history.summary')}
+          >
+            <div className="workspace-explorer__role-strip" aria-label="History route role">
+              <span className="workspace-chip">{t('roles.observation')}</span>
+              <span className="workspace-chip workspace-chip--secondary">{t('routes.history.contextChip')}</span>
+            </div>
+          </SectionHeading>
 
         {isListLoading ? (
           <div className="request-work-surface request-work-surface--empty">
@@ -584,11 +586,4 @@ export function HistoryPlaceholder() {
     </>
   );
 }
-
-
-
-
-
-
-
 

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useI18n } from '@client/app/providers/useI18n';
 import {
   createSavedScript,
   deleteSavedScript,
@@ -19,18 +20,11 @@ import type {
 } from '@client/features/scripts/scripts.types';
 import { DetailViewerSection } from '@client/shared/ui/DetailViewerSection';
 import { EmptyStateCallout } from '@client/shared/ui/EmptyStateCallout';
+import { IconLabel } from '@client/shared/ui/IconLabel';
 import { KeyValueMetaList } from '@client/shared/ui/KeyValueMetaList';
 import { SectionHeading } from '@client/shared/ui/SectionHeading';
-import { IconLabel } from '@client/shared/ui/IconLabel';
 
 type ScriptStageFilter = 'all' | ScriptType;
-
-const stageFilterOptions: Array<{ value: ScriptStageFilter; label: string }> = [
-  { value: 'all', label: 'All stages' },
-  { value: 'pre-request', label: 'Pre-request' },
-  { value: 'post-response', label: 'Post-response' },
-  { value: 'tests', label: 'Tests' },
-];
 
 function createScriptDraft(): SavedScriptInput {
   return { name: '', description: '', scriptType: 'pre-request', sourceCode: '' };
@@ -47,9 +41,9 @@ function createDraftFromSavedScript(script: Awaited<ReturnType<typeof readSavedS
   };
 }
 
-function createDraftFromTemplate(template: ScriptTemplateRecord): SavedScriptInput {
+function createDraftFromTemplate(template: ScriptTemplateRecord, copySuffix: string): SavedScriptInput {
   return {
-    name: `${template.name} copy`,
+    name: `${template.name} ${copySuffix}`,
     description: template.description,
     scriptType: template.templateType,
     sourceCode: template.sourceCode,
@@ -57,14 +51,34 @@ function createDraftFromTemplate(template: ScriptTemplateRecord): SavedScriptInp
   };
 }
 
+function getScriptTypeLabel(scriptType: ScriptType, t: ReturnType<typeof useI18n>['t']) {
+  switch (scriptType) {
+    case 'pre-request':
+      return t('scriptsRoute.stageFilterOptions.preRequest');
+    case 'post-response':
+      return t('scriptsRoute.stageFilterOptions.postResponse');
+    case 'tests':
+      return t('scriptsRoute.stageFilterOptions.tests');
+    default:
+      return scriptType;
+  }
+}
+
 export function ScriptsRoute() {
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const [searchText, setSearchText] = useState('');
   const [stageFilter, setStageFilter] = useState<ScriptStageFilter>('all');
   const [selectedScriptId, setSelectedScriptId] = useState<string | null>(null);
   const [isCreatingDraft, setIsCreatingDraft] = useState(false);
   const [draft, setDraft] = useState<SavedScriptInput>(createScriptDraft);
 
+  const stageFilterOptions: Array<{ value: ScriptStageFilter; label: string }> = [
+    { value: 'all', label: t('scriptsRoute.stageFilterOptions.all') },
+    { value: 'pre-request', label: t('scriptsRoute.stageFilterOptions.preRequest') },
+    { value: 'post-response', label: t('scriptsRoute.stageFilterOptions.postResponse') },
+    { value: 'tests', label: t('scriptsRoute.stageFilterOptions.tests') },
+  ];
   const listQuery = useQuery({ queryKey: workspaceScriptsQueryKey, queryFn: listWorkspaceScripts });
   const templatesQuery = useQuery({ queryKey: scriptTemplatesQueryKey, queryFn: listScriptTemplates });
   const filteredItems = (listQuery.data ?? []).filter((item) => {
@@ -123,13 +137,15 @@ export function ScriptsRoute() {
   });
 
   const saveDisabledReason = createMutation.isPending || updateMutation.isPending
-    ? 'Persisting the saved script resource.'
+    ? t('scriptsRoute.detail.management.pendingSave')
     : activeDraft.name.trim().length === 0
-      ? 'Script name is required before saving.'
+      ? t('scriptsRoute.detail.management.nameRequired')
       : null;
   const deleteDisabledReason = isCreatingDraft
-    ? 'Discard the draft instead of deleting it. Only persisted scripts can be deleted.'
-    : deleteMutation.isPending ? 'Deleting the persisted script.' : null;
+    ? t('scriptsRoute.detail.management.draftDeleteGuard')
+    : deleteMutation.isPending
+      ? t('scriptsRoute.detail.management.pendingDelete')
+      : null;
 
   return (
     <>
@@ -137,54 +153,60 @@ export function ScriptsRoute() {
         <div className="scripts-explorer">
           <header className="scripts-explorer__header">
             <div>
-              <p className="section-placeholder__eyebrow">Saved scripts library</p>
-              <h2>Scripts list</h2>
-              <p>Top-level Scripts manages standalone saved scripts and read-only starter templates. Request-stage attachment remains deferred.</p>
+              <p className="section-placeholder__eyebrow">{t('scriptsRoute.sidebar.eyebrow')}</p>
+              <h2>{t('scriptsRoute.sidebar.title')}</h2>
+              <p>{t('scriptsRoute.sidebar.summary')}</p>
             </div>
-            <button type="button" className="workspace-button" onClick={() => { setDraft(createScriptDraft()); setIsCreatingDraft(true); setSelectedScriptId(null); }}><IconLabel icon="new">New script</IconLabel></button>
+            <button type="button" className="workspace-button" onClick={() => { setDraft(createScriptDraft()); setIsCreatingDraft(true); setSelectedScriptId(null); }}>
+              <IconLabel icon="new">{t('scriptsRoute.sidebar.newButton')}</IconLabel>
+            </button>
           </header>
           <div className="scripts-filter-grid">
-            <label className="request-field"><span>Search scripts</span><input aria-label="Search scripts" type="text" value={searchText} onChange={(event) => setSearchText(event.currentTarget.value)} /></label>
-            <label className="request-field request-field--compact"><span>Stage filter</span><select aria-label="Stage filter" value={stageFilter} onChange={(event) => setStageFilter(event.currentTarget.value as ScriptStageFilter)}>{stageFilterOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+            <label className="request-field">
+              <span>{t('scriptsRoute.sidebar.searchLabel')}</span>
+              <input aria-label="Search scripts" type="text" value={searchText} onChange={(event) => setSearchText(event.currentTarget.value)} />
+            </label>
+            <label className="request-field request-field--compact">
+              <span>{t('scriptsRoute.sidebar.stageFilterLabel')}</span>
+              <select aria-label="Stage filter" value={stageFilter} onChange={(event) => setStageFilter(event.currentTarget.value as ScriptStageFilter)}>
+                {stageFilterOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+            </label>
           </div>
-          {listQuery.isPending && !listQuery.data ? <EmptyStateCallout title="Loading saved scripts" description="Waiting for the persisted script library before a detail row can be selected." /> : null}
-          {listQuery.isError ? <EmptyStateCallout title="Scripts library is degraded" description={listQuery.error instanceof Error ? listQuery.error.message : 'Saved scripts could not be loaded cleanly.'} /> : null}
-          {!listQuery.isPending && (listQuery.data ?? []).length === 0 ? <EmptyStateCallout title="No saved scripts yet" description="Create a blank script or copy a system template into the standalone library." /> : null}
-          {!listQuery.isPending && (listQuery.data ?? []).length > 0 && sortedItems.length === 0 ? <EmptyStateCallout title="No saved scripts match these filters" description="Adjust the search text or stage filter to bring persisted script rows back into view." /> : null}
-          {sortedItems.length > 0 ? <ul className="scripts-list" aria-label="Scripts list">{sortedItems.map((script) => <li key={script.id}><button type="button" className={script.id === effectiveSelectedId && !isCreatingDraft ? 'workspace-request workspace-request--selected' : 'workspace-request'} aria-label={`Open script ${script.name}`} onClick={() => { setIsCreatingDraft(false); setSelectedScriptId(script.id); }}><span className="workspace-request__header"><span className="workspace-request__title">{script.name}</span><span className="workspace-request__badges"><span className="workspace-chip">{script.scriptType}</span></span></span><span className="workspace-request__meta">{script.description || 'No description yet'}</span><span className="workspace-request__meta">{script.sourcePreview || 'Empty source'}</span></button></li>)}</ul> : null}
+          {listQuery.isPending && !listQuery.data ? <EmptyStateCallout title={t('scriptsRoute.empty.loadingList.title')} description={t('scriptsRoute.empty.loadingList.description')} /> : null}
+          {listQuery.isError ? <EmptyStateCallout title={t('scriptsRoute.empty.degraded.title')} description={listQuery.error instanceof Error ? listQuery.error.message : t('scriptsRoute.empty.degraded.fallbackDescription')} /> : null}
+          {!listQuery.isPending && (listQuery.data ?? []).length === 0 ? <EmptyStateCallout title={t('scriptsRoute.empty.noItems.title')} description={t('scriptsRoute.empty.noItems.description')} /> : null}
+          {!listQuery.isPending && (listQuery.data ?? []).length > 0 && sortedItems.length === 0 ? <EmptyStateCallout title={t('scriptsRoute.empty.noFilteredItems.title')} description={t('scriptsRoute.empty.noFilteredItems.description')} /> : null}
+          {sortedItems.length > 0 ? <ul className="scripts-list" aria-label="Scripts list">{sortedItems.map((script) => <li key={script.id}><button type="button" className={script.id === effectiveSelectedId && !isCreatingDraft ? 'workspace-request workspace-request--selected' : 'workspace-request'} aria-label={`Open script ${script.name}`} onClick={() => { setIsCreatingDraft(false); setSelectedScriptId(script.id); }}><span className="workspace-request__header"><span className="workspace-request__title">{script.name}</span><span className="workspace-request__badges"><span className="workspace-chip">{getScriptTypeLabel(script.scriptType, t)}</span></span></span><span className="workspace-request__meta">{script.description || t('scriptsRoute.list.noDescription')}</span><span className="workspace-request__meta">{script.sourcePreview || t('scriptsRoute.list.emptySource')}</span></button></li>)}</ul> : null}
         </div>
       </section>
       <section className="shell-panel shell-panel--main" aria-label="Main work surface">
-        <SectionHeading
-          icon="scripts"
-          title="Scripts"
-          summary="Scripts stores standalone saved stage snippets and read-only system templates. Request-bound attachment and live shared references remain outside this slice."
-        />
-        {listQuery.isPending && !listQuery.data ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title="Loading script detail" description="Saved script detail appears after the persisted list is available." /></div> : !isCreatingDraft && !detailQuery.data ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title="No script selected" description="Choose a persisted script or start a blank or template draft to edit source code in the standalone library." /></div> : detailQuery.isPending && !detailQuery.data && !isCreatingDraft ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title="Loading persisted script detail" description="Fetching the selected saved script before editable fields are shown." /></div> : (
+        <SectionHeading icon="scripts" title={t('routes.scripts.title')} summary={t('routes.scripts.summary')} />
+        {listQuery.isPending && !listQuery.data ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('scriptsRoute.empty.loadingDetail.title')} description={t('scriptsRoute.empty.loadingDetail.description')} /></div> : !isCreatingDraft && !detailQuery.data ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('scriptsRoute.empty.noSelection.title')} description={t('scriptsRoute.empty.noSelection.description')} /></div> : detailQuery.isPending && !detailQuery.data && !isCreatingDraft ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('scriptsRoute.empty.loadingPersistedDetail.title')} description={t('scriptsRoute.empty.loadingPersistedDetail.description')} /></div> : (
           <div className="scripts-detail">
             <header className="scripts-detail__header">
               <div>
-                <p className="section-placeholder__eyebrow">{isCreatingDraft ? 'New script draft' : 'Persisted script detail'}</p>
-                <h2>{isCreatingDraft ? 'Create saved script' : 'Edit saved script'}</h2>
-                <p>{detailQuery.data?.capabilitySummary ?? selectedTemplate?.capabilitySummary ?? 'Saved scripts stay standalone in this route.'}</p>
+                <p className="section-placeholder__eyebrow">{isCreatingDraft ? t('scriptsRoute.detail.draftEyebrow') : t('scriptsRoute.detail.persistedEyebrow')}</p>
+                <h2>{isCreatingDraft ? t('scriptsRoute.detail.createTitle') : t('scriptsRoute.detail.editTitle')}</h2>
+                <p>{detailQuery.data?.capabilitySummary ?? selectedTemplate?.capabilitySummary ?? t('scriptsRoute.detail.fallbackSummary')}</p>
               </div>
-              <div className="request-work-surface__badges"><span className="workspace-chip">{activeDraft.scriptType}</span>{selectedTemplate ? <span className="workspace-chip workspace-chip--secondary">Template seeded</span> : null}</div>
+              <div className="request-work-surface__badges"><span className="workspace-chip">{getScriptTypeLabel(activeDraft.scriptType, t)}</span>{selectedTemplate ? <span className="workspace-chip workspace-chip--secondary">{t('scriptsRoute.detail.templateSeededChip')}</span> : null}</div>
             </header>
-            <DetailViewerSection icon="summary" title="Management boundary" description="Save persists standalone scripts only. Request-stage attachment, backlinks, and reference semantics remain deferred." className="workspace-surface-card" actions={<div className="request-work-surface__future-actions"><button type="button" className="workspace-button workspace-button--secondary" onClick={() => { if (!saveDisabledReason) { if (isCreatingDraft || !activeDraft.id) { createMutation.mutate(activeDraft); } else { updateMutation.mutate({ scriptId: activeDraft.id, script: activeDraft }); } } }} disabled={saveDisabledReason !== null}><IconLabel icon="save">{isCreatingDraft ? 'Create script' : 'Save script'}</IconLabel></button>{isCreatingDraft ? <button type="button" className="workspace-button workspace-button--ghost" onClick={() => { setIsCreatingDraft(false); setSelectedScriptId(sortedItems[0]?.id ?? null); }}>Cancel draft</button> : <button type="button" className="workspace-button workspace-button--ghost" onClick={() => { if (detailQuery.data && !deleteDisabledReason) { deleteMutation.mutate(detailQuery.data.id); } }} disabled={deleteDisabledReason !== null}><IconLabel icon="delete">Delete script</IconLabel></button>}</div>}>
-              <p className="shared-readiness-note">{saveDisabledReason ?? deleteDisabledReason ?? 'Templates can seed a new saved script, but template CRUD, request linking, and Monaco-class editing remain deferred.'}</p>
-              {(createMutation.error || updateMutation.error || deleteMutation.error) ? <EmptyStateCallout title="Script mutation failed" description={([createMutation.error, updateMutation.error, deleteMutation.error].find(Boolean) as Error | undefined)?.message ?? 'Script mutation failed.'} /> : null}
+            <DetailViewerSection icon="summary" title={t('scriptsRoute.detail.management.title')} description={t('scriptsRoute.detail.management.description')} className="workspace-surface-card" actions={<div className="request-work-surface__future-actions"><button type="button" className="workspace-button workspace-button--secondary" onClick={() => { if (!saveDisabledReason) { if (isCreatingDraft || !activeDraft.id) { createMutation.mutate(activeDraft); } else { updateMutation.mutate({ scriptId: activeDraft.id, script: activeDraft }); } } }} disabled={saveDisabledReason !== null}><IconLabel icon="save">{isCreatingDraft ? t('scriptsRoute.detail.management.createAction') : t('scriptsRoute.detail.management.saveAction')}</IconLabel></button>{isCreatingDraft ? <button type="button" className="workspace-button workspace-button--ghost" onClick={() => { setIsCreatingDraft(false); setSelectedScriptId(sortedItems[0]?.id ?? null); }}>{t('scriptsRoute.detail.management.cancelDraft')}</button> : <button type="button" className="workspace-button workspace-button--ghost" onClick={() => { if (detailQuery.data && !deleteDisabledReason) { deleteMutation.mutate(detailQuery.data.id); } }} disabled={deleteDisabledReason !== null}><IconLabel icon="delete">{t('scriptsRoute.detail.management.deleteAction')}</IconLabel></button>}</div>}>
+              <p className="shared-readiness-note">{saveDisabledReason ?? deleteDisabledReason ?? t('scriptsRoute.detail.management.readinessNote')}</p>
+              {(createMutation.error || updateMutation.error || deleteMutation.error) ? <EmptyStateCallout title={t('scriptsRoute.detail.management.mutationFailedTitle')} description={([createMutation.error, updateMutation.error, deleteMutation.error].find(Boolean) as Error | undefined)?.message ?? t('scriptsRoute.detail.management.mutationFailedFallbackDescription')} /> : null}
             </DetailViewerSection>
             <div className="scripts-summary-grid">
-              <DetailViewerSection icon="scripts" title="Script summary" description="Saved scripts are workspace-scoped resources rather than runtime history artifacts." className="workspace-surface-card"><KeyValueMetaList items={[{ label: 'Script name', value: activeDraft.name || 'Untitled script' }, { label: 'Script type', value: activeDraft.scriptType }, { label: 'Template source', value: selectedTemplate?.name ?? 'Blank draft or direct authoring' }, { label: 'Source length', value: `${activeDraft.sourceCode.length} characters` }]} /></DetailViewerSection>
-              <DetailViewerSection icon="info" title="Capability guidance" description="Each stage keeps its existing bounded runtime semantics." className="workspace-surface-card workspace-surface-card--muted"><KeyValueMetaList items={[{ label: 'Current stage', value: activeDraft.scriptType }, { label: 'Capability summary', value: detailQuery.data?.capabilitySummary ?? selectedTemplate?.capabilitySummary ?? 'Stage capability guidance appears here.' }, { label: 'Deferred note', value: detailQuery.data?.deferredSummary ?? 'Attachment, backlinks, and live reference behavior remain deferred.' }]} /></DetailViewerSection>
+              <DetailViewerSection icon="scripts" title={t('scriptsRoute.detail.summaryCard.title')} description={t('scriptsRoute.detail.summaryCard.description')} className="workspace-surface-card"><KeyValueMetaList items={[{ label: t('scriptsRoute.detail.summaryCard.labels.name'), value: activeDraft.name || t('scriptsRoute.detail.summaryCard.values.untitled') }, { label: t('scriptsRoute.detail.summaryCard.labels.type'), value: getScriptTypeLabel(activeDraft.scriptType, t) }, { label: t('scriptsRoute.detail.summaryCard.labels.templateSource'), value: selectedTemplate?.name ?? t('scriptsRoute.detail.summaryCard.values.directAuthoring') }, { label: t('scriptsRoute.detail.summaryCard.labels.sourceLength'), value: t('scriptsRoute.detail.summaryCard.values.sourceLength', { count: activeDraft.sourceCode.length }) }]} /></DetailViewerSection>
+              <DetailViewerSection icon="info" title={t('scriptsRoute.detail.capabilityCard.title')} description={t('scriptsRoute.detail.capabilityCard.description')} className="workspace-surface-card workspace-surface-card--muted"><KeyValueMetaList items={[{ label: t('scriptsRoute.detail.capabilityCard.labels.currentStage'), value: getScriptTypeLabel(activeDraft.scriptType, t) }, { label: t('scriptsRoute.detail.capabilityCard.labels.capabilitySummary'), value: detailQuery.data?.capabilitySummary ?? selectedTemplate?.capabilitySummary ?? t('scriptsRoute.detail.capabilityCard.values.capabilitySummaryFallback') }, { label: t('scriptsRoute.detail.capabilityCard.labels.deferredNote'), value: detailQuery.data?.deferredSummary ?? t('scriptsRoute.detail.capabilityCard.values.deferredNoteFallback') }]} /></DetailViewerSection>
             </div>
-            <DetailViewerSection icon="code" title="Saved script editor" description="Textarea-based editing remains intentionally lightweight in this MVP." className="workspace-surface-card"><div className="request-editor-card__grid"><label className="request-field"><span>Script name</span><input aria-label="Script name" type="text" value={activeDraft.name} onChange={(event) => setDraft((current) => ({ ...(current.id === activeDraft.id ? current : activeDraft), name: event.currentTarget.value }))} /></label><label className="request-field"><span>Script stage</span><select aria-label="Script stage" value={activeDraft.scriptType} onChange={(event) => setDraft((current) => ({ ...(current.id === activeDraft.id ? current : activeDraft), scriptType: event.currentTarget.value as ScriptType }))}>{stageFilterOptions.filter((option) => option.value !== 'all').map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label><label className="request-field request-field--wide"><span>Script description</span><textarea aria-label="Script description" value={activeDraft.description} onChange={(event) => setDraft((current) => ({ ...(current.id === activeDraft.id ? current : activeDraft), description: event.currentTarget.value }))} /></label><label className="request-field request-field--wide"><span>Script source</span><textarea aria-label="Script source" value={activeDraft.sourceCode} onChange={(event) => setDraft((current) => ({ ...(current.id === activeDraft.id ? current : activeDraft), sourceCode: event.currentTarget.value }))} /></label></div></DetailViewerSection>
+            <DetailViewerSection icon="code" title={t('scriptsRoute.detail.editorCard.title')} description={t('scriptsRoute.detail.editorCard.description')} className="workspace-surface-card"><div className="request-editor-card__grid"><label className="request-field"><span>{t('scriptsRoute.detail.editorCard.labels.name')}</span><input aria-label="Script name" type="text" value={activeDraft.name} onChange={(event) => setDraft((current) => ({ ...(current.id === activeDraft.id ? current : activeDraft), name: event.currentTarget.value }))} /></label><label className="request-field"><span>{t('scriptsRoute.detail.editorCard.labels.stage')}</span><select aria-label="Script stage" value={activeDraft.scriptType} onChange={(event) => setDraft((current) => ({ ...(current.id === activeDraft.id ? current : activeDraft), scriptType: event.currentTarget.value as ScriptType }))}>{stageFilterOptions.filter((option) => option.value !== 'all').map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label><label className="request-field request-field--wide"><span>{t('scriptsRoute.detail.editorCard.labels.description')}</span><textarea aria-label="Script description" value={activeDraft.description} onChange={(event) => setDraft((current) => ({ ...(current.id === activeDraft.id ? current : activeDraft), description: event.currentTarget.value }))} /></label><label className="request-field request-field--wide"><span>{t('scriptsRoute.detail.editorCard.labels.source')}</span><textarea aria-label="Script source" value={activeDraft.sourceCode} onChange={(event) => setDraft((current) => ({ ...(current.id === activeDraft.id ? current : activeDraft), sourceCode: event.currentTarget.value }))} /></label></div></DetailViewerSection>
           </div>
         )}
       </section>
       <aside className="shell-panel shell-panel--detail" aria-label="Contextual detail panel">
         <div className="workspace-detail-panel">
-          {templatesQuery.isPending ? <EmptyStateCallout title="Loading script templates" description="System starter templates are loading for standalone copy-first authoring." /> : templatesQuery.isError ? <EmptyStateCallout title="Script templates are degraded" description={templatesQuery.error instanceof Error ? templatesQuery.error.message : 'System templates could not be loaded cleanly.'} /> : <ul className="scripts-template-list" aria-label="Script templates list">{(templatesQuery.data ?? []).map((template) => <li key={template.id} className="scripts-template-card"><div><h3>{template.name}</h3><p>{template.description}</p><div className="workspace-explorer__role-strip"><span className="workspace-chip">{template.templateType}</span><span className="workspace-chip workspace-chip--secondary">{template.tags.join(', ')}</span></div></div><pre className="scripts-template-card__preview">{template.sourceCode}</pre><button type="button" className="workspace-button workspace-button--secondary" onClick={() => { setDraft(createDraftFromTemplate(template)); setIsCreatingDraft(true); setSelectedScriptId(null); }}><IconLabel icon="template">Use {template.name}</IconLabel></button></li>)}</ul>}
+          {templatesQuery.isPending ? <EmptyStateCallout title={t('scriptsRoute.empty.loadingTemplates.title')} description={t('scriptsRoute.empty.loadingTemplates.description')} /> : templatesQuery.isError ? <EmptyStateCallout title={t('scriptsRoute.empty.templatesDegraded.title')} description={templatesQuery.error instanceof Error ? templatesQuery.error.message : t('scriptsRoute.empty.templatesDegraded.fallbackDescription')} /> : <ul className="scripts-template-list" aria-label="Script templates list">{(templatesQuery.data ?? []).map((template) => <li key={template.id} className="scripts-template-card"><div><h3>{template.name}</h3><p>{template.description}</p><div className="workspace-explorer__role-strip"><span className="workspace-chip">{getScriptTypeLabel(template.templateType, t)}</span><span className="workspace-chip workspace-chip--secondary">{template.tags.join(', ')}</span></div></div><pre className="scripts-template-card__preview">{template.sourceCode}</pre><button type="button" className="workspace-button workspace-button--secondary" onClick={() => { setDraft(createDraftFromTemplate(template, t('scriptsRoute.list.templateCopySuffix'))); setIsCreatingDraft(true); setSelectedScriptId(null); }}><IconLabel icon="template">{t('scriptsRoute.list.useTemplateAction', { name: template.name })}</IconLabel></button></li>)}</ul>}
         </div>
       </aside>
     </>
