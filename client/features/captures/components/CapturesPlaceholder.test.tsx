@@ -101,7 +101,7 @@ describe('Captures S18 fidelity refinement', () => {
     expect(screen.getByRole('heading', { name: 'Persistence summary' })).toBeInTheDocument();
     expect(screen.getByText('Inbound request snapshot')).toBeInTheDocument();
     expect(screen.getByText(/Persisted capture keeps/i)).toBeInTheDocument();
-    expect(screen.getByText('JSON body · 2 field(s)')).toBeInTheDocument();
+    expect(screen.getByText('JSON body · 2 field(s)', { selector: 'p' })).toBeInTheDocument();
     expect(screen.getAllByText(/Preview policy/i).length).toBeGreaterThan(0);
     expect(screen.getByText('Stored summary')).toBeInTheDocument();
     expect(screen.getByText('Handling summary')).toBeInTheDocument();

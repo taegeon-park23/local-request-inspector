@@ -181,10 +181,7 @@ describe('History S18 fidelity refinement', () => {
     expect(screen.getByText('0 params · 3 headers · json body · bearer')).toBeInTheDocument();
     expect(screen.getByText('Persisted response detail stays bounded')).toBeInTheDocument();
 
-    expect(screen.getByText('Succeeded', { selector: '[data-kind="executionOutcome"]' })).toHaveAttribute(
-      'data-kind',
-      'executionOutcome',
-    );
+    expect(screen.getAllByText('Succeeded', { selector: '[data-kind="executionOutcome"]' }).length).toBeGreaterThan(0);
     expect(screen.getByText('200 OK', { selector: '[data-kind="transportOutcome"]' })).toHaveAttribute(
       'data-kind',
       'transportOutcome',

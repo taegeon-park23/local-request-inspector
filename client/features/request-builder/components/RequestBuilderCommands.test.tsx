@@ -388,7 +388,8 @@ describe('Request builder save/run wiring', () => {
     expect(screen.getByText('[pre-request] prepared request')).toBeInTheDocument();
     expect(screen.getByText('[post-response] captured response')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('tab', { name: 'Tests' }));
+    const resultPanelTabs = screen.getByRole('tablist', { name: 'Result panel tabs' });
+    await user.click(within(resultPanelTabs).getByRole('tab', { name: 'Tests' }));
     expect(screen.getByText('PASS response status is 201')).toBeInTheDocument();
     expect(screen.getByText('1 assertion passed. No failures.')).toBeInTheDocument();
 
@@ -520,7 +521,7 @@ describe('Request builder save/run wiring', () => {
     expect(screen.getByText('script_blocked_capability')).toBeInTheDocument();
     expect(screen.getByText('Blocked token process is not available in the bounded script runtime.')).toBeInTheDocument();
     const stageSummary = screen.getByLabelText('Execution stage summary');
-    expect(within(stageSummary).getByText(/Transport/i)).toBeInTheDocument();
+    expect(within(stageSummary).getAllByText('Transport', { selector: 'strong' }).length).toBeGreaterThan(0);
     expect(within(stageSummary).getByText(/Transport did not run because pre-request blocked the execution./i)).toBeInTheDocument();
     expect(screen.getByLabelText('Blocked runtime has unsaved changes')).toBeInTheDocument();
   });
