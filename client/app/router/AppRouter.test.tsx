@@ -52,6 +52,22 @@ describe('AppRouter shell bootstrap', () => {
     expect(screen.getByLabelText('Current section breadcrumb')).toHaveTextContent('Settings');
   });
 
+  it('collapses the navigation rail without losing accessible route names', async () => {
+    const user = userEvent.setup();
+    renderApp(<AppRouter />);
+
+    const navigationRail = screen.getByLabelText('Navigation rail');
+    expect(navigationRail).toHaveAttribute('data-collapsed', 'false');
+
+    await user.click(within(navigationRail).getByRole('button', { name: 'Collapse navigation' }));
+    expect(navigationRail).toHaveAttribute('data-collapsed', 'true');
+    expect(within(navigationRail).getByRole('link', { name: 'Workspace' })).toBeInTheDocument();
+    expect(within(navigationRail).getByRole('link', { name: 'Settings' })).toBeInTheDocument();
+
+    await user.click(within(navigationRail).getByRole('button', { name: 'Expand navigation' }));
+    expect(navigationRail).toHaveAttribute('data-collapsed', 'false');
+  });
+
   it('supports the smoke path across workspace, scripts, history replay, and mocks shell readiness', async () => {
     const user = userEvent.setup();
     renderApp(<AppRouter />);

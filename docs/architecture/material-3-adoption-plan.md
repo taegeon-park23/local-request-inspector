@@ -165,6 +165,7 @@ Use a **token-first custom implementation**:
 - **Implementation follow-up (2026-03-23):** `T035` is now landed as the current visual plus light-UX continuation slice. It compacts the shell header, moves the shell breadcrumb to a route-only `Workbench / section` model, introduces a local curated SVG icon primitive inspired by Material Symbols Rounded, and limits icon adoption to navigation, top-level section headers, shared tabs, empty/detail callouts, and icon-plus-label primary actions.
 - **Guardrail refresh (2026-03-23):** `T035` remains client-only. It does not change backend APIs, persisted state ownership, request/capture/history/mock semantics, or the server-owned environment-resolution contract.
 - **Implementation follow-up (2026-03-23):** `T036` is now landed as the next visual correction slice after `T035`. It tightens shape usage, reduces over-rounded grouped surfaces, caps button corners near 12px, and increases the visual separation between actionable buttons and passive badges/tabs without changing semantics or contracts.
+- **Implementation follow-up (2026-03-23):** `T043` is the next shell-only refinement slice after `T035`/`T036`. It narrows the shell chrome to a true 42px top bar, removes the remaining card-like runtime-status wrapper, adds a collapsible icon-first navigation rail, and shifts top-level region separation from hard dividers toward softer shadow-box depth without changing feature ownership or backend/state contracts.
 
 ## 12. Post-S26 Follow-Up Slices
 ### M3-F1 — Secondary surfaces and remaining shell affordances
@@ -195,6 +196,11 @@ Use a **token-first custom implementation**:
 - Scope: reduce excessive radius intensity across dense controls and grouped surfaces, make buttons more obviously actionable than chips/status badges, and tighten shared tab geometry.
 - Guardrails: keep the slice client-only, preserve accessible names and control roles, and prefer CSS/token refinement over broad TSX churn.
 - Status: done on 2026-03-23 as a bounded Material 3 control-hierarchy refinement pass.
+
+### T043 — Shell density and collapsible navigation refinement
+- Scope: enforce a true 42px shell top bar, add user-controlled navigation collapse/expand affordance, remove remaining status-wrapper chrome, and rely more on shadow-box separation across shell regions.
+- Guardrails: keep the slice client-only, preserve route accessible names and keyboard navigation, and avoid broader layout/docking redesign.
+- Status: done on 2026-03-23 as a bounded shell-only continuation of the current Material 3 baseline.
 
 ### Explicitly Deferred Beyond This Sequence
 - light theme activation

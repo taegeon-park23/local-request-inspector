@@ -36,6 +36,10 @@ const enCatalog = {
     status: {
       runtimeConnection: 'Runtime Connection',
     },
+    navigation: {
+      collapse: 'Collapse navigation',
+      expand: 'Expand navigation',
+    },
   },
   roles: {
     authoring: 'Authoring',
@@ -284,6 +288,10 @@ const koCatalog: CatalogShape<typeof enCatalog> = {
     },
     status: {
       runtimeConnection: '런타임 연결',
+    },
+    navigation: {
+      collapse: '사이드바 접기',
+      expand: '사이드바 펼치기',
     },
   },
   roles: {
