@@ -1,4 +1,5 @@
 import { managementRouteMessagesEn, managementRouteMessagesKo } from '@client/shared/i18n/management-route-messages';
+import { observationRouteMessagesEn, observationRouteMessagesKo } from '@client/shared/i18n/observation-route-messages';
 import { workspaceRouteMessagesEn, workspaceRouteMessagesKo } from '@client/shared/i18n/workspace-route-messages';
 
 export const supportedLocales = ['en', 'ko'] as const;
@@ -250,6 +251,7 @@ const enCatalog = {
     },
   },
   ...managementRouteMessagesEn,
+  ...observationRouteMessagesEn,
   ...workspaceRouteMessagesEn,
 } as const;
 
@@ -498,6 +500,7 @@ const koCatalog: CatalogShape<typeof enCatalog> = {
     },
   },
   ...managementRouteMessagesKo,
+  ...observationRouteMessagesKo,
   ...workspaceRouteMessagesKo,
 };
 

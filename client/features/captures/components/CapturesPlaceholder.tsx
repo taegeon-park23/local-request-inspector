@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+﻿import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
 import { useNavigate } from 'react-router-dom';
@@ -19,28 +19,35 @@ import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 
-const outcomeFilterOptions: Array<{ value: CaptureOutcomeFilter; label: string }> = [
-  { value: 'all', label: 'All outcomes' },
-  { value: 'Mocked', label: 'Mocked' },
-  { value: 'Bypassed', label: 'Bypassed' },
-  { value: 'No rule matched', label: 'No rule matched' },
-  { value: 'Blocked', label: 'Blocked' },
-];
+type TranslateFn = ReturnType<typeof useI18n>['t'];
+type CaptureDetailTabId = 'timeline' | 'deferred-detail';
 
-const captureDetailTabs = [
-  { id: 'timeline', label: 'Timeline', icon: 'timeline' },
-  { id: 'deferred-detail', label: 'Deferred detail', icon: 'pending' },
-] as const;
+function getOutcomeFilterOptions(t: TranslateFn): Array<{ value: CaptureOutcomeFilter; label: string }> {
+  return [
+    { value: 'all', label: t('capturesRoute.outcomeFilterOptions.all') },
+    { value: 'Mocked', label: t('capturesRoute.outcomeFilterOptions.mocked') },
+    { value: 'Bypassed', label: t('capturesRoute.outcomeFilterOptions.bypassed') },
+    { value: 'No rule matched', label: t('capturesRoute.outcomeFilterOptions.noRuleMatched') },
+    { value: 'Blocked', label: t('capturesRoute.outcomeFilterOptions.blocked') },
+  ];
+}
 
-type CaptureDetailTabId = (typeof captureDetailTabs)[number]['id'];
+function getCaptureDetailTabs(t: TranslateFn) {
+  return [
+    { id: 'timeline', label: t('capturesRoute.timelinePanel.tabs.timeline'), icon: 'timeline' },
+    { id: 'deferred-detail', label: t('capturesRoute.timelinePanel.tabs.deferredDetail'), icon: 'pending' },
+  ] as const;
+}
 
-const connectionCopyByHealth = {
-  idle: 'Capture observation is idle until the runtime adapter starts and the persisted capture list is queried.',
-  connecting: 'Connecting to the runtime capture feed while loading the latest persisted inbound capture summaries.',
-  connected: 'Persisted inbound capture summaries are available. Select a row to inspect it or open a replay draft without mutating the capture record.',
-  degraded: 'Capture observation is degraded. Existing persisted inbound summaries may still be visible while refresh and deeper diagnostics remain limited.',
-  offline: 'Capture observation is offline. Persisted inbound capture rows remain queryable, but no new runtime events can trigger refresh right now.',
-} as const;
+function getConnectionCopyByHealth(t: TranslateFn) {
+  return {
+    idle: t('capturesRoute.sidebar.health.idle'),
+    connecting: t('capturesRoute.sidebar.health.connecting'),
+    connected: t('capturesRoute.sidebar.health.connected'),
+    degraded: t('capturesRoute.sidebar.health.degraded'),
+    offline: t('capturesRoute.sidebar.health.offline'),
+  } as const;
+}
 
 function captureMatchesSearch(capture: CaptureRecord, searchText: string) {
   const normalizedSearchText = searchText.trim().toLowerCase();
@@ -65,24 +72,42 @@ function captureMatchesSearch(capture: CaptureRecord, searchText: string) {
   return haystack.includes(normalizedSearchText);
 }
 
-function getCaptureStorageSummary(capture: CaptureRecord) {
-  return capture.storageSummary
-    ?? `Persisted capture keeps ${capture.requestHeaderCount ?? capture.requestHeaders.length} header(s) and bounded request previews for observation and replay.`;
+function hasStoredBodyPreview(capture: CaptureRecord) {
+  return capture.bodyPreview.trim().length > 0 && !capture.bodyPreview.startsWith('No request body preview');
 }
 
-function getCaptureBodyPreviewPolicy(capture: CaptureRecord) {
-  return capture.bodyPreviewPolicy
-    ?? (capture.bodyPreview.length > 0
-      ? 'Captured request body preview remains bounded before deeper diagnostics are added.'
-      : 'No request body preview was persisted for this capture.');
+function getCaptureStorageSummary(capture: CaptureRecord, t: TranslateFn) {
+  if (capture.storageSummary) {
+    return capture.storageSummary;
+  }
+
+  return hasStoredBodyPreview(capture)
+    ? t('capturesRoute.helpers.storageSummaryWithPreview', {
+      count: capture.requestHeaderCount ?? capture.requestHeaders.length,
+    })
+    : t('capturesRoute.helpers.storageSummaryWithoutPreview', {
+      count: capture.requestHeaderCount ?? capture.requestHeaders.length,
+    });
 }
 
-function getCaptureStatusSummary(capture: CaptureRecord) {
-  return capture.statusCode === null ? 'No response status summary' : `HTTP ${capture.statusCode}`;
+function getCaptureBodyPreviewPolicy(capture: CaptureRecord, t: TranslateFn) {
+  if (capture.bodyPreviewPolicy) {
+    return capture.bodyPreviewPolicy;
+  }
+
+  return hasStoredBodyPreview(capture)
+    ? t('capturesRoute.helpers.bodyPreviewPolicyWithPreview')
+    : t('capturesRoute.helpers.bodyPreviewPolicyWithoutPreview');
 }
 
-function getCaptureObservationSourceLabel() {
-  return 'Inbound request snapshot';
+function getCaptureStatusSummary(capture: CaptureRecord, t: TranslateFn) {
+  return capture.statusCode === null
+    ? t('capturesRoute.helpers.statusSummaryNoResponse')
+    : t('capturesRoute.helpers.statusSummaryHttp', { statusCode: capture.statusCode });
+}
+
+function getCaptureObservationSourceLabel(t: TranslateFn) {
+  return t('capturesRoute.helpers.observationSourceLabel');
 }
 
 export function CapturesPlaceholder() {
@@ -96,6 +121,10 @@ export function CapturesPlaceholder() {
   const selectCapture = useCapturesStore((state) => state.selectCapture);
   const setSearchText = useCapturesStore((state) => state.setSearchText);
   const setOutcomeFilter = useCapturesStore((state) => state.setOutcomeFilter);
+
+  const outcomeFilterOptions = getOutcomeFilterOptions(t);
+  const captureDetailTabs = getCaptureDetailTabs(t);
+  const connectionCopyByHealth = getConnectionCopyByHealth(t);
 
   const capturesListQuery = useQuery({
     queryKey: capturedRequestsQueryKey,
@@ -155,12 +184,12 @@ export function CapturesPlaceholder() {
         <div className="captures-explorer">
           <header className="captures-explorer__header">
             <div>
-              <p className="section-placeholder__eyebrow">Observation feed</p>
-              <h2>Capture list</h2>
+              <p className="section-placeholder__eyebrow">{t('capturesRoute.sidebar.eyebrow')}</p>
+              <h2>{t('capturesRoute.sidebar.title')}</h2>
               <p>{connectionCopyByHealth[observationHealth]}</p>
               <div className="workspace-explorer__role-strip" aria-label="Capture surface role">
-                <span className="workspace-chip">Observation</span>
-                <span className="workspace-chip workspace-chip--secondary">Runtime lane</span>
+                <span className="workspace-chip">{t('roles.observation')}</span>
+                <span className="workspace-chip workspace-chip--secondary">{t('capturesRoute.sidebar.roleChip')}</span>
               </div>
             </div>
             <StatusBadge kind="connection" value={connectionHealth} />
@@ -168,18 +197,18 @@ export function CapturesPlaceholder() {
 
           <div className="captures-filter-grid">
             <label className="request-field">
-              <span>Search captures</span>
+              <span>{t('capturesRoute.filters.searchLabel')}</span>
               <input
-                aria-label="Search captures"
+                aria-label={t('capturesRoute.filters.searchLabel')}
                 type="text"
                 value={searchText}
                 onChange={(event) => setSearchText(event.currentTarget.value)}
               />
             </label>
             <label className="request-field request-field--compact">
-              <span>Mock outcome filter</span>
+              <span>{t('capturesRoute.filters.outcomeFilterLabel')}</span>
               <select
-                aria-label="Mock outcome filter"
+                aria-label={t('capturesRoute.filters.outcomeFilterLabel')}
                 value={outcomeFilter}
                 onChange={(event) => setOutcomeFilter(event.currentTarget.value as CaptureOutcomeFilter)}
               >
@@ -194,37 +223,37 @@ export function CapturesPlaceholder() {
 
           {isLoading ? (
             <EmptyStateCallout
-              title="Loading persisted captures"
-              description="Waiting for the runtime lane to return the latest inbound capture summaries. Runtime events refresh this list when new captures arrive."
+              title={t('capturesRoute.empty.loadingList.title')}
+              description={t('capturesRoute.empty.loadingList.description')}
               className="captures-empty-state"
             />
           ) : null}
 
           {observationHealth === 'degraded' ? (
             <EmptyStateCallout
-              title="Capture observation is degraded"
-              description={`Persisted capture summaries could not be refreshed cleanly. ${degradedReason}`}
+              title={t('capturesRoute.empty.degraded.title')}
+              description={`${t('capturesRoute.empty.degraded.fallbackDescription')} ${degradedReason}`}
             />
           ) : null}
 
           {isEmpty ? (
             <EmptyStateCallout
-              title="No captures yet"
-              description="Inbound traffic will appear here once requests hit the local server and the runtime lane persists bounded capture summaries."
+              title={t('capturesRoute.empty.noItems.title')}
+              description={t('capturesRoute.empty.noItems.description')}
               className="captures-empty-state"
             />
           ) : null}
 
           {hasNoFilteredResults ? (
             <EmptyStateCallout
-              title="No captures match these filters"
-              description="Adjust the search text or mock outcome filter to bring persisted capture rows back into view."
+              title={t('capturesRoute.empty.noFilteredItems.title')}
+              description={t('capturesRoute.empty.noFilteredItems.description')}
               className="captures-empty-state"
             />
           ) : null}
 
           {filteredCaptures.length > 0 ? (
-            <ul className="captures-list" aria-label="Captures list">
+            <ul className="captures-list" aria-label={t('capturesRoute.filters.listAriaLabel')}>
               {filteredCaptures.map((capture) => {
                 const isSelected = capture.id === effectiveSelectedCaptureId;
 
@@ -233,7 +262,10 @@ export function CapturesPlaceholder() {
                     <button
                       type="button"
                       className={isSelected ? 'capture-row capture-row--selected' : 'capture-row'}
-                      aria-label={`Open capture ${capture.method} ${capture.path}`}
+                      aria-label={t('capturesRoute.helpers.openCaptureAction', {
+                        method: capture.method,
+                        path: capture.path,
+                      })}
                       aria-pressed={isSelected}
                       data-mock-outcome={capture.mockOutcome.toLowerCase().replace(/\s+/g, '-')}
                       onClick={() => selectCapture(capture.id)}
@@ -257,54 +289,54 @@ export function CapturesPlaceholder() {
 
       <section className="shell-panel shell-panel--main" aria-label="Main work surface">
         <SectionHeading
-            icon="captures"
-            title={t('routes.captures.title')}
-            summary={t('routes.captures.summary')}
-          >
-            <div className="workspace-explorer__role-strip" aria-label="Captures route role">
-              <span className="workspace-chip">{t('roles.observation')}</span>
-              <span className="workspace-chip workspace-chip--secondary">{t('routes.captures.contextChip')}</span>
-            </div>
-          </SectionHeading>
+          icon="captures"
+          title={t('routes.captures.title')}
+          summary={t('routes.captures.summary')}
+        >
+          <div className="workspace-explorer__role-strip" aria-label="Captures route role">
+            <span className="workspace-chip">{t('roles.observation')}</span>
+            <span className="workspace-chip workspace-chip--secondary">{t('routes.captures.contextChip')}</span>
+          </div>
+        </SectionHeading>
 
         {isLoading ? (
           <div className="request-work-surface request-work-surface--empty">
             <EmptyStateCallout
-              title="Loading persisted capture detail"
-              description="The runtime lane is loading the latest capture list before a detail row can be selected."
+              title={t('capturesRoute.empty.loadingDetail.title')}
+              description={t('capturesRoute.empty.loadingDetail.description')}
             />
           </div>
         ) : !selectedCapture ? (
           <div className="request-work-surface request-work-surface--empty">
             <EmptyStateCallout
-              title="No capture selected"
-              description="Pick a capture row to inspect the persisted inbound request snapshot, mock outcome vocabulary, and the compact timeline scaffold. Replay opens a separate authoring draft in Workspace."
+              title={t('capturesRoute.empty.noSelection.title')}
+              description={t('capturesRoute.empty.noSelection.description')}
             />
           </div>
         ) : isDetailLoading ? (
           <div className="request-work-surface request-work-surface--empty">
             <EmptyStateCallout
-              title="Loading persisted capture detail"
-              description="Fetching the selected captured request from the runtime lane. The detail surface stays observation-only once the row loads."
+              title={t('capturesRoute.empty.loadingPersistedDetail.title')}
+              description={t('capturesRoute.empty.loadingPersistedDetail.description')}
             />
           </div>
         ) : captureDetailQuery.isError ? (
           <div className="request-work-surface request-work-surface--empty">
             <EmptyStateCallout
-              title="Capture detail is degraded"
-              description={`The selected captured request could not be loaded cleanly. ${degradedReason}`}
+              title={t('capturesRoute.empty.detailDegraded.title')}
+              description={`${t('capturesRoute.empty.detailDegraded.fallbackDescription')} ${degradedReason}`}
             />
           </div>
         ) : (
           <div className="captures-detail">
             <header className="captures-detail__header">
               <div>
-                <p className="section-placeholder__eyebrow">Observation detail</p>
-                <h2>Capture detail</h2>
+                <p className="section-placeholder__eyebrow">{t('capturesRoute.detail.header.eyebrow')}</p>
+                <h2>{t('capturesRoute.detail.header.title')}</h2>
                 <p>{selectedCapture.requestSummary}</p>
                 <div className="workspace-explorer__role-strip" aria-label="Capture detail role">
-                  <span className="workspace-chip">Observation</span>
-                  <span className="workspace-chip workspace-chip--secondary">Inbound request</span>
+                  <span className="workspace-chip">{t('roles.observation')}</span>
+                  <span className="workspace-chip workspace-chip--secondary">{t('capturesRoute.detail.header.roleChip')}</span>
                 </div>
               </div>
               <div className="request-work-surface__badges">
@@ -315,85 +347,83 @@ export function CapturesPlaceholder() {
             </header>
 
             <DetailViewerSection
-              title="Observation bridge"
-              description="Replay stays edit-first. Open Replay Draft creates a new request draft while the captured request remains observation-only."
+              title={t('capturesRoute.detail.bridge.title')}
+              description={t('capturesRoute.detail.bridge.description')}
               className="capture-summary-card capture-summary-card--bridge"
               actions={(
                 <div className="request-work-surface__future-actions">
                   <button type="button" className="workspace-button workspace-button--secondary" onClick={handleOpenReplayDraft}>
-                    <IconLabel icon="replay">Open Replay Draft</IconLabel>
+                    <IconLabel icon="replay">{t('capturesRoute.detail.bridge.openReplayDraft')}</IconLabel>
                   </button>
                   <button type="button" className="workspace-button workspace-button--secondary" disabled>
-                    <IconLabel icon="run">Run Replay Now</IconLabel>
+                    <IconLabel icon="run">{t('capturesRoute.detail.bridge.runReplayNow')}</IconLabel>
                   </button>
                 </div>
               )}
             >
-              <p className="shared-readiness-note">
-                Run Replay Now stays disabled in this slice. Real capture data now drives this route, but replay still opens a fresh editable draft first.
-              </p>
+              <p className="shared-readiness-note">{t('capturesRoute.detail.bridge.readinessNote')}</p>
             </DetailViewerSection>
 
             <div className="captures-summary-grid">
               <DetailViewerSection
-                title="Request snapshot"
-                description="Inbound request snapshots stay separate from outbound execution history and editable request drafts."
+                title={t('capturesRoute.detail.requestSnapshot.title')}
+                description={t('capturesRoute.detail.requestSnapshot.description')}
                 className="capture-summary-card capture-summary-card--snapshot"
               >
                 <KeyValueMetaList
                   items={[
-                    { label: 'Snapshot source', value: getCaptureObservationSourceLabel() },
-                    { label: 'Host/path', value: `${selectedCapture.host}${selectedCapture.path}` },
-                    { label: 'Observed at', value: selectedCapture.receivedAtLabel },
-                    { label: 'Scope', value: selectedCapture.scopeLabel },
-                    { label: 'Headers', value: selectedCapture.requestHeaderCount ?? selectedCapture.requestHeaders.length },
+                    { label: t('capturesRoute.detail.requestSnapshot.labels.snapshotSource'), value: getCaptureObservationSourceLabel(t) },
+                    { label: t('capturesRoute.detail.requestSnapshot.labels.hostPath'), value: `${selectedCapture.host}${selectedCapture.path}` },
+                    { label: t('capturesRoute.detail.requestSnapshot.labels.observedAt'), value: selectedCapture.receivedAtLabel },
+                    { label: t('capturesRoute.detail.requestSnapshot.labels.scope'), value: selectedCapture.scopeLabel },
+                    { label: t('capturesRoute.detail.requestSnapshot.labels.headers'), value: selectedCapture.requestHeaderCount ?? selectedCapture.requestHeaders.length },
                   ]}
                 />
                 <p>{selectedCapture.requestSummary}</p>
               </DetailViewerSection>
 
               <DetailViewerSection
-                title="Persistence summary"
-                description="Stored capture headers and body previews remain bounded and redacted where needed before replay or deeper diagnostics are considered."
+                title={t('capturesRoute.detail.persistenceSummary.title')}
+                description={t('capturesRoute.detail.persistenceSummary.description')}
                 className="capture-summary-card capture-summary-card--storage"
               >
                 <KeyValueMetaList
                   items={[
-                    { label: 'Headers summary', value: selectedCapture.headersSummary },
-                    { label: 'Body hint', value: selectedCapture.bodyHint },
-                    { label: 'Stored summary', value: getCaptureStorageSummary(selectedCapture) },
-                    { label: 'Preview policy', value: getCaptureBodyPreviewPolicy(selectedCapture) },
+                    { label: t('capturesRoute.detail.persistenceSummary.labels.headersSummary'), value: selectedCapture.headersSummary },
+                    { label: t('capturesRoute.detail.persistenceSummary.labels.bodyHint'), value: selectedCapture.bodyHint },
+                    { label: t('capturesRoute.detail.persistenceSummary.labels.storedSummary'), value: getCaptureStorageSummary(selectedCapture, t) },
+                    { label: t('capturesRoute.detail.persistenceSummary.labels.previewPolicy'), value: getCaptureBodyPreviewPolicy(selectedCapture, t) },
                   ]}
                 />
               </DetailViewerSection>
 
               <DetailViewerSection
-                title="Body preview"
+                title={t('capturesRoute.detail.bodyPreview.title')}
                 description={selectedCapture.bodyHint}
                 className="capture-summary-card capture-summary-card--preview"
               >
                 <KeyValueMetaList
                   items={[
-                    { label: 'Response status', value: getCaptureStatusSummary(selectedCapture) },
-                    { label: 'Preview policy', value: getCaptureBodyPreviewPolicy(selectedCapture) },
+                    { label: t('capturesRoute.detail.bodyPreview.labels.responseStatus'), value: getCaptureStatusSummary(selectedCapture, t) },
+                    { label: t('capturesRoute.detail.bodyPreview.labels.previewPolicy'), value: getCaptureBodyPreviewPolicy(selectedCapture, t) },
                   ]}
                 />
                 <pre>{selectedCapture.bodyPreview}</pre>
               </DetailViewerSection>
 
               <DetailViewerSection
-                title="Mock handling"
-                description="Mock outcome family stays separate from connection, execution, and transport vocabulary."
+                title={t('capturesRoute.detail.mockHandling.title')}
+                description={t('capturesRoute.detail.mockHandling.description')}
                 className="capture-summary-card capture-summary-card--outcome"
               >
-                <p className="captures-meta-label">Mock outcome family</p>
+                <p className="captures-meta-label">{t('capturesRoute.detail.mockHandling.outcomeFamilyLabel')}</p>
                 <StatusBadge kind="mockOutcome" value={selectedCapture.mockOutcome} />
                 <KeyValueMetaList
                   items={[
-                    { label: 'Summary', value: selectedCapture.mockSummary },
-                    { label: 'Handling summary', value: selectedCapture.responseSummary },
-                    ...(selectedCapture.mockRuleName ? [{ label: 'Rule', value: selectedCapture.mockRuleName }] : []),
-                    ...(selectedCapture.delayLabel ? [{ label: 'Delay', value: selectedCapture.delayLabel }] : []),
+                    { label: t('capturesRoute.detail.mockHandling.labels.summary'), value: selectedCapture.mockSummary },
+                    { label: t('capturesRoute.detail.mockHandling.labels.handlingSummary'), value: selectedCapture.responseSummary },
+                    ...(selectedCapture.mockRuleName ? [{ label: t('capturesRoute.detail.mockHandling.labels.rule'), value: selectedCapture.mockRuleName }] : []),
+                    ...(selectedCapture.delayLabel ? [{ label: t('capturesRoute.detail.mockHandling.labels.delay'), value: selectedCapture.delayLabel }] : []),
                   ]}
                 />
               </DetailViewerSection>
@@ -406,26 +436,26 @@ export function CapturesPlaceholder() {
         {!selectedCapture ? (
           <div className="workspace-detail-panel workspace-detail-panel--empty">
             <EmptyStateCallout
-              title="Compact timeline placeholder"
-              description="Capture timeline summaries, handling notes, and replay bridge guidance appear after a persisted capture row is selected."
+              title={t('capturesRoute.empty.timelinePlaceholder.title')}
+              description={t('capturesRoute.empty.timelinePlaceholder.description')}
             />
           </div>
         ) : (
           <div className="workspace-detail-panel">
             <header className="workspace-detail-panel__header">
               <div>
-                <p className="section-placeholder__eyebrow">Observation panel</p>
-                <h2>Compact timeline</h2>
-                <p>Compact summary blocks only. Unified timelines, diff viewers, and deep traces remain out of scope.</p>
+                <p className="section-placeholder__eyebrow">{t('capturesRoute.timelinePanel.header.eyebrow')}</p>
+                <h2>{t('capturesRoute.timelinePanel.header.title')}</h2>
+                <p>{t('capturesRoute.timelinePanel.header.description')}</p>
                 <div className="workspace-explorer__role-strip" aria-label="Capture timeline role">
-                  <span className="workspace-chip">Observation</span>
-                  <span className="workspace-chip workspace-chip--secondary">Compact timeline</span>
+                  <span className="workspace-chip">{t('roles.observation')}</span>
+                  <span className="workspace-chip workspace-chip--secondary">{t('capturesRoute.timelinePanel.header.roleChip')}</span>
                 </div>
               </div>
             </header>
 
             <PanelTabs
-              ariaLabel="Capture detail tabs"
+              ariaLabel={t('capturesRoute.timelinePanel.tabs.ariaLabel')}
               tabs={captureDetailTabs}
               activeTab={activeDetailTab}
               onChange={setActiveDetailTab}
@@ -433,11 +463,11 @@ export function CapturesPlaceholder() {
 
             {activeDetailTab === 'timeline' ? (
               <DetailViewerSection
-                title="Timeline summary"
-                description="Compact summary blocks only. Unified timelines, diff viewers, and deep traces remain out of scope for this slice."
+                title={t('capturesRoute.timelinePanel.timelineSummary.title')}
+                description={t('capturesRoute.timelinePanel.timelineSummary.description')}
                 className="capture-summary-card capture-summary-card--timeline"
               >
-                <ol className="capture-timeline" aria-label="Capture timeline">
+                <ol className="capture-timeline" aria-label={t('capturesRoute.timelinePanel.timelineSummary.ariaLabel')}>
                   {selectedCapture.timelineEntries.map((entry) => (
                     <li key={entry.id} className="capture-timeline__item">
                       <DetailViewerSection title={entry.title} description={entry.summary} tone="muted" />
@@ -447,22 +477,22 @@ export function CapturesPlaceholder() {
               </DetailViewerSection>
             ) : (
               <DetailViewerSection
-                title="Deferred runtime detail"
+                title={t('capturesRoute.timelinePanel.deferred.title')}
                 description={selectedCapture.responseSummary}
                 className="capture-summary-card capture-summary-card--deferred"
                 tone="muted"
               >
                 <KeyValueMetaList
                   items={[
-                    { label: 'Mock outcome', value: selectedCapture.mockOutcome },
-                    { label: 'Handling summary', value: selectedCapture.responseSummary },
-                    { label: 'Stored summary', value: getCaptureStorageSummary(selectedCapture) },
-                    { label: 'Preview policy', value: getCaptureBodyPreviewPolicy(selectedCapture) },
+                    { label: t('capturesRoute.timelinePanel.deferred.labels.mockOutcome'), value: selectedCapture.mockOutcome },
+                    { label: t('capturesRoute.timelinePanel.deferred.labels.handlingSummary'), value: selectedCapture.responseSummary },
+                    { label: t('capturesRoute.timelinePanel.deferred.labels.storedSummary'), value: getCaptureStorageSummary(selectedCapture, t) },
+                    { label: t('capturesRoute.timelinePanel.deferred.labels.previewPolicy'), value: getCaptureBodyPreviewPolicy(selectedCapture, t) },
                   ]}
                 />
                 <EmptyStateCallout
-                  title="Deeper capture composition is deferred"
-                  description="Persisted capture detail stops at bounded handling summaries while raw transport views, richer diagnostics, and replay execution remain out of scope."
+                  title={t('capturesRoute.timelinePanel.deferred.emptyTitle')}
+                  description={t('capturesRoute.timelinePanel.deferred.emptyDescription')}
                 />
               </DetailViewerSection>
             )}
@@ -472,4 +502,3 @@ export function CapturesPlaceholder() {
     </>
   );
 }
-

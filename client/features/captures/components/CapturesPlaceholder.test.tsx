@@ -112,6 +112,37 @@ describe('Captures S18 fidelity refinement', () => {
     expect(fetchMock.mock.calls.some(([input]) => getUrl(input as RequestInfo | URL) === '/api/captured-requests')).toBe(true);
   });
 
+  it('renders client-owned capture-route copy in Korean without changing the English-default contracts', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/captured-requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [] });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />, {
+      initialEntries: ['/captures'],
+      initialLocale: 'ko',
+      runtimeEventsAdapterFactory: connectedAdapterFactory,
+    });
+
+    expect(screen.getByRole('heading', { name: '캡처' })).toBeInTheDocument();
+    expect(screen.getByText('캡처 목록')).toBeInTheDocument();
+    expect(screen.getByLabelText('캡처 검색')).toBeInTheDocument();
+    expect(screen.getByLabelText('Mock 결과 필터')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText('connected', { selector: '[data-kind="connection"]' }).length).toBeGreaterThan(0));
+    expect(screen.getByText('캡처가 아직 없습니다')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '선택된 캡처가 없습니다' })).toBeInTheDocument();
+  });
+
   it('changes detail when a persisted capture row is selected', async () => {
     const user = userEvent.setup();
     const firstCapture = defaultCaptureFixtureRecords[0]!;

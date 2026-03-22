@@ -3,7 +3,7 @@
 - **Purpose:** Explain sequencing logic and show which work should happen first, next, and later.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `master-task-board.md`, `post-m3-reactivation-guide.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `environment-follow-up-lane-comparison.md`, `resolved-preview-sub-lane-comparison.md`, `../architecture/request-environment-resolution-summary-contract.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md`, `../tasks/task-032-post-t030-environment-follow-up-lane-comparison.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../tasks/task-034-post-t033-resolution-summary-contract.md`, `../tasks/task-035-compact-shell-header-and-material-icon-usability-refresh.md`, `../tasks/task-036-button-badge-and-radius-visual-hierarchy-refinement.md`, `../architecture/client-i18n-foundation.md`, `../tasks/task-037-client-i18n-foundation-and-korean-locale-bootstrap.md`, `../tasks/task-038-environments-and-scripts-route-localization-pass.md`, `../tasks/task-039-workspace-authoring-localization-pass.md`, `../tasks/task-040-workspace-result-panel-localization-pass.md`, `../prd/overview.md`, `../tasks/task-001-foundation-architecture.md`
+- **Related Documents:** `master-task-board.md`, `post-m3-reactivation-guide.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `environment-follow-up-lane-comparison.md`, `resolved-preview-sub-lane-comparison.md`, `../architecture/request-environment-resolution-summary-contract.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md`, `../tasks/task-032-post-t030-environment-follow-up-lane-comparison.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../tasks/task-034-post-t033-resolution-summary-contract.md`, `../tasks/task-035-compact-shell-header-and-material-icon-usability-refresh.md`, `../tasks/task-036-button-badge-and-radius-visual-hierarchy-refinement.md`, `../architecture/client-i18n-foundation.md`, `../tasks/task-037-client-i18n-foundation-and-korean-locale-bootstrap.md`, `../tasks/task-038-environments-and-scripts-route-localization-pass.md`, `../tasks/task-039-workspace-authoring-localization-pass.md`, `../tasks/task-040-workspace-result-panel-localization-pass.md`, `../tasks/task-041-captures-observation-route-localization-pass.md`, `../prd/overview.md`, `../tasks/task-001-foundation-architecture.md`
 - **Update Rule:** Update when priorities, dependencies, or milestone assumptions change.
 
 ## Priority Principles
@@ -25,7 +25,6 @@ Tasks are prioritized using these criteria:
 7. **T006** Frontend stack and application shell decision — complete
 
 ### Phase B — Implementation Planning and Bootstrap
-8. **T008** Internal API contract design — complete
 9. **T011** Request builder MVP design — complete
 10. **T012** Script editor and automation UX spec — complete
 11. **T013** Mock engine rules spec — complete
@@ -96,10 +95,13 @@ Tasks are prioritized using these criteria:
 ### Phase S — Workspace Result Localization Slice
 43. **T040** Workspace result panel localization pass — complete
 
-### Phase T — Parked Optional Future Work
-44. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule bundle scope
-45. Later write-time migration-engine work if compatibility pressure justifies it
-46. Bounded packaging polish only if a delivery milestone identifies a concrete readiness gap
+### Phase T — Captures Observation Localization Slice
+44. **T041** Captures observation route localization pass — complete
+
+### Phase U — Parked Optional Future Work
+45. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule bundle scope
+46. Later write-time migration-engine work if compatibility pressure justifies it
+47. Bounded packaging polish only if a delivery milestone identifies a concrete readiness gap
 
 ## Why T001 Is First
 T001 is the first execution task because it has the highest leverage:
@@ -123,7 +125,6 @@ Recently completed foundation work:
 - `T005` Script execution safety model
 - `T003` UX information architecture and workspace flows
 - `T006` Frontend stack and application shell decision
-- `T008` Internal API contract design
 - `T009` Workspace persistence bootstrap
 - `T011` Request builder MVP design
 - `T012` Script editor and automation UX spec
@@ -133,33 +134,13 @@ Recently completed foundation work:
 - `T017` Developer environment and tooling baseline
 
 Ready to start now:
+- `T041` is landed: the Captures route sidebar, filter labels, detail/timeline chrome, replay-bridge actions, and client-owned fallback text now localize through the shared i18n layer while preserving backend contracts and runtime-owned status token boundaries
 - `T040` is landed: workspace result-panel tabs, observation header copy, response/console/tests/execution-info section copy, and client-owned fallback text now localize through the shared i18n layer while preserving backend contracts and runtime-owned status token boundaries
 - `T039` is landed: workspace explorer chrome, request tab shell, request-builder authoring copy, request-bound scripts authoring surface, and explorer-owned authored-resource transfer messaging now localize through the shared i18n layer while preserving backend contracts and keeping broader observation-route translation deferred
 - `T038` is landed: Environments and Scripts route internals now localize client-owned management copy, empty states, validation text, and primary actions through the shared i18n layer while preserving English-default contracts and leaving runtime payload translation for later slices
 - `T037` is landed: the app now has a shared i18n provider with locale persistence, English fallback plus Korean catalogs, translation and formatting helpers, shell and top-level header localization, and a settings locale switch for future translation QA
 - `T036` is landed: buttons now use tighter corners and stronger filled affordance, passive badges/chips are flatter and lighter, and shared tabs now use tighter segmented geometry without changing semantics or ownership
 - `T035` is landed: the shell header is now compact and route-only, nav monograms are replaced with local SVG icons, and shared primitives plus major route headers/actions now use bounded icon support without changing semantics or ownership
-- M3-F1 and M3-F2 are landed; keep them closed as visual-only slices
-- `M3-F3` is landed in tracking: its bounded wrapper/CSS patch is applied in code, a user-verified non-sandbox `npm.cmd run test:ui` passed the then-current full UI suite on 2026-03-22, and same-day `npm.cmd run check` passed in this sandbox
-- `T027` is landed: `/environments` and `/scripts` now expose persisted resource-management surfaces, and `/settings` now exposes a diagnostics-first read-only runtime-status surface
-- `T028` is landed: Candidate A guidance now reflects that environments and standalone saved scripts are real workflow objects after `T027`, but no new authored-resource transfer task is promoted automatically from that fact
-- `T029` is landed: the next request-builder environment slice is now bounded to request-level selector plus server-owned run-time resolution rather than top-bar global state
-- `T030` is landed: request drafts and saved requests now persist `selectedEnvironmentId`, the workspace request header now exposes request-level environment selection, and runtime execution/history now carry server-owned environment resolution metadata without widening into top-bar selector scope
-- `T031` is landed: `T030` does not automatically promote environment transfer, top-bar selector work, or another parked candidate, and the environment-transfer lane is now explicitly treated as more concrete but still too broad because request-reference and run/history coupling now matter
-- `T032` is landed: richer resolved-preview UX is now the strongest future environment lane if another environment task is later requested, while top-bar selector work and environment transfer remain parked
-- `T033` is landed: inside the richer resolved-preview lane, post-run bounded resolution summary is now the strongest future narrow lane, while pre-run unresolved-feedback tiering and explorer/readability copy remain parked
-- `T034` is landed: that future narrow lane now has one shared execution/history contract, so any later implementation can stay inside `Execution Info` summary metadata rather than reopening full preview scope
-- `T024` remains the canonical exact-patch reference plus local-verification handoff record for what landed in `M3-F3`, so future contributors can resume validation without repeating the scope audit
-- `T025` is landed: the repo now records one current post-M3-F3 closure review, and that review still promotes no new implementation task
-- `T026` is landed: blocker triage confirmed that the current repo already covers the main wrapper/config mitigations, so future sandbox-blocked confirmation should be requested locally rather than reopened as repo-side packaging work
-- T019 is landed: the workspace import surface now performs a server-backed no-write preview before explicit confirm and preserves the existing request/mock bundle import semantics after commit
-- T020 is landed: Candidate B now has a concrete gap inventory and stronger future lane without promoting migration implementation prematurely
-- T021 is landed: Candidate C now has a concrete packaging/startup gap inventory without promoting packaging implementation prematurely
-- T022 is landed: the repo now records an explicit no-promotion decision after T021 instead of implying that another implementation task should follow automatically
-- T023 is landed: the stronger Candidate B authored-resource import lane now has a chosen future approach, but it still lacks one explicit transform contract and remains parked
-- No additional post-M3 implementation task is activated automatically in this pass; `T025` confirms that Candidate A remains the strongest parked area but its remaining `/mocks`-local import lane is still too ambiguous, while Candidate B/C also remain parked
-- Use `post-m3-reactivation-guide.md` before promoting any parked post-M3 work so the decision is based on the documented gate and promotion triggers rather than ad hoc momentum
-- Use `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md` before proposing any extra repo-side blocker work so the next contributor starts from the confirmed preflight boundary instead of retrying already-landed runner or Windows-specific mitigations
 
 ## Deferred / Lower Priority Notes
 - Additional authored-resource tooling beyond `T019` remains parked because the repo already ships saved-request/mock-rule bundle transfer, and the remaining gaps are either already covered, blocked by missing first-class resource types, or still too broad.
