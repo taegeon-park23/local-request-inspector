@@ -3,7 +3,7 @@
 - **Purpose:** Compare the narrower follow-up candidates inside the richer resolved-preview UX lane so future contributors can choose one bounded environment-observation task without reopening broad validation or summary-polish scope.
 - **Created:** 2026-03-23
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `environment-follow-up-lane-comparison.md`, `post-m3-reactivation-guide.md`, `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `../architecture/request-builder-mvp.md`, `../architecture/request-environment-selection-and-resolution.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-032-post-t030-environment-follow-up-lane-comparison.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`
+- **Related Documents:** `environment-follow-up-lane-comparison.md`, `post-m3-reactivation-guide.md`, `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `../architecture/request-builder-mvp.md`, `../architecture/request-environment-selection-and-resolution.md`, `../architecture/request-environment-resolution-summary-contract.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-032-post-t030-environment-follow-up-lane-comparison.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../tasks/task-034-post-t033-resolution-summary-contract.md`
 - **Status:** active reference
 - **Update Rule:** Update when one narrower resolved-preview sub-lane is promoted, when the implemented environment baseline materially changes, or when a new narrower observation candidate replaces one of the current sub-lanes.
 
@@ -53,6 +53,7 @@
 
 ### Sub-Lane 2 - Post-run bounded resolution summary
 - This is the strongest future narrow lane because the server already owns environment resolution and the observation surfaces already carry execution metadata.
+- `T034` later narrows this sub-lane into one shared execution/history contract centered on a bounded `EnvironmentResolutionSummary` object in `Execution Info`.
 - A bounded version could add items such as:
   - how many placeholders were resolved
   - which authored input areas were affected (URL, headers, body, auth, params)

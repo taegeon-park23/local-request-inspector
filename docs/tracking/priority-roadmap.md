@@ -3,7 +3,7 @@
 - **Purpose:** Explain sequencing logic and show which work should happen first, next, and later.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `master-task-board.md`, `post-m3-reactivation-guide.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `environment-follow-up-lane-comparison.md`, `resolved-preview-sub-lane-comparison.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md`, `../tasks/task-032-post-t030-environment-follow-up-lane-comparison.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../prd/overview.md`, `../tasks/task-001-foundation-architecture.md`
+- **Related Documents:** `master-task-board.md`, `post-m3-reactivation-guide.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `environment-follow-up-lane-comparison.md`, `resolved-preview-sub-lane-comparison.md`, `../architecture/request-environment-resolution-summary-contract.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md`, `../tasks/task-032-post-t030-environment-follow-up-lane-comparison.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../tasks/task-034-post-t033-resolution-summary-contract.md`, `../prd/overview.md`, `../tasks/task-001-foundation-architecture.md`
 - **Update Rule:** Update when priorities, dependencies, or milestone assumptions change.
 
 ## Priority Principles
@@ -75,10 +75,13 @@ Tasks are prioritized using these criteria:
 ### Phase L — Resolved-Preview Sub-Lane Narrowing
 36. **T033** Post-T032 resolved-preview sub-lane comparison — complete
 
-### Phase M — Parked Optional Future Work
-37. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule bundle scope
-38. Later write-time migration-engine work if compatibility pressure justifies it
-39. Bounded packaging polish only if a delivery milestone identifies a concrete readiness gap
+### Phase M — Resolved-Preview Contract Definition
+37. **T034** Post-T033 resolution summary contract — complete
+
+### Phase N — Parked Optional Future Work
+38. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule bundle scope
+39. Later write-time migration-engine work if compatibility pressure justifies it
+40. Bounded packaging polish only if a delivery milestone identifies a concrete readiness gap
 
 ## Why T001 Is First
 `T001` is the first execution task because it has the highest leverage:
@@ -124,6 +127,7 @@ Ready to start now:
 - `T031` is landed: `T030` does not automatically promote environment transfer, top-bar selector work, or another parked candidate, and the environment-transfer lane is now explicitly treated as more concrete but still too broad because request-reference and run/history coupling now matter
 - `T032` is landed: richer resolved-preview UX is now the strongest future environment lane if another environment task is later requested, while top-bar selector work and environment transfer remain parked
 - `T033` is landed: inside the richer resolved-preview lane, post-run bounded resolution summary is now the strongest future narrow lane, while pre-run unresolved-feedback tiering and explorer/readability copy remain parked
+- `T034` is landed: that future narrow lane now has one shared execution/history contract, so any later implementation can stay inside `Execution Info` summary metadata rather than reopening full preview scope
 - `T024` remains the canonical exact-patch reference plus local-verification handoff record for what landed in `M3-F3`, so future contributors can resume validation without repeating the scope audit
 - `T025` is landed: the repo now records one current post-M3-F3 closure review, and that review still promotes no new implementation task
 - `T026` is landed: blocker triage confirmed that the current repo already covers the main wrapper/config mitigations, so future sandbox-blocked confirmation should be requested locally rather than reopened as repo-side packaging work
@@ -147,3 +151,4 @@ Ready to start now:
 - Use `candidate-c-promotion-readiness.md` and `candidate-c-gap-inventory.md` before proposing Candidate C so packaging work starts from the current shipped verification baseline and concrete gap evidence instead of from the already documented environment-bound limitation.
 - Top-bar environment selection, pre-run unresolved-feedback tiering, explorer/readability copy propagation, top-level script attachment/reference semantics, settings mutation, and environment/script import-export expansion remain deferred beyond `T030`; do not treat them as part of placeholder-route cleanup or request-level environment baseline completion anymore.
 - Use `resolved-preview-sub-lane-comparison.md` after `environment-follow-up-lane-comparison.md` before proposing further environment-observation work so future scope starts from the current strongest sub-lane rather than from a broad “better resolved preview” theme.
+- Use `request-environment-resolution-summary-contract.md` after `resolved-preview-sub-lane-comparison.md` before proposing future environment-observation implementation so result/history scope starts from one bounded shared DTO contract.
