@@ -44,7 +44,7 @@
 - T010 slice S24 future migration engine considerations: **done**
 - T010 slice S25 packaging / dev-experience improvements: **done**
 - T010 slice S26 repo/tooling sandbox compatibility fix (bounded): **done**
-- Material 3 adoption plan plus initial token/theme, shell chrome, route-role cues, and first-pass shared-surface materialization: **done**
+- Material 3 adoption plan plus initial token/theme, shell chrome, top-bar role legend, route-role cues, first-pass shared-surface materialization, role-specific panel accents, role-specific tab/header treatments, and feature-level list/detail/contextual role strips: **done**
 
 ## Current Next Action
 Use the landed MVP shell plus S11-S26 save-run/history/captures/diagnostics/scripts/mocks/persistence/fidelity/polish/import-export/migration-ready cleanup/tooling/packaging/sandbox-compatibility improvements and the initial Material 3 token/shell/shared-surface rollout as the baseline for later visual-only refinement. Keep optional future resource tools, bounded packaging polish, and later migration-engine work as separate follow-up axes.

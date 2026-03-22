@@ -159,4 +159,5 @@ Use a **token-first custom implementation**:
 - Do not change save/run/history/captures/mocks/scripts/replay semantics.
 - Do not move canonical ownership of any feature state.
 - Prefer CSS-token and shared-primitives work before deeper per-feature markup changes.
-- **Implementation follow-up (2026-03-22):** the initial rollout now includes a Material 3 token layer, dark-default light-ready theme attributes, shell chrome materialization, route-role cues in the navigation rail, and a first-pass reskin across shared primitives, request-builder controls, and observation/management cards without changing feature semantics.
+- **Implementation follow-up (2026-03-22):** the initial rollout now includes a Material 3 token layer, dark-default light-ready theme attributes, shell chrome materialization, a top-bar role legend, route-role cues in the navigation rail, and a first-pass reskin across shared primitives, request-builder controls, and observation/management cards without changing feature semantics.
+- **Implementation follow-up (2026-03-22):** a later visual-only pass extends role cues from shell chrome into feature-level list, detail, and contextual-panel headers for Workspace, Captures, History, and Mocks, reinforcing authoring vs observation vs management boundaries without touching state ownership.

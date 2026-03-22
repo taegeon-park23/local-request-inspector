@@ -519,6 +519,10 @@ export function MocksPlaceholder() {
               <p className="section-placeholder__eyebrow">Rule management</p>
               <h2>Mock rules</h2>
               <p>Persisted authored rules live here. Captures still owns runtime mock outcomes after evaluation.</p>
+              <div className="workspace-explorer__role-strip" aria-label="Mocks surface role">
+                <span className="workspace-chip">Management</span>
+                <span className="workspace-chip workspace-chip--secondary">Resource lane</span>
+              </div>
             </div>
             <button type="button" className="workspace-button" onClick={() => startCreatingRule()}>
               New Rule
@@ -561,11 +565,13 @@ export function MocksPlaceholder() {
                       className={isSelected ? 'mocks-row mocks-row--selected' : 'mocks-row'}
                       aria-label={`Open mock rule ${rule.name}`}
                       aria-pressed={isSelected}
+                      data-rule-state={rule.ruleState === 'Enabled' ? 'enabled' : 'disabled'}
                       onClick={() => selectRule(rule.id)}
                     >
                       <span className="mocks-row__top">
                         <StatusBadge kind="neutral" value={rule.ruleState} />
                         <span className="workspace-chip">Priority {rule.priority}</span>
+                        <span className="workspace-chip workspace-chip--secondary">{rule.fixedDelayLabel}</span>
                       </span>
                       <span className="mocks-row__title">{rule.name}</span>
                       <span className="mocks-row__summary">{rule.matcherSummary}</span>
@@ -584,6 +590,10 @@ export function MocksPlaceholder() {
           <p className="section-placeholder__eyebrow">Top-level section</p>
           <h1>Mocks</h1>
           <p>Mocks is the authored rule management route. It persists matcher and response definitions while captures shows runtime outcomes after evaluation.</p>
+          <div className="workspace-explorer__role-strip" aria-label="Mocks route role">
+            <span className="workspace-chip">Management</span>
+            <span className="workspace-chip workspace-chip--secondary">Authored rules</span>
+          </div>
         </header>
 
         {isListLoading && !isCreatingRule ? (
@@ -609,6 +619,10 @@ export function MocksPlaceholder() {
                 <p className="section-placeholder__eyebrow">{isCreatingRule ? 'New rule draft' : 'Persisted rule detail'}</p>
                 <h2>{isCreatingRule ? 'Create mock rule' : 'Edit mock rule'}</h2>
                 <p>{currentPresentation.matcherSummary}</p>
+                <div className="workspace-explorer__role-strip" aria-label="Mock rule detail role">
+                  <span className="workspace-chip">Management</span>
+                  <span className="workspace-chip workspace-chip--secondary">Authored rule</span>
+                </div>
               </div>
               <div className="request-work-surface__badges">
                 <StatusBadge kind="neutral" value={currentPresentation.ruleState} />
@@ -620,6 +634,7 @@ export function MocksPlaceholder() {
             <DetailViewerSection
               title="Persistence boundary"
               description="Create and Save update authored rule definitions only. Runtime mock outcomes remain in Captures."
+              className="mocks-summary-card mocks-summary-card--boundary"
               actions={(
                 <div className="request-work-surface__future-actions">
                   <button type="button" className="workspace-button workspace-button--secondary" onClick={handleSaveRule} disabled={saveDisabledReason !== null}>
@@ -662,7 +677,7 @@ export function MocksPlaceholder() {
             </DetailViewerSection>
 
             <div className="mocks-summary-grid">
-              <DetailViewerSection title="Rule summary" description="Enabled or Disabled here describes authored rule state, not runtime mock outcome." className="mocks-summary-card">
+              <DetailViewerSection title="Rule summary" description="Enabled or Disabled here describes authored rule state, not runtime mock outcome." className="mocks-summary-card mocks-summary-card--rule">
                 <KeyValueMetaList
                   items={[
                     { label: 'Rule name', value: draft.name || 'Untitled Mock Rule' },
@@ -673,7 +688,7 @@ export function MocksPlaceholder() {
                 />
               </DetailViewerSection>
 
-              <DetailViewerSection title="Evaluation summary" description="Enabled rules are evaluated by priority, matcher specificity, and a stable tie-breaker." className="mocks-summary-card">
+              <DetailViewerSection title="Evaluation summary" description="Enabled rules are evaluated by priority, matcher specificity, and a stable tie-breaker." className="mocks-summary-card mocks-summary-card--evaluation">
                 <KeyValueMetaList
                   items={[
                     { label: 'Matcher summary', value: currentPresentation.matcherSummary },
@@ -687,7 +702,7 @@ export function MocksPlaceholder() {
             <PanelTabs ariaLabel="Mock rule detail tabs" tabs={mockDetailTabs} activeTab={activeDetailTab} onChange={setActiveDetailTab} />
 
             {activeDetailTab === 'overview' ? (
-              <DetailViewerSection title="Overview" description="This editor stays inside the T013 MVP matcher and static response surface.">
+              <DetailViewerSection title="Overview" description="This editor stays inside the T013 MVP matcher and static response surface." className="mocks-summary-card mocks-summary-card--overview">
                 <div className="request-editor-card__grid">
                   <label className="request-field">
                     <span>Rule name</span>
@@ -745,7 +760,7 @@ export function MocksPlaceholder() {
                   rows={draft.headerMatchers}
                   onChange={(headerMatchers) => setDraft((current) => ({ ...current, headerMatchers }))}
                 />
-                <DetailViewerSection title="Body matcher" description="Regex, JSONPath, and script matchers remain deferred." className="mocks-summary-card">
+                <DetailViewerSection title="Body matcher" description="Regex, JSONPath, and script matchers remain deferred." className="mocks-summary-card mocks-summary-card--matchers">
                   <div className="request-editor-card__grid">
                     <label className="request-field">
                       <span>Body matcher</span>
@@ -773,7 +788,7 @@ export function MocksPlaceholder() {
 
             {activeDetailTab === 'response' ? (
               <div className="mocks-summary-grid">
-                <DetailViewerSection title="Static response" description="Static status, headers, body, and fixed delay form the bounded MVP response surface." className="mocks-summary-card">
+                <DetailViewerSection title="Static response" description="Static status, headers, body, and fixed delay form the bounded MVP response surface." className="mocks-summary-card mocks-summary-card--response">
                   <div className="request-editor-card__grid">
                     <label className="request-field">
                       <span>Response status</span>
@@ -794,6 +809,7 @@ export function MocksPlaceholder() {
                 <DetailViewerSection
                   title="Response headers"
                   description="Static response headers stay bounded and predictable in this MVP surface."
+                  className="mocks-summary-card mocks-summary-card--headers"
                   actions={(
                     <button type="button" className="workspace-button workspace-button--secondary" onClick={() => setDraft((current) => ({ ...current, responseHeaders: [...current.responseHeaders, createResponseHeaderRow()] }))}>
                       Add response header
@@ -826,7 +842,7 @@ export function MocksPlaceholder() {
             ) : null}
 
             {activeDetailTab === 'diagnostics' ? (
-              <DetailViewerSection title="Diagnostics and deferred work" description={selectedRule?.diagnosticsSummary ?? 'Rules are evaluated by enabled state, explicit priority, matcher specificity, and a stable tie-breaker.'}>
+              <DetailViewerSection title="Diagnostics and deferred work" description={selectedRule?.diagnosticsSummary ?? 'Rules are evaluated by enabled state, explicit priority, matcher specificity, and a stable tie-breaker.'} className="mocks-summary-card mocks-summary-card--diagnostics">
                 <KeyValueMetaList
                   items={[
                     { label: 'Deferred note', value: selectedRule?.deferredSummary ?? 'Script-assisted matcher/response and advanced scenario state remain deferred.' },
@@ -853,10 +869,14 @@ export function MocksPlaceholder() {
                 <p className="section-placeholder__eyebrow">Contextual panel</p>
                 <h2>Management notes</h2>
                 <p>Authored mock rules stay separate from runtime capture outcomes. This panel stays focused on rule constraints and evaluation order.</p>
+                <div className="workspace-explorer__role-strip" aria-label="Mock notes role">
+                  <span className="workspace-chip">Management</span>
+                  <span className="workspace-chip workspace-chip--secondary">Guardrails</span>
+                </div>
               </div>
             </header>
 
-            <DetailViewerSection title="Evaluation guardrails" description="Only enabled rules are evaluated. Priority wins first, then matcher specificity, then a stable created-at tie-breaker.">
+            <DetailViewerSection title="Evaluation guardrails" description="Only enabled rules are evaluated. Priority wins first, then matcher specificity, then a stable created-at tie-breaker." className="mocks-summary-card mocks-summary-card--guardrails">
               <KeyValueMetaList
                 items={[
                   { label: 'Method summary', value: currentPresentation.methodSummary },
@@ -866,7 +886,7 @@ export function MocksPlaceholder() {
               />
             </DetailViewerSection>
 
-            <DetailViewerSection title="Deferred capabilities" description="Script-assisted matcher/response authoring, scenario state, diff, and deeper runtime traces remain later-slice work." tone="muted">
+            <DetailViewerSection title="Deferred capabilities" description="Script-assisted matcher/response authoring, scenario state, diff, and deeper runtime traces remain later-slice work." className="mocks-summary-card mocks-summary-card--deferred" tone="muted">
               <KeyValueMetaList
                 items={[
                   { label: 'Persistence', value: 'Persisted JSON resource lane' },

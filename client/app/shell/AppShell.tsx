@@ -15,6 +15,11 @@ export function AppShell() {
           <p className="shell-topbar__supporting">
             Shell-first authoring and observation surfaces stay split while Material 3 tokens provide a shared visual foundation.
           </p>
+          <div className="shell-topbar__legend" aria-label="Surface roles">
+            <span className="shell-topbar__legend-chip shell-topbar__legend-chip--authoring">Authoring</span>
+            <span className="shell-topbar__legend-chip shell-topbar__legend-chip--observation">Observation</span>
+            <span className="shell-topbar__legend-chip shell-topbar__legend-chip--management">Management</span>
+          </div>
         </div>
         <div className="shell-topbar__status">
           <span className="shell-topbar__status-label">Runtime connection</span>
@@ -28,6 +33,7 @@ export function AppShell() {
               <li key={section.path}>
                 <NavLink
                   to={section.path}
+                  data-section-role={section.role.toLowerCase()}
                   className={({ isActive }) =>
                     isActive ? 'shell-nav__link shell-nav__link--active' : 'shell-nav__link'
                   }

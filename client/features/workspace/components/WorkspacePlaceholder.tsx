@@ -287,6 +287,10 @@ export function WorkspacePlaceholder() {
           <p>
             Workspace remains the authoring surface for saved requests, starter request drafts, replay drafts, and the lazy-loaded Scripts path. Save updates request definitions, while Run writes observation only into the right-hand result surface.
           </p>
+          <div className="workspace-explorer__role-strip" aria-label="Workspace surface role">
+            <span className="workspace-chip">Authoring</span>
+            <span className="workspace-chip workspace-chip--secondary">Resource lane</span>
+          </div>
         </header>
 
         <RequestTabShell

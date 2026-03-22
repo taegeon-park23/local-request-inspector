@@ -154,6 +154,10 @@ export function CapturesPlaceholder() {
               <p className="section-placeholder__eyebrow">Observation feed</p>
               <h2>Capture list</h2>
               <p>{connectionCopyByHealth[observationHealth]}</p>
+              <div className="workspace-explorer__role-strip" aria-label="Capture surface role">
+                <span className="workspace-chip">Observation</span>
+                <span className="workspace-chip workspace-chip--secondary">Runtime lane</span>
+              </div>
             </div>
             <StatusBadge kind="connection" value={connectionHealth} />
           </header>
@@ -227,11 +231,13 @@ export function CapturesPlaceholder() {
                       className={isSelected ? 'capture-row capture-row--selected' : 'capture-row'}
                       aria-label={`Open capture ${capture.method} ${capture.path}`}
                       aria-pressed={isSelected}
+                      data-mock-outcome={capture.mockOutcome.toLowerCase().replace(/\s+/g, '-')}
                       onClick={() => selectCapture(capture.id)}
                     >
                       <span className="capture-row__top">
                         <span className="workspace-chip">{capture.method}</span>
                         <StatusBadge kind="mockOutcome" value={capture.mockOutcome} />
+                        <span className="workspace-chip workspace-chip--secondary">{capture.scopeLabel}</span>
                       </span>
                       <span className="capture-row__path">{capture.host}{capture.path}</span>
                       <span className="capture-row__summary">{capture.bodyHint}</span>
@@ -252,6 +258,10 @@ export function CapturesPlaceholder() {
           <p>
             Captures is an observation route for inbound traffic. It reads persisted capture summaries from the runtime lane and keeps replay as an explicit edit-first bridge into Workspace.
           </p>
+          <div className="workspace-explorer__role-strip" aria-label="Captures route role">
+            <span className="workspace-chip">Observation</span>
+            <span className="workspace-chip workspace-chip--secondary">Replay bridge</span>
+          </div>
         </header>
 
         {isLoading ? (
@@ -289,6 +299,10 @@ export function CapturesPlaceholder() {
                 <p className="section-placeholder__eyebrow">Observation detail</p>
                 <h2>Capture detail</h2>
                 <p>{selectedCapture.requestSummary}</p>
+                <div className="workspace-explorer__role-strip" aria-label="Capture detail role">
+                  <span className="workspace-chip">Observation</span>
+                  <span className="workspace-chip workspace-chip--secondary">Inbound request</span>
+                </div>
               </div>
               <div className="request-work-surface__badges">
                 <span className="workspace-chip">{selectedCapture.method}</span>
@@ -300,6 +314,7 @@ export function CapturesPlaceholder() {
             <DetailViewerSection
               title="Observation bridge"
               description="Replay stays edit-first. Open Replay Draft creates a new request draft while the captured request remains observation-only."
+              className="capture-summary-card capture-summary-card--bridge"
               actions={(
                 <div className="request-work-surface__future-actions">
                   <button type="button" className="workspace-button workspace-button--secondary" onClick={handleOpenReplayDraft}>
@@ -320,7 +335,7 @@ export function CapturesPlaceholder() {
               <DetailViewerSection
                 title="Request snapshot"
                 description="Inbound request snapshots stay separate from outbound execution history and editable request drafts."
-                className="capture-summary-card"
+                className="capture-summary-card capture-summary-card--snapshot"
               >
                 <KeyValueMetaList
                   items={[
@@ -337,7 +352,7 @@ export function CapturesPlaceholder() {
               <DetailViewerSection
                 title="Persistence summary"
                 description="Stored capture headers and body previews remain bounded and redacted where needed before replay or deeper diagnostics are considered."
-                className="capture-summary-card"
+                className="capture-summary-card capture-summary-card--storage"
               >
                 <KeyValueMetaList
                   items={[
@@ -352,7 +367,7 @@ export function CapturesPlaceholder() {
               <DetailViewerSection
                 title="Body preview"
                 description={selectedCapture.bodyHint}
-                className="capture-summary-card"
+                className="capture-summary-card capture-summary-card--preview"
               >
                 <KeyValueMetaList
                   items={[
@@ -366,7 +381,7 @@ export function CapturesPlaceholder() {
               <DetailViewerSection
                 title="Mock handling"
                 description="Mock outcome family stays separate from connection, execution, and transport vocabulary."
-                className="capture-summary-card"
+                className="capture-summary-card capture-summary-card--outcome"
               >
                 <p className="captures-meta-label">Mock outcome family</p>
                 <StatusBadge kind="mockOutcome" value={selectedCapture.mockOutcome} />
@@ -399,6 +414,10 @@ export function CapturesPlaceholder() {
                 <p className="section-placeholder__eyebrow">Observation panel</p>
                 <h2>Compact timeline</h2>
                 <p>Compact summary blocks only. Unified timelines, diff viewers, and deep traces remain out of scope.</p>
+                <div className="workspace-explorer__role-strip" aria-label="Capture timeline role">
+                  <span className="workspace-chip">Observation</span>
+                  <span className="workspace-chip workspace-chip--secondary">Compact timeline</span>
+                </div>
               </div>
             </header>
 
@@ -413,6 +432,7 @@ export function CapturesPlaceholder() {
               <DetailViewerSection
                 title="Timeline summary"
                 description="Compact summary blocks only. Unified timelines, diff viewers, and deep traces remain out of scope for this slice."
+                className="capture-summary-card capture-summary-card--timeline"
               >
                 <ol className="capture-timeline" aria-label="Capture timeline">
                   {selectedCapture.timelineEntries.map((entry) => (
@@ -426,6 +446,7 @@ export function CapturesPlaceholder() {
               <DetailViewerSection
                 title="Deferred runtime detail"
                 description={selectedCapture.responseSummary}
+                className="capture-summary-card capture-summary-card--deferred"
                 tone="muted"
               >
                 <KeyValueMetaList

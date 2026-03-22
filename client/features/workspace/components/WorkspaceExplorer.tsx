@@ -47,6 +47,10 @@ export function WorkspaceExplorer({
         <p>
           Persisted saved requests are the canonical explorer source. Starter fixtures only appear until the first real request definitions are stored in the resource lane.
         </p>
+        <div className="workspace-explorer__role-strip" aria-label="Explorer surface role">
+          <span className="workspace-chip">Authoring</span>
+          <span className="workspace-chip workspace-chip--secondary">Resource lane</span>
+        </div>
         <div className="workspace-explorer__header-actions">
           <button type="button" className="workspace-button" onClick={onCreateRequest}>
             New Request
@@ -130,11 +134,26 @@ function WorkspaceExplorerNodeList({
                   aria-label={`Open ${node.request.name}`}
                   aria-pressed={isSelected}
                   data-kind={node.kind}
+                  data-resource-kind={node.request.resourceKind}
                   onClick={() => onOpenSavedRequest(node.request)}
                 >
-                  <span className="workspace-request__title">{node.request.name}</span>
+                  <span className="workspace-request__header">
+                    <span className="workspace-request__title">{node.request.name}</span>
+                    <span className="workspace-request__badges">
+                      <span className="workspace-chip">{node.request.methodLabel}</span>
+                      <span
+                        className={
+                          node.request.resourceKind === 'persisted'
+                            ? 'workspace-chip workspace-chip--secondary'
+                            : 'workspace-chip workspace-chip--accent'
+                        }
+                      >
+                        {node.request.resourceKind === 'persisted' ? 'Saved' : 'Starter'}
+                      </span>
+                    </span>
+                  </span>
                   <span className="workspace-request__meta">
-                    {node.request.methodLabel} | {node.request.summary}
+                    {node.request.summary}
                   </span>
                 </button>
                 {node.request.resourceKind === 'persisted' ? (

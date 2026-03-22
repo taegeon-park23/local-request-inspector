@@ -172,6 +172,10 @@ export function HistoryPlaceholder() {
               <p className="section-placeholder__eyebrow">Execution observations</p>
               <h2>History list</h2>
               <p>{observationHealthCopy[observationHealth]}</p>
+              <div className="workspace-explorer__role-strip" aria-label="History surface role">
+                <span className="workspace-chip">Observation</span>
+                <span className="workspace-chip workspace-chip--secondary">Runtime lane</span>
+              </div>
             </div>
           </header>
 
@@ -243,12 +247,14 @@ export function HistoryPlaceholder() {
                       className={isSelected ? 'history-row history-row--selected' : 'history-row'}
                       aria-label={`Open history ${history.requestLabel}`}
                       aria-pressed={isSelected}
+                      data-source-kind={history.sourceLabel === 'Saved request snapshot' ? 'saved' : 'ad-hoc'}
                       onClick={() => selectHistory(history.id)}
                     >
                       <span className="history-row__top">
                         <span className="workspace-chip">{history.method}</span>
                         <StatusBadge kind="executionOutcome" value={history.executionOutcome} />
                         <StatusBadge kind="transportOutcome" value={history.transportOutcome} />
+                        <span className="workspace-chip workspace-chip--secondary">{history.sourceLabel}</span>
                       </span>
                       <span className="history-row__title">{history.requestLabel}</span>
                       <span className="history-row__path">{history.hostPathHint}</span>
@@ -272,6 +278,10 @@ export function HistoryPlaceholder() {
           <p>
             History is an observation route for persisted outbound executions. It reads redacted runtime summaries from SQLite without reusing active request-tab result state.
           </p>
+          <div className="workspace-explorer__role-strip" aria-label="History route role">
+            <span className="workspace-chip">Observation</span>
+            <span className="workspace-chip workspace-chip--secondary">Persisted execution</span>
+          </div>
         </header>
 
         {isListLoading ? (
@@ -309,6 +319,10 @@ export function HistoryPlaceholder() {
                 <p className="section-placeholder__eyebrow">Observation detail</p>
                 <h2>History detail</h2>
                 <p>{selectedHistory.requestSnapshotSummary}</p>
+                <div className="workspace-explorer__role-strip" aria-label="History detail role">
+                  <span className="workspace-chip">Observation</span>
+                  <span className="workspace-chip workspace-chip--secondary">Persisted execution</span>
+                </div>
               </div>
               <div className="request-work-surface__badges">
                 <span className="workspace-chip">{selectedHistory.method}</span>
@@ -321,6 +335,7 @@ export function HistoryPlaceholder() {
             <DetailViewerSection
               title="Observation boundary"
               description="History detail stays observation-only. Open Replay Draft creates a new editable request draft instead of turning this persisted execution record into live authoring state."
+              className="history-summary-card history-summary-card--bridge"
               actions={(
                 <div className="request-work-surface__future-actions">
                   <button type="button" className="workspace-button workspace-button--secondary" onClick={handleOpenReplayDraft}>
@@ -341,7 +356,7 @@ export function HistoryPlaceholder() {
               <DetailViewerSection
                 title="Execution summary"
                 description="Execution outcome, transport outcome, and test summary remain separate vocabulary families."
-                className="history-summary-card"
+                className="history-summary-card history-summary-card--execution"
               >
                 <KeyValueMetaList
                   items={[
@@ -356,7 +371,7 @@ export function HistoryPlaceholder() {
               <DetailViewerSection
                 title="Request snapshot"
                 description="History shows the persisted outbound request snapshot used during execution, not the live request draft currently open in Workspace."
-                className="history-summary-card"
+                className="history-summary-card history-summary-card--snapshot"
               >
                 <KeyValueMetaList
                   items={[
@@ -382,6 +397,7 @@ export function HistoryPlaceholder() {
               <DetailViewerSection
                 title="Response summary"
                 description={selectedHistory.responseSummary}
+                className="history-summary-card history-summary-card--response"
               >
                 <div className="request-work-surface__badges">
                   <StatusBadge kind="transportOutcome" value={selectedHistory.transportOutcome} />
@@ -413,6 +429,7 @@ export function HistoryPlaceholder() {
               <DetailViewerSection
                 title="Console summary"
                 description={selectedHistory.consoleSummary}
+                className="history-summary-card history-summary-card--console"
               >
               <KeyValueMetaList
                 items={[
@@ -441,6 +458,7 @@ export function HistoryPlaceholder() {
               <DetailViewerSection
                 title="Tests summary"
                 description={selectedHistory.testsSummary}
+                className="history-summary-card history-summary-card--tests"
               >
                 <div className="request-work-surface__badges">
                   <StatusBadge kind="testSummary" value={selectedHistory.testOutcome} />
@@ -476,6 +494,7 @@ export function HistoryPlaceholder() {
               <DetailViewerSection
                 title="Execution info"
                 description="Execution metadata remains separate from request authoring and inbound capture observation state."
+                className="history-summary-card history-summary-card--execution-info"
               >
                 <div className="request-work-surface__badges">
                   <StatusBadge kind="executionOutcome" value={selectedHistory.executionOutcome} />
@@ -526,12 +545,17 @@ export function HistoryPlaceholder() {
                 <p className="section-placeholder__eyebrow">Observation panel</p>
                 <h2>Execution stage summary</h2>
                 <p>Compact persisted stage summaries only. Unified timelines, diff viewers, and deep traces remain out of scope.</p>
+                <div className="workspace-explorer__role-strip" aria-label="History timeline role">
+                  <span className="workspace-chip">Observation</span>
+                  <span className="workspace-chip workspace-chip--secondary">Stage summary</span>
+                </div>
               </div>
             </header>
 
             <DetailViewerSection
               title="Compact timeline"
               description="History keeps stage summaries compact and human-readable rather than turning into a deep trace viewer."
+              className="history-summary-card history-summary-card--timeline"
             >
               <ol className="history-timeline" aria-label="History timeline">
                 {selectedHistory.timelineEntries.map((entry) => (
@@ -545,6 +569,7 @@ export function HistoryPlaceholder() {
             <DetailViewerSection
               title="Deferred runtime detail"
               description="Persisted history detail is intentionally bounded, and replay continues to use an explicit edit-first bridge into Workspace."
+              className="history-summary-card history-summary-card--deferred"
               tone="muted"
             >
               <EmptyStateCallout
