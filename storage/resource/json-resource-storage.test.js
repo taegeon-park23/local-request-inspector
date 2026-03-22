@@ -2,7 +2,14 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { JsonResourceStorage, buildResourceManifestPayload, serializeJsonDeterministically } = require('./json-resource-storage');
+const { STORAGE_COMPATIBILITY_STATES } = require('../shared/constants');
+const {
+  JsonResourceStorage,
+  buildResourceManifestPayload,
+  serializeJsonDeterministically,
+  readJsonFileState,
+  inspectResourceManifestCompatibility,
+} = require('./json-resource-storage');
 const { buildStorageLayout } = require('../shared/data-root');
 
 function createTempLayout() {
@@ -23,6 +30,10 @@ function createTempLayout() {
   assert.equal(manifest.schemaVersion, buildResourceManifestPayload().schemaVersion);
   assert.equal(manifest.storageKind, buildResourceManifestPayload().storageKind);
   assert.deepEqual(manifest.recordSchemaVersions, buildResourceManifestPayload().recordSchemaVersions);
+  assert.equal(
+    inspectResourceManifestCompatibility(readJsonFileState(layout.resourceManifestPath)).state,
+    STORAGE_COMPATIBILITY_STATES.READ_COMPATIBLE,
+  );
 
   const entity = {
     workspaceId: 'local-workspace',
@@ -41,5 +52,26 @@ function createTempLayout() {
   assert.throws(
     () => storage.list('request'),
     (error) => error && error.code === 'resource_record_invalid_json',
+  );
+
+  const migrationLayout = createTempLayout();
+  const migrationStorage = new JsonResourceStorage({ layout: migrationLayout });
+  fs.mkdirSync(migrationLayout.metadataDir, { recursive: true });
+  fs.writeFileSync(
+    migrationLayout.resourceManifestPath,
+    JSON.stringify({
+      ...buildResourceManifestPayload(),
+      schemaVersion: 0,
+    }, null, 2),
+  );
+
+  const migrationCompatibility = inspectResourceManifestCompatibility(
+    readJsonFileState(migrationLayout.resourceManifestPath),
+  );
+  assert.equal(migrationCompatibility.state, STORAGE_COMPATIBILITY_STATES.MIGRATION_NEEDED);
+  assert.equal(migrationCompatibility.code, 'resource_manifest_migration_needed');
+  assert.throws(
+    () => migrationStorage.ensureStructure(),
+    (error) => error && error.code === 'resource_manifest_migration_needed',
   );
 })();

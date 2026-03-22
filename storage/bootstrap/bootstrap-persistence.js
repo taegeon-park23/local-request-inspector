@@ -18,10 +18,8 @@ const { JsonResourceStorage } = require('../resource/json-resource-storage');
 const { SqliteRuntimeStorage } = require('../runtime/sqlite-runtime-storage');
 const { createRepositoryRegistry } = require('../repositories/repository-registry');
 
-function writeVersionManifest(layout) {
-  fs.mkdirSync(layout.metadataDir, { recursive: true });
-
-  const payload = {
+function buildStorageVersionManifestPayload() {
+  return {
     schemaVersion: STORAGE_SCHEMA_VERSION,
     resourceManifestSchemaVersion: RESOURCE_MANIFEST_SCHEMA_VERSION,
     resourceStorage: RESOURCE_STORAGE_KIND,
@@ -37,8 +35,31 @@ function writeVersionManifest(layout) {
     note: 'Bootstrap manifest only. Resource lane stores authored definitions. Runtime lane stores bounded observation summaries. DTO shapes must remain decoupled from storage shapes.',
     updatedAt: new Date().toISOString(),
   };
+}
 
-  fs.writeFileSync(layout.versionManifestPath, JSON.stringify(payload, null, 2));
+function ensureVersionManifest(layout) {
+  fs.mkdirSync(layout.metadataDir, { recursive: true });
+
+  const payload = buildStorageVersionManifestPayload();
+  let shouldRewriteManifest = true;
+
+  if (fs.existsSync(layout.versionManifestPath)) {
+    try {
+      const existingManifest = JSON.parse(fs.readFileSync(layout.versionManifestPath, 'utf8'));
+      shouldRewriteManifest = !(
+        existingManifest
+        && existingManifest.schemaVersion === payload.schemaVersion
+        && existingManifest.resourceStorage === payload.resourceStorage
+        && existingManifest.runtimeStorage === payload.runtimeStorage
+      );
+    } catch {
+      shouldRewriteManifest = true;
+    }
+  }
+
+  if (shouldRewriteManifest) {
+    fs.writeFileSync(layout.versionManifestPath, JSON.stringify(payload, null, 2));
+  }
 }
 
 function bootstrapPersistence(options = {}) {
@@ -49,7 +70,7 @@ function bootstrapPersistence(options = {}) {
     migrationsDir: options.migrationsDir || require('path').join(__dirname, '..', 'runtime', 'migrations'),
   });
 
-  writeVersionManifest(layout);
+  ensureVersionManifest(layout);
   resourceStorage.ensureStructure();
   runtimeStorage.ensureStructure();
 
@@ -63,4 +84,5 @@ function bootstrapPersistence(options = {}) {
 
 module.exports = {
   bootstrapPersistence,
+  buildStorageVersionManifestPayload,
 };

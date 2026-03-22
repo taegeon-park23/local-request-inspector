@@ -2,7 +2,7 @@
 
 - **Purpose:** Provide the canonical backlog and execution status for project preparation and delivery.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-21
+- **Last Updated:** 2026-03-22
 - **Related Documents:** `priority-roadmap.md`, `../prd/overview.md`, `../tasks/task-001-foundation-architecture.md`
 - **Update Rule:** Update status, dependencies, notes, and outputs whenever task state changes.
 
@@ -35,7 +35,7 @@
 | T018 | Delivery milestone plan | Convert backlog into phased milestones with readiness gates and review checkpoints. | P1 | todo | Needed once P0 architecture decisions stabilize. | T001-T007 | Milestone plan | Delivery Agent | Shifts if P0 scope changes | Revisit after architecture |
 
 ## Current Focus
-- **Active highest-priority next step:** Post-S22 follow-up: optional future import/export extensions, future migration-engine considerations, and packaging/dev-experience improvements only if later justified.
+- **Active highest-priority next step:** Post-S25 follow-up: optional future resource tools, later migration-engine work only if justified, and small packaging polish only if it remains bounded.
 - S1 is implemented with the new client bootstrap, route/provider scaffold, persistent shell regions, component coverage, and a conservative legacy coexistence seam.
 - S2 is implemented with the `/workspace` explorer scaffold, in-memory request tree, request tab registry shell, tab focus/close behavior, active work-surface placeholder, and contextual result-panel placeholder.
 - S3 is implemented with per-tab request draft state, method/url authoring, params/headers/body/auth core editors, scripts placeholder, dirty tab indicators, and a still-separated observation panel seam.
@@ -58,9 +58,12 @@
 - S20 is implemented with authored resource-lane import/export for saved request definitions and mock rules, a safe new-identity import policy, workspace explorer import/export entrypoints, and no runtime lane history/captures artifact transfer.
 - S21 is implemented with explicit resource/runtime schema markers, deterministic resource manifest/serialization helpers, stricter authored-resource bundle validation, runtime metadata compatibility checks, and low-level storage seam tests without changing save/run/history/captures/mocks semantics.
 - S22 is implemented with bounded repo/tooling cleanup: split lint/test scripts, CommonJS-aware ESLint overrides, normalized Node seam-test entrypoints, and a safer Vitest startup path that clarifies the remaining Windows sandbox `esbuild` limitation.
+- S23 is implemented with single-resource authored bundle export for saved requests and mock rules, richer import accept/reject summaries, bounded imported-name previews, and continued exclusion of runtime history/captures/execution artifacts from transfer scope.
+- S24 is implemented with explicit compatibility classification helpers, resource-manifest/runtime-metadata migration-needed vs unsupported-version handling, read-compatible legacy bundle/resource paths, and additional low-level seam tests without introducing a write-time migration engine.
+- S25 is implemented with clearer dev/build/serve script taxonomy, a built-shell-aware `/app` fallback page, `/api/app-shell-status`, `/app` build-base alignment for the React shell, and a lightweight README/check script that make app packaging and local startup expectations easier to verify without changing feature semantics.
 
 ## Blockers Snapshot
-- T010 shell slices S1-S22 are now landed. Remaining work moves to optional future import/export extensions, future migration-engine considerations, and packaging/dev-experience improvements rather than more shell scaffolding.
+- T010 shell slices S1-S25 are now landed. Remaining work moves to optional future resource tools, later migration-engine work if justified, and only bounded packaging polish rather than more shell scaffolding.
 - Architecture, schema, safety, persistence, request-builder, script-UX, mock-rule, history/inspector, QA, tooling, and shell-slicing inputs are now documented.
 
 

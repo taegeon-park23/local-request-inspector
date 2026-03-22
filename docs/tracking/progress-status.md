@@ -2,7 +2,7 @@
 
 - **Purpose:** Provide a concise snapshot of what is done, what is next, and what is blocked.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-21
+- **Last Updated:** 2026-03-22
 - **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `../tasks/task-001-foundation-architecture.md`
 - **Update Rule:** Update at the end of each meaningful planning or implementation step.
 
@@ -40,12 +40,15 @@
 - T010 slice S20 optional import/export: **done**
 - T010 slice S21 migration-ready cleanup: **done**
 - T010 slice S22 repo / tooling cleanup (bounded): **done**
+- T010 slice S23 optional import/export extensions: **done**
+- T010 slice S24 future migration engine considerations: **done**
+- T010 slice S25 packaging / dev-experience improvements: **done**
 
 ## Current Next Action
-Use the landed MVP shell plus S11-S22 save-run/history/captures/diagnostics/scripts/mocks/persistence/fidelity/polish/import-export/migration-ready cleanup/tooling cleanup as the baseline for follow-up implementation axes: optional future import/export extensions, future migration-engine considerations, and packaging/dev-experience improvements only if later justified.
+Use the landed MVP shell plus S11-S25 save-run/history/captures/diagnostics/scripts/mocks/persistence/fidelity/polish/import-export/migration-ready cleanup/tooling/packaging improvements as the baseline for follow-up implementation axes: optional future resource tools, small packaging polish only if still justified, and later migration-engine work only if later justified.
 
 ## Open Blockers
-- No blocker remains inside T010. The remaining work is post-S22 follow-up around optional future import/export extensions, future migration-engine considerations, and packaging/dev-experience improvements only if later justified.
+- No blocker remains inside T010. The remaining work is post-S25 follow-up around optional future resource tools, bounded packaging polish if needed, and later migration-engine work only if later justified.
 - Major planning dependencies for request behavior, script UX, mock behavior, runtime observation, QA strategy, tooling baseline, and shell slicing are now documented.
 
 ## Notes for Next Contributor

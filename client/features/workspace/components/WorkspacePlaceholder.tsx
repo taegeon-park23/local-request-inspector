@@ -14,13 +14,21 @@ import type { RequestTabRecord } from '@client/features/request-builder/request-
 import { workspaceMockRulesQueryKey } from '@client/features/mocks/mock-rules.api';
 import { WorkspaceExplorer } from '@client/features/workspace/components/WorkspaceExplorer';
 import { buildWorkspaceExplorerTree } from '@client/features/workspace/data/workspace-explorer-data';
-import { exportWorkspaceResources, importWorkspaceResources, type AuthoredResourceBundleExport, type AuthoredResourceBundleImportResult } from '@client/features/workspace/resource-bundle.api';
+import {
+  downloadAuthoredResourceBundle,
+  exportSavedRequestResource,
+  exportWorkspaceResources,
+  importWorkspaceResources,
+  type AuthoredResourceBundleExport,
+  type AuthoredResourceBundleImportResult,
+} from '@client/features/workspace/resource-bundle.api';
 import type { WorkspaceSavedRequestSeed } from '@client/features/workspace/data/workspace-explorer-fixtures';
 import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
 
 interface ResourceTransferStatus {
   tone: 'success' | 'error' | 'info';
   message: string;
+  details?: string[];
 }
 
 function resolvePresentationTab(
@@ -39,42 +47,56 @@ function resolvePresentationTab(
   };
 }
 
-function downloadAuthoredResourceBundle(bundle: AuthoredResourceBundleExport) {
-  if (typeof URL.createObjectURL !== 'function') {
-    throw new Error('Browser download APIs are unavailable for resource export.');
-  }
-
-  const objectUrl = URL.createObjectURL(
-    new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' }),
-  );
-
-  try {
-    const link = document.createElement('a');
-    link.href = objectUrl;
-    link.download = `local-request-inspector-${bundle.workspaceId}-resources-${bundle.exportedAt.slice(0, 10)}.json`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } finally {
-    URL.revokeObjectURL(objectUrl);
-  }
-}
-
 function createImportStatusMessage(result: AuthoredResourceBundleImportResult) {
-  const acceptedCount = result.acceptedRequests.length + result.acceptedMockRules.length;
-  const rejectedCount = result.rejected.length;
+  const {
+    acceptedCount,
+    rejectedCount,
+    createdRequestCount,
+    createdMockRuleCount,
+    renamedCount,
+    importedNamesPreview,
+    rejectedReasonSummary,
+  } = result.summary;
   const acceptedSummary = `${acceptedCount} authored resource${acceptedCount === 1 ? '' : 's'} imported`;
+  const details = [
+    `Created requests: ${createdRequestCount}`,
+    `Created mock rules: ${createdMockRuleCount}`,
+    `Renamed on import: ${renamedCount}`,
+    `Rejected during validation: ${rejectedCount}`,
+  ];
+
+  if (importedNamesPreview.length > 0) {
+    details.push(`Imported preview: ${importedNamesPreview.join(', ')}`);
+  }
+
+  if (rejectedReasonSummary.length > 0) {
+    details.push(`Rejected reasons: ${rejectedReasonSummary.map((entry) => `${entry.reason} (${entry.count})`).join(' · ')}`);
+  }
 
   if (rejectedCount === 0) {
     return {
       tone: 'success' as const,
       message: `${acceptedSummary}. Imported resources received new identities so existing saved resources were not overwritten.`,
+      details,
     };
   }
 
   return {
-    tone: 'info' as const,
+    tone: acceptedCount === 0 ? 'error' as const : 'info' as const,
     message: `${acceptedSummary}. ${rejectedCount} resource${rejectedCount === 1 ? '' : 's'} were rejected during validation and left unchanged.`,
+    details,
+  };
+}
+
+function createExportStatusMessage(bundle: AuthoredResourceBundleExport, label: string) {
+  return {
+    tone: 'success' as const,
+    message: `Exported ${label} from the authored resource lane.`,
+    details: [
+      `Saved requests in bundle: ${bundle.requests.length}`,
+      `Mock rules in bundle: ${bundle.mockRules.length}`,
+      'Runtime history, captures, and execution artifacts remain excluded.',
+    ],
   };
 }
 
@@ -111,15 +133,38 @@ export function WorkspacePlaceholder() {
       return bundle;
     },
     onSuccess: (bundle) => {
-      setResourceTransferStatus({
-        tone: 'success',
-        message: `Exported ${bundle.requests.length} saved request definition${bundle.requests.length === 1 ? '' : 's'} and ${bundle.mockRules.length} mock rule${bundle.mockRules.length === 1 ? '' : 's'} from the resource lane.`,
-      });
+      setResourceTransferStatus(createExportStatusMessage(
+        bundle,
+        `${bundle.requests.length} saved request definition${bundle.requests.length === 1 ? '' : 's'} and ${bundle.mockRules.length} mock rule${bundle.mockRules.length === 1 ? '' : 's'}`,
+      ));
     },
     onError: (error) => {
       setResourceTransferStatus({
         tone: 'error',
         message: error instanceof Error ? error.message : 'Resource export failed before a bundle could be downloaded.',
+      });
+    },
+  });
+
+  const exportRequestMutation = useMutation({
+    mutationFn: async (request: WorkspaceSavedRequestSeed) => {
+      const bundle = await exportSavedRequestResource(request.id);
+      downloadAuthoredResourceBundle(
+        bundle,
+        `local-request-inspector-${bundle.workspaceId}-${request.name.toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'request'}`,
+      );
+      return {
+        request,
+        bundle,
+      };
+    },
+    onSuccess: ({ request, bundle }) => {
+      setResourceTransferStatus(createExportStatusMessage(bundle, `saved request ${request.name}`));
+    },
+    onError: (error) => {
+      setResourceTransferStatus({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Saved request export failed before a bundle could be downloaded.',
       });
     },
   });
@@ -224,11 +269,13 @@ export function WorkspacePlaceholder() {
           selectedRequestId={selectedExplorerItemId}
           onCreateRequest={handleCreateRequest}
           onOpenSavedRequest={handleOpenSavedRequest}
+          onExportRequest={(request) => exportRequestMutation.mutate(request)}
           onExportResources={() => exportResourcesMutation.mutate()}
           onImportResources={handleImportResources}
           transferStatusMessage={resourceTransferStatus?.message ?? null}
+          transferStatusDetails={resourceTransferStatus?.details}
           transferStatusTone={resourceTransferStatus?.tone}
-          isExporting={exportResourcesMutation.isPending}
+          isExporting={exportResourcesMutation.isPending || exportRequestMutation.isPending}
           isImporting={importResourcesMutation.isPending}
         />
       </section>

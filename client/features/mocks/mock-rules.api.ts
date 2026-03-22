@@ -89,6 +89,23 @@ export async function readMockRule(mockRuleId: string) {
   return parseJsonResponse<{ rule: MockRuleRecord }>(response).then((payload) => payload.rule);
 }
 
+export async function exportMockRuleResource(mockRuleId: string) {
+  const response = await fetch(`/api/mock-rules/${mockRuleId}/resource-bundle`);
+  return parseJsonResponse<{
+    bundle: {
+      schemaVersion: number;
+      resourceKind: string;
+      exportedAt: string;
+      workspaceId: string;
+      requests: [];
+      mockRules: MockRuleRecord[];
+    };
+  }>(response).then((payload) => ({
+    ...payload.bundle,
+    mockRules: sortMockRuleRecords(payload.bundle.mockRules),
+  }));
+}
+
 export async function createMockRule(rule: MockRuleInput) {
   const response = await fetch(`/api/workspaces/${DEFAULT_WORKSPACE_ID}/mock-rules`, {
     method: 'POST',

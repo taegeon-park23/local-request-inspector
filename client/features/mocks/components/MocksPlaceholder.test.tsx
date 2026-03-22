@@ -161,6 +161,23 @@ function createMockRulesFetch(initialRules = defaultMockRuleFixtureRecords) {
       return createApiResponse({ rule: nextRule });
     }
 
+    if (url.startsWith('/api/mock-rules/') && url.endsWith('/resource-bundle') && method === 'GET') {
+      const mockRuleId = url.split('/')[3] ?? '';
+      const rule = rules.find((item) => item.id === mockRuleId);
+      return rule
+        ? createApiResponse({
+          bundle: {
+            schemaVersion: 1,
+            resourceKind: 'local-request-inspector-authored-resource-bundle',
+            exportedAt: '2026-03-21T12:00:00.000Z',
+            workspaceId: 'local-workspace',
+            requests: [],
+            mockRules: [rule],
+          },
+        })
+        : createApiError(`Mock rule ${mockRuleId} was not found.`, 404);
+    }
+
     if (url.startsWith('/api/mock-rules/') && method === 'GET') {
       const mockRuleId = url.split('/').pop() ?? '';
       const rule = rules.find((item) => item.id === mockRuleId);
@@ -359,6 +376,37 @@ describe('Mocks S16 persisted CRUD surface', () => {
     vi.stubGlobal('fetch', degradedFetch);
     renderApp(<AppRouter />, { initialEntries: ['/mocks'] });
     expect(await screen.findByText('Mock rules are degraded')).toBeInTheDocument();
+  });
+
+  it('exports a single mock rule bundle without runtime observation artifacts', async () => {
+    const user = userEvent.setup();
+    const createObjectURLSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:single-mock-rule-bundle');
+    const revokeObjectURLSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const linkClickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+
+    vi.stubGlobal('fetch', createMockRulesFetch());
+    renderApp(<AppRouter />, { initialEntries: ['/mocks'] });
+
+    await screen.findByRole('button', { name: 'Open mock rule Stripe webhook accepted' });
+    await user.click(screen.getByRole('button', { name: 'Export rule' }));
+
+    expect(await screen.findByText(/Exported Stripe webhook accepted from the authored resource lane/i)).toBeInTheDocument();
+    expect(createObjectURLSpy).toHaveBeenCalledTimes(1);
+    expect(linkClickSpy).toHaveBeenCalledTimes(1);
+    expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:single-mock-rule-bundle');
+
+    const exportedBlob = createObjectURLSpy.mock.calls[0]?.[0];
+    expect(exportedBlob).toBeInstanceOf(Blob);
+
+    if (!(exportedBlob instanceof Blob)) {
+      throw new Error('Single mock-rule export did not create a Blob.');
+    }
+
+    const exportedText = await exportedBlob.text();
+    expect(exportedText).toContain('"mockRules"');
+    expect(exportedText).toContain('"Stripe webhook accepted"');
+    expect(exportedText).not.toContain('executionHistories');
+    expect(exportedText).not.toContain('capturedRequests');
   });
 
   it('keeps mocks management state separate from captures, history, and request drafts', async () => {

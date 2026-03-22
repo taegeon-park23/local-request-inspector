@@ -5,6 +5,10 @@ const {
   REQUEST_RESOURCE_SCHEMA_VERSION,
   RESOURCE_RECORD_KINDS,
 } = require('../shared/constants');
+const {
+  classifySchemaVersion,
+  createCompatibilityReport,
+} = require('../shared/compatibility');
 
 function createBundleError(code, message, details = {}) {
   const error = new Error(message);
@@ -38,18 +42,37 @@ function validateBundledResourceRecord(record, options) {
       `Import file contains a ${arrayName} entry with unsupported resource kind "${record.resourceKind}".`,
       {
         arrayName,
+        compatibilityState: 'malformed-data',
         resourceKind: record.resourceKind,
         expectedResourceKind: expectedKind,
       },
     );
   }
 
-  if (record.resourceSchemaVersion != null && record.resourceSchemaVersion !== supportedSchemaVersion) {
+  const resourceSchemaCompatibility = record.resourceSchemaVersion == null
+    ? createCompatibilityReport([], `Bundled ${arrayName} resource uses a legacy unversioned shape that remains read-compatible.`)
+    : createCompatibilityReport([
+      classifySchemaVersion({
+        subject: `${arrayName} resource schemaVersion`,
+        currentVersion: record.resourceSchemaVersion,
+        supportedVersion: supportedSchemaVersion,
+        missingCode: 'resource_bundle_resource_schema_missing',
+        malformedCode: 'resource_bundle_resource_schema_malformed',
+        migrationNeededCode: 'resource_bundle_resource_schema_migration_needed',
+        unsupportedCode: 'resource_bundle_resource_schema_unsupported_version',
+        details: {
+          arrayName,
+        },
+      }),
+    ]);
+
+  if (resourceSchemaCompatibility.state !== 'read-compatible') {
     throw createBundleError(
       'resource_bundle_unsupported_resource_schema',
       `Import file contains a ${arrayName} entry with unsupported resource schema version ${record.resourceSchemaVersion}.`,
       {
         arrayName,
+        compatibilityState: resourceSchemaCompatibility.state,
         resourceSchemaVersion: record.resourceSchemaVersion,
         supportedSchemaVersion,
       },
@@ -74,7 +97,7 @@ function buildAuthoredResourceBundle({ workspaceId, requests, mockRules, exporte
   };
 }
 
-function validateAuthoredResourceBundlePayload(payload) {
+function inspectAuthoredResourceBundleCompatibility(payload) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
     throw createBundleError('resource_bundle_invalid_shape', 'Import file must contain a JSON object bundle.');
   }
@@ -82,18 +105,42 @@ function validateAuthoredResourceBundlePayload(payload) {
   if (payload.resourceKind !== AUTHORED_RESOURCE_BUNDLE_KIND) {
     throw createBundleError(
       'resource_bundle_unsupported_kind',
-      'Import file is not an authored resource bundle exported by this app.',
-      { resourceKind: payload.resourceKind },
+        'Import file is not an authored resource bundle exported by this app.',
+      {
+        compatibilityState: 'malformed-data',
+        resourceKind: payload.resourceKind,
+      },
     );
   }
 
-  if (payload.schemaVersion !== AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION) {
+  const bundleSchemaCompatibility = createCompatibilityReport([
+    classifySchemaVersion({
+      subject: 'Authored resource bundle schemaVersion',
+      currentVersion: payload.schemaVersion,
+      supportedVersion: AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION,
+      missingCode: 'resource_bundle_schema_missing',
+      malformedCode: 'resource_bundle_schema_malformed',
+      migrationNeededCode: 'resource_bundle_schema_migration_needed',
+      unsupportedCode: 'resource_bundle_schema_unsupported_version',
+    }),
+  ]);
+
+  if (bundleSchemaCompatibility.state !== 'read-compatible') {
     throw createBundleError(
       'resource_bundle_unsupported_schema',
       `Schema version ${payload.schemaVersion} is not supported for import.`,
-      { schemaVersion: payload.schemaVersion },
+      {
+        compatibilityState: bundleSchemaCompatibility.state,
+        schemaVersion: payload.schemaVersion,
+      },
     );
   }
+
+  return bundleSchemaCompatibility;
+}
+
+function validateAuthoredResourceBundlePayload(payload) {
+  inspectAuthoredResourceBundleCompatibility(payload);
 
   if (typeof payload.exportedAt !== 'string' || payload.exportedAt.trim().length === 0) {
     throw createBundleError(
@@ -174,6 +221,7 @@ module.exports = {
   AUTHORED_RESOURCE_BUNDLE_KIND,
   AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION,
   buildAuthoredResourceBundle,
+  inspectAuthoredResourceBundleCompatibility,
   validateAuthoredResourceBundlePayload,
   parseAuthoredResourceBundleText,
   createImportedResourceName,

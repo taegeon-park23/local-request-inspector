@@ -3,9 +3,11 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { buildStorageLayout } = require('../shared/data-root');
+const { STORAGE_COMPATIBILITY_STATES } = require('../shared/constants');
 const {
   SqliteRuntimeStorage,
   createExpectedRuntimeMetadata,
+  inspectRuntimeMetadataCompatibility,
   validateRuntimeMetadataMap,
 } = require('./sqlite-runtime-storage');
 
@@ -23,11 +25,15 @@ function createTempLayout() {
 
   storage.ensureStructure();
   assert.deepEqual(storage.readMetadataMap(), createExpectedRuntimeMetadata());
+  assert.equal(
+    inspectRuntimeMetadataCompatibility(storage.readMetadataMap()).state,
+    STORAGE_COMPATIBILITY_STATES.READ_COMPATIBLE,
+  );
   storage.close();
 
-  assert.throws(
-    () => validateRuntimeMetadataMap({ schemaVersion: '999' }),
-    (error) => error && error.code === 'runtime_storage_metadata_mismatch',
+  assert.equal(
+    inspectRuntimeMetadataCompatibility({}).state,
+    STORAGE_COMPATIBILITY_STATES.BOOTSTRAP_RECOVERABLE,
   );
 
   const mismatchStorage = new SqliteRuntimeStorage({
@@ -38,7 +44,7 @@ function createTempLayout() {
   mismatchStorage.ensureStructure();
   mismatchStorage.database.prepare(
     'UPDATE runtime_metadata SET value = ? WHERE key = ?',
-  ).run('999', 'schemaVersion');
+  ).run('0', 'schemaVersion');
   mismatchStorage.close();
 
   const restartedStorage = new SqliteRuntimeStorage({
@@ -48,10 +54,15 @@ function createTempLayout() {
 
   assert.throws(
     () => restartedStorage.ensureStructure(),
-    (error) => error && error.code === 'runtime_storage_metadata_mismatch',
+    (error) => error && error.code === 'runtime_metadata_migration_needed' && error.details?.compatibilityState === 'migration-needed',
   );
 
   if (restartedStorage.database) {
     restartedStorage.close();
   }
+
+  assert.throws(
+    () => validateRuntimeMetadataMap({ schemaVersion: '999' }),
+    (error) => error && error.code === 'runtime_metadata_unsupported_version' && error.details?.compatibilityState === 'unsupported-version',
+  );
 })();

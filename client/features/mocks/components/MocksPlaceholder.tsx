@@ -3,6 +3,7 @@ import { useEffect, useReducer, useState } from 'react';
 import {
   createMockRule,
   deleteMockRule,
+  exportMockRuleResource,
   listWorkspaceMockRules,
   mockRuleDetailQueryKey,
   readMockRule,
@@ -33,6 +34,7 @@ import { EmptyStateCallout } from '@client/shared/ui/EmptyStateCallout';
 import { KeyValueMetaList } from '@client/shared/ui/KeyValueMetaList';
 import { PanelTabs } from '@client/shared/ui/PanelTabs';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
+import { downloadAuthoredResourceBundle } from '@client/features/workspace/resource-bundle.api';
 
 const mockDetailTabs = [
   { id: 'overview', label: 'Overview' },
@@ -211,6 +213,11 @@ function mockRuleDraftReducer(state: MockRuleInput, action: MockRuleDraftAction)
   return action.updater(state);
 }
 
+interface MockResourceTransferStatus {
+  tone: 'success' | 'error' | 'info';
+  message: string;
+}
+
 interface MatcherEditorProps {
   title: string;
   description: string;
@@ -311,6 +318,7 @@ function MatcherEditor({ title, description, addLabel, rowPrefix, rows, onChange
 export function MocksPlaceholder() {
   const queryClient = useQueryClient();
   const [activeDetailTab, setActiveDetailTab] = useState<MockRuleDetailTabId>('overview');
+  const [resourceTransferStatus, setResourceTransferStatus] = useState<MockResourceTransferStatus | null>(null);
   const [draft, draftDispatch] = useReducer(mockRuleDraftReducer, defaultNewMockRuleInput, createDraft);
   const selectedRuleId = useMocksStore((state) => state.selectedRuleId);
   const searchText = useMocksStore((state) => state.searchText);
@@ -407,6 +415,29 @@ export function MocksPlaceholder() {
       queryClient.setQueryData<MockRuleRecord[]>(workspaceMockRulesQueryKey, (current) => (current ?? []).filter((rule) => rule.id !== deletedRuleId));
       queryClient.removeQueries({ queryKey: mockRuleDetailQueryKey(deletedRuleId) });
       clearSelection();
+    },
+  });
+
+  const exportRuleMutation = useMutation({
+    mutationFn: async (mockRuleId: string) => {
+      const bundle = await exportMockRuleResource(mockRuleId);
+      const exportedRuleName = bundle.mockRules[0]?.name || 'mock-rule';
+      const fileNameBase = `local-request-inspector-${bundle.workspaceId}-${exportedRuleName.toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'mock-rule'}`;
+      downloadAuthoredResourceBundle(bundle, fileNameBase);
+      return bundle;
+    },
+    onSuccess: (bundle) => {
+      const exportedRuleName = bundle.mockRules[0]?.name || 'mock rule';
+      setResourceTransferStatus({
+        tone: 'success',
+        message: `Exported ${exportedRuleName} from the authored resource lane. Runtime mock outcomes remain excluded.`,
+      });
+    },
+    onError: (error) => {
+      setResourceTransferStatus({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Mock rule export failed before a bundle could be downloaded.',
+      });
     },
   });
 
@@ -597,6 +628,16 @@ export function MocksPlaceholder() {
                   <button type="button" className="workspace-button workspace-button--secondary" onClick={handleToggleRuleEnabled} disabled={quickToggleDisabledReason !== null}>
                     {selectedRule?.enabled ? 'Disable rule' : 'Enable rule'}
                   </button>
+                  {!isCreatingRule && selectedRule ? (
+                    <button
+                      type="button"
+                      className="workspace-button workspace-button--secondary"
+                      onClick={() => exportRuleMutation.mutate(selectedRule.id)}
+                      disabled={exportRuleMutation.isPending}
+                    >
+                      {exportRuleMutation.isPending ? 'Exporting rule' : 'Export rule'}
+                    </button>
+                  ) : null}
                   {isCreatingRule ? (
                     <button type="button" className="workspace-button workspace-button--ghost" onClick={handleCancelDraft}>
                       Cancel draft
@@ -612,6 +653,11 @@ export function MocksPlaceholder() {
               <p className="shared-readiness-note">
                 {saveDisabledReason ?? quickToggleDisabledReason ?? deleteDisabledReason ?? 'Quick enable or disable updates persisted rule state only. Other field edits still require Create or Save.'}
               </p>
+              {resourceTransferStatus ? (
+                <p className={`workspace-explorer__status workspace-explorer__status--${resourceTransferStatus.tone}`}>
+                  {resourceTransferStatus.message}
+                </p>
+              ) : null}
               {currentError ? <EmptyStateCallout title="Rule mutation failed" description={currentError} /> : null}
             </DetailViewerSection>
 

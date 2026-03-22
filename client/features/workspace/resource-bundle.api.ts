@@ -39,10 +39,27 @@ export interface AuthoredResourceBundleImportRejection {
   reason: string;
 }
 
+export interface AuthoredResourceBundleImportRejectedReasonSummary {
+  reason: string;
+  count: number;
+}
+
+export interface AuthoredResourceBundleImportSummary {
+  acceptedCount: number;
+  rejectedCount: number;
+  createdRequestCount: number;
+  createdMockRuleCount: number;
+  renamedCount: number;
+  importedNamesPreview: string[];
+  rejectedReasonSummary: AuthoredResourceBundleImportRejectedReasonSummary[];
+  duplicateIdentityPolicy: 'new_identity';
+}
+
 export interface AuthoredResourceBundleImportResult {
   acceptedRequests: SavedRequestResourceRecord[];
   acceptedMockRules: MockRuleRecord[];
   rejected: AuthoredResourceBundleImportRejection[];
+  summary: AuthoredResourceBundleImportSummary;
 }
 
 async function parseJsonResponse<TData>(response: Response): Promise<TData> {
@@ -68,8 +85,50 @@ async function parseJsonResponse<TData>(response: Response): Promise<TData> {
   return (payload as ApiEnvelope<TData>).data;
 }
 
+export function downloadAuthoredResourceBundle(
+  bundle: AuthoredResourceBundleExport,
+  fileNameBase = `local-request-inspector-${bundle.workspaceId}-resources`,
+) {
+  if (typeof URL.createObjectURL !== 'function') {
+    throw new Error('Browser download APIs are unavailable for resource export.');
+  }
+
+  const objectUrl = URL.createObjectURL(
+    new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' }),
+  );
+
+  try {
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = `${fileNameBase}-${bundle.exportedAt.slice(0, 10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 export async function exportWorkspaceResources() {
   const response = await fetch(`/api/workspaces/${DEFAULT_WORKSPACE_ID}/resource-bundle`);
+  return parseJsonResponse<{ bundle: AuthoredResourceBundleExport }>(response).then((payload) => ({
+    ...payload.bundle,
+    requests: [...payload.bundle.requests],
+    mockRules: sortMockRuleRecords(payload.bundle.mockRules),
+  }));
+}
+
+export async function exportSavedRequestResource(requestId: string) {
+  const response = await fetch(`/api/requests/${requestId}/resource-bundle`);
+  return parseJsonResponse<{ bundle: AuthoredResourceBundleExport }>(response).then((payload) => ({
+    ...payload.bundle,
+    requests: [...payload.bundle.requests],
+    mockRules: sortMockRuleRecords(payload.bundle.mockRules),
+  }));
+}
+
+export async function exportMockRuleResource(mockRuleId: string) {
+  const response = await fetch(`/api/mock-rules/${mockRuleId}/resource-bundle`);
   return parseJsonResponse<{ bundle: AuthoredResourceBundleExport }>(response).then((payload) => ({
     ...payload.bundle,
     requests: [...payload.bundle.requests],
@@ -91,5 +150,10 @@ export async function importWorkspaceResources(bundleText: string) {
     acceptedRequests: [...payload.result.acceptedRequests],
     acceptedMockRules: sortMockRuleRecords(payload.result.acceptedMockRules),
     rejected: [...payload.result.rejected],
+    summary: {
+      ...payload.result.summary,
+      importedNamesPreview: [...payload.result.summary.importedNamesPreview],
+      rejectedReasonSummary: [...payload.result.summary.rejectedReasonSummary],
+    },
   }));
 }

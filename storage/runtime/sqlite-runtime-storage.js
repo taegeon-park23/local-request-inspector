@@ -2,12 +2,20 @@ const fs = require('fs');
 const path = require('path');
 const { DatabaseSync } = require('node:sqlite');
 const {
+  classifyExactValueCompatibility,
+  classifySchemaVersion,
+  createCompatibilityError,
+  createCompatibilityIssue,
+  createCompatibilityReport,
+} = require('../shared/compatibility');
+const {
   RUNTIME_CAPTURE_SUMMARY_SCHEMA_VERSION,
   RUNTIME_METADATA_SCHEMA_VERSION,
   RUNTIME_PERSISTENCE_POLICY,
   RUNTIME_REQUEST_SNAPSHOT_SCHEMA_VERSION,
   RUNTIME_SCHEMA_VERSION,
   RUNTIME_STORAGE_KIND,
+  STORAGE_COMPATIBILITY_STATES,
 } = require('../shared/constants');
 
 function parseJsonColumn(value, fallbackValue) {
@@ -33,31 +41,89 @@ function createExpectedRuntimeMetadata() {
   };
 }
 
-function validateRuntimeMetadataMap(metadataMap) {
+function inspectRuntimeMetadataCompatibility(metadataMap) {
   const expectedMetadata = createExpectedRuntimeMetadata();
+  const normalizedMetadataMap = metadataMap && typeof metadataMap === 'object' ? metadataMap : {};
+  const issues = [
+    classifySchemaVersion({
+      subject: 'Runtime metadata schemaVersion',
+      currentVersion: normalizedMetadataMap.schemaVersion,
+      supportedVersion: expectedMetadata.schemaVersion,
+      missingCode: 'runtime_metadata_schema_missing',
+      malformedCode: 'runtime_metadata_schema_malformed',
+      migrationNeededCode: 'runtime_metadata_migration_needed',
+      unsupportedCode: 'runtime_metadata_unsupported_version',
+    }),
+    classifySchemaVersion({
+      subject: 'Runtime metadata runtimeMetadataSchemaVersion',
+      currentVersion: normalizedMetadataMap.runtimeMetadataSchemaVersion,
+      supportedVersion: expectedMetadata.runtimeMetadataSchemaVersion,
+      missingCode: 'runtime_metadata_shape_missing',
+      malformedCode: 'runtime_metadata_shape_malformed',
+      migrationNeededCode: 'runtime_metadata_shape_migration_needed',
+      unsupportedCode: 'runtime_metadata_shape_unsupported_version',
+    }),
+    classifySchemaVersion({
+      subject: 'Runtime metadata requestSnapshotSchemaVersion',
+      currentVersion: normalizedMetadataMap.requestSnapshotSchemaVersion,
+      supportedVersion: expectedMetadata.requestSnapshotSchemaVersion,
+      missingCode: 'runtime_metadata_snapshot_schema_missing',
+      malformedCode: 'runtime_metadata_snapshot_schema_malformed',
+      migrationNeededCode: 'runtime_metadata_snapshot_schema_migration_needed',
+      unsupportedCode: 'runtime_metadata_snapshot_schema_unsupported_version',
+    }),
+    classifySchemaVersion({
+      subject: 'Runtime metadata capturedRequestSummarySchemaVersion',
+      currentVersion: normalizedMetadataMap.capturedRequestSummarySchemaVersion,
+      supportedVersion: expectedMetadata.capturedRequestSummarySchemaVersion,
+      missingCode: 'runtime_metadata_capture_schema_missing',
+      malformedCode: 'runtime_metadata_capture_schema_malformed',
+      migrationNeededCode: 'runtime_metadata_capture_schema_migration_needed',
+      unsupportedCode: 'runtime_metadata_capture_schema_unsupported_version',
+    }),
+    classifyExactValueCompatibility({
+      subject: 'Runtime metadata runtimeStorageKind',
+      currentValue: normalizedMetadataMap.runtimeStorageKind,
+      expectedValue: expectedMetadata.runtimeStorageKind,
+      missingCode: 'runtime_metadata_storage_kind_missing',
+      incompatibleCode: 'runtime_metadata_incompatible',
+    }),
+    classifyExactValueCompatibility({
+      subject: 'Runtime metadata runtimePersistenceMode',
+      currentValue: normalizedMetadataMap.runtimePersistenceMode,
+      expectedValue: expectedMetadata.runtimePersistenceMode,
+      missingCode: 'runtime_metadata_persistence_mode_missing',
+      incompatibleCode: 'runtime_metadata_incompatible',
+    }),
+  ];
 
-  for (const [key, expectedValue] of Object.entries(expectedMetadata)) {
-    const currentValue = metadataMap[key];
-
-    if (currentValue == null || currentValue === '') {
-      continue;
-    }
-
-    if (String(currentValue) !== String(expectedValue)) {
-      const error = new Error(
-        `Runtime storage metadata mismatch for ${key}: expected ${expectedValue}, received ${currentValue}.`,
-      );
-      error.code = 'runtime_storage_metadata_mismatch';
-      error.details = {
-        key,
-        expectedValue,
-        currentValue,
-      };
-      throw error;
-    }
+  if (Array.isArray(normalizedMetadataMap)) {
+    issues.push(createCompatibilityIssue({
+      state: STORAGE_COMPATIBILITY_STATES.MALFORMED_DATA,
+      code: 'runtime_metadata_invalid_shape',
+      message: 'Runtime metadata map is malformed and cannot be classified safely.',
+    }));
   }
 
-  return expectedMetadata;
+  return {
+    expectedMetadata,
+    ...createCompatibilityReport(issues),
+  };
+}
+
+function validateRuntimeMetadataMap(metadataMap) {
+  const compatibility = inspectRuntimeMetadataCompatibility(metadataMap);
+
+  if (
+    compatibility.state !== STORAGE_COMPATIBILITY_STATES.READ_COMPATIBLE
+    && compatibility.state !== STORAGE_COMPATIBILITY_STATES.BOOTSTRAP_RECOVERABLE
+  ) {
+    throw createCompatibilityError(compatibility, {
+      expectedMetadata: compatibility.expectedMetadata,
+    });
+  }
+
+  return compatibility.expectedMetadata;
 }
 
 class SqliteRuntimeStorage {
@@ -130,9 +196,18 @@ class SqliteRuntimeStorage {
 
   ensureMetadataCompatibility() {
     const existingMetadata = this.readMetadataMap();
-    const expectedMetadata = validateRuntimeMetadataMap(existingMetadata);
+    const compatibility = inspectRuntimeMetadataCompatibility(existingMetadata);
 
-    for (const [key, value] of Object.entries(expectedMetadata)) {
+    if (
+      compatibility.state !== STORAGE_COMPATIBILITY_STATES.READ_COMPATIBLE
+      && compatibility.state !== STORAGE_COMPATIBILITY_STATES.BOOTSTRAP_RECOVERABLE
+    ) {
+      throw createCompatibilityError(compatibility, {
+        expectedMetadata: compatibility.expectedMetadata,
+      });
+    }
+
+    for (const [key, value] of Object.entries(compatibility.expectedMetadata)) {
       this.upsertMetadata(key, value);
     }
   }
@@ -450,5 +525,6 @@ class SqliteRuntimeStorage {
 module.exports = {
   SqliteRuntimeStorage,
   createExpectedRuntimeMetadata,
+  inspectRuntimeMetadataCompatibility,
   validateRuntimeMetadataMap,
 };

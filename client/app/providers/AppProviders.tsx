@@ -6,9 +6,12 @@ import { RuntimeEventsProvider } from '@client/app/providers/runtime-events';
 
 export function AppProviders({ children }: PropsWithChildren) {
   const [queryClient] = useState(createQueryClient);
+  const routerBasename =
+    import.meta.env.BASE_URL === '/' ? undefined : import.meta.env.BASE_URL.replace(/\/$/, '');
+  const routerProps = routerBasename ? { basename: routerBasename } : {};
 
   return (
-    <BrowserRouter>
+    <BrowserRouter {...routerProps}>
       <QueryClientProvider client={queryClient}>
         <RuntimeEventsProvider>{children}</RuntimeEventsProvider>
       </QueryClientProvider>

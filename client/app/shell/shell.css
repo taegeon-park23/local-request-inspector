@@ -64,8 +64,17 @@ body { margin: 0; min-height: 100vh; background: #020617; }
   cursor: pointer;
 }
 .workspace-explorer__status {
+  display: grid;
+  gap: 0.45rem;
+}
+.workspace-explorer__status p {
   margin: 0;
+}
+.workspace-explorer__status-details {
+  margin: 0;
+  padding-left: 1.2rem;
   font-size: 0.9rem;
+  color: inherit;
 }
 .workspace-explorer__status--success {
   color: #86efac;
@@ -126,6 +135,16 @@ body { margin: 0; min-height: 100vh; background: #020617; }
   cursor: pointer;
   display: grid;
   gap: 0.25rem;
+}
+.workspace-request-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+.workspace-request-row__export {
+  align-self: center;
+  white-space: nowrap;
 }
 .workspace-request:hover,
 .workspace-request--selected {
@@ -444,6 +463,9 @@ body { margin: 0; min-height: 100vh; background: #020617; }
   .request-editor-card__grid,
   .request-row-editor,
   .request-script-placeholder-grid {
+    grid-template-columns: 1fr;
+  }
+  .workspace-request-row {
     grid-template-columns: 1fr;
   }
   .request-field--compact,

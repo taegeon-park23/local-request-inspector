@@ -7,9 +7,11 @@ interface WorkspaceExplorerProps {
   selectedRequestId: string | null;
   onCreateRequest: () => void;
   onOpenSavedRequest: (request: WorkspaceSavedRequestSeed) => void;
+  onExportRequest: (request: WorkspaceSavedRequestSeed) => void;
   onExportResources: () => void;
   onImportResources: (file: File) => void;
   transferStatusMessage: string | null;
+  transferStatusDetails?: string[] | undefined;
   transferStatusTone?: ResourceTransferTone | undefined;
   isExporting: boolean;
   isImporting: boolean;
@@ -20,6 +22,7 @@ interface WorkspaceExplorerNodeListProps {
   depth: number;
   selectedRequestId: string | null;
   onOpenSavedRequest: (request: WorkspaceSavedRequestSeed) => void;
+  onExportRequest: (request: WorkspaceSavedRequestSeed) => void;
 }
 
 export function WorkspaceExplorer({
@@ -27,9 +30,11 @@ export function WorkspaceExplorer({
   selectedRequestId,
   onCreateRequest,
   onOpenSavedRequest,
+  onExportRequest,
   onExportResources,
   onImportResources,
   transferStatusMessage,
+  transferStatusDetails = [],
   transferStatusTone = 'info',
   isExporting,
   isImporting,
@@ -77,12 +82,19 @@ export function WorkspaceExplorer({
           Export and import stay limited to authored request definitions and mock rules. Runtime history, captures, and execution artifacts remain outside this bundle.
         </p>
         {transferStatusMessage ? (
-          <p
+          <div
             className={`workspace-explorer__status workspace-explorer__status--${transferStatusTone}`}
             role={transferStatusTone === 'error' ? 'alert' : 'status'}
           >
-            {transferStatusMessage}
-          </p>
+            <p>{transferStatusMessage}</p>
+            {transferStatusDetails.length > 0 ? (
+              <ul className="workspace-explorer__status-details">
+                {transferStatusDetails.map((detail) => (
+                  <li key={detail}>{detail}</li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
         ) : null}
       </header>
       <WorkspaceExplorerNodeList
@@ -90,6 +102,7 @@ export function WorkspaceExplorer({
         depth={0}
         selectedRequestId={selectedRequestId}
         onOpenSavedRequest={onOpenSavedRequest}
+        onExportRequest={onExportRequest}
       />
     </div>
   );
@@ -100,6 +113,7 @@ function WorkspaceExplorerNodeList({
   depth,
   selectedRequestId,
   onOpenSavedRequest,
+  onExportRequest,
 }: WorkspaceExplorerNodeListProps) {
   return (
     <ul className="workspace-explorer__tree" data-depth={depth}>
@@ -109,19 +123,31 @@ function WorkspaceExplorerNodeList({
 
           return (
             <li key={node.id}>
-              <button
-                type="button"
-                className={isSelected ? 'workspace-request workspace-request--selected' : 'workspace-request'}
-                aria-label={`Open ${node.request.name}`}
-                aria-pressed={isSelected}
-                data-kind={node.kind}
-                onClick={() => onOpenSavedRequest(node.request)}
-              >
-                <span className="workspace-request__title">{node.request.name}</span>
-                <span className="workspace-request__meta">
-                  {node.request.methodLabel} | {node.request.summary}
-                </span>
-              </button>
+              <div className="workspace-request-row">
+                <button
+                  type="button"
+                  className={isSelected ? 'workspace-request workspace-request--selected' : 'workspace-request'}
+                  aria-label={`Open ${node.request.name}`}
+                  aria-pressed={isSelected}
+                  data-kind={node.kind}
+                  onClick={() => onOpenSavedRequest(node.request)}
+                >
+                  <span className="workspace-request__title">{node.request.name}</span>
+                  <span className="workspace-request__meta">
+                    {node.request.methodLabel} | {node.request.summary}
+                  </span>
+                </button>
+                {node.request.resourceKind === 'persisted' ? (
+                  <button
+                    type="button"
+                    className="workspace-button workspace-button--ghost workspace-request-row__export"
+                    aria-label={`Export ${node.request.name}`}
+                    onClick={() => onExportRequest(node.request)}
+                  >
+                    Export
+                  </button>
+                ) : null}
+              </div>
             </li>
           );
         }
@@ -137,6 +163,7 @@ function WorkspaceExplorerNodeList({
               depth={depth + 1}
               selectedRequestId={selectedRequestId}
               onOpenSavedRequest={onOpenSavedRequest}
+              onExportRequest={onExportRequest}
             />
           </li>
         );

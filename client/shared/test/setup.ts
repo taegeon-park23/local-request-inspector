@@ -78,6 +78,76 @@ beforeEach(() => {
           acceptedRequests: [],
           acceptedMockRules: [],
           rejected: [],
+          summary: {
+            acceptedCount: 0,
+            rejectedCount: 0,
+            createdRequestCount: 0,
+            createdMockRuleCount: 0,
+            renamedCount: 0,
+            importedNamesPreview: [],
+            rejectedReasonSummary: [],
+            duplicateIdentityPolicy: 'new_identity',
+          },
+        },
+      });
+    }
+
+    if (url.startsWith('/api/requests/') && url.endsWith('/resource-bundle') && (!init || !init.method || init.method === 'GET')) {
+      const requestId = url.split('/')[3] ?? '';
+      return createApiResponse({
+        bundle: {
+          schemaVersion: 1,
+          resourceKind: 'local-request-inspector-authored-resource-bundle',
+          exportedAt: '2026-03-21T00:00:00.000Z',
+          workspaceId: 'local-workspace',
+          requests: [{
+            id: requestId,
+            workspaceId: 'local-workspace',
+            name: 'Exported request',
+            method: 'GET',
+            url: 'http://localhost:5671/exported',
+            params: [],
+            headers: [],
+            bodyMode: 'none',
+            bodyText: '',
+            formBody: [],
+            multipartBody: [],
+            auth: {
+              type: 'none',
+              bearerToken: '',
+              basicUsername: '',
+              basicPassword: '',
+              apiKeyName: '',
+              apiKeyValue: '',
+              apiKeyPlacement: 'header',
+            },
+            scripts: {
+              activeStage: 'pre-request',
+              preRequest: '',
+              postResponse: '',
+              tests: '',
+            },
+            summary: 'Exported request definition',
+            collectionName: 'Saved Requests',
+            createdAt: '2026-03-21T00:00:00.000Z',
+            updatedAt: '2026-03-21T00:00:00.000Z',
+          }],
+          mockRules: [],
+        },
+      });
+    }
+
+    if (url.startsWith('/api/mock-rules/') && url.endsWith('/resource-bundle') && (!init || !init.method || init.method === 'GET')) {
+      const mockRuleId = url.split('/')[3] ?? '';
+      const rule = defaultMockRuleFixtureRecords.find((item) => item.id === mockRuleId) ?? defaultMockRuleFixtureRecords[0];
+      return createApiResponse({
+        bundle: {
+          schemaVersion: 1,
+          resourceKind: 'local-request-inspector-authored-resource-bundle',
+          exportedAt: '2026-03-21T00:00:00.000Z',
+          workspaceId: 'local-workspace',
+          requests: [],
+          mockRules: rule ? [rule] : [],
         },
       });
     }

@@ -29,23 +29,124 @@ const resourceStorage = persistence.resourceStorage;
 const runtimeStorage = persistence.runtimeStorage;
 
 const clientDistPath = path.join(__dirname, 'client', 'dist');
-const hasClientDist = fs.existsSync(clientDistPath);
+const clientIndexPath = path.join(clientDistPath, 'index.html');
+const appShellStatic = express.static(clientDistPath);
+
+function getClientShellStatus() {
+  const builtClientAvailable = fs.existsSync(clientIndexPath);
+
+  return {
+    builtClientAvailable,
+    clientDistPath,
+    clientIndexPath,
+    legacyRoute: '/',
+    appRoute: '/app',
+    devClientUrl: 'http://localhost:5173/',
+    buildCommand: 'npm run build:client',
+    serveCommand: 'npm run serve:app',
+    devCommand: 'npm run dev:app',
+    note: builtClientAvailable
+      ? 'Built React app shell is available from the server-backed /app route.'
+      : 'Built React app shell is not available yet. Build the client shell or use the Vite dev server for authoring.',
+  };
+}
+
+function renderAppShellUnavailablePage(status) {
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>App shell not built</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: "Segoe UI", sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 48px 24px;
+      }
+      h1 {
+        margin-top: 0;
+        font-size: 2rem;
+      }
+      p,
+      li {
+        line-height: 1.6;
+      }
+      code {
+        background: rgba(148, 163, 184, 0.18);
+        border-radius: 6px;
+        padding: 2px 6px;
+      }
+      .panel {
+        margin-top: 24px;
+        padding: 20px;
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.72);
+        border: 1px solid rgba(148, 163, 184, 0.28);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Built app shell is not available yet</h1>
+      <p>${status.note}</p>
+      <div class="panel">
+        <p><strong>Server routes</strong></p>
+        <ul>
+          <li><code>${status.legacyRoute}</code> keeps serving the legacy prototype.</li>
+          <li><code>${status.appRoute}</code> serves the built React shell after <code>${status.buildCommand}</code>.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <p><strong>Recommended next steps</strong></p>
+        <ul>
+          <li>Build the shell: <code>${status.buildCommand}</code></li>
+          <li>Serve the built shell: <code>${status.serveCommand}</code></li>
+          <li>For iterative authoring, run <code>${status.devCommand}</code> and open <code>${status.devClientUrl}</code></li>
+        </ul>
+      </div>
+    </main>
+  </body>
+</html>`;
+}
+
+function sendAppShellUnavailable(req, res) {
+  const status = getClientShellStatus();
+
+  if (req.method === 'GET' && req.accepts('html')) {
+    return res.status(503).send(renderAppShellUnavailablePage(status));
+  }
+
+  return res.status(503).type('text/plain').send(
+    `${status.note} Run "${status.buildCommand}" to enable ${status.appRoute} or use ${status.devClientUrl} during development.`,
+  );
+}
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-if (hasClientDist) {
-  app.use('/app', express.static(clientDistPath));
+app.use('/app', (req, res, next) => {
+  if (!getClientShellStatus().builtClientAvailable) {
+    return sendAppShellUnavailable(req, res);
+  }
 
-  app.get(['/app', '/app/*'], (req, res) => {
-    res.sendFile(path.join(clientDistPath, 'index.html'));
-  });
-} else {
-  app.get(['/app', '/app/*'], (req, res) => {
-    res.status(503).send(
-      'The React client shell is available through the Vite dev server during S1. Build the client to enable the /app coexistence entrypoint.',
-    );
-  });
-}
+  return appShellStatic(req, res, next);
+});
+
+app.get(['/app', '/app/*'], (req, res) => {
+  const status = getClientShellStatus();
+
+  if (!status.builtClientAvailable) {
+    return sendAppShellUnavailable(req, res);
+  }
+
+  return res.sendFile(status.clientIndexPath);
+});
 
 function sendData(res, data, status = 200) {
   res.status(status).json({
@@ -1235,6 +1336,12 @@ function createTransportFailureStageResult(error) {
   });
 }
 
+app.get('/api/app-shell-status', (req, res) => {
+  return sendData(res, {
+    appShell: getClientShellStatus(),
+  });
+});
+
 function createTransportSkippedStageResult(reason) {
   return createStageStatusRecord('transport', 'skipped', reason);
 }
@@ -2175,6 +2282,47 @@ function createImportedResourceRejection(kind, reason, name) {
   };
 }
 
+function createImportResultSummary({
+  acceptedRequests,
+  acceptedMockRules,
+  rejected,
+  renamedCount,
+}) {
+  const acceptedCount = acceptedRequests.length + acceptedMockRules.length;
+  const rejectedCount = rejected.length;
+  const rejectedReasonCounts = new Map();
+
+  for (const rejection of rejected) {
+    const reason = typeof rejection?.reason === 'string' && rejection.reason.trim().length > 0
+      ? rejection.reason.trim()
+      : 'Import validation failed.';
+    rejectedReasonCounts.set(reason, (rejectedReasonCounts.get(reason) || 0) + 1);
+  }
+
+  return {
+    acceptedCount,
+    rejectedCount,
+    createdRequestCount: acceptedRequests.length,
+    createdMockRuleCount: acceptedMockRules.length,
+    renamedCount,
+    importedNamesPreview: [...acceptedRequests, ...acceptedMockRules]
+      .map((resource) => resource.name)
+      .filter((name) => typeof name === 'string' && name.trim().length > 0)
+      .slice(0, 5),
+    rejectedReasonSummary: [...rejectedReasonCounts.entries()]
+      .map(([reason, count]) => ({ reason, count }))
+      .sort((left, right) => {
+        if (right.count !== left.count) {
+          return right.count - left.count;
+        }
+
+        return left.reason.localeCompare(right.reason);
+      })
+      .slice(0, 5),
+    duplicateIdentityPolicy: 'new_identity',
+  };
+}
+
 function createImportedRequestRecord(input, workspaceId, usedNames) {
   const compatibilityError = validateImportedResourceCompatibility(
     input,
@@ -2196,17 +2344,20 @@ function createImportedRequestRecord(input, workspaceId, usedNames) {
     };
   }
 
+  const importedName = createImportedResourceName(input.name, usedNames);
+
   return {
     record: normalizeSavedRequest(
       {
         ...input,
         id: randomUUID(),
         workspaceId,
-        name: createImportedResourceName(input.name, usedNames),
+        name: importedName,
       },
       null,
       workspaceId,
     ),
+    renamed: importedName !== String(input.name || '').trim(),
   };
 }
 
@@ -2231,16 +2382,19 @@ function createImportedMockRuleResource(input, workspaceId, usedNames) {
     };
   }
 
+  const importedName = createImportedResourceName(input.name, usedNames);
+
   return {
     rule: createMockRuleRecord(
       {
         ...input,
         id: randomUUID(),
-        name: createImportedResourceName(input.name, usedNames),
+        name: importedName,
       },
       null,
       workspaceId,
     ),
+    renamed: importedName !== String(input.name || '').trim(),
   };
 }
 app.get('/api/workspaces/:workspaceId/requests', (req, res) => {
@@ -2329,6 +2483,58 @@ app.get('/api/workspaces/:workspaceId/resource-bundle', (req, res) => {
   }
 });
 
+app.get('/api/requests/:requestId/resource-bundle', (req, res) => {
+  try {
+    const requestRecord = normalizePersistedRequestRecord(
+      resourceStorage.read('request', req.params.requestId),
+    );
+
+    if (!requestRecord) {
+      return sendError(res, 404, 'request_not_found', 'Saved request was not found.', {
+        requestId: req.params.requestId,
+      });
+    }
+
+    const bundle = buildAuthoredResourceBundle({
+      workspaceId: requestRecord.workspaceId || DEFAULT_WORKSPACE_ID,
+      requests: [requestRecord],
+      mockRules: [],
+    });
+
+    return sendData(res, { bundle });
+  } catch (error) {
+    return sendError(res, 500, 'resource_bundle_export_failed', error.message, {
+      requestId: req.params.requestId,
+    });
+  }
+});
+
+app.get('/api/mock-rules/:mockRuleId/resource-bundle', (req, res) => {
+  try {
+    const mockRule = normalizePersistedMockRuleRecord(
+      resourceStorage.read('mock-rule', req.params.mockRuleId),
+    );
+
+    if (!mockRule) {
+      return sendError(res, 404, 'mock_rule_not_found', 'Mock rule was not found.', {
+        mockRuleId: req.params.mockRuleId,
+      });
+    }
+
+    const bundle = buildAuthoredResourceBundle({
+      workspaceId: mockRule.workspaceId || DEFAULT_WORKSPACE_ID,
+      requests: [],
+      mockRules: [mockRule],
+    });
+
+    return sendData(res, { bundle });
+  } catch (error) {
+    return sendError(res, 500, 'resource_bundle_export_failed', error.message, {
+      mockRuleId: req.params.mockRuleId,
+    });
+  }
+});
+
 app.post('/api/workspaces/:workspaceId/resource-bundle/import', (req, res) => {
   const bundleText = req.body?.bundleText;
 
@@ -2362,6 +2568,7 @@ app.post('/api/workspaces/:workspaceId/resource-bundle/import', (req, res) => {
     const acceptedRequests = [];
     const acceptedMockRules = [];
     const rejected = [];
+    let renamedCount = 0;
 
     for (const requestResource of bundle.requests) {
       const importResult = createImportedRequestRecord(requestResource, req.params.workspaceId, usedRequestNames);
@@ -2373,6 +2580,9 @@ app.post('/api/workspaces/:workspaceId/resource-bundle/import', (req, res) => {
 
       resourceStorage.save('request', importResult.record);
       acceptedRequests.push(importResult.record);
+      if (importResult.renamed) {
+        renamedCount += 1;
+      }
     }
 
     for (const mockRuleResource of bundle.mockRules) {
@@ -2385,13 +2595,25 @@ app.post('/api/workspaces/:workspaceId/resource-bundle/import', (req, res) => {
 
       resourceStorage.save('mock-rule', importResult.rule);
       acceptedMockRules.push(importResult.rule);
+      if (importResult.renamed) {
+        renamedCount += 1;
+      }
     }
+
+    const sortedAcceptedRequests = acceptedRequests.sort(compareSavedRequestRecords);
+    const sortedAcceptedMockRules = acceptedMockRules.sort(compareMockRuleRecords);
 
     return sendData(res, {
       result: {
-        acceptedRequests: acceptedRequests.sort(compareSavedRequestRecords),
-        acceptedMockRules: acceptedMockRules.sort(compareMockRuleRecords),
+        acceptedRequests: sortedAcceptedRequests,
+        acceptedMockRules: sortedAcceptedMockRules,
         rejected,
+        summary: createImportResultSummary({
+          acceptedRequests: sortedAcceptedRequests,
+          acceptedMockRules: sortedAcceptedMockRules,
+          rejected,
+          renamedCount,
+        }),
       },
     });
   } catch (error) {
@@ -3067,7 +3289,17 @@ app.all(/.*/, async (req, res) => {
   res.send(evaluationResult.response.body);
 });
 
-app.listen(PORT, () => console.log(`[Ready] http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  const appShellStatus = getClientShellStatus();
+
+  console.log(`[Ready] Server: http://localhost:${PORT}`);
+  console.log(`[Ready] Legacy prototype: http://localhost:${PORT}/`);
+  console.log(
+    appShellStatus.builtClientAvailable
+      ? `[Ready] Built app shell: http://localhost:${PORT}${appShellStatus.appRoute}`
+      : `[Ready] Built app shell unavailable at ${appShellStatus.appRoute}. Run "${appShellStatus.buildCommand}" or use ${appShellStatus.devClientUrl} for development.`,
+  );
+});
 
 
 

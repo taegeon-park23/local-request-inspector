@@ -415,7 +415,9 @@ describe('Workspace request builder authoring shell', () => {
     const explorer = screen.getByLabelText('Section explorer');
     await user.click(within(explorer).getByRole('button', { name: 'Export Resources' }));
 
-    expect(await within(explorer).findByText(/Exported 1 saved request definition and 1 mock rule from the resource lane/i)).toBeInTheDocument();
+    expect(await within(explorer).findByText(/Exported 1 saved request definition and 1 mock rule from the authored resource lane/i)).toBeInTheDocument();
+    expect(await within(explorer).findByText('Saved requests in bundle: 1')).toBeInTheDocument();
+    expect(within(explorer).getByText('Mock rules in bundle: 1')).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith('/api/workspaces/local-workspace/resource-bundle');
     expect(createObjectURLSpy).toHaveBeenCalledTimes(1);
     expect(linkClickSpy).toHaveBeenCalledTimes(1);
@@ -555,6 +557,16 @@ describe('Workspace request builder authoring shell', () => {
             acceptedRequests: [importedRequest],
             acceptedMockRules: [importedRule],
             rejected: [],
+            summary: {
+              acceptedCount: 2,
+              rejectedCount: 0,
+              createdRequestCount: 1,
+              createdMockRuleCount: 1,
+              renamedCount: 2,
+              importedNamesPreview: ['Health check (Imported)', 'Latency guard (Imported)'],
+              rejectedReasonSummary: [],
+              duplicateIdentityPolicy: 'new_identity',
+            },
           },
         });
       }
@@ -652,12 +664,142 @@ describe('Workspace request builder authoring shell', () => {
     await user.upload(screen.getByLabelText('Import authored resources'), importFile);
 
     expect(await within(explorer).findByText(/Imported resources received new identities so existing saved resources were not overwritten/i)).toBeInTheDocument();
+    expect(within(explorer).getByText('Created requests: 1')).toBeInTheDocument();
+    expect(within(explorer).getByText('Created mock rules: 1')).toBeInTheDocument();
+    expect(within(explorer).getByText('Renamed on import: 2')).toBeInTheDocument();
+    expect(within(explorer).getByText(/Imported preview: Health check \(Imported\), Latency guard \(Imported\)/i)).toBeInTheDocument();
     expect(await within(explorer).findByRole('button', { name: 'Open Health check (Imported)' })).toBeInTheDocument();
     expect(within(explorer).getByRole('button', { name: 'Open Health check' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('link', { name: /mocks/i }));
     expect(await screen.findByRole('button', { name: 'Open mock rule Latency guard (Imported)' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Open mock rule Latency guard' })).toBeInTheDocument();
+  });
+
+  it('exports a single persisted request bundle without runtime observation artifacts', async () => {
+    const user = userEvent.setup();
+    const createObjectURLSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:single-request-bundle');
+    const revokeObjectURLSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const linkClickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+      const method = init?.method ?? 'GET';
+
+      if (url === '/api/workspaces/local-workspace/requests' && method === 'GET') {
+        return createApiResponse({
+          items: [
+            {
+              id: 'request-health-persisted',
+              workspaceId: 'local-workspace',
+              name: 'Health check',
+              method: 'GET',
+              url: 'http://localhost:5671/health',
+              params: [],
+              headers: [],
+              bodyMode: 'none',
+              bodyText: '',
+              formBody: [],
+              multipartBody: [],
+              auth: {
+                type: 'none',
+                bearerToken: '',
+                basicUsername: '',
+                basicPassword: '',
+                apiKeyName: '',
+                apiKeyValue: '',
+                apiKeyPlacement: 'header',
+              },
+              scripts: {
+                activeStage: 'pre-request',
+                preRequest: '',
+                postResponse: '',
+                tests: '',
+              },
+              summary: 'Saved health request',
+              collectionName: 'Saved Requests',
+              createdAt: '2026-03-20T09:00:00.000Z',
+              updatedAt: '2026-03-20T09:30:00.000Z',
+            },
+          ],
+        });
+      }
+
+      if (url === '/api/requests/request-health-persisted/resource-bundle' && method === 'GET') {
+        return createApiResponse({
+          bundle: {
+            schemaVersion: 1,
+            resourceKind: 'local-request-inspector-authored-resource-bundle',
+            exportedAt: '2026-03-21T12:00:00.000Z',
+            workspaceId: 'local-workspace',
+            requests: [
+              {
+                id: 'request-health-persisted',
+                workspaceId: 'local-workspace',
+                name: 'Health check',
+                method: 'GET',
+                url: 'http://localhost:5671/health',
+                params: [],
+                headers: [],
+                bodyMode: 'none',
+                bodyText: '',
+                formBody: [],
+                multipartBody: [],
+                auth: {
+                  type: 'none',
+                  bearerToken: '',
+                  basicUsername: '',
+                  basicPassword: '',
+                  apiKeyName: '',
+                  apiKeyValue: '',
+                  apiKeyPlacement: 'header',
+                },
+                scripts: {
+                  activeStage: 'pre-request',
+                  preRequest: '',
+                  postResponse: '',
+                  tests: '',
+                },
+                summary: 'Saved health request',
+                collectionName: 'Saved Requests',
+                createdAt: '2026-03-20T09:00:00.000Z',
+                updatedAt: '2026-03-20T09:30:00.000Z',
+              },
+            ],
+            mockRules: [],
+          },
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    const explorer = screen.getByLabelText('Section explorer');
+    await within(explorer).findByRole('button', { name: 'Open Health check' });
+    await user.click(within(explorer).getByRole('button', { name: 'Export Health check' }));
+
+    expect(await within(explorer).findByText(/Exported saved request Health check from the authored resource lane/i)).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith('/api/requests/request-health-persisted/resource-bundle');
+    expect(createObjectURLSpy).toHaveBeenCalledTimes(1);
+    expect(linkClickSpy).toHaveBeenCalledTimes(1);
+    expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:single-request-bundle');
+
+    const exportedBlob = createObjectURLSpy.mock.calls[0]?.[0];
+    expect(exportedBlob).toBeInstanceOf(Blob);
+
+    if (!(exportedBlob instanceof Blob)) {
+      throw new Error('Single-request export did not create a Blob.');
+    }
+
+    const exportedText = await exportedBlob.text();
+    expect(exportedText).toContain('"requests"');
+    expect(exportedText).toContain('"Health check"');
+    expect(exportedText).not.toContain('"mockRules":[{');
+    expect(exportedText).not.toContain('executionHistories');
+    expect(exportedText).not.toContain('capturedRequests');
   });
 });
 

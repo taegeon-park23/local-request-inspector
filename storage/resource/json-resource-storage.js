@@ -1,12 +1,20 @@
 const fs = require('fs');
 const path = require('path');
 const {
+  classifyExactValueCompatibility,
+  classifySchemaVersion,
+  createCompatibilityError,
+  createCompatibilityIssue,
+  createCompatibilityReport,
+} = require('../shared/compatibility');
+const {
   AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION,
   MOCK_RULE_RESOURCE_SCHEMA_VERSION,
   REQUEST_RESOURCE_SCHEMA_VERSION,
   RESOURCE_ENTITY_TYPES,
   RESOURCE_MANIFEST_SCHEMA_VERSION,
   RESOURCE_STORAGE_KIND,
+  STORAGE_COMPATIBILITY_STATES,
 } = require('../shared/constants');
 
 function sortJsonValue(value) {
@@ -45,15 +53,25 @@ function buildResourceManifestPayload() {
   };
 }
 
-function readJsonFileSafely(filePath) {
+function readJsonFileState(filePath) {
   if (!fs.existsSync(filePath)) {
-    return null;
+    return {
+      status: 'missing',
+      value: null,
+    };
   }
 
   try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  } catch {
-    return null;
+    return {
+      status: 'ok',
+      value: JSON.parse(fs.readFileSync(filePath, 'utf8')),
+    };
+  } catch (error) {
+    return {
+      status: 'invalid-json',
+      value: null,
+      error,
+    };
   }
 }
 
@@ -67,11 +85,82 @@ function parseResourceRecordFile(entityType, filePath) {
     wrappedError.code = 'resource_record_invalid_json';
     wrappedError.cause = error;
     wrappedError.details = {
+      compatibilityState: STORAGE_COMPATIBILITY_STATES.MALFORMED_DATA,
       entityType,
       filePath,
     };
     throw wrappedError;
   }
+}
+
+function inspectResourceManifestCompatibility(manifestState) {
+  if (!manifestState || manifestState.status === 'missing') {
+    return createCompatibilityReport([
+      createCompatibilityIssue({
+        state: STORAGE_COMPATIBILITY_STATES.BOOTSTRAP_RECOVERABLE,
+        code: 'resource_manifest_missing',
+        message: 'Resource manifest is missing and can be bootstrapped safely.',
+      }),
+    ]);
+  }
+
+  if (manifestState.status === 'invalid-json') {
+    return createCompatibilityReport([
+      createCompatibilityIssue({
+        state: STORAGE_COMPATIBILITY_STATES.BOOTSTRAP_RECOVERABLE,
+        code: 'resource_manifest_malformed',
+        message: 'Resource manifest is malformed and can be regenerated safely.',
+      }),
+    ]);
+  }
+
+  if (!manifestState.value || typeof manifestState.value !== 'object' || Array.isArray(manifestState.value)) {
+    return createCompatibilityReport([
+      createCompatibilityIssue({
+        state: STORAGE_COMPATIBILITY_STATES.BOOTSTRAP_RECOVERABLE,
+        code: 'resource_manifest_invalid_shape',
+        message: 'Resource manifest shape is invalid and can be regenerated safely.',
+      }),
+    ]);
+  }
+
+  const manifest = manifestState.value;
+  const issues = [
+    classifySchemaVersion({
+      subject: 'Resource manifest schemaVersion',
+      currentVersion: manifest.schemaVersion,
+      supportedVersion: RESOURCE_MANIFEST_SCHEMA_VERSION,
+      missingCode: 'resource_manifest_schema_missing',
+      malformedCode: 'resource_manifest_schema_malformed',
+      migrationNeededCode: 'resource_manifest_migration_needed',
+      unsupportedCode: 'resource_manifest_unsupported_version',
+    }),
+    classifyExactValueCompatibility({
+      subject: 'Resource manifest storageKind',
+      currentValue: manifest.storageKind,
+      expectedValue: RESOURCE_STORAGE_KIND,
+      missingCode: 'resource_manifest_storage_kind_missing',
+      incompatibleCode: 'resource_manifest_storage_kind_incompatible',
+    }),
+  ];
+
+  if (!manifest.recordSchemaVersions || typeof manifest.recordSchemaVersions !== 'object' || Array.isArray(manifest.recordSchemaVersions)) {
+    issues.push(createCompatibilityIssue({
+      state: STORAGE_COMPATIBILITY_STATES.BOOTSTRAP_RECOVERABLE,
+      code: 'resource_manifest_record_versions_missing',
+      message: 'Resource manifest recordSchemaVersions is missing and can be regenerated safely.',
+    }));
+  }
+
+  if (manifest.bundleSchemaVersion == null) {
+    issues.push(createCompatibilityIssue({
+      state: STORAGE_COMPATIBILITY_STATES.BOOTSTRAP_RECOVERABLE,
+      code: 'resource_manifest_bundle_schema_missing',
+      message: 'Resource manifest bundleSchemaVersion is missing and can be regenerated safely.',
+    }));
+  }
+
+  return createCompatibilityReport(issues);
 }
 
 class JsonResourceStorage {
@@ -89,18 +178,22 @@ class JsonResourceStorage {
       });
     }
 
-    const existingManifest = readJsonFileSafely(this.layout.resourceManifestPath);
-    const hasCompatibleManifest = Boolean(
-      existingManifest
-      && existingManifest.schemaVersion === RESOURCE_MANIFEST_SCHEMA_VERSION
-      && existingManifest.storageKind === RESOURCE_STORAGE_KIND,
+    const manifestCompatibility = inspectResourceManifestCompatibility(
+      readJsonFileState(this.layout.resourceManifestPath),
     );
 
-    if (!hasCompatibleManifest) {
+    if (manifestCompatibility.state === STORAGE_COMPATIBILITY_STATES.BOOTSTRAP_RECOVERABLE) {
       fs.writeFileSync(
         this.layout.resourceManifestPath,
         serializeJsonDeterministically(buildResourceManifestPayload()),
       );
+      return;
+    }
+
+    if (manifestCompatibility.state !== STORAGE_COMPATIBILITY_STATES.READ_COMPATIBLE) {
+      throw createCompatibilityError(manifestCompatibility, {
+        manifestPath: this.layout.resourceManifestPath,
+      });
     }
   }
 
@@ -165,4 +258,6 @@ module.exports = {
   JsonResourceStorage,
   buildResourceManifestPayload,
   serializeJsonDeterministically,
+  readJsonFileState,
+  inspectResourceManifestCompatibility,
 };

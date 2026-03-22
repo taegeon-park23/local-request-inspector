@@ -5,8 +5,9 @@ import react from '@vitejs/plugin-react';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   root: 'client',
+  base: command === 'build' ? '/app/' : '/',
   plugins: [react()],
   resolve: {
     alias: {
@@ -17,6 +18,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': 'http://localhost:5671',
+      '/events': 'http://localhost:5671',
     },
   },
-});
+}));

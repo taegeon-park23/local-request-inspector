@@ -2,7 +2,7 @@
 
 - **Purpose:** Define the incremental implementation plan for the React + Vite + TypeScript frontend shell so the team can begin coding with clear route, shell, provider, state, and slice boundaries.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-21
+- **Last Updated:** 2026-03-22
 - **Related Documents:** `task-006-frontend-stack-and-application-shell-decision.md`, `task-011-request-builder-mvp-design.md`, `task-012-script-editor-and-automation-ux-spec.md`, `task-013-mock-engine-rules-spec.md`, `task-014-history-inspector-behavior-spec.md`, `task-016-testing-and-qa-strategy.md`, `task-017-developer-environment-and-tooling-baseline.md`, `../architecture/frontend-workspace-shell-implementation-plan.md`, `../tracking/master-task-board.md`
 - **Status:** done
 - **Priority:** P1
@@ -71,6 +71,9 @@ This task is done when all of the following are true:
 - **Implementation follow-up (2026-03-21):** S20 is now delivered in code with authored resource-lane import/export for saved request definitions and mock rules, a safe create-new-identity import policy, workspace explorer import/export entrypoints, and explicit exclusion of runtime history/captures artifacts from transfer scope.
 - **Implementation follow-up (2026-03-21):** S21 is now delivered in code with explicit resource/runtime schema markers, deterministic resource manifest and JSON serialization helpers, stricter authored-resource bundle validation, runtime metadata compatibility checks, and low-level storage seam tests without changing save/run/history/captures/mocks/import-export behavior.
 - **Implementation follow-up (2026-03-21):** S22 is now delivered in code with bounded repo/tooling cleanup: split lint/test scripts, CommonJS-aware ESLint overrides, normalized Node seam-test entrypoints, `.mjs` Vite/Vitest config files, and a safer Vitest startup path that now fails later at TS transform `esbuild` boundaries instead of config-load `EPERM`.
+- **Implementation follow-up (2026-03-21):** S23 is now delivered in code with single-resource authored bundle export for saved requests and mock rules, clearer import accept/reject summaries, bounded imported-name previews, and continued exclusion of runtime history/captures/execution artifacts from transfer scope.
+- **Implementation follow-up (2026-03-21):** S24 is now delivered in code with explicit compatibility classification helpers for resource manifests, authored-resource bundles, and runtime metadata, plus migration-needed vs unsupported-version seam handling and additional low-level storage tests without adding a destructive migration engine.
+- **Implementation follow-up (2026-03-22):** S25 is now delivered in code with clearer dev/build/serve script taxonomy, a built-shell-aware `/app` fallback and `/api/app-shell-status` seam, `/app` build-base alignment for the React shell, and a lightweight README/check flow that makes local startup and packaging verification easier without changing feature semantics.
 
 ## 7. Key Decisions
 1. The frontend rewrite should proceed **shell-first with incremental feature slices**, not route-first and not all-at-once.
@@ -100,7 +103,7 @@ This task is done when all of the following are true:
 - Secondary reviewers: Backend Lead + QA / Senior Engineer
 
 ## 11. Closure Decision
-T010 can stay closed as **done** at the planning/documentation level, and the linked implementation slices S1-S22 are now landed. The next work should move to optional future import/export extensions, future migration-engine considerations, and packaging/dev-experience improvements rather than widening the shell itself.
+T010 can stay closed as **done** at the planning/documentation level, and the linked implementation slices S1-S25 are now landed. The next work should move to optional future resource tools, bounded packaging polish only if needed, and later migration-engine work rather than widening the shell itself.
 
 
 
