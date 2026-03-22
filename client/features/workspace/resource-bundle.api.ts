@@ -62,6 +62,11 @@ export interface AuthoredResourceBundleImportResult {
   summary: AuthoredResourceBundleImportSummary;
 }
 
+export interface AuthoredResourceBundleImportPreviewResult {
+  rejected: AuthoredResourceBundleImportRejection[];
+  summary: AuthoredResourceBundleImportSummary;
+}
+
 async function parseJsonResponse<TData>(response: Response): Promise<TData> {
   const responseText = await response.text();
   const payload = responseText.length > 0
@@ -154,6 +159,25 @@ export async function importWorkspaceResources(bundleText: string) {
       ...payload.result.summary,
       importedNamesPreview: [...payload.result.summary.importedNamesPreview],
       rejectedReasonSummary: [...payload.result.summary.rejectedReasonSummary],
+    },
+  }));
+}
+
+export async function previewWorkspaceResources(bundleText: string) {
+  const response = await fetch(`/api/workspaces/${DEFAULT_WORKSPACE_ID}/resource-bundle/import-preview`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ bundleText }),
+  });
+
+  return parseJsonResponse<{ preview: AuthoredResourceBundleImportPreviewResult }>(response).then((payload) => ({
+    rejected: [...payload.preview.rejected],
+    summary: {
+      ...payload.preview.summary,
+      importedNamesPreview: [...payload.preview.summary.importedNamesPreview],
+      rejectedReasonSummary: [...payload.preview.summary.rejectedReasonSummary],
     },
   }));
 }

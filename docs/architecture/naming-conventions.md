@@ -1,10 +1,10 @@
-# Naming Conventions Draft
+# Naming Conventions
 
 - **Purpose:** Define stable naming conventions across documentation, schemas, code, APIs, and events for the Local API Workbench.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-18
+- **Last Updated:** 2026-03-22
 - **Related Documents:** `shared-schema.md`, `domain-model.md`, `overview.md`, `../tasks/task-007-shared-domain-schema-and-naming-conventions.md`
-- **Status:** doing
+- **Status:** done
 - **Update Rule:** Update when canonical terminology or naming rules materially change.
 
 ## 1. Naming Principles

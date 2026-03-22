@@ -40,7 +40,7 @@ const lines = [
   'Built client entry: ' + clientIndexPath,
   'Server legacy route: http://localhost:5671/',
   'Server app route: http://localhost:5671/app',
-  'Vite dev route: http://localhost:5173/',
+  'Vite dev route: http://localhost:6173/',
   '',
   'Storage bootstrap: ' + (storageBootstrapped ? 'ready' : 'not bootstrapped yet'),
   'Storage root: ' + layout.rootDir,

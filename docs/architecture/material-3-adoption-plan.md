@@ -3,7 +3,7 @@
 - **Purpose:** Define the safe, incremental adoption path for Material 3 foundations in the current shell-first React workbench without changing feature semantics or state ownership.
 - **Created:** 2026-03-22
 - **Last Updated:** 2026-03-22
-- **Related Documents:** `overview.md`, `frontend-stack-and-shell.md`, `request-builder-mvp.md`, `script-editor-and-automation-ux.md`, `mock-engine-rules-spec.md`, `history-and-inspector-behavior.md`, `frontend-workspace-shell-implementation-plan.md`, `../tasks/task-010-frontend-workspace-shell-implementation-plan.md`
+- **Related Documents:** `overview.md`, `frontend-stack-and-shell.md`, `request-builder-mvp.md`, `script-editor-and-automation-ux.md`, `mock-engine-rules-spec.md`, `history-and-inspector-behavior.md`, `frontend-workspace-shell-implementation-plan.md`, `../tasks/task-010-frontend-workspace-shell-implementation-plan.md`, `../tracking/post-m3-reactivation-guide.md`
 - **Status:** done
 - **Update Rule:** Update when the Material 3 foundation strategy, token model, component mapping, or rollout slices materially change.
 
@@ -161,3 +161,28 @@ Use a **token-first custom implementation**:
 - Prefer CSS-token and shared-primitives work before deeper per-feature markup changes.
 - **Implementation follow-up (2026-03-22):** the initial rollout now includes a Material 3 token layer, dark-default light-ready theme attributes, shell chrome materialization, a top-bar role legend, route-role cues in the navigation rail, and a first-pass reskin across shared primitives, request-builder controls, and observation/management cards without changing feature semantics.
 - **Implementation follow-up (2026-03-22):** a later visual-only pass extends role cues from shell chrome into feature-level list, detail, and contextual-panel headers for Workspace, Captures, History, and Mocks, reinforcing authoring vs observation vs management boundaries without touching state ownership.
+- **Implementation follow-up (2026-03-22):** `M3-F2` is now landed as a CSS-first accessibility/density polish pass that strengthens focus-visible clarity, interaction-state contrast, supporting-container separation, and dense metadata/readiness/list scanability across shared tabs, action/filter groups, detail/meta primitives, and list-row surfaces without changing behavior or ownership.
+
+## 12. Post-S26 Follow-Up Slices
+### M3-F1 — Secondary surfaces and remaining shell affordances
+- Scope: placeholder/secondary routes and remaining shell affordances only.
+- Guardrails: keep the slice visual-only, prefer CSS-first changes, and do not change feature ownership or behavior.
+
+### M3-F2 — Accessibility, contrast, and density polish
+- Scope: focus-visible treatment, supporting-container rhythm, spacing/density, and empty/deferred/disabled readability across shared primitives and list/detail/filter surfaces.
+- Guardrails: use the existing smoke/readiness flows as regression checks and keep all save/run/history/captures/mocks/scripts/replay semantics stable.
+- Status: done on 2026-03-22 as a bounded CSS-only refinement pass; no TSX restructuring was included.
+
+### M3-F3 — Conditional TSX presentation refinement
+- Scope: request-builder and active request observation wrapper hierarchy only.
+- Gate: start only after a non-mutating check confirms the sandbox-refresh issue no longer blocks safe TSX edits in the affected files.
+- Fallback: if the blocker persists, record the slice as blocked/deferred and stop the active sequence after `M3-F2`.
+- Official gate procedure: run `npm run check:m3f3-gate`. The check requires `typecheck`, a real dev-transform probe against `/`, `/app/bootstrap/main.tsx`, `RequestWorkSurfacePlaceholder.tsx`, and `RequestResultPanelPlaceholder.tsx`, plus bounded build/test preflight reporting. Dev-server startup or root HTML alone never clears the gate.
+- Hold-state reference: use `../tracking/post-m3-reactivation-guide.md` before retrying `M3-F3` or promoting any optional post-M3 backlog item.
+- Re-check note (2026-03-22): the gated TSX surfaces remain `client/features/request-builder/components/RequestWorkSurfacePlaceholder.tsx` and `client/features/request-builder/components/RequestResultPanelPlaceholder.tsx`.
+- Validation note (2026-03-22): a direct `npm run check:m3f3-gate` run now reports `gate_clear`; `typecheck`, build preflight, UI test preflight, root HTML, `/app/bootstrap/main.tsx`, and both gated TSX module transforms all pass in this environment.
+- Status: gate cleared / implementation pending on 2026-03-22. `M3-F3` can now be revisited in this environment, but the TSX presentation cleanup itself is not yet landed.
+
+### Explicitly Deferred Beyond This Sequence
+- light theme activation
+- restrained motion refinement

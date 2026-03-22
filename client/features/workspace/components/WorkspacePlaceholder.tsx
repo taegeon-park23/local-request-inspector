@@ -20,7 +20,9 @@ import {
   exportWorkspaceResources,
   importWorkspaceResources,
   type AuthoredResourceBundleExport,
+  type AuthoredResourceBundleImportPreviewResult,
   type AuthoredResourceBundleImportResult,
+  previewWorkspaceResources,
 } from '@client/features/workspace/resource-bundle.api';
 import type { WorkspaceSavedRequestSeed } from '@client/features/workspace/data/workspace-explorer-fixtures';
 import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
@@ -29,6 +31,12 @@ interface ResourceTransferStatus {
   tone: 'success' | 'error' | 'info';
   message: string;
   details?: string[];
+}
+
+interface PendingImportPreview {
+  bundleText: string;
+  fileName: string;
+  result: AuthoredResourceBundleImportPreviewResult;
 }
 
 function resolvePresentationTab(
@@ -48,16 +56,37 @@ function resolvePresentationTab(
 }
 
 function createImportStatusMessage(result: AuthoredResourceBundleImportResult) {
+  const details = createImportSummaryDetails(result.summary);
   const {
     acceptedCount,
     rejectedCount,
+  } = result.summary;
+  const acceptedSummary = `${acceptedCount} authored resource${acceptedCount === 1 ? '' : 's'} imported`;
+
+  if (rejectedCount === 0) {
+    return {
+      tone: 'success' as const,
+      message: `${acceptedSummary}. Imported resources received new identities so existing saved resources were not overwritten.`,
+      details,
+    };
+  }
+
+  return {
+    tone: acceptedCount === 0 ? 'error' as const : 'info' as const,
+    message: `${acceptedSummary}. ${rejectedCount} resource${rejectedCount === 1 ? '' : 's'} were rejected during validation and left unchanged.`,
+    details,
+  };
+}
+
+function createImportSummaryDetails(summary: AuthoredResourceBundleImportResult['summary']) {
+  const {
     createdRequestCount,
     createdMockRuleCount,
     renamedCount,
     importedNamesPreview,
     rejectedReasonSummary,
-  } = result.summary;
-  const acceptedSummary = `${acceptedCount} authored resource${acceptedCount === 1 ? '' : 's'} imported`;
+    rejectedCount,
+  } = summary;
   const details = [
     `Created requests: ${createdRequestCount}`,
     `Created mock rules: ${createdMockRuleCount}`,
@@ -73,17 +102,45 @@ function createImportStatusMessage(result: AuthoredResourceBundleImportResult) {
     details.push(`Rejected reasons: ${rejectedReasonSummary.map((entry) => `${entry.reason} (${entry.count})`).join(' · ')}`);
   }
 
+  return details;
+}
+
+function createPreviewStatusMessage(fileName: string, result: AuthoredResourceBundleImportPreviewResult) {
+  const details = createImportSummaryDetails(result.summary);
+  const {
+    acceptedCount,
+    rejectedCount,
+  } = result.summary;
+
+  if (acceptedCount === 0) {
+    if (rejectedCount === 0) {
+      return {
+        tone: 'error' as const,
+        message: `Preview found no saved-request or mock-rule resources in ${fileName}. Nothing will be written until you choose a bundle with authored resources.`,
+        details,
+      };
+    }
+
+    return {
+      tone: 'error' as const,
+      message: `Preview found no importable authored resources in ${fileName}. ${rejectedCount} resource${rejectedCount === 1 ? '' : 's'} would be rejected and nothing will be written until you choose a different bundle.`,
+      details,
+    };
+  }
+
+  const acceptedSummary = `${acceptedCount} authored resource${acceptedCount === 1 ? '' : 's'}`;
+
   if (rejectedCount === 0) {
     return {
-      tone: 'success' as const,
-      message: `${acceptedSummary}. Imported resources received new identities so existing saved resources were not overwritten.`,
+      tone: 'info' as const,
+      message: `Preview ready for ${fileName}. Confirm import to write ${acceptedSummary} with new identities.`,
       details,
     };
   }
 
   return {
-    tone: acceptedCount === 0 ? 'error' as const : 'info' as const,
-    message: `${acceptedSummary}. ${rejectedCount} resource${rejectedCount === 1 ? '' : 's'} were rejected during validation and left unchanged.`,
+    tone: 'info' as const,
+    message: `Preview ready for ${fileName}. Confirm import to write ${acceptedSummary}; ${rejectedCount} resource${rejectedCount === 1 ? '' : 's'} would still be rejected and left unchanged.`,
     details,
   };
 }
@@ -103,6 +160,7 @@ function createExportStatusMessage(bundle: AuthoredResourceBundleExport, label: 
 export function WorkspacePlaceholder() {
   const queryClient = useQueryClient();
   const [resourceTransferStatus, setResourceTransferStatus] = useState<ResourceTransferStatus | null>(null);
+  const [pendingImportPreview, setPendingImportPreview] = useState<PendingImportPreview | null>(null);
   const tabs = useWorkspaceShellStore((state) => state.tabs);
   const activeTabId = useWorkspaceShellStore((state) => state.activeTabId);
   const selectedExplorerItemId = useWorkspaceShellStore((state) => state.selectedExplorerItemId);
@@ -169,9 +227,31 @@ export function WorkspacePlaceholder() {
     },
   });
 
+  const previewResourcesMutation = useMutation({
+    mutationFn: async ({ bundleText }: { bundleText: string; fileName: string }) => (
+      previewWorkspaceResources(bundleText)
+    ),
+    onSuccess: (result, variables) => {
+      setPendingImportPreview({
+        bundleText: variables.bundleText,
+        fileName: variables.fileName,
+        result,
+      });
+      setResourceTransferStatus(createPreviewStatusMessage(variables.fileName, result));
+    },
+    onError: (error) => {
+      setPendingImportPreview(null);
+      setResourceTransferStatus({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Import preview failed before any authored resources were written.',
+      });
+    },
+  });
+
   const importResourcesMutation = useMutation({
     mutationFn: importWorkspaceResources,
     onSuccess: async (result) => {
+      setPendingImportPreview(null);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: workspaceSavedRequestsQueryKey }),
         queryClient.invalidateQueries({ queryKey: workspaceMockRulesQueryKey }),
@@ -181,7 +261,9 @@ export function WorkspacePlaceholder() {
     onError: (error) => {
       setResourceTransferStatus({
         tone: 'error',
-        message: error instanceof Error ? error.message : 'Resource import failed before any authored resources were stored.',
+        message: error instanceof Error
+          ? error.message
+          : 'Resource import failed before the authored-resource transfer completed. Already-written resources, if any, were not rolled back automatically.',
       });
     },
   });
@@ -247,18 +329,44 @@ export function WorkspacePlaceholder() {
 
   const handleImportResources = async (file: File) => {
     try {
+      setPendingImportPreview(null);
       setResourceTransferStatus({
         tone: 'info',
-        message: `Importing authored resources from ${file.name}. Existing saved resources will keep their identities.`,
+        message: `Previewing authored resources from ${file.name}. No changes will be written until you confirm import.`,
       });
       const bundleText = await file.text();
-      importResourcesMutation.mutate(bundleText);
+      previewResourcesMutation.mutate({
+        bundleText,
+        fileName: file.name,
+      });
     } catch (error) {
+      setPendingImportPreview(null);
       setResourceTransferStatus({
         tone: 'error',
         message: error instanceof Error ? error.message : 'Selected file could not be read for import.',
       });
     }
+  };
+
+  const handleConfirmImportPreview = () => {
+    if (!pendingImportPreview) {
+      return;
+    }
+
+    setResourceTransferStatus({
+      tone: 'info',
+      message: `Importing authored resources from ${pendingImportPreview.fileName}. Preview remains advisory until the write completes.`,
+      details: createImportSummaryDetails(pendingImportPreview.result.summary),
+    });
+    importResourcesMutation.mutate(pendingImportPreview.bundleText);
+  };
+
+  const handleCancelImportPreview = () => {
+    setPendingImportPreview(null);
+    setResourceTransferStatus({
+      tone: 'info',
+      message: 'Import preview cleared. No authored resources were written.',
+    });
   };
 
   return (
@@ -272,10 +380,14 @@ export function WorkspacePlaceholder() {
           onExportRequest={(request) => exportRequestMutation.mutate(request)}
           onExportResources={() => exportResourcesMutation.mutate()}
           onImportResources={handleImportResources}
+          importPreview={pendingImportPreview}
+          onConfirmImportPreview={handleConfirmImportPreview}
+          onCancelImportPreview={handleCancelImportPreview}
           transferStatusMessage={resourceTransferStatus?.message ?? null}
           transferStatusDetails={resourceTransferStatus?.details}
           transferStatusTone={resourceTransferStatus?.tone}
           isExporting={exportResourcesMutation.isPending || exportRequestMutation.isPending}
+          isPreviewingImport={previewResourcesMutation.isPending}
           isImporting={importResourcesMutation.isPending}
         />
       </section>

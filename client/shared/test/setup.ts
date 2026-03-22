@@ -92,6 +92,24 @@ beforeEach(() => {
       });
     }
 
+    if (url === '/api/workspaces/local-workspace/resource-bundle/import-preview' && init?.method === 'POST') {
+      return createApiResponse({
+        preview: {
+          rejected: [],
+          summary: {
+            acceptedCount: 0,
+            rejectedCount: 0,
+            createdRequestCount: 0,
+            createdMockRuleCount: 0,
+            renamedCount: 0,
+            importedNamesPreview: [],
+            rejectedReasonSummary: [],
+            duplicateIdentityPolicy: 'new_identity',
+          },
+        },
+      });
+    }
+
     if (url.startsWith('/api/requests/') && url.endsWith('/resource-bundle') && (!init || !init.method || init.method === 'GET')) {
       const requestId = url.split('/')[3] ?? '';
       return createApiResponse({

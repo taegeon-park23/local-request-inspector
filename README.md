@@ -11,7 +11,7 @@ npm run dev:app
 ```
 
 - Server-backed legacy prototype: `http://localhost:5671/`
-- Vite client shell during development: `http://localhost:5173/`
+- Vite client shell during development: `http://localhost:6173/`
 - Built React shell from the server: `http://localhost:5671/app`
 
 ## Common commands

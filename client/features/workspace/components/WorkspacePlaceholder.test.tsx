@@ -437,7 +437,7 @@ describe('Workspace request builder authoring shell', () => {
     expect(exportedText).not.toContain('capturedRequests');
   });
 
-  it('imports authored resources as new identities and refreshes explorer plus mocks lists', async () => {
+  it('previews authored resources before confirm and then refreshes explorer plus mocks lists after import', async () => {
     const user = userEvent.setup();
     const persistedRequests = [
       {
@@ -511,6 +511,8 @@ describe('Workspace request builder authoring shell', () => {
         sourceLabel: 'Persisted workspace rule',
       },
     ];
+    let previewRequestCount = 0;
+    let importRequestCount = 0;
 
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = getUrl(input);
@@ -524,7 +526,28 @@ describe('Workspace request builder authoring shell', () => {
         return createApiResponse({ items: persistedMockRules });
       }
 
+      if (url === '/api/workspaces/local-workspace/resource-bundle/import-preview' && method === 'POST') {
+        previewRequestCount += 1;
+
+        return createApiResponse({
+          preview: {
+            rejected: [],
+            summary: {
+              acceptedCount: 2,
+              rejectedCount: 0,
+              createdRequestCount: 1,
+              createdMockRuleCount: 1,
+              renamedCount: 2,
+              importedNamesPreview: ['Health check (Imported)', 'Latency guard (Imported)'],
+              rejectedReasonSummary: [],
+              duplicateIdentityPolicy: 'new_identity',
+            },
+          },
+        });
+      }
+
       if (url === '/api/workspaces/local-workspace/resource-bundle/import' && method === 'POST') {
+        importRequestCount += 1;
         const payload = JSON.parse(String(init?.body ?? '{}')) as { bundleText: string };
         const bundle = JSON.parse(payload.bundleText) as {
           requests: Array<{ id: string; name: string; method: string; url: string }>;
@@ -663,17 +686,166 @@ describe('Workspace request builder authoring shell', () => {
 
     await user.upload(screen.getByLabelText('Import authored resources'), importFile);
 
-    expect(await within(explorer).findByText(/Imported resources received new identities so existing saved resources were not overwritten/i)).toBeInTheDocument();
+    expect(await within(explorer).findByText(/Preview ready for authored-resources\.json/i)).toBeInTheDocument();
     expect(within(explorer).getByText('Created requests: 1')).toBeInTheDocument();
     expect(within(explorer).getByText('Created mock rules: 1')).toBeInTheDocument();
     expect(within(explorer).getByText('Renamed on import: 2')).toBeInTheDocument();
     expect(within(explorer).getByText(/Imported preview: Health check \(Imported\), Latency guard \(Imported\)/i)).toBeInTheDocument();
+    expect(within(explorer).getByRole('button', { name: 'Confirm Import' })).toBeInTheDocument();
+    expect(previewRequestCount).toBe(1);
+    expect(importRequestCount).toBe(0);
+    expect(within(explorer).queryByRole('button', { name: 'Open Health check (Imported)' })).not.toBeInTheDocument();
+
+    await user.click(within(explorer).getByRole('button', { name: 'Confirm Import' }));
+
+    expect(await within(explorer).findByText(/Imported resources received new identities so existing saved resources were not overwritten/i)).toBeInTheDocument();
+    expect(importRequestCount).toBe(1);
     expect(await within(explorer).findByRole('button', { name: 'Open Health check (Imported)' })).toBeInTheDocument();
     expect(within(explorer).getByRole('button', { name: 'Open Health check' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('link', { name: /mocks/i }));
     expect(await screen.findByRole('button', { name: 'Open mock rule Latency guard (Imported)' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Open mock rule Latency guard' })).toBeInTheDocument();
+  });
+
+  it('cancels an authored-resource import preview without writing any resources', async () => {
+    const user = userEvent.setup();
+    const persistedRequests = [
+      {
+        id: 'request-existing-health',
+        workspaceId: 'local-workspace',
+        name: 'Health check',
+        method: 'GET',
+        url: 'http://localhost:5671/health',
+        params: [],
+        headers: [],
+        bodyMode: 'none',
+        bodyText: '',
+        formBody: [],
+        multipartBody: [],
+        auth: {
+          type: 'none',
+          bearerToken: '',
+          basicUsername: '',
+          basicPassword: '',
+          apiKeyName: '',
+          apiKeyValue: '',
+          apiKeyPlacement: 'header',
+        },
+        scripts: {
+          activeStage: 'pre-request',
+          preRequest: '',
+          postResponse: '',
+          tests: '',
+        },
+        summary: 'Existing health request',
+        collectionName: 'Saved Requests',
+        createdAt: '2026-03-20T09:00:00.000Z',
+        updatedAt: '2026-03-20T09:30:00.000Z',
+      },
+    ];
+    const persistedMockRules = [
+      {
+        id: 'mock-rule-existing-latency',
+        workspaceId: 'local-workspace',
+        name: 'Latency guard',
+        enabled: true,
+        priority: 300,
+        methodMode: 'exact',
+        method: 'GET',
+        pathMode: 'exact',
+        pathValue: '/health',
+        queryMatchers: [],
+        headerMatchers: [],
+        bodyMatcherMode: 'none',
+        bodyMatcherValue: '',
+        responseStatusCode: 200,
+        responseHeaders: [],
+        responseBody: '{"ok":true}',
+        fixedDelayMs: 0,
+        createdAt: '2026-03-20T09:00:00.000Z',
+        updatedAt: '2026-03-20T09:30:00.000Z',
+        ruleState: 'Enabled',
+        matcherSummary: 'Method exact: GET with Path exact: /health with No query matcher with No header matcher with No body matcher',
+        responseSummary: 'Static 200 response.',
+        methodSummary: 'Method exact: GET',
+        pathSummary: 'Path exact: /health',
+        querySummary: 'No query matcher',
+        headerSummary: 'No header matcher',
+        bodySummary: 'No body matcher',
+        responseStatusSummary: '200 OK',
+        responseHeadersSummary: 'No static response headers',
+        responseBodyPreview: '{"ok":true}',
+        fixedDelayLabel: 'No fixed delay',
+        diagnosticsSummary: 'Rules are evaluated by enabled state first.',
+        deferredSummary: 'Advanced diagnostics remain deferred.',
+        sourceLabel: 'Persisted workspace rule',
+      },
+    ];
+    let importRequestCount = 0;
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+      const method = init?.method ?? 'GET';
+
+      if (url === '/api/workspaces/local-workspace/requests' && method === 'GET') {
+        return createApiResponse({ items: persistedRequests });
+      }
+
+      if (url === '/api/workspaces/local-workspace/mock-rules' && method === 'GET') {
+        return createApiResponse({ items: persistedMockRules });
+      }
+
+      if (url === '/api/workspaces/local-workspace/resource-bundle/import-preview' && method === 'POST') {
+        return createApiResponse({
+          preview: {
+            rejected: [],
+            summary: {
+              acceptedCount: 2,
+              rejectedCount: 0,
+              createdRequestCount: 1,
+              createdMockRuleCount: 1,
+              renamedCount: 2,
+              importedNamesPreview: ['Health check (Imported)', 'Latency guard (Imported)'],
+              rejectedReasonSummary: [],
+              duplicateIdentityPolicy: 'new_identity',
+            },
+          },
+        });
+      }
+
+      if (url === '/api/workspaces/local-workspace/resource-bundle/import' && method === 'POST') {
+        importRequestCount += 1;
+        throw new Error('Import should not run when preview is cancelled.');
+      }
+
+      throw new Error(`Unexpected fetch call: ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    const explorer = screen.getByLabelText('Section explorer');
+    expect(await within(explorer).findByRole('button', { name: 'Open Health check' })).toBeInTheDocument();
+
+    const importFile = new File([JSON.stringify({
+      schemaVersion: 1,
+      resourceKind: 'local-request-inspector-authored-resource-bundle',
+      exportedAt: '2026-03-21T11:59:00.000Z',
+      workspaceId: 'other-workspace',
+      requests: [{ id: 'request-original-health', name: 'Health check' }],
+      mockRules: [{ id: 'mock-rule-original-latency', name: 'Latency guard' }],
+    })], 'authored-resources.json', { type: 'application/json' });
+
+    await user.upload(screen.getByLabelText('Import authored resources'), importFile);
+
+    expect(await within(explorer).findByRole('button', { name: 'Confirm Import' })).toBeInTheDocument();
+    await user.click(within(explorer).getByRole('button', { name: 'Cancel Preview' }));
+
+    expect(await within(explorer).findByText('Import preview cleared. No authored resources were written.')).toBeInTheDocument();
+    expect(importRequestCount).toBe(0);
+    expect(within(explorer).queryByRole('button', { name: 'Confirm Import' })).not.toBeInTheDocument();
+    expect(within(explorer).queryByRole('button', { name: 'Open Health check (Imported)' })).not.toBeInTheDocument();
   });
 
   it('exports a single persisted request bundle without runtime observation artifacts', async () => {

@@ -15,7 +15,7 @@ export default defineConfig(({ command }) => ({
     },
   },
   server: {
-    port: 5173,
+    port: 6173,
     proxy: {
       '/api': 'http://localhost:5671',
       '/events': 'http://localhost:5671',

@@ -2,9 +2,9 @@
 
 - **Purpose:** Define and initialize the first persistence scaffold that turns the T004 hybrid storage decision into concrete repository and directory boundaries.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-18
+- **Last Updated:** 2026-03-22
 - **Related Documents:** `persistence-strategy.md`, `shared-schema.md`, `internal-api-contracts.md`, `script-execution-safety-model.md`, `../tasks/task-009-workspace-persistence-bootstrap.md`
-- **Status:** draft
+- **Status:** done
 - **Update Rule:** Update when bootstrap storage boundaries, migration/version strategy, or local data directory rules materially change.
 
 ## 1. Goal

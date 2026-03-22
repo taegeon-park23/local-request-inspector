@@ -16,6 +16,9 @@ const {
   createImportedResourceName,
 } = require('./storage/resource/authored-resource-bundle');
 const {
+  prepareAuthoredResourceImport,
+} = require('./storage/resource/authored-resource-import-plan');
+const {
   MOCK_RULE_RESOURCE_SCHEMA_VERSION,
   REQUEST_RESOURCE_SCHEMA_VERSION,
   RESOURCE_RECORD_KINDS,
@@ -41,7 +44,7 @@ function getClientShellStatus() {
     clientIndexPath,
     legacyRoute: '/',
     appRoute: '/app',
-    devClientUrl: 'http://localhost:5173/',
+    devClientUrl: 'http://localhost:6173/',
     buildCommand: 'npm run build:client',
     serveCommand: 'npm run serve:app',
     devCommand: 'npm run dev:app',
@@ -401,9 +404,9 @@ function createExecutionObservation({
       typeof responsePreviewLength === 'number' && responsePreviewLength > 0
         ? `${responsePreviewLength} B response body`
         : createPreviewSizeLabel(
-            responseBodyPreview,
-            responseStatus === null ? 'No preview stored' : 'Empty preview',
-          ),
+          responseBodyPreview,
+          responseStatus === null ? 'No preview stored' : 'Empty preview',
+        ),
     responsePreviewPolicy: createResponsePreviewPolicy({
       preview: responseBodyPreview,
       redactionApplied: false,
@@ -2283,47 +2286,6 @@ function createImportedResourceRejection(kind, reason, name) {
   };
 }
 
-function createImportResultSummary({
-  acceptedRequests,
-  acceptedMockRules,
-  rejected,
-  renamedCount,
-}) {
-  const acceptedCount = acceptedRequests.length + acceptedMockRules.length;
-  const rejectedCount = rejected.length;
-  const rejectedReasonCounts = new Map();
-
-  for (const rejection of rejected) {
-    const reason = typeof rejection?.reason === 'string' && rejection.reason.trim().length > 0
-      ? rejection.reason.trim()
-      : 'Import validation failed.';
-    rejectedReasonCounts.set(reason, (rejectedReasonCounts.get(reason) || 0) + 1);
-  }
-
-  return {
-    acceptedCount,
-    rejectedCount,
-    createdRequestCount: acceptedRequests.length,
-    createdMockRuleCount: acceptedMockRules.length,
-    renamedCount,
-    importedNamesPreview: [...acceptedRequests, ...acceptedMockRules]
-      .map((resource) => resource.name)
-      .filter((name) => typeof name === 'string' && name.trim().length > 0)
-      .slice(0, 5),
-    rejectedReasonSummary: [...rejectedReasonCounts.entries()]
-      .map(([reason, count]) => ({ reason, count }))
-      .sort((left, right) => {
-        if (right.count !== left.count) {
-          return right.count - left.count;
-        }
-
-        return left.reason.localeCompare(right.reason);
-      })
-      .slice(0, 5),
-    duplicateIdentityPolicy: 'new_identity',
-  };
-}
-
 function createImportedRequestRecord(input, workspaceId, usedNames) {
   const compatibilityError = validateImportedResourceCompatibility(
     input,
@@ -2386,7 +2348,7 @@ function createImportedMockRuleResource(input, workspaceId, usedNames) {
   const importedName = createImportedResourceName(input.name, usedNames);
 
   return {
-    rule: createMockRuleRecord(
+    record: createMockRuleRecord(
       {
         ...input,
         id: randomUUID(),
@@ -2397,6 +2359,49 @@ function createImportedMockRuleResource(input, workspaceId, usedNames) {
     ),
     renamed: importedName !== String(input.name || '').trim(),
   };
+}
+
+function parseWorkspaceResourceBundleImportRequest(req, res) {
+  const bundleText = req.body?.bundleText;
+
+  if (typeof bundleText !== 'string') {
+    sendError(res, 400, 'resource_bundle_invalid_json', 'Import request must include bundle JSON text.', {
+      workspaceId: req.params.workspaceId,
+    });
+    return null;
+  }
+
+  try {
+    return parseAuthoredResourceBundleText(bundleText);
+  } catch (error) {
+    sendError(
+      res,
+      400,
+      error.code || 'resource_bundle_import_failed',
+      error.message,
+      {
+        workspaceId: req.params.workspaceId,
+        ...(error.details || {}),
+      },
+    );
+    return null;
+  }
+}
+
+function prepareWorkspaceResourceBundleImport(bundle, workspaceId) {
+  const existingRequests = listWorkspaceSavedRequestRecords(workspaceId);
+  const existingMockRules = listWorkspaceMockRuleRecords(workspaceId);
+
+  return prepareAuthoredResourceImport({
+    bundle,
+    workspaceId,
+    existingRequestNames: existingRequests.map((record) => record.name),
+    existingMockRuleNames: existingMockRules.map((record) => record.name),
+    createImportedRequest: createImportedRequestRecord,
+    createImportedMockRule: createImportedMockRuleResource,
+    sortAcceptedRequests: (records) => [...records].sort(compareSavedRequestRecords),
+    sortAcceptedMockRules: (records) => [...records].sort(compareMockRuleRecords),
+  });
 }
 app.get('/api/workspaces/:workspaceId/requests', (req, res) => {
   try {
@@ -2537,84 +2542,29 @@ app.get('/api/mock-rules/:mockRuleId/resource-bundle', (req, res) => {
 });
 
 app.post('/api/workspaces/:workspaceId/resource-bundle/import', (req, res) => {
-  const bundleText = req.body?.bundleText;
+  const bundle = parseWorkspaceResourceBundleImportRequest(req, res);
 
-  if (typeof bundleText !== 'string') {
-    return sendError(res, 400, 'resource_bundle_invalid_json', 'Import request must include bundle JSON text.', {
-      workspaceId: req.params.workspaceId,
-    });
-  }
-
-  let bundle;
-  try {
-    bundle = parseAuthoredResourceBundleText(bundleText);
-  } catch (error) {
-    return sendError(
-      res,
-      400,
-      error.code || 'resource_bundle_import_failed',
-      error.message,
-      {
-        workspaceId: req.params.workspaceId,
-        ...(error.details || {}),
-      },
-    );
+  if (!bundle) {
+    return undefined;
   }
 
   try {
-    const existingRequests = listWorkspaceSavedRequestRecords(req.params.workspaceId);
-    const existingMockRules = listWorkspaceMockRuleRecords(req.params.workspaceId);
-    const usedRequestNames = new Set(existingRequests.map((record) => String(record.name || '').trim().toLowerCase()).filter(Boolean));
-    const usedMockRuleNames = new Set(existingMockRules.map((record) => String(record.name || '').trim().toLowerCase()).filter(Boolean));
-    const acceptedRequests = [];
-    const acceptedMockRules = [];
-    const rejected = [];
-    let renamedCount = 0;
+    const importPlan = prepareWorkspaceResourceBundleImport(bundle, req.params.workspaceId);
 
-    for (const requestResource of bundle.requests) {
-      const importResult = createImportedRequestRecord(requestResource, req.params.workspaceId, usedRequestNames);
-
-      if (importResult.rejection) {
-        rejected.push(importResult.rejection);
-        continue;
-      }
-
-      resourceStorage.save('request', importResult.record);
-      acceptedRequests.push(importResult.record);
-      if (importResult.renamed) {
-        renamedCount += 1;
-      }
+    for (const requestRecord of importPlan.acceptedRequests) {
+      resourceStorage.save('request', requestRecord);
     }
 
-    for (const mockRuleResource of bundle.mockRules) {
-      const importResult = createImportedMockRuleResource(mockRuleResource, req.params.workspaceId, usedMockRuleNames);
-
-      if (importResult.rejection) {
-        rejected.push(importResult.rejection);
-        continue;
-      }
-
-      resourceStorage.save('mock-rule', importResult.rule);
-      acceptedMockRules.push(importResult.rule);
-      if (importResult.renamed) {
-        renamedCount += 1;
-      }
+    for (const mockRuleRecord of importPlan.acceptedMockRules) {
+      resourceStorage.save('mock-rule', mockRuleRecord);
     }
-
-    const sortedAcceptedRequests = acceptedRequests.sort(compareSavedRequestRecords);
-    const sortedAcceptedMockRules = acceptedMockRules.sort(compareMockRuleRecords);
 
     return sendData(res, {
       result: {
-        acceptedRequests: sortedAcceptedRequests,
-        acceptedMockRules: sortedAcceptedMockRules,
-        rejected,
-        summary: createImportResultSummary({
-          acceptedRequests: sortedAcceptedRequests,
-          acceptedMockRules: sortedAcceptedMockRules,
-          rejected,
-          renamedCount,
-        }),
+        acceptedRequests: importPlan.acceptedRequests,
+        acceptedMockRules: importPlan.acceptedMockRules,
+        rejected: importPlan.rejected,
+        summary: importPlan.summary,
       },
     });
   } catch (error) {
@@ -2623,6 +2573,30 @@ app.post('/api/workspaces/:workspaceId/resource-bundle/import', (req, res) => {
     });
   }
 });
+
+app.post('/api/workspaces/:workspaceId/resource-bundle/import-preview', (req, res) => {
+  const bundle = parseWorkspaceResourceBundleImportRequest(req, res);
+
+  if (!bundle) {
+    return undefined;
+  }
+
+  try {
+    const preview = prepareWorkspaceResourceBundleImport(bundle, req.params.workspaceId);
+
+    return sendData(res, {
+      preview: {
+        rejected: preview.rejected,
+        summary: preview.summary,
+      },
+    });
+  } catch (error) {
+    return sendError(res, 500, 'resource_bundle_import_preview_failed', error.message, {
+      workspaceId: req.params.workspaceId,
+    });
+  }
+});
+
 app.get('/api/workspaces/:workspaceId/mock-rules', (req, res) => {
   try {
     const items = listWorkspaceMockRuleRecords(req.params.workspaceId);

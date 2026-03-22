@@ -1,10 +1,10 @@
-# T001 Domain Model Draft
+# T001 Domain Model
 
 - **Purpose:** Define the initial domain vocabulary, entity responsibilities, relationships, and field drafts for the Local API Workbench architecture.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-18
+- **Last Updated:** 2026-03-22
 - **Related Documents:** `overview.md`, `migration-plan.md`, `../prd/overview.md`, `../tasks/task-001-foundation-architecture.md`
-- **Status:** doing
+- **Status:** done
 - **Update Rule:** Update when entity definitions, naming rules, or certainty levels change.
 
 ## 1. Modeling Principles

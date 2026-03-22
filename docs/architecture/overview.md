@@ -2,9 +2,9 @@
 
 - **Purpose:** Define the target architecture, module boundaries, responsibilities, data flow, and security boundaries for evolving Local Request Inspector into a local-first API workbench.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-18
+- **Last Updated:** 2026-03-22
 - **Related Documents:** `../prd/overview.md`, `domain-model.md`, `migration-plan.md`, `../tasks/task-001-foundation-architecture.md`
-- **Status:** doing
+- **Status:** done
 - **Update Rule:** Update when architecture decisions, open questions, or module boundaries materially change.
 
 ## 1. Goal

@@ -1,10 +1,10 @@
-# Shared Schema Draft
+# Shared Schema
 
 - **Purpose:** Define canonical schema concepts, resource categories, entity field drafts, and shared structural rules for the Local API Workbench.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-18
+- **Last Updated:** 2026-03-22
 - **Related Documents:** `overview.md`, `domain-model.md`, `migration-plan.md`, `naming-conventions.md`, `../tasks/task-007-shared-domain-schema-and-naming-conventions.md`
-- **Status:** doing
+- **Status:** done
 - **Update Rule:** Update when entity shapes, relation rules, or resource-category rules materially change.
 
 ## 1. Schema Design Principles

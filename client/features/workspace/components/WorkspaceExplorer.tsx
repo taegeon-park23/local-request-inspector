@@ -1,6 +1,12 @@
 import type { WorkspaceSavedRequestSeed, WorkspaceExplorerNode } from '@client/features/workspace/data/workspace-explorer-fixtures';
+import type { AuthoredResourceBundleImportPreviewResult } from '@client/features/workspace/resource-bundle.api';
 
 type ResourceTransferTone = 'success' | 'error' | 'info';
+
+interface WorkspaceImportPreview {
+  fileName: string;
+  result: AuthoredResourceBundleImportPreviewResult;
+}
 
 interface WorkspaceExplorerProps {
   tree: WorkspaceExplorerNode[];
@@ -10,10 +16,14 @@ interface WorkspaceExplorerProps {
   onExportRequest: (request: WorkspaceSavedRequestSeed) => void;
   onExportResources: () => void;
   onImportResources: (file: File) => void;
+  importPreview: WorkspaceImportPreview | null;
+  onConfirmImportPreview: () => void;
+  onCancelImportPreview: () => void;
   transferStatusMessage: string | null;
   transferStatusDetails?: string[] | undefined;
   transferStatusTone?: ResourceTransferTone | undefined;
   isExporting: boolean;
+  isPreviewingImport: boolean;
   isImporting: boolean;
 }
 
@@ -33,10 +43,14 @@ export function WorkspaceExplorer({
   onExportRequest,
   onExportResources,
   onImportResources,
+  importPreview,
+  onConfirmImportPreview,
+  onCancelImportPreview,
   transferStatusMessage,
   transferStatusDetails = [],
   transferStatusTone = 'info',
   isExporting,
+  isPreviewingImport,
   isImporting,
 }: WorkspaceExplorerProps) {
   return (
@@ -59,17 +73,18 @@ export function WorkspaceExplorer({
             type="button"
             className="workspace-button workspace-button--secondary"
             onClick={onExportResources}
-            disabled={isExporting || isImporting}
+            disabled={isExporting || isPreviewingImport || isImporting}
           >
             {isExporting ? 'Exporting resources' : 'Export Resources'}
           </button>
           <label className="workspace-button workspace-button--secondary workspace-explorer__import-label">
-            <span>{isImporting ? 'Importing resources' : 'Import Resources'}</span>
+            <span>{isPreviewingImport ? 'Previewing import' : isImporting ? 'Importing resources' : 'Import Resources'}</span>
             <input
               aria-label="Import authored resources"
               className="workspace-explorer__file-input"
               type="file"
               accept="application/json,.json"
+              disabled={isPreviewingImport || isImporting}
               onChange={(event) => {
                 const file = event.currentTarget.files?.[0];
                 if (!file) {
@@ -97,6 +112,31 @@ export function WorkspaceExplorer({
                   <li key={detail}>{detail}</li>
                 ))}
               </ul>
+            ) : null}
+            {importPreview ? (
+              <>
+                <p className="workspace-explorer__preview-note">
+                  Preview is advisory only. Workspace changes before confirm can still change imported names or validation outcomes for {importPreview.fileName}.
+                </p>
+                <div className="workspace-explorer__preview-actions">
+                  <button
+                    type="button"
+                    className="workspace-button"
+                    onClick={onConfirmImportPreview}
+                    disabled={isImporting || importPreview.result.summary.acceptedCount === 0}
+                  >
+                    {isImporting ? 'Importing resources' : 'Confirm Import'}
+                  </button>
+                  <button
+                    type="button"
+                    className="workspace-button workspace-button--secondary"
+                    onClick={onCancelImportPreview}
+                    disabled={isImporting}
+                  >
+                    Cancel Preview
+                  </button>
+                </div>
+              </>
             ) : null}
           </div>
         ) : null}

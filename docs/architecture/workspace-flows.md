@@ -2,9 +2,9 @@
 
 - **Purpose:** Document the core user journeys and flow-level state transitions for the local-first API workbench.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-18
+- **Last Updated:** 2026-03-22
 - **Related Documents:** `ux-information-architecture.md`, `internal-api-contracts.md`, `script-execution-safety-model.md`, `../tasks/task-003-ux-information-architecture-and-workspace-flows.md`
-- **Status:** draft
+- **Status:** done
 - **Update Rule:** Update when primary workspace journeys or runtime-view responsibilities materially change.
 
 ## 1. Flow Design Principles
