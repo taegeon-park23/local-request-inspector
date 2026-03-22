@@ -3,7 +3,7 @@
 - **Purpose:** Explain sequencing logic and show which work should happen first, next, and later.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-22
-- **Related Documents:** `master-task-board.md`, `post-m3-reactivation-guide.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`, `../prd/overview.md`, `../tasks/task-001-foundation-architecture.md`
+- **Related Documents:** `master-task-board.md`, `post-m3-reactivation-guide.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`, `../prd/overview.md`, `../tasks/task-001-foundation-architecture.md`
 - **Update Rule:** Update when priorities, dependencies, or milestone assumptions change.
 
 ## Priority Principles
@@ -51,12 +51,13 @@ Tasks are prioritized using these criteria:
 25. **T022** Post-T021 priority review — complete
 26. **T023** Candidate B import migration approach decision — complete
 27. **T024** M3-F3 implementation handoff — complete
-28. **T026** M3-F3 validation environment blocker triage — complete
+28. **T025** Post-M3-F3 closure priority review — complete
+29. **T026** M3-F3 validation environment blocker triage — complete
 
 ### Phase F — Parked Optional Future Work
-29. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule bundle scope
-30. Later write-time migration-engine work if compatibility pressure justifies it
-31. Bounded packaging polish only if a delivery milestone identifies a concrete readiness gap
+30. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule bundle scope
+31. Later write-time migration-engine work if compatibility pressure justifies it
+32. Bounded packaging polish only if a delivery milestone identifies a concrete readiness gap
 
 ## Why T001 Is First
 `T001` is the first execution task because it has the highest leverage:
@@ -96,13 +97,14 @@ Ready to start now:
 - M3-F1 and M3-F2 are landed; keep them closed as visual-only slices
 - `M3-F3` is landed in tracking: its bounded wrapper/CSS patch is applied in code, a user-verified non-sandbox `npm.cmd run test:ui` passed all 47 tests on 2026-03-22, and same-day `npm.cmd run check` passed in this sandbox
 - `T024` remains the canonical exact-patch reference plus local-verification handoff record for what landed in `M3-F3`, so future contributors can resume validation without repeating the scope audit
+- `T025` is landed: the repo now records one current post-M3-F3 closure review, and that review still promotes no new implementation task
 - `T026` is landed: blocker triage confirmed that the current repo already covers the main wrapper/config mitigations, so future sandbox-blocked confirmation should be requested locally rather than reopened as repo-side packaging work
 - T019 is landed: the workspace import surface now performs a server-backed no-write preview before explicit confirm and preserves the existing request/mock bundle import semantics after commit
 - T020 is landed: Candidate B now has a concrete gap inventory and stronger future lane without promoting migration implementation prematurely
 - T021 is landed: Candidate C now has a concrete packaging/startup gap inventory without promoting packaging implementation prematurely
 - T022 is landed: the repo now records an explicit no-promotion decision after T021 instead of implying that another implementation task should follow automatically
 - T023 is landed: the stronger Candidate B authored-resource import lane now has a chosen future approach, but it still lacks one explicit transform contract and remains parked
-- No additional post-M3 implementation task is activated automatically in this pass; use `post-m3-reactivation-guide.md` for later Candidate A/B/C reactivation rules, and request local commands when sandbox-blocked verification is the only missing confirmation
+- No additional post-M3 implementation task is activated automatically in this pass; `T025` confirms that Candidate A remains the strongest parked area but its remaining `/mocks`-local import lane is still too ambiguous, while Candidate B/C also remain parked
 - Use `post-m3-reactivation-guide.md` before promoting any parked post-M3 work so the decision is based on the documented gate and promotion triggers rather than ad hoc momentum
 - Use `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md` before proposing any extra repo-side blocker work so the next contributor starts from the confirmed preflight boundary instead of retrying already-landed runner or Windows-specific mitigations
 

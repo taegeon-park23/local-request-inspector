@@ -3,7 +3,7 @@
 - **Purpose:** Provide the canonical hold-state and reactivation rules for work after `M3-F1` / `M3-F2`, so contributors know when extra local confirmation of `M3-F3` is needed and when an optional backlog item is narrow enough to promote.
 - **Created:** 2026-03-22
 - **Last Updated:** 2026-03-22
-- **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `../architecture/material-3-adoption-plan.md`, `../tasks/task-010-frontend-workspace-shell-implementation-plan.md`, `../tasks/task-015-import-export-strategy.md`, `../tasks/task-018-delivery-milestone-plan.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`
+- **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `../architecture/material-3-adoption-plan.md`, `../tasks/task-010-frontend-workspace-shell-implementation-plan.md`, `../tasks/task-015-import-export-strategy.md`, `../tasks/task-018-delivery-milestone-plan.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`
 - **Status:** active reference
 - **Update Rule:** Update when the official `M3-F3` gate result changes, when an optional backlog item becomes narrowly promotable, or when the current post-M3 hold state changes.
 
@@ -18,6 +18,7 @@
 - ../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md is landed as the bounded Candidate C documentation follow-up for packaging/startup gap inventory.
 - ../tasks/task-022-post-t021-priority-review.md is landed as the latest explicit no-promotion review after the Candidate B/C narrowing passes.
 - ../tasks/task-023-candidate-b-import-migration-approach-decision.md is landed as the latest Candidate B approach-decision pass for the stronger authored-resource import lane.
+- ../tasks/task-025-post-m3-f3-closure-priority-review.md is landed as the latest explicit no-promotion review after `M3-F3` closure.
 - ../tasks/task-026-m3-f3-validation-environment-blocker-triage.md is landed as the blocker-triage follow-up confirming that the remaining official-closeout failure is environment-level rather than one more repo-side wrapper/config gap.
 - `M3-F3` is now treated as landed in tracking; future sandbox-blocked confirmation should use local command handoff rather than reopen the slice as blocked.
 - Use `m3-f3-implementation-handoff.md` when future contributors need local confirmation of the landed wrapper/result-panel patch.
@@ -35,6 +36,7 @@
 - Import uses a create-new-identity policy and keeps runtime artifacts out of scope.
 - One narrow Candidate A follow-up is now landed as `../tasks/task-019-server-backed-pre-import-preview.md`, which adds a server-backed no-write preview plus explicit confirm/cancel flow for the current workspace import surface.
 - Broader Candidate A extensions are still too broad or under-scoped to promote safely without duplicating landed behavior.
+- `T025` confirms that the strongest remaining parked Candidate A lane is still Candidate 2, the `/mocks`-local import entrypoint, but that lane remains too ambiguous because import ownership is still workspace-level and mixed-bundle.
 - Use `candidate-a-promotion-readiness.md` before proposing Candidate A so the gap is measured against the shipped request/mock bundle baseline and current authored-resource boundaries.
 - Use `candidate-a-gap-inventory.md` before proposing Candidate A so the proposal starts from a concrete current gap rather than from generic future-tooling language.
 - Use `candidate-a-narrow-candidate-comparison.md` to understand why Candidate 2 stayed parked and why Candidate 1 won before `T019` was created.
@@ -115,9 +117,10 @@ Before promoting any post-M3 work:
 - Keep `../tasks/task-019-server-backed-pre-import-preview.md` closed as the only landed post-M3 Candidate A follow-up so far.
 - Keep `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md` closed as the Candidate B documentation narrowing step, not as migration-engine implementation.
 - Keep `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md` closed as the Candidate C documentation narrowing step, not as packaging implementation.
-- Keep `../tasks/task-022-post-t021-priority-review.md` closed as the latest no-promotion decision record rather than as a new implementation track.
+- Keep `../tasks/task-022-post-t021-priority-review.md` closed as the historical no-promotion decision from the pre-closure `M3-F3` state.
 - Keep `../tasks/task-023-candidate-b-import-migration-approach-decision.md` closed as the Candidate B approach-decision step, not as migration implementation.
+- Keep `../tasks/task-025-post-m3-f3-closure-priority-review.md` closed as the latest no-promotion decision record after `M3-F3` closure.
 - Keep `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md` closed as the blocker-boundary confirmation step, not as a new packaging or toolchain workstream.
 - Keep Candidate B, Candidate C, and any additional Candidate A work parked until one of the reactivation triggers above is satisfied.
-- Do not create a post-M3-F3 closure review task automatically from sandbox-only verification churn.
+- Do not create another post-M3-F3 closure review task automatically from sandbox-only verification churn; use `T025` as the current closure-state review.
 - Keep the current state as "one narrow next step plus clear parking rules," not "search for anything left to implement."

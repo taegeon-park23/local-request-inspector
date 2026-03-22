@@ -3,7 +3,7 @@
 - **Purpose:** Determine whether the remaining `M3-F3` closeout blocker still hides a repo-side mitigation gap or whether it is now best treated as an environment-level validation restriction.
 - **Created:** 2026-03-22
 - **Last Updated:** 2026-03-22
-- **Related Documents:** `task-018-delivery-milestone-plan.md`, `task-024-m3-f3-implementation-handoff.md`, `../tracking/m3-f3-implementation-handoff.md`, `../tracking/post-m3-reactivation-guide.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`, `../tracking/candidate-c-promotion-readiness.md`, `../tracking/candidate-c-gap-inventory.md`
+- **Related Documents:** `task-018-delivery-milestone-plan.md`, `task-024-m3-f3-implementation-handoff.md`, `task-025-post-m3-f3-closure-priority-review.md`, `../tracking/m3-f3-implementation-handoff.md`, `../tracking/post-m3-reactivation-guide.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`, `../tracking/candidate-c-promotion-readiness.md`, `../tracking/candidate-c-gap-inventory.md`
 - **Status:** done
 - **Priority:** P2
 
@@ -49,7 +49,7 @@ This task is done when all of the following are true:
 2. No new repo-side mitigation task is promoted from this investigation.
 3. Candidate C remains parked because this triage did not reveal one new startup/packaging seam missing from the shipped `check:app`, wrapper, and `/api/app-shell-status` baseline.
 4. Future sandbox-blocked verification should be resolved through local command handoff with expected results, not through repeated repo-side wrapper churn.
-5. `T025` remains unassigned in this pass; sandbox-only verification churn should not create a new post-closeout review task by itself.
+5. `T025` is the separate post-closeout priority review task, and sandbox-only verification churn by itself should not create any additional follow-up review task beyond that closed record.
 
 ## 8. Open Questions
 1. Whether future contributors will still want to rerun the full local command set for extra assurance remains **확실하지 않음**.
