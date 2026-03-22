@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useI18n } from '@client/app/providers/useI18n';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
 import { useRequestCommandStore } from '@client/features/request-builder/state/request-command-store';
 import { DetailViewerSection } from '@client/shared/ui/DetailViewerSection';
@@ -7,30 +8,58 @@ import { KeyValueMetaList } from '@client/shared/ui/KeyValueMetaList';
 import { PanelTabs } from '@client/shared/ui/PanelTabs';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
 
-const resultPanelTabs = [
-  { id: 'response', label: 'Response', icon: 'response' },
-  { id: 'console', label: 'Console', icon: 'console' },
-  { id: 'tests', label: 'Tests', icon: 'tests' },
-  { id: 'execution-info', label: 'Execution Info', icon: 'info' },
-] as const;
-
-type ResultPanelTabId = (typeof resultPanelTabs)[number]['id'];
+type TranslateFn = ReturnType<typeof useI18n>['t'];
+type ResultPanelTabId = 'response' | 'console' | 'tests' | 'execution-info';
 
 interface RequestResultPanelPlaceholderProps {
   activeTab: RequestTabRecord | null;
 }
 
-function getTabSourceCopy(activeTab: RequestTabRecord) {
+function getResultPanelTabs(t: TranslateFn) {
+  return [
+    { id: 'response' as const, label: t('workspaceRoute.resultPanel.tabs.response'), icon: 'response' as const },
+    { id: 'console' as const, label: t('workspaceRoute.resultPanel.tabs.console'), icon: 'console' as const },
+    { id: 'tests' as const, label: t('workspaceRoute.resultPanel.tabs.tests'), icon: 'tests' as const },
+    { id: 'execution-info' as const, label: t('workspaceRoute.resultPanel.tabs.executionInfo'), icon: 'info' as const },
+  ] as const;
+}
+
+function getResultPanelIcon(tabId: ResultPanelTabId) {
+  switch (tabId) {
+    case 'response':
+      return 'response' as const;
+    case 'console':
+      return 'console' as const;
+    case 'tests':
+      return 'tests' as const;
+    case 'execution-info':
+      return 'info' as const;
+  }
+}
+
+function getTabSourceCopy(activeTab: RequestTabRecord, t: TranslateFn) {
   if (activeTab.source === 'replay') {
-    return activeTab.replaySource?.label ?? 'Replay draft';
+    return activeTab.replaySource?.label ?? t('workspaceRoute.resultPanel.source.replayDraft');
   }
 
   if (activeTab.source === 'draft') {
-    return 'Draft request tab';
+    return t('workspaceRoute.resultPanel.source.draftRequestTab');
   }
 
-  const collectionCopy = activeTab.collectionName ? `Saved in ${activeTab.collectionName}` : 'Saved request';
-  return activeTab.folderName ? `${collectionCopy} / ${activeTab.folderName}` : collectionCopy;
+  if (activeTab.collectionName && activeTab.folderName) {
+    return t('workspaceRoute.resultPanel.source.savedInCollectionFolder', {
+      collectionName: activeTab.collectionName,
+      folderName: activeTab.folderName,
+    });
+  }
+
+  if (activeTab.collectionName) {
+    return t('workspaceRoute.resultPanel.source.savedInCollection', {
+      collectionName: activeTab.collectionName,
+    });
+  }
+
+  return t('workspaceRoute.resultPanel.source.savedRequest');
 }
 
 function getTransportOutcomeLabel(responseStatus: number | null) {
@@ -41,31 +70,37 @@ function getTransportOutcomeLabel(responseStatus: number | null) {
   return `HTTP ${responseStatus}`;
 }
 
-function formatObservedPlacement(collectionName?: string, folderName?: string) {
+function formatObservedPlacement(
+  collectionName: string | undefined,
+  folderName: string | undefined,
+  t: TranslateFn,
+) {
   if (!collectionName) {
-    return 'No saved placement recorded';
+    return t('workspaceRoute.resultPanel.linkage.noSavedPlacementRecorded');
   }
 
   return folderName ? `${collectionName} / ${folderName}` : collectionName;
 }
 
 function formatObservedLinkage(
-  requestResourceId?: string | null,
-  sourceLabel?: string,
-  collectionName?: string,
-  folderName?: string,
+  requestResourceId: string | null | undefined,
+  sourceLabel: string | undefined,
+  collectionName: string | undefined,
+  folderName: string | undefined,
+  t: TranslateFn,
 ) {
   if (requestResourceId) {
     return requestResourceId;
   }
 
   if (collectionName) {
+    const placement = formatObservedPlacement(collectionName, folderName, t);
     return sourceLabel === 'Saved request snapshot'
-      ? formatObservedPlacement(collectionName, folderName)
-      : `Draft save placement: ${formatObservedPlacement(collectionName, folderName)}`;
+      ? placement
+      : t('workspaceRoute.resultPanel.linkage.draftSavePlacement', { placement });
   }
 
-  return 'No linked saved request';
+  return t('workspaceRoute.resultPanel.linkage.noLinkedSavedRequest');
 }
 
 function getStageStatus(
@@ -84,24 +119,27 @@ function getStageSummary(
 }
 
 function renderHeaderExecutionStatus(
+  t: TranslateFn,
   runStatus: { status: 'idle' | 'pending' | 'success' | 'error' },
   execution: ReturnType<typeof useRequestCommandStore.getState>['byTabId'][string]['run']['latestExecution'],
 ) {
   if (runStatus.status === 'pending') {
-    return <StatusBadge kind="neutral" value="Running" />;
+    return <StatusBadge kind="neutral" value={t('workspaceRoute.resultPanel.summary.badges.running')} />;
   }
 
   if (execution) {
     return <StatusBadge kind="executionOutcome" value={execution.executionOutcome} />;
   }
 
-  return <StatusBadge kind="neutral" value="No execution yet" />;
+  return <StatusBadge kind="neutral" value={t('workspaceRoute.resultPanel.summary.badges.noExecutionYet')} />;
 }
 
 export function RequestResultPanelPlaceholder({
   activeTab,
 }: RequestResultPanelPlaceholderProps) {
+  const { t } = useI18n();
   const [activeResultTab, setActiveResultTab] = useState<ResultPanelTabId>('response');
+  const resultPanelTabs = getResultPanelTabs(t);
   const commandEntry = useRequestCommandStore((state) =>
     activeTab ? state.byTabId[activeTab.id] : undefined,
   );
@@ -117,56 +155,60 @@ export function RequestResultPanelPlaceholder({
     return (
       <div className="workspace-detail-panel workspace-detail-panel--empty">
         <EmptyStateCallout
-          title="Observation panel is waiting for an active request tab"
-          description="Open a request tab first. The center panel owns authoring state, while Save updates request definitions and Run sends bounded observation here without turning this panel into editable state."
+          title={t('workspaceRoute.resultPanel.empty.waitingTitle')}
+          description={t('workspaceRoute.resultPanel.empty.waitingDescription')}
         />
       </div>
     );
   }
 
-  const activeResultTabLabel = resultPanelTabs.find((tab) => tab.id === activeResultTab)?.label ?? 'Response';
+  const activeResultTabLabel = resultPanelTabs.find((tab) => tab.id === activeResultTab)?.label
+    ?? t('workspaceRoute.resultPanel.tabs.response');
 
   return (
     <div className="workspace-detail-panel">
       <header className="workspace-detail-panel__header">
         <div className="workspace-detail-panel__header-copy">
-          <p className="section-placeholder__eyebrow">Observation surface</p>
-          <h2>Observation for {activeTab.title}</h2>
-          <p>
-            This right-hand panel is reserved for run observation only. Save never updates it, and request authoring stays in the center authoring surface.
-          </p>
+          <p className="section-placeholder__eyebrow">{t('workspaceRoute.resultPanel.header.eyebrow')}</p>
+          <h2>{t('workspaceRoute.resultPanel.header.title', { title: activeTab.title })}</h2>
+          <p>{t('workspaceRoute.resultPanel.header.description')}</p>
           <div className="workspace-detail-panel__header-meta request-work-surface__badges">
             <span className={activeTab.source === 'replay' ? 'workspace-chip workspace-chip--replay' : 'workspace-chip'}>
-              {getTabSourceCopy(activeTab)}
+              {getTabSourceCopy(activeTab, t)}
             </span>
             <span className="workspace-chip workspace-chip--secondary">{activeResultTabLabel}</span>
-            {renderHeaderExecutionStatus(runStatus, execution)}
+            {renderHeaderExecutionStatus(t, runStatus, execution)}
           </div>
         </div>
       </header>
 
       <PanelTabs
-        ariaLabel="Result panel tabs"
+        ariaLabel={t('workspaceRoute.resultPanel.tabs.ariaLabel')}
         tabs={resultPanelTabs}
         activeTab={activeResultTab}
         onChange={setActiveResultTab}
       />
 
       <DetailViewerSection
-        icon={activeResultTab === 'response' ? 'response' : activeResultTab === 'console' ? 'console' : activeResultTab === 'tests' ? 'tests' : 'info'}
-        title={`${activeResultTabLabel} summary`}
-        description="Observation stays separate from the editable request draft. Run creates execution output here without clearing unsaved changes in the center authoring panel."
+        icon={getResultPanelIcon(activeResultTab)}
+        title={t('workspaceRoute.resultPanel.summary.title', { tabLabel: activeResultTabLabel })}
+        description={t('workspaceRoute.resultPanel.summary.description')}
         actions={
           execution ? <StatusBadge kind="executionOutcome" value={execution.executionOutcome} /> : null
         }
       >
         <KeyValueMetaList
           items={[
-            { label: 'Active request', value: activeTab.title },
-            { label: 'Method', value: activeTab.methodLabel },
-            { label: 'Tab source', value: getTabSourceCopy(activeTab) },
-            { label: 'Visible slot', value: activeResultTabLabel },
-            { label: 'Run lane', value: runStatus.status === 'pending' ? 'Execution in progress' : runStatus.message ?? 'No execution yet' },
+            { label: t('workspaceRoute.resultPanel.summary.labels.activeRequest'), value: activeTab.title },
+            { label: t('workspaceRoute.resultPanel.summary.labels.method'), value: activeTab.methodLabel },
+            { label: t('workspaceRoute.resultPanel.summary.labels.tabSource'), value: getTabSourceCopy(activeTab, t) },
+            { label: t('workspaceRoute.resultPanel.summary.labels.visibleSlot'), value: activeResultTabLabel },
+            {
+              label: t('workspaceRoute.resultPanel.summary.labels.runLane'),
+              value: runStatus.status === 'pending'
+                ? t('workspaceRoute.resultPanel.summary.values.executionInProgress')
+                : runStatus.message ?? t('workspaceRoute.resultPanel.summary.values.noExecutionYet'),
+            },
           ]}
         />
       </DetailViewerSection>
@@ -174,14 +216,14 @@ export function RequestResultPanelPlaceholder({
       {activeResultTab === 'response' ? (
         <DetailViewerSection
           icon="response"
-          title="Response detail"
-          description="Response detail belongs to the latest run for this active tab only. Preview stays bounded here, and truncation or redaction notes stay explicit instead of expanding the payload surface."
+          title={t('workspaceRoute.resultPanel.response.title')}
+          description={t('workspaceRoute.resultPanel.response.description')}
           tone="muted"
         >
           {runStatus.status === 'pending' && !execution ? (
             <EmptyStateCallout
-              title="Running request"
-              description="The request is in flight. Response headers, bounded preview size, and body preview will appear here when the current run settles."
+              title={t('workspaceRoute.resultPanel.response.runningTitle')}
+              description={t('workspaceRoute.resultPanel.response.runningDescription')}
             />
           ) : execution ? (
             <div className="workspace-detail-panel__result-stack">
@@ -192,24 +234,24 @@ export function RequestResultPanelPlaceholder({
                 </div>
                 <KeyValueMetaList
                   items={[
-                    { label: 'HTTP status', value: execution.responseStatusLabel },
-                    { label: 'Duration', value: `${execution.durationMs} ms` },
-                    { label: 'Preview size', value: execution.responsePreviewSizeLabel ?? 'No preview stored' },
-                    { label: 'Preview policy', value: execution.responsePreviewPolicy ?? 'Preview is bounded before richer diagnostics and raw payload inspection are added.' },
-                    { label: 'Headers summary', value: execution.responseHeadersSummary },
-                    { label: 'Body hint', value: execution.responseBodyHint },
+                    { label: t('workspaceRoute.resultPanel.response.labels.httpStatus'), value: execution.responseStatusLabel },
+                    { label: t('workspaceRoute.resultPanel.response.labels.duration'), value: t('workspaceRoute.resultPanel.common.durationMs', { durationMs: execution.durationMs }) },
+                    { label: t('workspaceRoute.resultPanel.response.labels.previewSize'), value: execution.responsePreviewSizeLabel ?? t('workspaceRoute.resultPanel.response.values.noPreviewStored') },
+                    { label: t('workspaceRoute.resultPanel.response.labels.previewPolicy'), value: execution.responsePreviewPolicy ?? t('workspaceRoute.resultPanel.response.values.previewPolicyFallback') },
+                    { label: t('workspaceRoute.resultPanel.response.labels.headersSummary'), value: execution.responseHeadersSummary },
+                    { label: t('workspaceRoute.resultPanel.response.labels.bodyHint'), value: execution.responseBodyHint },
                   ]}
                 />
               </div>
               <div className="workspace-detail-panel__result-support">
-                <p className="shared-readiness-note">{execution.responsePreviewPolicy ?? 'Preview stays bounded in this observation surface while richer inspection remains deferred.'}</p>
-                <pre className="history-preview-block" data-testid="request-response-preview">{execution.responseBodyPreview || 'No response body preview was captured.'}</pre>
+                <p className="shared-readiness-note">{execution.responsePreviewPolicy ?? t('workspaceRoute.resultPanel.response.values.previewSupportFallback')}</p>
+                <pre className="history-preview-block" data-testid="request-response-preview">{execution.responseBodyPreview || t('workspaceRoute.resultPanel.response.values.noBodyPreview')}</pre>
               </div>
             </div>
           ) : (
             <EmptyStateCallout
-              title="Run this request to populate Response"
-              description="Save only updates the request definition. Use Run to execute the current draft and load response status, bounded preview metadata, headers, and body preview here."
+              title={t('workspaceRoute.resultPanel.response.empty.title')}
+              description={t('workspaceRoute.resultPanel.response.empty.description')}
             />
           )}
         </DetailViewerSection>
@@ -218,19 +260,19 @@ export function RequestResultPanelPlaceholder({
       {activeResultTab === 'console' ? (
         <DetailViewerSection
           icon="console"
-          title="Console detail"
-          description="Console stays observation-only and shows bounded stage-aware output when scripts run. Missing entries are explained explicitly instead of being fabricated."
+          title={t('workspaceRoute.resultPanel.console.title')}
+          description={t('workspaceRoute.resultPanel.console.description')}
           tone="muted"
         >
           {execution ? (
             <>
               <KeyValueMetaList
                 items={[
-                  { label: 'Log lines', value: execution.consoleLogCount ?? execution.consoleEntries.length },
-                  { label: 'Warnings', value: execution.consoleWarningCount ?? 0 },
-                  { label: 'Pre-request stage', value: getStageStatus(executionStageSummaries, 'pre-request') },
-                  { label: 'Post-response stage', value: getStageStatus(executionStageSummaries, 'post-response') },
-                  { label: 'Summary', value: execution.consoleSummary },
+                  { label: t('workspaceRoute.resultPanel.console.labels.logLines'), value: execution.consoleLogCount ?? execution.consoleEntries.length },
+                  { label: t('workspaceRoute.resultPanel.console.labels.warnings'), value: execution.consoleWarningCount ?? 0 },
+                  { label: t('workspaceRoute.resultPanel.console.labels.preRequestStage'), value: getStageStatus(executionStageSummaries, 'pre-request') },
+                  { label: t('workspaceRoute.resultPanel.console.labels.postResponseStage'), value: getStageStatus(executionStageSummaries, 'post-response') },
+                  { label: t('workspaceRoute.resultPanel.console.labels.summary'), value: execution.consoleSummary },
                 ]}
               />
               {execution.consoleEntries.length > 0 ? (
@@ -241,15 +283,15 @@ export function RequestResultPanelPlaceholder({
                 </ul>
               ) : (
                 <EmptyStateCallout
-                  title="No console entries for this run"
+                  title={t('workspaceRoute.resultPanel.console.noEntriesTitle')}
                   description={getStageSummary(executionStageSummaries, 'post-response', execution.consoleSummary)}
                 />
               )}
             </>
           ) : (
             <EmptyStateCallout
-              title="Console waits for an execution"
-              description="Run the current request to associate bounded pre-request and post-response console summaries with this tab. Empty stages stay explicitly explained here."
+              title={t('workspaceRoute.resultPanel.console.empty.title')}
+              description={t('workspaceRoute.resultPanel.console.empty.description')}
             />
           )}
         </DetailViewerSection>
@@ -258,17 +300,17 @@ export function RequestResultPanelPlaceholder({
       {activeResultTab === 'tests' ? (
         <DetailViewerSection
           icon="tests"
-          title="Tests detail"
-          description="Tests stays observation-only and shows bounded assertion summaries from the tests stage when present. Missing assertions stay explicit instead of being invented."
+          title={t('workspaceRoute.resultPanel.tests.title')}
+          description={t('workspaceRoute.resultPanel.tests.description')}
           tone="muted"
         >
           {execution ? (
             <>
               <KeyValueMetaList
                 items={[
-                  { label: 'Summary', value: execution.testsSummary },
-                  { label: 'Entries', value: execution.testEntries.length },
-                  { label: 'Tests stage', value: getStageStatus(executionStageSummaries, 'tests') },
+                  { label: t('workspaceRoute.resultPanel.tests.labels.summary'), value: execution.testsSummary },
+                  { label: t('workspaceRoute.resultPanel.tests.labels.entries'), value: execution.testEntries.length },
+                  { label: t('workspaceRoute.resultPanel.tests.labels.testsStage'), value: getStageStatus(executionStageSummaries, 'tests') },
                 ]}
               />
               {execution.testEntries.length > 0 ? (
@@ -279,15 +321,15 @@ export function RequestResultPanelPlaceholder({
                 </ul>
               ) : (
                 <EmptyStateCallout
-                  title="No tests ran for this execution"
+                  title={t('workspaceRoute.resultPanel.tests.noEntriesTitle')}
                   description={getStageSummary(executionStageSummaries, 'tests', execution.testsSummary)}
                 />
               )}
             </>
           ) : (
             <EmptyStateCallout
-              title="Tests wait for an execution"
-              description="Run the current request to record bounded assertion summaries. If no tests script exists, the tests stage is skipped and explained here."
+              title={t('workspaceRoute.resultPanel.tests.empty.title')}
+              description={t('workspaceRoute.resultPanel.tests.empty.description')}
             />
           )}
         </DetailViewerSection>
@@ -296,14 +338,14 @@ export function RequestResultPanelPlaceholder({
       {activeResultTab === 'execution-info' ? (
         <DetailViewerSection
           icon="info"
-          title="Execution info"
-          description="Execution metadata belongs to the latest run and stays separate from saved request definitions, inbound captures, and persisted history."
+          title={t('workspaceRoute.resultPanel.executionInfo.title')}
+          description={t('workspaceRoute.resultPanel.executionInfo.description')}
           tone="muted"
         >
           {runStatus.status === 'pending' && !execution ? (
             <EmptyStateCallout
-              title="Execution is starting"
-              description="A local run id, timing data, and a bounded request snapshot summary will appear here once the current request settles."
+              title={t('workspaceRoute.resultPanel.executionInfo.startingTitle')}
+              description={t('workspaceRoute.resultPanel.executionInfo.startingDescription')}
             />
           ) : execution ? (
             <div className="workspace-detail-panel__result-stack">
@@ -314,23 +356,35 @@ export function RequestResultPanelPlaceholder({
                 </div>
                 <KeyValueMetaList
                   items={[
-                    { label: 'Execution id', value: execution.executionId },
-                    { label: 'Started at', value: execution.startedAt },
-                    { label: 'Completed at', value: execution.completedAt },
-                    { label: 'Outcome', value: execution.executionOutcome },
-                    { label: 'Snapshot source', value: execution.requestSourceLabel ?? 'Runtime request snapshot' },
-                    { label: 'Linked request', value: formatObservedLinkage(execution.requestResourceId, execution.requestSourceLabel, execution.requestCollectionName, execution.requestFolderName) },
-                    { label: 'Placement', value: formatObservedPlacement(execution.requestCollectionName, execution.requestFolderName) },
-                    { label: 'Environment', value: execution.environmentLabel ?? 'No environment selected' },
-                    { label: 'Error code', value: execution.errorCode ?? 'No execution error code' },
-                    { label: 'Error summary', value: execution.errorSummary ?? 'No execution error was reported.' },
-                    { label: 'Request input', value: execution.requestInputSummary ?? 'Request snapshot summary was not returned.' },
+                    { label: t('workspaceRoute.resultPanel.executionInfo.labels.executionId'), value: execution.executionId },
+                    { label: t('workspaceRoute.resultPanel.executionInfo.labels.startedAt'), value: execution.startedAt },
+                    { label: t('workspaceRoute.resultPanel.executionInfo.labels.completedAt'), value: execution.completedAt },
+                    { label: t('workspaceRoute.resultPanel.executionInfo.labels.outcome'), value: execution.executionOutcome },
+                    { label: t('workspaceRoute.resultPanel.executionInfo.labels.snapshotSource'), value: execution.requestSourceLabel ?? t('workspaceRoute.resultPanel.executionInfo.values.runtimeRequestSnapshot') },
+                    {
+                      label: t('workspaceRoute.resultPanel.executionInfo.labels.linkedRequest'),
+                      value: formatObservedLinkage(
+                        execution.requestResourceId,
+                        execution.requestSourceLabel,
+                        execution.requestCollectionName,
+                        execution.requestFolderName,
+                        t,
+                      ),
+                    },
+                    {
+                      label: t('workspaceRoute.resultPanel.executionInfo.labels.placement'),
+                      value: formatObservedPlacement(execution.requestCollectionName, execution.requestFolderName, t),
+                    },
+                    { label: t('workspaceRoute.resultPanel.executionInfo.labels.environment'), value: execution.environmentLabel ?? t('workspaceRoute.resultPanel.executionInfo.values.noEnvironmentSelected') },
+                    { label: t('workspaceRoute.resultPanel.executionInfo.labels.errorCode'), value: execution.errorCode ?? t('workspaceRoute.resultPanel.executionInfo.values.noExecutionErrorCode') },
+                    { label: t('workspaceRoute.resultPanel.executionInfo.labels.errorSummary'), value: execution.errorSummary ?? t('workspaceRoute.resultPanel.executionInfo.values.noExecutionErrorSummary') },
+                    { label: t('workspaceRoute.resultPanel.executionInfo.labels.requestInput'), value: execution.requestInputSummary ?? t('workspaceRoute.resultPanel.executionInfo.values.requestSnapshotSummaryMissing') },
                   ]}
                 />
               </div>
               <div className="workspace-detail-panel__result-support">
                 {executionStageSummaries.length > 0 ? (
-                  <ul className="history-preview-list" aria-label="Execution stage summary">
+                  <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.executionInfo.executionStageSummaryAriaLabel')}>
                     {executionStageSummaries.map((summary) => (
                       <li key={`${execution.executionId}-${summary.stageId}`}>
                         <strong>{summary.label}</strong>: {summary.status} - {summary.summary}
@@ -344,8 +398,8 @@ export function RequestResultPanelPlaceholder({
             </div>
           ) : (
             <EmptyStateCallout
-              title="No execution info yet"
-              description="Use Run to create a fresh execution record for this tab. Save success does not populate execution info in this observation panel."
+              title={t('workspaceRoute.resultPanel.executionInfo.empty.title')}
+              description={t('workspaceRoute.resultPanel.executionInfo.empty.description')}
             />
           )}
         </DetailViewerSection>

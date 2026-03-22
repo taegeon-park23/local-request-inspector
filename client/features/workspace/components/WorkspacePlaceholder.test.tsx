@@ -1018,5 +1018,21 @@ describe('Workspace request builder authoring shell', () => {
     expect(exportedText).not.toContain('executionHistories');
     expect(exportedText).not.toContain('capturedRequests');
   });
-});
+  it('renders result-panel copy in Korean without changing the English-default contracts', async () => {
+    const user = userEvent.setup();
+    renderApp(<AppRouter />, { initialLocale: 'ko' });
 
+    const explorer = screen.getByLabelText('Section explorer');
+    await user.click(within(explorer).getByRole('button', { name: '새 요청' }));
+
+    const detailPanel = screen.getByLabelText('Contextual detail panel');
+    expect(within(detailPanel).getByRole('heading', { name: 'Untitled Request에 대한 관측' })).toBeInTheDocument();
+    expect(within(detailPanel).getByRole('tablist', { name: '결과 패널 탭' })).toBeInTheDocument();
+    expect(within(detailPanel).getByRole('tab', { name: '응답' })).toBeInTheDocument();
+    expect(within(detailPanel).getByRole('heading', { name: '응답 요약' })).toBeInTheDocument();
+    expect(within(detailPanel).getByText('응답을 채우려면 이 요청을 실행하세요')).toBeInTheDocument();
+
+    await user.click(within(detailPanel).getByRole('tab', { name: '실행 정보' }));
+    expect(within(detailPanel).getByText('아직 실행 정보가 없습니다')).toBeInTheDocument();
+  });
+});

@@ -290,6 +290,158 @@ export const workspaceRouteMessagesEn = {
           'Reusable script management, richer diagnostics, broader capability surfaces, and Monaco or intellisense expansion remain explicitly later-slice work.',
       },
     },
+    resultPanel: {
+      tabs: {
+        ariaLabel: 'Result panel tabs',
+        response: 'Response',
+        console: 'Console',
+        tests: 'Tests',
+        executionInfo: 'Execution Info',
+      },
+      empty: {
+        waitingTitle: 'Observation panel is waiting for an active request tab',
+        waitingDescription:
+          'Open a request tab first. The center panel owns authoring state, while Save updates request definitions and Run sends bounded observation here without turning this panel into editable state.',
+      },
+      header: {
+        eyebrow: 'Observation surface',
+        title: 'Observation for {title}',
+        description:
+          'This right-hand panel is reserved for run observation only. Save never updates it, and request authoring stays in the center authoring surface.',
+      },
+      source: {
+        replayDraft: 'Replay draft',
+        draftRequestTab: 'Draft request tab',
+        savedRequest: 'Saved request',
+        savedInCollection: 'Saved in {collectionName}',
+        savedInCollectionFolder: 'Saved in {collectionName} / {folderName}',
+      },
+      linkage: {
+        noSavedPlacementRecorded: 'No saved placement recorded',
+        draftSavePlacement: 'Draft save placement: {placement}',
+        noLinkedSavedRequest: 'No linked saved request',
+      },
+      common: {
+        durationMs: '{durationMs} ms',
+      },
+      summary: {
+        title: '{tabLabel} summary',
+        description:
+          'Observation stays separate from the editable request draft. Run creates execution output here without clearing unsaved changes in the center authoring panel.',
+        badges: {
+          running: 'Running',
+          noExecutionYet: 'No execution yet',
+        },
+        labels: {
+          activeRequest: 'Active request',
+          method: 'Method',
+          tabSource: 'Tab source',
+          visibleSlot: 'Visible slot',
+          runLane: 'Run lane',
+        },
+        values: {
+          executionInProgress: 'Execution in progress',
+          noExecutionYet: 'No execution yet',
+        },
+      },
+      response: {
+        title: 'Response detail',
+        description:
+          'Response detail belongs to the latest run for this active tab only. Preview stays bounded here, and truncation or redaction notes stay explicit instead of expanding the payload surface.',
+        runningTitle: 'Running request',
+        runningDescription:
+          'The request is in flight. Response headers, bounded preview size, and body preview will appear here when the current run settles.',
+        labels: {
+          httpStatus: 'HTTP status',
+          duration: 'Duration',
+          previewSize: 'Preview size',
+          previewPolicy: 'Preview policy',
+          headersSummary: 'Headers summary',
+          bodyHint: 'Body hint',
+        },
+        values: {
+          noPreviewStored: 'No preview stored',
+          previewPolicyFallback:
+            'Preview is bounded before richer diagnostics and raw payload inspection are added.',
+          previewSupportFallback:
+            'Preview stays bounded in this observation surface while richer inspection remains deferred.',
+          noBodyPreview: 'No response body preview was captured.',
+        },
+        empty: {
+          title: 'Run this request to populate Response',
+          description:
+            'Save only updates the request definition. Use Run to execute the current draft and load response status, bounded preview metadata, headers, and body preview here.',
+        },
+      },
+      console: {
+        title: 'Console detail',
+        description:
+          'Console stays observation-only and shows bounded stage-aware output when scripts run. Missing entries are explained explicitly instead of being fabricated.',
+        labels: {
+          logLines: 'Log lines',
+          warnings: 'Warnings',
+          preRequestStage: 'Pre-request stage',
+          postResponseStage: 'Post-response stage',
+          summary: 'Summary',
+        },
+        noEntriesTitle: 'No console entries for this run',
+        empty: {
+          title: 'Console waits for an execution',
+          description:
+            'Run the current request to associate bounded pre-request and post-response console summaries with this tab. Empty stages stay explicitly explained here.',
+        },
+      },
+      tests: {
+        title: 'Tests detail',
+        description:
+          'Tests stays observation-only and shows bounded assertion summaries from the tests stage when present. Missing assertions stay explicit instead of being invented.',
+        labels: {
+          summary: 'Summary',
+          entries: 'Entries',
+          testsStage: 'Tests stage',
+        },
+        noEntriesTitle: 'No tests ran for this execution',
+        empty: {
+          title: 'Tests wait for an execution',
+          description:
+            'Run the current request to record bounded assertion summaries. If no tests script exists, the tests stage is skipped and explained here.',
+        },
+      },
+      executionInfo: {
+        title: 'Execution info',
+        description:
+          'Execution metadata belongs to the latest run and stays separate from saved request definitions, inbound captures, and persisted history.',
+        startingTitle: 'Execution is starting',
+        startingDescription:
+          'A local run id, timing data, and a bounded request snapshot summary will appear here once the current request settles.',
+        executionStageSummaryAriaLabel: 'Execution stage summary',
+        labels: {
+          executionId: 'Execution id',
+          startedAt: 'Started at',
+          completedAt: 'Completed at',
+          outcome: 'Outcome',
+          snapshotSource: 'Snapshot source',
+          linkedRequest: 'Linked request',
+          placement: 'Placement',
+          environment: 'Environment',
+          errorCode: 'Error code',
+          errorSummary: 'Error summary',
+          requestInput: 'Request input',
+        },
+        values: {
+          runtimeRequestSnapshot: 'Runtime request snapshot',
+          noEnvironmentSelected: 'No environment selected',
+          noExecutionErrorCode: 'No execution error code',
+          noExecutionErrorSummary: 'No execution error was reported.',
+          requestSnapshotSummaryMissing: 'Request snapshot summary was not returned.',
+        },
+        empty: {
+          title: 'No execution info yet',
+          description:
+            'Use Run to create a fresh execution record for this tab. Save success does not populate execution info in this observation panel.',
+        },
+      },
+    },
   },
 } as const;
 
@@ -588,6 +740,158 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         title: '나중 slice에서 처리',
         description:
           '재사용 가능한 스크립트 관리, 더 풍부한 진단, 더 넓은 capability surface, Monaco나 intellisense 확장은 명시적으로 이후 slice 작업으로 남아 있습니다.',
+      },
+    },
+    resultPanel: {
+      tabs: {
+        ariaLabel: '결과 패널 탭',
+        response: '응답',
+        console: '콘솔',
+        tests: '테스트',
+        executionInfo: '실행 정보',
+      },
+      empty: {
+        waitingTitle: '활성 요청 탭을 기다리는 관측 패널',
+        waitingDescription:
+          '먼저 요청 탭을 여세요. 가운데 패널은 작성 상태를 소유하고, Save는 요청 정의를 갱신하며, Run은 이 패널을 편집 상태로 바꾸지 않은 채 제한된 관측 결과만 여기로 보냅니다.',
+      },
+      header: {
+        eyebrow: '관측 surface',
+        title: '{title}에 대한 관측',
+        description:
+          '오른쪽 패널은 실행 관측 전용입니다. Save는 이 패널을 갱신하지 않으며, 요청 작성은 가운데 작성 surface에 남습니다.',
+      },
+      source: {
+        replayDraft: '리플레이 draft',
+        draftRequestTab: 'draft 요청 탭',
+        savedRequest: '저장된 요청',
+        savedInCollection: '{collectionName}에 저장됨',
+        savedInCollectionFolder: '{collectionName} / {folderName}에 저장됨',
+      },
+      linkage: {
+        noSavedPlacementRecorded: '저장 위치 기록이 없습니다',
+        draftSavePlacement: 'draft 저장 위치: {placement}',
+        noLinkedSavedRequest: '연결된 저장 요청이 없습니다',
+      },
+      common: {
+        durationMs: '{durationMs}ms',
+      },
+      summary: {
+        title: '{tabLabel} 요약',
+        description:
+          '관측 결과는 편집 가능한 요청 draft와 분리되어 유지됩니다. Run은 가운데 작성 패널의 미저장 변경을 지우지 않고 이곳에 실행 결과를 만듭니다.',
+        badges: {
+          running: '실행 중',
+          noExecutionYet: '아직 실행 없음',
+        },
+        labels: {
+          activeRequest: '활성 요청',
+          method: '메서드',
+          tabSource: '탭 출처',
+          visibleSlot: '표시 슬롯',
+          runLane: '실행 레인',
+        },
+        values: {
+          executionInProgress: '실행이 진행 중입니다',
+          noExecutionYet: '아직 실행이 없습니다',
+        },
+      },
+      response: {
+        title: '응답 상세',
+        description:
+          '응답 상세는 이 활성 탭의 최신 실행에만 속합니다. 미리보기는 여기에서 제한적으로 유지되며, 잘림이나 redaction 메모도 payload surface를 확장하지 않고 명시적으로 남습니다.',
+        runningTitle: '요청을 실행하는 중',
+        runningDescription:
+          '요청이 진행 중입니다. 현재 실행이 끝나면 응답 헤더, 제한된 미리보기 크기, 본문 미리보기가 여기 표시됩니다.',
+        labels: {
+          httpStatus: 'HTTP 상태',
+          duration: '소요 시간',
+          previewSize: '미리보기 크기',
+          previewPolicy: '미리보기 정책',
+          headersSummary: '헤더 요약',
+          bodyHint: '본문 힌트',
+        },
+        values: {
+          noPreviewStored: '저장된 미리보기가 없습니다',
+          previewPolicyFallback:
+            '더 풍부한 진단과 raw payload 확인이 추가되기 전까지 미리보기는 제한적으로 유지됩니다.',
+          previewSupportFallback:
+            '이 관측 surface에서는 미리보기가 제한적으로 유지되며, 더 풍부한 검사는 이후 slice로 남아 있습니다.',
+          noBodyPreview: '응답 본문 미리보기가 기록되지 않았습니다.',
+        },
+        empty: {
+          title: '응답을 채우려면 이 요청을 실행하세요',
+          description:
+            'Save는 요청 정의만 갱신합니다. 현재 draft를 실행해 응답 상태, 제한된 미리보기 메타데이터, 헤더, 본문 미리보기를 여기에 채우세요.',
+        },
+      },
+      console: {
+        title: '콘솔 상세',
+        description:
+          '콘솔은 관측 전용으로 유지되며, 스크립트가 실행되면 제한된 단계 인식 출력을 보여줍니다. 누락된 항목도 추측하지 않고 명시적으로 설명합니다.',
+        labels: {
+          logLines: '로그 줄 수',
+          warnings: '경고',
+          preRequestStage: '사전 요청 단계',
+          postResponseStage: '응답 후 단계',
+          summary: '요약',
+        },
+        noEntriesTitle: '이번 실행에는 콘솔 항목이 없습니다',
+        empty: {
+          title: '콘솔은 실행을 기다립니다',
+          description:
+            '현재 요청을 실행하면 이 탭과 연결된 제한된 사전 요청 및 응답 후 콘솔 요약이 기록됩니다. 비어 있는 단계도 여기에서 명시적으로 설명됩니다.',
+        },
+      },
+      tests: {
+        title: '테스트 상세',
+        description:
+          '테스트는 관측 전용으로 유지되며, 존재할 때만 tests 단계의 제한된 assertion 요약을 보여줍니다. 누락된 assertion도 만들어내지 않고 명시적으로 남깁니다.',
+        labels: {
+          summary: '요약',
+          entries: '항목 수',
+          testsStage: '테스트 단계',
+        },
+        noEntriesTitle: '이번 실행에서는 테스트가 수행되지 않았습니다',
+        empty: {
+          title: '테스트는 실행을 기다립니다',
+          description:
+            '현재 요청을 실행해 제한된 assertion 요약을 기록하세요. tests script가 없으면 tests 단계는 건너뛰고 그 이유를 여기에서 설명합니다.',
+        },
+      },
+      executionInfo: {
+        title: '실행 정보',
+        description:
+          '실행 메타데이터는 최신 실행에 속하며 저장된 요청 정의, 인바운드 캡처, 저장된 히스토리와 분리되어 유지됩니다.',
+        startingTitle: '실행을 시작하는 중',
+        startingDescription:
+          '현재 요청이 완료되면 로컬 실행 ID, 타이밍 데이터, 제한된 요청 스냅샷 요약이 여기에 표시됩니다.',
+        executionStageSummaryAriaLabel: '실행 단계 요약',
+        labels: {
+          executionId: '실행 ID',
+          startedAt: '시작 시각',
+          completedAt: '완료 시각',
+          outcome: '결과',
+          snapshotSource: '스냅샷 출처',
+          linkedRequest: '연결된 요청',
+          placement: '위치',
+          environment: '환경',
+          errorCode: '오류 코드',
+          errorSummary: '오류 요약',
+          requestInput: '요청 입력',
+        },
+        values: {
+          runtimeRequestSnapshot: '런타임 요청 스냅샷',
+          noEnvironmentSelected: '선택된 환경이 없습니다',
+          noExecutionErrorCode: '실행 오류 코드가 없습니다',
+          noExecutionErrorSummary: '보고된 실행 오류가 없습니다.',
+          requestSnapshotSummaryMissing: '요청 스냅샷 요약이 반환되지 않았습니다.',
+        },
+        empty: {
+          title: '아직 실행 정보가 없습니다',
+          description:
+            '이 탭에 대한 새 실행 기록을 만들려면 Run을 사용하세요. Save 성공만으로는 이 관측 패널의 실행 정보가 채워지지 않습니다.',
+        },
       },
     },
   },

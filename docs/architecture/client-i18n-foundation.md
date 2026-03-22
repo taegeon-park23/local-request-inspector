@@ -3,7 +3,7 @@
 - **Purpose:** Define the bounded client-side internationalization model for English and Korean so later localization work can expand surface-by-surface without re-choosing provider, storage, or key conventions.
 - **Created:** 2026-03-23
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `../tasks/task-037-client-i18n-foundation-and-korean-locale-bootstrap.md`, `../tasks/task-038-environments-and-scripts-route-localization-pass.md`, `../tasks/task-039-workspace-authoring-localization-pass.md`, `material-3-adoption-plan.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`
+- **Related Documents:** `../tasks/task-037-client-i18n-foundation-and-korean-locale-bootstrap.md`, `../tasks/task-038-environments-and-scripts-route-localization-pass.md`, `../tasks/task-039-workspace-authoring-localization-pass.md`, `../tasks/task-040-workspace-result-panel-localization-pass.md`, `material-3-adoption-plan.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`
 - **Update Rule:** Update when locale ownership, message-key shape, supported locales, or first-slice coverage rules change.
 
 ## 1. Scope
@@ -48,14 +48,15 @@ This first slice is enough to validate provider wiring, locale persistence, cata
 After the foundation slice, the following bounded localization passes are now landed:
 - `T038`: Environments and Scripts route internals now translate client-owned management copy, empty states, validation text, and action labels.
 - `T039`: Workspace explorer chrome, request tab shell, request-builder authoring copy, request-bound scripts authoring surface, and explorer-owned authored-resource transfer messaging now translate through the shared i18n layer.
+- `T040`: Workspace result panel tabs, observation header copy, response/console/tests/execution-info section copy, and client-owned fallback text now translate through the shared i18n layer without changing runtime DTO ownership.
 
 ## 8. Deferred Follow-Up Boundaries
 The following are explicitly deferred beyond the currently landed slices:
-- full translation of the workspace result panel and execution-observation copy
 - full translation of captures, history, and mocks observation-route internals
 - broad ARIA-label localization across the whole app in one pass
 - backend-driven locale negotiation
 - translation import/export tooling
+- runtime enum/status token localization where CSS or test contracts still depend on English values
 
 ## 9. Future Task Guidance
 When later localization tasks begin:
@@ -64,4 +65,4 @@ When later localization tasks begin:
 3. keep English fallback intact
 4. avoid mixing localized and hard-coded literals inside the same component area when a bounded conversion is practical
 5. update tests to pin either explicit English fallback behavior or explicit Korean rendering for the translated surface
-6. treat Environments/Scripts and Workspace authoring as the current bounded reference patterns before starting any observation-surface translation work
+6. treat Environments/Scripts, Workspace authoring, and Workspace result-panel copy as the current bounded reference patterns before starting broader observation-route translation work
