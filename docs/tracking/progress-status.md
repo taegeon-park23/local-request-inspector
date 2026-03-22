@@ -55,12 +55,20 @@
 - Material 3 adoption plan plus initial token/theme, shell chrome, top-bar role legend, route-role cues, first-pass shared-surface materialization, role-specific panel accents, role-specific tab/header treatments, feature-level list/detail/contextual role strips, and `M3-F2` accessibility/contrast/focus/density polish: **done**
 
 ## Current Next Action
-Use the landed MVP shell plus the reconciled T015/T018/T019/T020/T021/T022/T023/T024 baseline to finish `M3-F3` validation outside the current sandbox. The request-builder/result-panel wrapper patch is now applied in code, and `npm.cmd run typecheck` passed on 2026-03-22, but the latest direct `npm.cmd run check:m3f3-gate` in this sandbox returned `env_blocked_transform` because Vite/esbuild worker startup hit `spawn EPERM`. Use `m3-f3-implementation-handoff.md` as the applied patch record plus validation-resume note. Candidate 2, Candidate B, Candidate C, and broader authored-resource follow-ups remain parked under `post-m3-reactivation-guide.md` while `M3-F3` is still awaiting repo-native transform confirmation.
+Use the landed MVP shell plus the reconciled T015/T018/T019/T020/T021/T022/T023/T024 baseline to rerun the full `M3-F3` closeout trio in one non-blocked environment. A user-verified non-sandbox local `npm.cmd run test:ui` passed all 47 tests on 2026-03-22 and same-day `npm.cmd run check` passed in this sandbox, but the latest direct `npm.cmd run check:m3f3-gate` and direct `npm.cmd run test:ui` reruns here still failed on `env_blocked_transform` / `sandbox_esbuild_transform_blocked` because Vite/esbuild worker startup hit `spawn EPERM`. Use `m3-f3-implementation-handoff.md` as the applied patch record plus blocker-refresh note, and do not open `T025` or promote Candidate 2 / Candidate B / Candidate C until the official closeout trio all pass together.
 
 ## Open Blockers
-- No blocker remains inside T010, but `M3-F3` is now validation-blocked in the current sandbox after the code patch landed.
+- No blocker remains inside T010, but `M3-F3` is still official-closeout-blocked in the current sandbox after the code patch landed.
 - `npm.cmd run typecheck` passed against `client/features/request-builder/components/RequestWorkSurfacePlaceholder.tsx` and `client/features/request-builder/components/RequestResultPanelPlaceholder.tsx` on 2026-03-22.
-- A fresh direct `npm.cmd run check:m3f3-gate` on 2026-03-22 returned `env_blocked_transform`: root HTML still served, but `/app/bootstrap/main.tsx` and both gated TSX module transforms failed before completion because Vite/esbuild worker startup hit `spawn EPERM`.
+- A user-verified non-sandbox local 
+pm.cmd run test:ui passed all 47 tests on 2026-03-22.
+- A same-day 
+pm.cmd run check rerun in this sandbox passed.
+- A fresh direct 
+pm.cmd run check:m3f3-gate on 2026-03-22 returned env_blocked_transform: root HTML still served, but /app/bootstrap/main.tsx and both gated TSX module transforms failed before completion because Vite/esbuild worker startup hit spawn EPERM.
+- A fresh direct 
+pm.cmd run test:ui on 2026-03-22 in this sandbox still failed preflight with sandbox_esbuild_transform_blocked / spawn EPERM.
+- Because the official closeout trio did not all clear in one environment, M3-F3 is not formally closed and no T025 post-M3-F3 priority review task was created in this pass.
 - **확실하지 않음:** whether live refresh on those specific TSX surfaces is fully healthy remains unverified because the official transform gate is currently blocked again in this sandbox.
 - `../tasks/task-019-server-backed-pre-import-preview.md` is landed as the current bounded Candidate A delivery: the workspace import surface now requests a server-backed no-write preview before confirm, then preserves the existing request/mock bundle import semantics after commit.
 - Additional authored-resource tooling beyond `T019` remains parked because the shipped request/mock transfer baseline already covers the current documented scope, and the remaining increments still need a narrower task boundary.

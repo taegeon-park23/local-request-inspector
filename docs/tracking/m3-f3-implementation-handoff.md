@@ -8,10 +8,12 @@
 - **Update Rule:** Update only if the exact `M3-F3` wrapper/CSS patch scope changes or once the slice is fully landed.
 
 ## 1. Current State
-- The documented M3-F3 wrapper/CSS patch is now applied in RequestWorkSurfacePlaceholder.tsx, RequestResultPanelPlaceholder.tsx, and material-theme.css.
+- The documented M3-F3 wrapper/CSS patch is now applied in `RequestWorkSurfacePlaceholder.tsx`, `RequestResultPanelPlaceholder.tsx`, and `material-theme.css`.
 - `npm.cmd run typecheck` passed on 2026-03-22 after the patch landed.
-- A fresh direct `npm.cmd run check:m3f3-gate` on 2026-03-22 in this sandbox returned `env_blocked_transform` because Vite/esbuild worker startup hit `spawn EPERM` for `/app/bootstrap/main.tsx` and the two gated TSX modules.
-- This note now serves as the canonical applied-patch reference plus the validation-resume handoff for a non-blocked environment.
+- A user-verified non-sandbox local `npm.cmd run test:ui` passed all 47 tests on 2026-03-22.
+- A same-day `npm.cmd run check` rerun in this sandbox passed.
+- The latest direct `npm.cmd run check:m3f3-gate` in this sandbox still returned `env_blocked_transform`, and direct `npm.cmd run test:ui` here still failed preflight with `sandbox_esbuild_transform_blocked`, because Vite/esbuild worker startup hit `spawn EPERM` for `/app/bootstrap/main.tsx` and the two gated TSX modules.
+- This note now serves as the canonical applied-patch reference plus the blocker-refresh handoff for a non-blocked environment.
 
 ## 2. Scope Anchor
 ### In Scope
@@ -74,7 +76,7 @@ Expected shape:
 - `workspace-detail-panel__result-support` contains bounded preview/execution-support notes, stage-summary list, and secondary readiness copy
 
 Intent:
-- make response/execution surfaces read top-down with clearer “summary first, support second” rhythm
+- make response/execution surfaces read top-down with clearer "summary first, support second" rhythm
 - expose header meta without moving ownership away from the existing tabs or result detail sections
 
 ## 4. Applied CSS Follow-Up
@@ -103,8 +105,11 @@ Styling intent:
 Latest validation on 2026-03-22:
 1. `npm.cmd run typecheck` - passed
 2. `npm.cmd run test:node` - passed, including a static M3-F3 wrapper/CSS shape guard for the two TSX files and `material-theme.css`
-3. `npm.cmd run check:m3f3-gate` - `env_blocked_transform` in this sandbox because esbuild worker startup hit `spawn EPERM`
-4. direct in-app inspection - not completed in this sandbox because the official transform gate is currently blocked
+3. user-verified non-sandbox local `npm.cmd run test:ui` - passed all 47 tests
+4. `npm.cmd run check` - passed in this sandbox
+5. `npm.cmd run check:m3f3-gate` - `env_blocked_transform` in this sandbox because esbuild worker startup hit `spawn EPERM`
+6. direct `npm.cmd run test:ui` - failed preflight in this sandbox with `sandbox_esbuild_transform_blocked` / `spawn EPERM`
+7. direct in-app inspection - not completed in this sandbox because the official transform gate is currently blocked
 What remains to verify elsewhere:
 - no TSX ownership/behavior changes, only wrapper hierarchy cleanup
 - request-builder header/identity/command copy now reads as distinct groups
@@ -112,8 +117,9 @@ What remains to verify elsewhere:
 - no regression to save/run/result semantics
 
 ## 6. If Tooling Fails Again
-- If a contributor reruns the gate in a non-blocked environment and it reports gate_clear, do not re-scope M3-F3; use this note to confirm the intended wrapper/CSS shape that is already in code.
+- If a contributor reruns the gate in a non-blocked environment and it reports `gate_clear`, do not re-scope M3-F3; use this note to confirm the intended wrapper/CSS shape that is already in code.
 - If the gate still reports an environment-bound transform failure, keep the slice in validation-blocked state rather than reopening roadmap or feature scope discussion.
+- If a standalone unsandboxed `npm.cmd run test:ui` rerun passes but the official gate still fails elsewhere, treat that as useful evidence rather than as final closeout; the same closeout trio still needs to clear in one non-blocked environment.
 
 ## 7. Explicit Uncertainties / 확실하지 않음
 - **확실하지 않음:** whether one tiny extra wrapper will be needed after direct local UI inspection, but the current intended patch should start with the classes listed above only.
