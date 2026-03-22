@@ -111,7 +111,7 @@ export function RequestWorkSurfacePlaceholder({
   return (
     <div className="request-work-surface request-builder-core" data-testid="request-work-surface">
       <header className="request-work-surface__header request-builder-core__header">
-        <div>
+        <div className="request-work-surface__header-copy">
           <p className="section-placeholder__eyebrow">Request builder core</p>
           <h2>{displayTitle}</h2>
           <p>This tab owns editable request state only. Save updates the request definition, while Run creates separate observation in the right-hand panel without mutating history or captures.</p>
@@ -137,7 +137,9 @@ export function RequestWorkSurfacePlaceholder({
               onChange={(event) => updateDraftName(draft.tabId, event.currentTarget.value)}
             />
           </label>
-          <p className="request-builder-core__source-copy">{locationSummary}</p>
+          <div className="request-builder-core__identity-support">
+            <p className="request-builder-core__source-copy">{locationSummary}</p>
+          </div>
         </div>
         <div className="request-builder-core__command-area">
           <div className="request-work-surface__future-actions" aria-label="Request header actions">
@@ -162,14 +164,20 @@ export function RequestWorkSurfacePlaceholder({
             </button>
           </div>
           <div className="request-builder-core__command-copy-group">
-            <p className="request-builder-core__command-copy">
-              {replaySource
-                ? 'Replay drafts still open in edit-first mode. Save creates or updates a request definition, while Run creates separate observation for this draft only.'
-                : 'Save updates the request definition. Run does not save automatically and does not clear unsaved authoring changes.'}
-            </p>
-            <p className="shared-readiness-note" data-testid="save-command-status">{saveStatusCopy}</p>
-            <p className="shared-readiness-note" data-testid="run-command-status">{runStatusCopy}</p>
-            <p className="shared-readiness-note">Duplicate stays deferred until saved-request copy semantics are added in a later slice.</p>
+            <div className="request-builder-core__command-intro">
+              <p className="request-builder-core__command-copy">
+                {replaySource
+                  ? 'Replay drafts still open in edit-first mode. Save creates or updates a request definition, while Run creates separate observation for this draft only.'
+                  : 'Save updates the request definition. Run does not save automatically and does not clear unsaved authoring changes.'}
+              </p>
+            </div>
+            <div className="request-builder-core__command-status-list">
+              <p className="shared-readiness-note" data-testid="save-command-status">{saveStatusCopy}</p>
+              <p className="shared-readiness-note" data-testid="run-command-status">{runStatusCopy}</p>
+            </div>
+            <div className="request-builder-core__command-support">
+              <p className="shared-readiness-note">Duplicate stays deferred until saved-request copy semantics are added in a later slice.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -440,11 +448,3 @@ export function RequestWorkSurfacePlaceholder({
     </div>
   );
 }
-
-
-
-
-
-
-
-

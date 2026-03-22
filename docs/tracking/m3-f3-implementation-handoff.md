@@ -1,6 +1,6 @@
 # M3-F3 Implementation Handoff
 
-- **Purpose:** Provide the exact pending `M3-F3` patch scope so request-builder and active observation TSX presentation cleanup can resume without rediscovering wrappers, classes, or guardrails.
+- **Purpose:** Record the exact M3-F3 wrapper/CSS patch plus the latest validation state so request-builder and active observation cleanup can be resumed or revalidated without rediscovering scope.
 - **Created:** 2026-03-22
 - **Last Updated:** 2026-03-22
 - **Related Documents:** `post-m3-reactivation-guide.md`, `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `../architecture/material-3-adoption-plan.md`, `../tasks/task-018-delivery-milestone-plan.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`
@@ -8,10 +8,10 @@
 - **Update Rule:** Update only if the exact `M3-F3` wrapper/CSS patch scope changes or once the slice is fully landed.
 
 ## 1. Current State
-- `M3-F3` is the active next implementation slice.
-- The official repo-native gate, `npm run check:m3f3-gate`, now reports `gate_clear`.
-- The pending work is still bounded to request-builder and active request observation wrapper hierarchy cleanup plus minimal companion CSS.
-- This note exists because one contributor session could update tracking/docs but could not apply the TSX patch due a tool-local refresh failure. Treat that as execution context, not as a repo-level blocker.
+- The documented M3-F3 wrapper/CSS patch is now applied in RequestWorkSurfacePlaceholder.tsx, RequestResultPanelPlaceholder.tsx, and material-theme.css.
+- `npm.cmd run typecheck` passed on 2026-03-22 after the patch landed.
+- A fresh direct `npm.cmd run check:m3f3-gate` on 2026-03-22 in this sandbox returned `env_blocked_transform` because Vite/esbuild worker startup hit `spawn EPERM` for `/app/bootstrap/main.tsx` and the two gated TSX modules.
+- This note now serves as the canonical applied-patch reference plus the validation-resume handoff for a non-blocked environment.
 
 ## 2. Scope Anchor
 ### In Scope
@@ -26,12 +26,12 @@
 - no per-feature layout rewrite outside the two named surfaces
 - no `M3-F4`-style redesign or new component-system work
 
-## 3. Exact Pending TSX Patch
+## 3. Applied TSX Patch
 ### 3.1 RequestWorkSurfacePlaceholder
 Target file:
 - `client/features/request-builder/components/RequestWorkSurfacePlaceholder.tsx`
 
-Pending wrapper/class additions:
+Applied wrapper/class additions:
 1. Add `request-work-surface__header-copy` to the existing header-copy container inside `.request-work-surface__header`.
 2. Wrap the existing location/source paragraph in a new support container:
    - `request-builder-core__identity-support`
@@ -54,7 +54,7 @@ Intent:
 Target file:
 - `client/features/request-builder/components/RequestResultPanelPlaceholder.tsx`
 
-Pending wrapper/class additions:
+Applied wrapper/class additions:
 1. Add `workspace-detail-panel__header-copy` to the existing header-copy container inside `.workspace-detail-panel__header`.
 2. Add a new header meta cluster below the descriptive copy:
    - `workspace-detail-panel__header-meta`
@@ -77,7 +77,7 @@ Intent:
 - make response/execution surfaces read top-down with clearer “summary first, support second” rhythm
 - expose header meta without moving ownership away from the existing tabs or result detail sections
 
-## 4. Exact Pending CSS Follow-Up
+## 4. Applied CSS Follow-Up
 Target file:
 - `client/app/shell/material-theme.css`
 
@@ -99,23 +99,23 @@ Styling intent:
 - keep the new wrappers visually consistent with `shared-readiness-note`, `request-builder-core__identity`, `request-builder-core__command-area`, and existing detail-section surfaces
 - do not introduce new color tokens or new interaction states for this slice
 
-## 5. Validation Order
-After the patch lands:
-1. `npm run typecheck`
-2. rerun `npm run check:m3f3-gate` if the environment changed or if the contributor wants to reconfirm transform health after the TSX edit
-3. inspect the request-builder and result-panel surfaces directly in the app if local execution is available
-
-What to verify:
+## 5. Current Validation State
+Latest validation on 2026-03-22:
+1. `npm.cmd run typecheck` - passed
+2. `npm.cmd run test:node` - passed, including a static M3-F3 wrapper/CSS shape guard for the two TSX files and `material-theme.css`
+3. `npm.cmd run check:m3f3-gate` - `env_blocked_transform` in this sandbox because esbuild worker startup hit `spawn EPERM`
+4. direct in-app inspection - not completed in this sandbox because the official transform gate is currently blocked
+What remains to verify elsewhere:
 - no TSX ownership/behavior changes, only wrapper hierarchy cleanup
 - request-builder header/identity/command copy now reads as distinct groups
 - result-panel header meta and response/execution detail now scan as summary-first support-second groupings
 - no regression to save/run/result semantics
 
 ## 6. If Tooling Fails Again
-- If the gate still reports `gate_clear` but a contributor hits a tool-local TSX edit failure again, do not re-scope `M3-F3`.
-- Use this handoff note as the canonical exact patch plan and apply the change through another local edit path rather than reopening roadmap or scope discussion.
+- If a contributor reruns the gate in a non-blocked environment and it reports gate_clear, do not re-scope M3-F3; use this note to confirm the intended wrapper/CSS shape that is already in code.
+- If the gate still reports an environment-bound transform failure, keep the slice in validation-blocked state rather than reopening roadmap or feature scope discussion.
 
 ## 7. Explicit Uncertainties / 확실하지 않음
 - **확실하지 않음:** whether one tiny extra wrapper will be needed after direct local UI inspection, but the current intended patch should start with the classes listed above only.
 - **확실하지 않음:** whether any companion CSS beyond grouping/layout refinements will be needed once the TSX wrappers land.
-- **확실하지 않음:** whether live refresh on these two files is fully healthy even though the official transform gate now clears.
+- **확실하지 않음:** whether live refresh on these two files is fully healthy because the latest sandbox gate re-check returned env_blocked_transform before direct UI inspection could happen.

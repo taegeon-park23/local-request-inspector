@@ -8,24 +8,23 @@
 - **Update Rule:** Update when the official `M3-F3` gate result changes, when an optional backlog item becomes narrowly promotable, or when the current post-M3 hold state changes.
 
 ## 1. Current Hold-State Summary
-- `M3-F3` is no longer gated; the official `npm run check:m3f3-gate` procedure now reports `gate_clear`.
-- `../tasks/task-019-server-backed-pre-import-preview.md` is landed as the bounded Candidate A delivery for the current workspace authored-resource import flow.
-- `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md` is landed as the bounded Candidate B documentation follow-up for compatibility-gap narrowing.
-- `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md` is landed as the bounded Candidate C documentation follow-up for packaging/startup gap inventory.
-- `../tasks/task-022-post-t021-priority-review.md` is landed as the latest explicit no-promotion review after the Candidate B/C narrowing passes.
-- `../tasks/task-023-candidate-b-import-migration-approach-decision.md` is landed as the latest Candidate B approach-decision pass for the stronger authored-resource import lane.
-- `M3-F3` should now be treated as the active next implementation slice before any additional parked backlog is reconsidered.
-- Use `m3-f3-implementation-handoff.md` when resuming `M3-F3` so the active slice starts from the exact pending request-builder/result-panel wrapper patch instead of from a fresh scope audit.
+- M3-F3 now has its bounded request-builder/result-panel wrapper patch applied in code.
+- `npm.cmd run typecheck` passed on 2026-03-22 after that patch landed, but the latest direct `npm.cmd run check:m3f3-gate` in this sandbox returned `env_blocked_transform` because Vite/esbuild worker startup hit `spawn EPERM`.
+- ../tasks/task-019-server-backed-pre-import-preview.md is landed as the bounded Candidate A delivery for the current workspace authored-resource import flow.
+- ../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md is landed as the bounded Candidate B documentation follow-up for compatibility-gap narrowing.
+- ../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md is landed as the bounded Candidate C documentation follow-up for packaging/startup gap inventory.
+- ../tasks/task-022-post-t021-priority-review.md is landed as the latest explicit no-promotion review after the Candidate B/C narrowing passes.
+- ../tasks/task-023-candidate-b-import-migration-approach-decision.md is landed as the latest Candidate B approach-decision pass for the stronger authored-resource import lane.
+- M3-F3 should now be treated as validation-blocked follow-up in the current sandbox before any additional parked backlog is reconsidered.
+- Use m3-f3-implementation-handoff.md when resuming M3-F3 so the applied wrapper/result-panel patch and latest validation notes are both available without a fresh scope audit.
 - Candidate B and Candidate C remain parked.
 - No additional post-M3 implementation promotion should start until one reactivation trigger in this guide is satisfied.
 - `T010` remains closed, and post-S26 work must not reopen shell route, provider, state-boundary, or ownership scope.
 
 ## 2. Why Each Item Is Blocked, Active, Or Parked
 ### M3-F3
-- `M3-F3` is no longer gate-blocked because the official repo-native check, `npm run check:m3f3-gate`, now reports `gate_clear`.
-- The latest direct run confirms that `typecheck`, build preflight, UI test preflight, root HTML, and real Vite TSX module transforms for `/app/bootstrap/main.tsx`, `RequestWorkSurfacePlaceholder.tsx`, and `RequestResultPanelPlaceholder.tsx` all pass in this environment.
-- Dev-server startup or root HTML alone still would not have been enough, but the official gate now has the stronger success signal needed to revisit TSX presentation cleanup safely.
-
+- M3-F3 is no longer blocked by implementation scope; the intended request-builder/result-panel wrapper patch is now applied in code.
+- The latest direct run confirms that `npm.cmd run typecheck` passes, but `npm.cmd run check:m3f3-gate` now returns `env_blocked_transform` in this sandbox before Vite/esbuild can transform `/app/bootstrap/main.tsx`, `RequestWorkSurfacePlaceholder.tsx`, and `RequestResultPanelPlaceholder.tsx`.
 ### Candidate A - Additional Authored-Resource Tooling
 - The shipped authored-resource baseline already covers workspace-level import plus workspace-level and single-resource export for saved requests and mock rules.
 - Import uses a create-new-identity policy and keeps runtime artifacts out of scope.
@@ -53,10 +52,9 @@
 
 ## 3. Exact Reactivation Triggers
 ### M3-F3
-- The current reactivation trigger is already satisfied: `npm run check:m3f3-gate` reports `gate_clear`.
-- Continue using the same gate procedure before any future TSX presentation follow-up beyond the current `M3-F3` slice.
-- Do not treat Vite port binding, root HTML `200`, or manual expectation as enough to bypass the official gate in later retries.
-
+- The current reactivation trigger is not satisfied in this sandbox: the latest direct `npm.cmd run check:m3f3-gate` on 2026-03-22 returned `env_blocked_transform`.
+- Continue using the same gate procedure before any future TSX presentation follow-up beyond the current M3-F3 slice, and rerun it in an environment where Vite/esbuild worker startup is allowed.
+- Do not treat Vite port binding, root HTML 200, or manual expectation as enough to bypass the official gate in later retries.
 ### Additional Candidate A Work Beyond T019
 - Promote further Candidate A work only when a concrete authored-resource UX or transfer gap is documented tightly enough to become one bounded task beyond `T019`.
 - The promoted scope must be narrower than "improve import/export" and must not duplicate either the current saved-request/mock-rule bundle baseline or the new `T019` dry-run preview direction.
@@ -98,13 +96,13 @@ Before promoting any post-M3 work:
 - If the decision is still ambiguous after the checklist, keep the work parked and record the reason instead of forcing promotion.
 
 ## 6. Explicit Uncertainties / 확실하지 않음
-- **확실하지 않음:** whether live refresh on the gated request-builder and active-observation TSX files is fully healthy even after the gate now clears in this environment.
+- **확실하지 않음:** whether live refresh on the gated request-builder and active-observation TSX files is fully healthy because the latest sandbox gate re-check returned env_blocked_transform before direct inspection could happen.
 - **확실하지 않음:** which next authored-resource gap, if any, will become narrow enough to justify promotion without re-scoping the current shipped baseline.
 - **확실하지 않음:** when compatibility pressure will be strong enough to justify a write-time migration engine instead of the current classification-only approach.
 - **확실하지 않음:** whether a future packaging gap will be environmental, product-facing, or distribution-facing once the current sandbox limitation is no longer the main blocker.
 
 ## 7. Canonical Decision
-- Treat `M3-F3` as the active next bounded implementation slice now that the official repo-native gate clears.
+- Treat M3-F3 as applied-in-code but validation-blocked in the current sandbox until the official repo-native gate can be rerun successfully elsewhere.
 - Keep `../tasks/task-019-server-backed-pre-import-preview.md` closed as the only landed post-M3 Candidate A follow-up so far.
 - Keep `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md` closed as the Candidate B documentation narrowing step, not as migration-engine implementation.
 - Keep `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md` closed as the Candidate C documentation narrowing step, not as packaging implementation.

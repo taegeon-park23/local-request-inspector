@@ -83,6 +83,21 @@ function getStageSummary(
   return executionStageSummaries?.find((summary) => summary.stageId === stageId)?.summary ?? fallback;
 }
 
+function renderHeaderExecutionStatus(
+  runStatus: { status: 'idle' | 'pending' | 'success' | 'error' },
+  execution: ReturnType<typeof useRequestCommandStore.getState>['byTabId'][string]['run']['latestExecution'],
+) {
+  if (runStatus.status === 'pending') {
+    return <StatusBadge kind="neutral" value="Running" />;
+  }
+
+  if (execution) {
+    return <StatusBadge kind="executionOutcome" value={execution.executionOutcome} />;
+  }
+
+  return <StatusBadge kind="neutral" value="No execution yet" />;
+}
+
 export function RequestResultPanelPlaceholder({
   activeTab,
 }: RequestResultPanelPlaceholderProps) {
@@ -114,12 +129,19 @@ export function RequestResultPanelPlaceholder({
   return (
     <div className="workspace-detail-panel">
       <header className="workspace-detail-panel__header">
-        <div>
+        <div className="workspace-detail-panel__header-copy">
           <p className="section-placeholder__eyebrow">Observation surface</p>
           <h2>Observation for {activeTab.title}</h2>
           <p>
             This right-hand panel is reserved for run observation only. Save never updates it, and request authoring stays in the center authoring surface.
           </p>
+          <div className="workspace-detail-panel__header-meta request-work-surface__badges">
+            <span className={activeTab.source === 'replay' ? 'workspace-chip workspace-chip--replay' : 'workspace-chip'}>
+              {getTabSourceCopy(activeTab)}
+            </span>
+            <span className="workspace-chip workspace-chip--secondary">{activeResultTabLabel}</span>
+            {renderHeaderExecutionStatus(runStatus, execution)}
+          </div>
         </div>
       </header>
 
@@ -160,24 +182,28 @@ export function RequestResultPanelPlaceholder({
               description="The request is in flight. Response headers, bounded preview size, and body preview will appear here when the current run settles."
             />
           ) : execution ? (
-            <>
-              <div className="request-run-outcome-row">
-                <StatusBadge kind="executionOutcome" value={execution.executionOutcome} />
-                <StatusBadge kind="transportOutcome" value={getTransportOutcomeLabel(execution.responseStatus)} />
+            <div className="workspace-detail-panel__result-stack">
+              <div className="workspace-detail-panel__result-summary">
+                <div className="request-run-outcome-row">
+                  <StatusBadge kind="executionOutcome" value={execution.executionOutcome} />
+                  <StatusBadge kind="transportOutcome" value={getTransportOutcomeLabel(execution.responseStatus)} />
+                </div>
+                <KeyValueMetaList
+                  items={[
+                    { label: 'HTTP status', value: execution.responseStatusLabel },
+                    { label: 'Duration', value: `${execution.durationMs} ms` },
+                    { label: 'Preview size', value: execution.responsePreviewSizeLabel ?? 'No preview stored' },
+                    { label: 'Preview policy', value: execution.responsePreviewPolicy ?? 'Preview is bounded before richer diagnostics and raw payload inspection are added.' },
+                    { label: 'Headers summary', value: execution.responseHeadersSummary },
+                    { label: 'Body hint', value: execution.responseBodyHint },
+                  ]}
+                />
               </div>
-              <KeyValueMetaList
-                items={[
-                  { label: 'HTTP status', value: execution.responseStatusLabel },
-                  { label: 'Duration', value: `${execution.durationMs} ms` },
-                  { label: 'Preview size', value: execution.responsePreviewSizeLabel ?? 'No preview stored' },
-                  { label: 'Preview policy', value: execution.responsePreviewPolicy ?? 'Preview is bounded before richer diagnostics and raw payload inspection are added.' },
-                  { label: 'Headers summary', value: execution.responseHeadersSummary },
-                  { label: 'Body hint', value: execution.responseBodyHint },
-                ]}
-              />
-              <p className="shared-readiness-note">{execution.responsePreviewPolicy ?? 'Preview stays bounded in this observation surface while richer inspection remains deferred.'}</p>
-              <pre className="history-preview-block" data-testid="request-response-preview">{execution.responseBodyPreview || 'No response body preview was captured.'}</pre>
-            </>
+              <div className="workspace-detail-panel__result-support">
+                <p className="shared-readiness-note">{execution.responsePreviewPolicy ?? 'Preview stays bounded in this observation surface while richer inspection remains deferred.'}</p>
+                <pre className="history-preview-block" data-testid="request-response-preview">{execution.responseBodyPreview || 'No response body preview was captured.'}</pre>
+              </div>
+            </div>
           ) : (
             <EmptyStateCallout
               title="Run this request to populate Response"
@@ -275,33 +301,41 @@ export function RequestResultPanelPlaceholder({
               description="A local run id, timing data, and a bounded request snapshot summary will appear here once the current request settles."
             />
           ) : execution ? (
-            <>
-              <KeyValueMetaList
-                items={[
-                  { label: 'Execution id', value: execution.executionId },
-                  { label: 'Started at', value: execution.startedAt },
-                  { label: 'Completed at', value: execution.completedAt },
-                  { label: 'Outcome', value: execution.executionOutcome },
-                  { label: 'Snapshot source', value: execution.requestSourceLabel ?? 'Runtime request snapshot' },
-                  { label: 'Linked request', value: formatObservedLinkage(execution.requestResourceId, execution.requestSourceLabel, execution.requestCollectionName, execution.requestFolderName) },
-                  { label: 'Placement', value: formatObservedPlacement(execution.requestCollectionName, execution.requestFolderName) },
-                  { label: 'Error code', value: execution.errorCode ?? 'No execution error code' },
-                  { label: 'Error summary', value: execution.errorSummary ?? 'No execution error was reported.' },
-                  { label: 'Request input', value: execution.requestInputSummary ?? 'Request snapshot summary was not returned.' },
-                ]}
-              />
-              {executionStageSummaries.length > 0 ? (
-                <ul className="history-preview-list" aria-label="Execution stage summary">
-                  {executionStageSummaries.map((summary) => (
-                    <li key={`${execution.executionId}-${summary.stageId}`}>
-                      <strong>{summary.label}</strong>: {summary.status} - {summary.summary}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-              {execution.requestSnapshotSummary ? <p className="shared-readiness-note">{execution.requestSnapshotSummary}</p> : null}
-              {runStatus.message ? <p className="shared-readiness-note">{runStatus.message}</p> : null}
-            </>
+            <div className="workspace-detail-panel__result-stack">
+              <div className="workspace-detail-panel__result-summary">
+                <div className="request-run-outcome-row">
+                  <StatusBadge kind="executionOutcome" value={execution.executionOutcome} />
+                  <StatusBadge kind="transportOutcome" value={getTransportOutcomeLabel(execution.responseStatus)} />
+                </div>
+                <KeyValueMetaList
+                  items={[
+                    { label: 'Execution id', value: execution.executionId },
+                    { label: 'Started at', value: execution.startedAt },
+                    { label: 'Completed at', value: execution.completedAt },
+                    { label: 'Outcome', value: execution.executionOutcome },
+                    { label: 'Snapshot source', value: execution.requestSourceLabel ?? 'Runtime request snapshot' },
+                    { label: 'Linked request', value: formatObservedLinkage(execution.requestResourceId, execution.requestSourceLabel, execution.requestCollectionName, execution.requestFolderName) },
+                    { label: 'Placement', value: formatObservedPlacement(execution.requestCollectionName, execution.requestFolderName) },
+                    { label: 'Error code', value: execution.errorCode ?? 'No execution error code' },
+                    { label: 'Error summary', value: execution.errorSummary ?? 'No execution error was reported.' },
+                    { label: 'Request input', value: execution.requestInputSummary ?? 'Request snapshot summary was not returned.' },
+                  ]}
+                />
+              </div>
+              <div className="workspace-detail-panel__result-support">
+                {executionStageSummaries.length > 0 ? (
+                  <ul className="history-preview-list" aria-label="Execution stage summary">
+                    {executionStageSummaries.map((summary) => (
+                      <li key={`${execution.executionId}-${summary.stageId}`}>
+                        <strong>{summary.label}</strong>: {summary.status} - {summary.summary}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {execution.requestSnapshotSummary ? <p className="shared-readiness-note">{execution.requestSnapshotSummary}</p> : null}
+                {runStatus.message ? <p className="shared-readiness-note">{runStatus.message}</p> : null}
+              </div>
+            </div>
           ) : (
             <EmptyStateCallout
               title="No execution info yet"
@@ -313,14 +347,3 @@ export function RequestResultPanelPlaceholder({
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-

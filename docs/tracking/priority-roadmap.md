@@ -92,15 +92,15 @@ Recently completed foundation work:
 - `T018` Delivery milestone plan
 
 Ready to start now:
-- `M3-F1` and `M3-F2` are landed; keep them closed as visual-only slices
-- `M3-F3` is now ready to start again; the latest direct `npm run check:m3f3-gate` run reports `gate_clear`, so request-builder and active observation TSX presentation cleanup is again the active next visual-only slice
-- `T024` is landed: `M3-F3` now has a canonical exact-patch handoff note for the pending request-builder/result-panel wrapper cleanup, so future contributors can resume the slice without repeating the scope audit
-- `T019` is landed: the workspace import surface now performs a server-backed no-write preview before explicit confirm and preserves the existing request/mock bundle import semantics after commit
-- `T020` is landed: Candidate B now has a concrete gap inventory and stronger future lane without promoting migration implementation prematurely
-- `T021` is landed: Candidate C now has a concrete packaging/startup gap inventory without promoting packaging implementation prematurely
-- `T022` is landed: the repo now records an explicit no-promotion decision after `T021` instead of implying that another implementation task should follow automatically
-- `T023` is landed: the stronger Candidate B authored-resource import lane now has a chosen future approach, but it still lacks one explicit transform contract and remains parked
-- No additional post-M3 implementation task beyond `M3-F3` should be activated right now; finish the bounded TSX presentation slice first, then return to `post-m3-reactivation-guide.md` for later Candidate A/B/C reactivation rules
+- M3-F1 and M3-F2 are landed; keep them closed as visual-only slices
+- `M3-F3` now has its bounded wrapper/CSS patch applied in code, but the latest direct `npm.cmd run check:m3f3-gate` on 2026-03-22 in this sandbox returned `env_blocked_transform`, so the slice still needs repo-native transform revalidation outside this blocked environment
+- `T024` remains the canonical exact-patch reference for what landed in `M3-F3`, so future contributors can resume validation without repeating the scope audit
+- T019 is landed: the workspace import surface now performs a server-backed no-write preview before explicit confirm and preserves the existing request/mock bundle import semantics after commit
+- T020 is landed: Candidate B now has a concrete gap inventory and stronger future lane without promoting migration implementation prematurely
+- T021 is landed: Candidate C now has a concrete packaging/startup gap inventory without promoting packaging implementation prematurely
+- T022 is landed: the repo now records an explicit no-promotion decision after T021 instead of implying that another implementation task should follow automatically
+- T023 is landed: the stronger Candidate B authored-resource import lane now has a chosen future approach, but it still lacks one explicit transform contract and remains parked
+- No additional post-M3 implementation task beyond M3-F3 should be activated right now; rerun the bounded slice validation first in a non-blocked environment, then return to post-m3-reactivation-guide.md for later Candidate A/B/C reactivation rules
 - Use `post-m3-reactivation-guide.md` before promoting any parked post-M3 work so the decision is based on the documented gate and promotion triggers rather than ad hoc momentum
 
 ## Deferred / Lower Priority Notes
