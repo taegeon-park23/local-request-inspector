@@ -32,6 +32,44 @@ async function openNewRequest(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('Request builder save/run wiring', () => {
+  it('renders the M3-F3 request-builder and observation grouping structure for a new draft', async () => {
+    const user = userEvent.setup();
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || init.method === undefined)) {
+        return createApiResponse({ items: [] });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    await openNewRequest(user);
+
+    const builderHeaderCopy = screen.getByRole('heading', { name: 'Untitled Request' }).closest('.request-work-surface__header-copy');
+    expect(builderHeaderCopy).not.toBeNull();
+    expect(within(builderHeaderCopy as HTMLElement).getByText(/This tab owns editable request state only/i)).toBeInTheDocument();
+
+    const locationSummary = screen.getByText('Unsaved draft');
+    expect(locationSummary.closest('.request-builder-core__identity-support')).not.toBeNull();
+
+    expect(screen.getByTestId('save-command-status').closest('.request-builder-core__command-status-list')).not.toBeNull();
+    expect(screen.getByTestId('run-command-status').closest('.request-builder-core__command-status-list')).not.toBeNull();
+    expect(screen.getByText(/Duplicate stays deferred until saved-request copy semantics are added/i).closest('.request-builder-core__command-support')).not.toBeNull();
+
+    const observationHeaderCopy = screen.getByRole('heading', { name: 'Observation for Untitled Request' }).closest('.workspace-detail-panel__header-copy');
+    expect(observationHeaderCopy).not.toBeNull();
+
+    const observationMeta = observationHeaderCopy?.querySelector('.workspace-detail-panel__header-meta');
+    expect(observationMeta).not.toBeNull();
+    expect(within(observationMeta as HTMLElement).getByText('Draft request tab')).toBeInTheDocument();
+    expect(within(observationMeta as HTMLElement).getByText('Response')).toBeInTheDocument();
+    expect(within(observationMeta as HTMLElement).getByText('No execution yet')).toBeInTheDocument();
+  });
   it('saves the active draft, clears dirty state, and reflects the saved request in the explorer', async () => {
     const user = userEvent.setup();
 
