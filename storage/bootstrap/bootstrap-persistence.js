@@ -2,6 +2,7 @@ const fs = require('fs');
 const { buildStorageLayout } = require('../shared/data-root');
 const {
   AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION,
+  ENVIRONMENT_RESOURCE_SCHEMA_VERSION,
   MOCK_RULE_RESOURCE_SCHEMA_VERSION,
   REQUEST_RESOURCE_SCHEMA_VERSION,
   RESOURCE_MANIFEST_SCHEMA_VERSION,
@@ -12,6 +13,7 @@ const {
   RUNTIME_REQUEST_SNAPSHOT_SCHEMA_VERSION,
   RUNTIME_SCHEMA_VERSION,
   RUNTIME_STORAGE_KIND,
+  SCRIPT_RESOURCE_SCHEMA_VERSION,
   STORAGE_SCHEMA_VERSION,
 } = require('../shared/constants');
 const { JsonResourceStorage } = require('../resource/json-resource-storage');
@@ -28,6 +30,8 @@ function buildStorageVersionManifestPayload() {
     runtimeMetadataSchemaVersion: RUNTIME_METADATA_SCHEMA_VERSION,
     runtimePersistencePolicy: RUNTIME_PERSISTENCE_POLICY,
     authoredRequestSchemaVersion: REQUEST_RESOURCE_SCHEMA_VERSION,
+    environmentSchemaVersion: ENVIRONMENT_RESOURCE_SCHEMA_VERSION,
+    savedScriptSchemaVersion: SCRIPT_RESOURCE_SCHEMA_VERSION,
     mockRuleSchemaVersion: MOCK_RULE_RESOURCE_SCHEMA_VERSION,
     requestSnapshotSchemaVersion: RUNTIME_REQUEST_SNAPSHOT_SCHEMA_VERSION,
     capturedRequestSummarySchemaVersion: RUNTIME_CAPTURE_SUMMARY_SCHEMA_VERSION,

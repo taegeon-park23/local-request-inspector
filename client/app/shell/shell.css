@@ -987,6 +987,107 @@ body { margin: 0; min-height: 100vh; background: #020617; }
 .request-builder-core__source-copy {
   margin: 0;
 }
+.environments-explorer,
+.environments-detail,
+.environments-summary-grid,
+.scripts-explorer,
+.scripts-detail,
+.scripts-summary-grid,
+.settings-surface,
+.settings-summary-grid {
+  display: grid;
+  gap: 1rem;
+}
+.environments-explorer__header,
+.environments-detail__header,
+.scripts-explorer__header,
+.scripts-detail__header,
+.settings-surface__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.environments-filter-grid,
+.scripts-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.environments-list,
+.scripts-list,
+.scripts-template-list,
+.settings-copy-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+.environment-row-editor,
+.scripts-template-card,
+.settings-copy-item {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid #1e293b;
+  border-radius: 0.85rem;
+  padding: 0.85rem;
+  background: #020617;
+}
+.environment-secret-editor {
+  display: grid;
+  gap: 0.65rem;
+}
+.environment-secret-editor__status,
+.scripts-template-card p,
+.settings-copy-item p {
+  margin: 0;
+  color: #cbd5e1;
+}
+.environment-validation-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: #fca5a5;
+}
+.scripts-template-card h3,
+.settings-copy-item strong {
+  margin: 0;
+}
+.scripts-template-card__preview {
+  margin: 0;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  background: #0b1220;
+  color: #cbd5e1;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.settings-copy-item {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+.settings-copy-item code {
+  display: inline-block;
+  margin-top: 0.35rem;
+}
+@media (max-width: 1024px) {
+  .environments-explorer__header,
+  .environments-detail__header,
+  .scripts-explorer__header,
+  .scripts-detail__header,
+  .settings-surface__header {
+    flex-direction: column;
+  }
+
+  .environments-filter-grid,
+  .scripts-filter-grid,
+  .environments-summary-grid,
+  .scripts-summary-grid,
+  .settings-summary-grid,
+  .settings-copy-item {
+    grid-template-columns: 1fr;
+  }
+}
 
 
 

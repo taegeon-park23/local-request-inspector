@@ -10,7 +10,7 @@
 ## 1. Current State
 - The documented M3-F3 wrapper/CSS patch is now applied in `RequestWorkSurfacePlaceholder.tsx`, `RequestResultPanelPlaceholder.tsx`, and `material-theme.css`.
 - `npm.cmd run typecheck` passed on 2026-03-22 after the patch landed.
-- A user-verified non-sandbox local `npm.cmd run test:ui` passed all 47 tests on 2026-03-22.
+- A user-verified non-sandbox local `npm.cmd run test:ui` passed the then-current full UI suite on 2026-03-22.
 - A same-day `npm.cmd run check` rerun in this sandbox passed.
 - Direct sandbox reruns of `npm.cmd run check:m3f3-gate` and `npm.cmd run test:ui` still hit environment-level esbuild worker startup failure, but that sandbox-only result no longer keeps `M3-F3` open in tracking.
 - This note now serves as the canonical applied-patch reference plus the local-verification handoff guide when sandboxed checks cannot run.
@@ -105,7 +105,7 @@ Styling intent:
 Latest validation on 2026-03-22:
 1. `npm.cmd run typecheck` - passed
 2. `npm.cmd run test:node` - passed, including a static M3-F3 wrapper/CSS shape guard for the two TSX files and `material-theme.css`
-3. user-verified non-sandbox local `npm.cmd run test:ui` - passed all 47 tests
+3. user-verified non-sandbox local `npm.cmd run test:ui` - passed the then-current full UI suite
 4. `npm.cmd run check` - passed in this sandbox
 5. direct sandbox reruns of `npm.cmd run check:m3f3-gate` and `npm.cmd run test:ui` - still environment-blocked by esbuild worker startup
 6. direct in-app inspection - not completed in this sandbox
@@ -116,7 +116,7 @@ If a future contributor wants local confirmation outside the sandbox, use:
 2. `npm.cmd run check`
    Expected result: exit code `0`
 3. `npm.cmd run test:ui`
-   Expected result: `Test Files  8 passed (8)` and `Tests  47 passed (47)`
+   Expected result for the current repo state: `Test Files  11 passed (11)` and `Tests  52 passed (52)`
 
 ## 6. If Tooling Fails Again
 - If a contributor reruns the gate locally and it reports `gate_clear`, do not re-scope M3-F3; use this note to confirm the intended wrapper/CSS shape that is already in code.

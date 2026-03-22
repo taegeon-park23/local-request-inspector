@@ -8,8 +8,11 @@ import { defaultHistoryFixtureScenario } from '@client/features/history/data/his
 import { resetHistoryStore } from '@client/features/history/state/history-store';
 import { defaultMockRuleFixtureRecords } from '@client/features/mocks/data/mock-rule-fixtures';
 import { resetMocksStore } from '@client/features/mocks/state/mocks-store';
+import { defaultEnvironmentFixtureDetails, defaultEnvironmentFixtureSummaries } from '@client/features/environments/data/environment-fixtures';
 import { resetRequestCommandStore } from '@client/features/request-builder/state/request-command-store';
 import { resetRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
+import { defaultScriptTemplateFixtureRecords, defaultSavedScriptFixtureRecords } from '@client/features/scripts/data/script-fixtures';
+import { defaultRuntimeStatusFixture } from '@client/features/settings/data/runtime-status-fixtures';
 import { resetWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
 
 let objectUrlSequence = 0;
@@ -147,6 +150,49 @@ beforeEach(() => {
 
     if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
       return createApiResponse({ items: [] });
+    }
+
+    if (url === '/api/workspaces/local-workspace/environments' && (!init || !init.method || init.method === 'GET')) {
+      return createApiResponse({ items: defaultEnvironmentFixtureSummaries });
+    }
+
+    if (url.startsWith('/api/environments/') && (!init || !init.method || init.method === 'GET')) {
+      const environmentId = url.split('/').pop() ?? '';
+      const environment = defaultEnvironmentFixtureDetails.find((item) => item.id === environmentId);
+
+      return environment
+        ? createApiResponse({ environment })
+        : createApiError(`Environment ${environmentId} was not found.`);
+    }
+
+    if (url === '/api/workspaces/local-workspace/scripts' && (!init || !init.method || init.method === 'GET')) {
+      return createApiResponse({ items: defaultSavedScriptFixtureRecords });
+    }
+
+    if (url.startsWith('/api/scripts/') && (!init || !init.method || init.method === 'GET')) {
+      const scriptId = url.split('/').pop() ?? '';
+      const script = defaultSavedScriptFixtureRecords.find((item) => item.id === scriptId);
+
+      return script
+        ? createApiResponse({ script })
+        : createApiError(`Saved script ${scriptId} was not found.`);
+    }
+
+    if (url === '/api/script-templates' && (!init || !init.method || init.method === 'GET')) {
+      return createApiResponse({ items: defaultScriptTemplateFixtureRecords });
+    }
+
+    if (url.startsWith('/api/script-templates/') && (!init || !init.method || init.method === 'GET')) {
+      const templateId = url.split('/').pop() ?? '';
+      const template = defaultScriptTemplateFixtureRecords.find((item) => item.id === templateId);
+
+      return template
+        ? createApiResponse({ template })
+        : createApiError(`Script template ${templateId} was not found.`);
+    }
+
+    if (url === '/api/settings/runtime-status' && (!init || !init.method || init.method === 'GET')) {
+      return createApiResponse({ status: defaultRuntimeStatusFixture });
     }
 
     if (url === '/api/workspaces/local-workspace/resource-bundle' && (!init || !init.method || init.method === 'GET')) {

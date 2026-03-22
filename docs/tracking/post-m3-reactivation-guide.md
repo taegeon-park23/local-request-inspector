@@ -3,16 +3,17 @@
 - **Purpose:** Provide the canonical hold-state and reactivation rules for work after `M3-F1` / `M3-F2`, so contributors know when extra local confirmation of `M3-F3` is needed and when an optional backlog item is narrow enough to promote.
 - **Created:** 2026-03-22
 - **Last Updated:** 2026-03-22
-- **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `../architecture/material-3-adoption-plan.md`, `../tasks/task-010-frontend-workspace-shell-implementation-plan.md`, `../tasks/task-015-import-export-strategy.md`, `../tasks/task-018-delivery-milestone-plan.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`
+- **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `../architecture/material-3-adoption-plan.md`, `../tasks/task-010-frontend-workspace-shell-implementation-plan.md`, `../tasks/task-015-import-export-strategy.md`, `../tasks/task-018-delivery-milestone-plan.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`, `../tasks/task-027-placeholder-route-mvp.md`
 - **Status:** active reference
 - **Update Rule:** Update when the official `M3-F3` gate result changes, when an optional backlog item becomes narrowly promotable, or when the current post-M3 hold state changes.
 
 ## 1. Current Hold-State Summary
 - M3-F3 now has its bounded request-builder/result-panel wrapper patch applied in code.
 - `npm.cmd run typecheck` passed on 2026-03-22 after that patch landed.
-- A user-verified non-sandbox local `npm.cmd run test:ui` passed all 47 tests on 2026-03-22.
+- A user-verified non-sandbox local `npm.cmd run test:ui` passed the then-current full UI suite on 2026-03-22.
 - A same-day `npm.cmd run check` rerun in this sandbox passed.
 - Direct sandbox reruns of `npm.cmd run check:m3f3-gate` and `npm.cmd run test:ui` still hit environment-level esbuild worker startup failure.
+- `../tasks/task-027-placeholder-route-mvp.md` is landed: `/environments` and `/scripts` now expose persisted route-level management surfaces, and `/settings` now exposes a diagnostics-first runtime-status surface.
 - `../tasks/task-019-server-backed-pre-import-preview.md` is landed as the bounded Candidate A delivery for the current workspace authored-resource import flow.
 - ../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md is landed as the bounded Candidate B documentation follow-up for compatibility-gap narrowing.
 - ../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md is landed as the bounded Candidate C documentation follow-up for packaging/startup gap inventory.
@@ -64,7 +65,7 @@
 - Recommended local command set:
   1. `npm.cmd run check:m3f3-gate` -> expect exit code `0` and `Gate status: gate_clear`
   2. `npm.cmd run check` -> expect exit code `0`
-  3. `npm.cmd run test:ui` -> expect `Test Files  8 passed (8)` and `Tests  47 passed (47)`
+  3. `npm.cmd run test:ui` -> expect `Test Files  11 passed (11)` and `Tests  52 passed (52)` for the current repo state
 - Use `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md` before proposing any extra repo-side blocker work so later contributors start from the confirmed preflight boundary.
 ### Additional Candidate A Work Beyond T019
 - Promote further Candidate A work only when a concrete authored-resource UX or transfer gap is documented tightly enough to become one bounded task beyond `T019`.
@@ -121,6 +122,7 @@ Before promoting any post-M3 work:
 - Keep `../tasks/task-023-candidate-b-import-migration-approach-decision.md` closed as the Candidate B approach-decision step, not as migration implementation.
 - Keep `../tasks/task-025-post-m3-f3-closure-priority-review.md` closed as the latest no-promotion decision record after `M3-F3` closure.
 - Keep `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md` closed as the blocker-boundary confirmation step, not as a new packaging or toolchain workstream.
+- Keep `../tasks/task-027-placeholder-route-mvp.md` closed as the bounded implementation step that removed the remaining top-level placeholder routes without promoting selector, linkage, or settings-mutation scope.
 - Keep Candidate B, Candidate C, and any additional Candidate A work parked until one of the reactivation triggers above is satisfied.
 - Do not create another post-M3-F3 closure review task automatically from sandbox-only verification churn; use `T025` as the current closure-state review.
 - Keep the current state as "one narrow next step plus clear parking rules," not "search for anything left to implement."
