@@ -24,91 +24,98 @@ import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 
-const historyResultTabs = [
-  { id: 'response', label: 'Response', icon: 'response' },
-  { id: 'console', label: 'Console', icon: 'console' },
-  { id: 'tests', label: 'Tests', icon: 'tests' },
-  { id: 'execution-info', label: 'Execution Info', icon: 'info' },
-] as const;
+type Translate = ReturnType<typeof useI18n>['t'];
 
-const observationHealthCopy = {
-  ready: 'History reads persisted execution summaries from the runtime lane. Select a row to inspect bounded result composition or open a replay draft into Workspace.',
-  degraded: 'History observation is degraded. Persisted execution summaries may be unavailable until the runtime lane responds again.',
-} as const;
-
-function createFallbackPreviewSizeLabel(history: HistoryRecord) {
+function createFallbackPreviewSizeLabel(history: HistoryRecord, t: Translate) {
   if (history.bodyPreview.length === 0 || history.bodyPreview.startsWith('No persisted response body preview')) {
-    return 'No persisted preview';
+    return t('historyRoute.helpers.previewSizeNone');
   }
 
-  return `${new TextEncoder().encode(history.bodyPreview).length} B preview`;
+  return t('historyRoute.helpers.previewSizeBytes', {
+    count: new TextEncoder().encode(history.bodyPreview).length,
+  });
 }
 
-function formatObservedPlacement(collectionName?: string, folderName?: string) {
+function formatObservedPlacement(collectionName: string | undefined, folderName: string | undefined, t: Translate) {
   if (!collectionName) {
-    return 'No saved placement recorded';
+    return t('historyRoute.helpers.placementNone');
   }
 
   return folderName ? `${collectionName} / ${folderName}` : collectionName;
 }
 
-function createFallbackBodyModeSummary(bodyMode: HistoryRecord['requestBodyMode']) {
+function createFallbackBodyModeSummary(bodyMode: HistoryRecord['requestBodyMode'], t: Translate) {
   switch (bodyMode) {
     case 'json':
-      return 'JSON body';
+      return t('historyRoute.helpers.bodyModeJson');
     case 'text':
-      return 'Text body';
+      return t('historyRoute.helpers.bodyModeText');
     case 'form-urlencoded':
-      return 'Form body';
+      return t('historyRoute.helpers.bodyModeForm');
     case 'multipart-form-data':
-      return 'Multipart body';
+      return t('historyRoute.helpers.bodyModeMultipart');
     default:
-      return 'No body';
+      return t('historyRoute.helpers.bodyModeNone');
   }
 }
 
-function createFallbackAuthSummary(history: HistoryRecord) {
+function createFallbackAuthSummary(history: HistoryRecord, t: Translate) {
   switch (history.requestAuth.type) {
     case 'bearer':
-      return 'Bearer auth';
+      return t('historyRoute.helpers.authBearer');
     case 'basic':
-      return 'Basic auth';
+      return t('historyRoute.helpers.authBasic');
     case 'api-key':
-      return history.requestAuth.apiKeyPlacement === 'query' ? 'API key in query' : 'API key in header';
+      return history.requestAuth.apiKeyPlacement === 'query'
+        ? t('historyRoute.helpers.authApiKeyQuery')
+        : t('historyRoute.helpers.authApiKeyHeader');
     default:
-      return 'No auth';
+      return t('historyRoute.helpers.authNone');
   }
 }
 
-function createFallbackRequestInputSummary(history: HistoryRecord) {
-  return `${history.requestParams.length} params · ${history.requestHeaders.length} headers · ${createFallbackBodyModeSummary(history.requestBodyMode)} · ${createFallbackAuthSummary(history)}`;
+function createFallbackRequestInputSummary(history: HistoryRecord, t: Translate) {
+  return t('historyRoute.helpers.requestInputSummary', {
+    params: history.requestParams.length,
+    headers: history.requestHeaders.length,
+    bodyMode: createFallbackBodyModeSummary(history.requestBodyMode, t),
+    auth: createFallbackAuthSummary(history, t),
+  });
 }
 
-function formatHistoryRequestLinkage(history: HistoryRecord) {
+function formatHistoryRequestLinkage(history: HistoryRecord, t: Translate) {
   if (history.requestResourceId) {
     return history.requestResourceId;
   }
 
   if (history.requestCollectionName) {
     return history.sourceLabel === 'Saved request snapshot'
-      ? formatObservedPlacement(history.requestCollectionName, history.requestFolderName)
-      : `Draft save placement: ${formatObservedPlacement(history.requestCollectionName, history.requestFolderName)}`;
+      ? formatObservedPlacement(history.requestCollectionName, history.requestFolderName, t)
+      : t('historyRoute.helpers.linkedRequestDraftPlacement', {
+        placement: formatObservedPlacement(history.requestCollectionName, history.requestFolderName, t),
+      });
   }
 
-  return 'No linked saved request';
+  return t('historyRoute.helpers.linkedRequestNone');
 }
 
-function createFallbackResponsePreviewPolicy(history: HistoryRecord) {
+function createFallbackResponsePreviewPolicy(history: HistoryRecord, t: Translate) {
   if (history.bodyPreview.startsWith('No persisted response body preview')) {
-    return 'No response preview was persisted for this execution.';
+    return t('historyRoute.helpers.responsePreviewPolicyNone');
   }
 
-  return 'Persisted response preview is bounded and redacted before deeper diagnostics are added.';
+  return t('historyRoute.helpers.responsePreviewPolicyBounded');
 }
 
 export function HistoryPlaceholder() {
   const navigate = useNavigate();
   const { t } = useI18n();
+  const historyResultTabs = [
+    { id: 'response', label: t('historyRoute.resultTabs.response'), icon: 'response' },
+    { id: 'console', label: t('historyRoute.resultTabs.console'), icon: 'console' },
+    { id: 'tests', label: t('historyRoute.resultTabs.tests'), icon: 'tests' },
+    { id: 'execution-info', label: t('historyRoute.resultTabs.executionInfo'), icon: 'info' },
+  ] as const;
   const [activeResultTab, setActiveResultTab] = useState<HistoryResultTabId>('response');
   const selectedHistoryId = useHistoryStore((state) => state.selectedHistoryId);
   const searchText = useHistoryStore((state) => state.searchText);
@@ -155,7 +162,7 @@ export function HistoryPlaceholder() {
     ? historyListQuery.error.message
     : historyDetailQuery.error instanceof Error
       ? historyDetailQuery.error.message
-      : 'Runtime execution history is temporarily unavailable.';
+      : t('historyRoute.empty.degraded.fallbackDescription');
   const selectedStageSummaries = selectedHistory?.stageSummaries ?? [];
 
   const handleOpenReplayDraft = () => {
@@ -173,36 +180,36 @@ export function HistoryPlaceholder() {
         <div className="history-explorer">
           <header className="history-explorer__header">
             <div>
-              <p className="section-placeholder__eyebrow">Execution observations</p>
-              <h2>History list</h2>
-              <p>{observationHealthCopy[observationHealth]}</p>
+              <p className="section-placeholder__eyebrow">{t('historyRoute.sidebar.eyebrow')}</p>
+              <h2>{t('historyRoute.sidebar.title')}</h2>
+              <p>{observationHealth === 'ready' ? t('historyRoute.sidebar.health.ready') : t('historyRoute.sidebar.health.degraded')}</p>
               <div className="workspace-explorer__role-strip" aria-label="History surface role">
-                <span className="workspace-chip">Observation</span>
-                <span className="workspace-chip workspace-chip--secondary">Runtime lane</span>
+                <span className="workspace-chip">{t('roles.observation')}</span>
+                <span className="workspace-chip workspace-chip--secondary">{t('historyRoute.sidebar.roleChip')}</span>
               </div>
             </div>
           </header>
 
           <div className="history-filter-grid">
             <label className="request-field">
-              <span>Search history</span>
+              <span>{t('historyRoute.filters.searchLabel')}</span>
               <input
-                aria-label="Search history"
+                aria-label={t('historyRoute.filters.searchLabel')}
                 type="text"
                 value={searchText}
                 onChange={(event) => setSearchText(event.currentTarget.value)}
               />
             </label>
             <label className="request-field request-field--compact">
-              <span>Execution outcome filter</span>
+              <span>{t('historyRoute.filters.executionOutcomeFilterLabel')}</span>
               <select
-                aria-label="Execution outcome filter"
+                aria-label={t('historyRoute.filters.executionOutcomeFilterLabel')}
                 value={executionOutcomeFilter}
                 onChange={(event) => setExecutionOutcomeFilter(event.currentTarget.value as typeof executionOutcomeFilter)}
               >
                 {historyExecutionOutcomeOptions.map((option) => (
                   <option key={option.value} value={option.value}>
-                    {option.label}
+                    {option.value === 'all' ? t('historyRoute.outcomeFilterOptions.all') : option.label}
                   </option>
                 ))}
               </select>
@@ -211,36 +218,36 @@ export function HistoryPlaceholder() {
 
           {isListLoading ? (
             <EmptyStateCallout
-              title="Loading persisted execution history"
-              description="Waiting for the runtime lane to return the latest execution summaries. Filtering stays local once the persisted list arrives."
+              title={t('historyRoute.empty.loadingList.title')}
+              description={t('historyRoute.empty.loadingList.description')}
             />
           ) : null}
 
           {observationHealth === 'degraded' ? (
             <EmptyStateCallout
-              title="History observation is degraded"
-              description={`Persisted execution summaries could not be loaded cleanly. ${degradedReason}`}
+              title={t('historyRoute.empty.degraded.title')}
+              description={`${t('historyRoute.empty.degraded.fallbackDescription')} ${degradedReason}`}
             />
           ) : null}
 
           {isEmpty ? (
             <EmptyStateCallout
-              title="No history yet"
-              description="Outbound request executions appear here after Run persists a bounded runtime summary into SQLite history storage."
+              title={t('historyRoute.empty.noItems.title')}
+              description={t('historyRoute.empty.noItems.description')}
               className="history-empty-state"
             />
           ) : null}
 
           {hasNoFilteredResults ? (
             <EmptyStateCallout
-              title="No history rows match these filters"
-              description="Adjust the search text or execution outcome filter to bring persisted history rows back into view."
+              title={t('historyRoute.empty.noFilteredItems.title')}
+              description={t('historyRoute.empty.noFilteredItems.description')}
               className="history-empty-state"
             />
           ) : null}
 
           {filteredHistory.length > 0 ? (
-            <ul className="history-list" aria-label="History list">
+            <ul className="history-list" aria-label={t('historyRoute.filters.listAriaLabel')}>
               {filteredHistory.map((history) => {
                 const isSelected = history.id === effectiveSelectedHistoryId;
 
@@ -249,7 +256,7 @@ export function HistoryPlaceholder() {
                     <button
                       type="button"
                       className={isSelected ? 'history-row history-row--selected' : 'history-row'}
-                      aria-label={`Open history ${history.requestLabel}`}
+                      aria-label={t('historyRoute.helpers.openHistoryAction', { label: history.requestLabel })}
                       aria-pressed={isSelected}
                       data-source-kind={history.sourceLabel === 'Saved request snapshot' ? 'saved' : 'ad-hoc'}
                       onClick={() => selectHistory(history.id)}
@@ -277,54 +284,54 @@ export function HistoryPlaceholder() {
 
       <section className="shell-panel shell-panel--main" aria-label="Main work surface">
         <SectionHeading
-            icon="history"
-            title={t('routes.history.title')}
-            summary={t('routes.history.summary')}
-          >
-            <div className="workspace-explorer__role-strip" aria-label="History route role">
-              <span className="workspace-chip">{t('roles.observation')}</span>
-              <span className="workspace-chip workspace-chip--secondary">{t('routes.history.contextChip')}</span>
-            </div>
-          </SectionHeading>
+          icon="history"
+          title={t('routes.history.title')}
+          summary={t('routes.history.summary')}
+        >
+          <div className="workspace-explorer__role-strip" aria-label="History route role">
+            <span className="workspace-chip">{t('roles.observation')}</span>
+            <span className="workspace-chip workspace-chip--secondary">{t('routes.history.contextChip')}</span>
+          </div>
+        </SectionHeading>
 
         {isListLoading ? (
           <div className="request-work-surface request-work-surface--empty">
             <EmptyStateCallout
-              title="Loading persisted history detail"
-              description="The runtime lane is loading the latest execution list before a detail row can be selected."
+              title={t('historyRoute.empty.loadingDetail.title')}
+              description={t('historyRoute.empty.loadingDetail.description')}
             />
           </div>
         ) : !selectedHistory ? (
           <div className="request-work-surface request-work-surface--empty">
             <EmptyStateCallout
-              title="No history selected"
-              description="Pick an execution row to inspect the persisted request snapshot, bounded result composition, and compact stage summary. Replay still opens a separate authoring draft instead of mutating history detail."
+              title={t('historyRoute.empty.noSelection.title')}
+              description={t('historyRoute.empty.noSelection.description')}
             />
           </div>
         ) : isDetailLoading ? (
           <div className="request-work-surface request-work-surface--empty">
             <EmptyStateCallout
-              title="Loading persisted execution detail"
-              description="Fetching the selected execution detail from the runtime lane. The result composition tabs stay observation-only once the row loads."
+              title={t('historyRoute.empty.loadingPersistedDetail.title')}
+              description={t('historyRoute.empty.loadingPersistedDetail.description')}
             />
           </div>
         ) : historyDetailQuery.isError ? (
           <div className="request-work-surface request-work-surface--empty">
             <EmptyStateCallout
-              title="Execution detail is degraded"
-              description={`The selected execution could not be loaded cleanly. ${degradedReason}`}
+              title={t('historyRoute.empty.detailDegraded.title')}
+              description={`${t('historyRoute.empty.detailDegraded.fallbackDescription')} ${degradedReason}`}
             />
           </div>
         ) : (
           <div className="history-detail">
             <header className="history-detail__header">
               <div>
-                <p className="section-placeholder__eyebrow">Observation detail</p>
-                <h2>History detail</h2>
+                <p className="section-placeholder__eyebrow">{t('historyRoute.detail.header.eyebrow')}</p>
+                <h2>{t('historyRoute.detail.header.title')}</h2>
                 <p>{selectedHistory.requestSnapshotSummary}</p>
                 <div className="workspace-explorer__role-strip" aria-label="History detail role">
-                  <span className="workspace-chip">Observation</span>
-                  <span className="workspace-chip workspace-chip--secondary">Persisted execution</span>
+                  <span className="workspace-chip">{t('roles.observation')}</span>
+                  <span className="workspace-chip workspace-chip--secondary">{t('historyRoute.detail.header.roleChip')}</span>
                 </div>
               </div>
               <div className="request-work-surface__badges">
@@ -336,61 +343,61 @@ export function HistoryPlaceholder() {
             </header>
 
             <DetailViewerSection
-              title="Observation boundary"
-              description="History detail stays observation-only. Open Replay Draft creates a new editable request draft instead of turning this persisted execution record into live authoring state."
+              title={t('historyRoute.detail.bridge.title')}
+              description={t('historyRoute.detail.bridge.description')}
               className="history-summary-card history-summary-card--bridge"
               actions={(
                 <div className="request-work-surface__future-actions">
                   <button type="button" className="workspace-button workspace-button--secondary" onClick={handleOpenReplayDraft}>
-                    <IconLabel icon="replay">Open Replay Draft</IconLabel>
+                    <IconLabel icon="replay">{t('historyRoute.detail.bridge.openReplayDraft')}</IconLabel>
                   </button>
                   <button type="button" className="workspace-button workspace-button--secondary" disabled>
-                    <IconLabel icon="run">Run Replay Now</IconLabel>
+                    <IconLabel icon="run">{t('historyRoute.detail.bridge.runReplayNow')}</IconLabel>
                   </button>
                 </div>
               )}
             >
               <p className="shared-readiness-note">
-                Run Replay Now stays disabled in this slice because replay remains edit-first, and persisted history keeps only bounded redacted summaries.
+                {t('historyRoute.detail.bridge.readinessNote')}
               </p>
             </DetailViewerSection>
 
             <div className="history-summary-grid">
               <DetailViewerSection
-                title="Execution summary"
-                description="Execution outcome, transport outcome, and test summary remain separate vocabulary families."
+                title={t('historyRoute.summaryCards.executionSummary.title')}
+                description={t('historyRoute.summaryCards.executionSummary.description')}
                 className="history-summary-card history-summary-card--execution"
               >
                 <KeyValueMetaList
                   items={[
-                    { label: 'Execution outcome', value: selectedHistory.executionOutcome },
-                    { label: 'Transport outcome', value: selectedHistory.transportOutcome },
-                    { label: 'Duration', value: selectedHistory.durationLabel },
-                    { label: 'Tests', value: selectedHistory.testSummaryLabel },
+                    { label: t('historyRoute.summaryCards.executionSummary.labels.executionOutcome'), value: selectedHistory.executionOutcome },
+                    { label: t('historyRoute.summaryCards.executionSummary.labels.transportOutcome'), value: selectedHistory.transportOutcome },
+                    { label: t('historyRoute.summaryCards.executionSummary.labels.duration'), value: selectedHistory.durationLabel },
+                    { label: t('historyRoute.summaryCards.executionSummary.labels.tests'), value: selectedHistory.testSummaryLabel },
                   ]}
                 />
               </DetailViewerSection>
 
               <DetailViewerSection
-                title="Request snapshot"
-                description="History shows the persisted outbound request snapshot used during execution, not the live request draft currently open in Workspace."
+                title={t('historyRoute.summaryCards.requestSnapshot.title')}
+                description={t('historyRoute.summaryCards.requestSnapshot.description')}
                 className="history-summary-card history-summary-card--snapshot"
               >
                 <KeyValueMetaList
                   items={[
-                    { label: 'Request label', value: selectedHistory.requestLabel },
-                    { label: 'Snapshot source', value: selectedHistory.sourceLabel },
-                    { label: 'Linked request', value: formatHistoryRequestLinkage(selectedHistory) },
-                    { label: 'Placement', value: formatObservedPlacement(selectedHistory.requestCollectionName, selectedHistory.requestFolderName) },
-                    { label: 'URL', value: selectedHistory.url },
-                    { label: 'Request input', value: selectedHistory.requestInputSummary ?? createFallbackRequestInputSummary(selectedHistory) },
+                    { label: t('historyRoute.summaryCards.requestSnapshot.labels.requestLabel'), value: selectedHistory.requestLabel },
+                    { label: t('historyRoute.summaryCards.requestSnapshot.labels.snapshotSource'), value: selectedHistory.sourceLabel },
+                    { label: t('historyRoute.summaryCards.requestSnapshot.labels.linkedRequest'), value: formatHistoryRequestLinkage(selectedHistory, t) },
+                    { label: t('historyRoute.summaryCards.requestSnapshot.labels.placement'), value: formatObservedPlacement(selectedHistory.requestCollectionName, selectedHistory.requestFolderName, t) },
+                    { label: t('historyRoute.summaryCards.requestSnapshot.labels.url'), value: selectedHistory.url },
+                    { label: t('historyRoute.summaryCards.requestSnapshot.labels.requestInput'), value: selectedHistory.requestInputSummary ?? createFallbackRequestInputSummary(selectedHistory, t) },
                   ]}
                 />
               </DetailViewerSection>
             </div>
 
             <PanelTabs
-              ariaLabel="History result tabs"
+              ariaLabel={t('historyRoute.resultTabs.ariaLabel')}
               tabs={historyResultTabs}
               activeTab={activeResultTab}
               onChange={setActiveResultTab}
@@ -398,7 +405,7 @@ export function HistoryPlaceholder() {
 
             {activeResultTab === 'response' ? (
               <DetailViewerSection
-                title="Response summary"
+                title={t('historyRoute.resultPanels.response.title')}
                 description={selectedHistory.responseSummary}
                 className="history-summary-card history-summary-card--response"
               >
@@ -409,48 +416,48 @@ export function HistoryPlaceholder() {
                 <KeyValueMetaList
                   items={[
                     {
-                      label: 'Status code',
-                      value: selectedHistory.transportStatusCode === null ? 'No persisted code' : selectedHistory.transportStatusCode,
+                      label: t('historyRoute.resultPanels.response.labels.statusCode'),
+                      value: selectedHistory.transportStatusCode === null ? t('historyRoute.resultPanels.response.statusCodeNoPersistedCode') : selectedHistory.transportStatusCode,
                     },
-                    { label: 'Duration', value: selectedHistory.durationLabel },
-                    { label: 'Preview size', value: selectedHistory.responsePreviewSizeLabel ?? createFallbackPreviewSizeLabel(selectedHistory) },
-                    { label: 'Preview policy', value: selectedHistory.responsePreviewPolicy ?? createFallbackResponsePreviewPolicy(selectedHistory) },
-                    { label: 'Headers summary', value: selectedHistory.headersSummary },
-                    { label: 'Body hint', value: selectedHistory.bodyHint },
+                    { label: t('historyRoute.resultPanels.response.labels.duration'), value: selectedHistory.durationLabel },
+                    { label: t('historyRoute.resultPanels.response.labels.previewSize'), value: selectedHistory.responsePreviewSizeLabel ?? createFallbackPreviewSizeLabel(selectedHistory, t) },
+                    { label: t('historyRoute.resultPanels.response.labels.previewPolicy'), value: selectedHistory.responsePreviewPolicy ?? createFallbackResponsePreviewPolicy(selectedHistory, t) },
+                    { label: t('historyRoute.resultPanels.response.labels.headersSummary'), value: selectedHistory.headersSummary },
+                    { label: t('historyRoute.resultPanels.response.labels.bodyHint'), value: selectedHistory.bodyHint },
                   ]}
                 />
-                <p className="shared-readiness-note">{selectedHistory.responsePreviewPolicy ?? createFallbackResponsePreviewPolicy(selectedHistory)}</p>
+                <p className="shared-readiness-note">{selectedHistory.responsePreviewPolicy ?? createFallbackResponsePreviewPolicy(selectedHistory, t)}</p>
                 <pre className="history-preview-block">{selectedHistory.bodyPreview}</pre>
                 <EmptyStateCallout
-                  title="Persisted response detail stays bounded"
-                  description="Saved history shows redacted runtime summaries. Rich JSON viewers, diff, and full raw payload inspection stay deferred for a later slice."
+                  title={t('historyRoute.resultPanels.response.boundedDetailTitle')}
+                  description={t('historyRoute.resultPanels.response.boundedDetailDescription')}
                 />
               </DetailViewerSection>
             ) : null}
 
             {activeResultTab === 'console' ? (
               <DetailViewerSection
-                title="Console summary"
+                title={t('historyRoute.resultPanels.console.title')}
                 description={selectedHistory.consoleSummary}
                 className="history-summary-card history-summary-card--console"
               >
-              <KeyValueMetaList
-                items={[
-                  { label: 'Log lines', value: selectedHistory.consoleLogCount },
-                  { label: 'Warnings', value: selectedHistory.consoleWarningCount },
-                  { label: 'Post-response stage', value: selectedStageSummaries.find((entry) => entry.stageId === 'post-response')?.status ?? 'Skipped' },
-                  { label: 'Stored summary', value: 'Redacted summary only' },
-                ]}
-              />
-              {selectedHistory.consolePreview.length > 0 ? (
-                <ul className="history-preview-list" aria-label="Console preview">
+                <KeyValueMetaList
+                  items={[
+                    { label: t('historyRoute.resultPanels.console.labels.logLines'), value: selectedHistory.consoleLogCount },
+                    { label: t('historyRoute.resultPanels.console.labels.warnings'), value: selectedHistory.consoleWarningCount },
+                    { label: t('historyRoute.resultPanels.console.labels.postResponseStage'), value: selectedStageSummaries.find((entry) => entry.stageId === 'post-response')?.status ?? t('historyRoute.helpers.stageStatusSkipped') },
+                    { label: t('historyRoute.resultPanels.console.labels.storedSummary'), value: t('historyRoute.resultPanels.console.labels.storedSummaryValue') },
+                  ]}
+                />
+                {selectedHistory.consolePreview.length > 0 ? (
+                  <ul className="history-preview-list" aria-label={t('historyRoute.resultPanels.console.consolePreviewAriaLabel')}>
                     {selectedHistory.consolePreview.map((entry) => (
                       <li key={entry}>{entry}</li>
                     ))}
                   </ul>
                 ) : (
                   <EmptyStateCallout
-                    title="No persisted console summary"
+                    title={t('historyRoute.resultPanels.console.noPersistedSummaryTitle')}
                     description={selectedStageSummaries.find((entry) => entry.stageId === 'post-response')?.summary ?? selectedHistory.consoleSummary}
                   />
                 )}
@@ -459,7 +466,7 @@ export function HistoryPlaceholder() {
 
             {activeResultTab === 'tests' ? (
               <DetailViewerSection
-                title="Tests summary"
+                title={t('historyRoute.resultPanels.tests.title')}
                 description={selectedHistory.testsSummary}
                 className="history-summary-card history-summary-card--tests"
               >
@@ -468,35 +475,35 @@ export function HistoryPlaceholder() {
                 </div>
                 <KeyValueMetaList
                   items={[
-                    { label: 'Assertions', value: selectedHistory.assertionCount },
-                    { label: 'Passed', value: selectedHistory.passedAssertions },
-                    { label: 'Failed', value: selectedHistory.failedAssertions },
-                    { label: 'Tests stage', value: selectedStageSummaries.find((entry) => entry.stageId === 'tests')?.status ?? 'Skipped' },
+                    { label: t('historyRoute.resultPanels.tests.labels.assertions'), value: selectedHistory.assertionCount },
+                    { label: t('historyRoute.resultPanels.tests.labels.passed'), value: selectedHistory.passedAssertions },
+                    { label: t('historyRoute.resultPanels.tests.labels.failed'), value: selectedHistory.failedAssertions },
+                    { label: t('historyRoute.resultPanels.tests.labels.testsStage'), value: selectedStageSummaries.find((entry) => entry.stageId === 'tests')?.status ?? t('historyRoute.helpers.stageStatusSkipped') },
                   ]}
                 />
                 {selectedHistory.testsPreview.length > 0 ? (
-                  <ul className="history-preview-list" aria-label="Tests preview">
+                  <ul className="history-preview-list" aria-label={t('historyRoute.resultPanels.tests.testsPreviewAriaLabel')}>
                     {selectedHistory.testsPreview.map((entry) => (
                       <li key={entry}>{entry}</li>
                     ))}
                   </ul>
                 ) : (
                   <EmptyStateCallout
-                    title="No persisted tests summary"
+                    title={t('historyRoute.resultPanels.tests.noPersistedSummaryTitle')}
                     description={selectedHistory.testsSummary}
                   />
                 )}
                 <EmptyStateCallout
-                  title="Per-assertion drilldown is deferred"
-                  description="History stops at bounded persisted test summaries and does not add script execution or deep diagnostics composition yet."
+                  title={t('historyRoute.resultPanels.tests.deferredDetailTitle')}
+                  description={t('historyRoute.resultPanels.tests.deferredDetailDescription')}
                 />
               </DetailViewerSection>
             ) : null}
 
             {activeResultTab === 'execution-info' ? (
               <DetailViewerSection
-                title="Execution info"
-                description="Execution metadata remains separate from request authoring and inbound capture observation state."
+                title={t('historyRoute.resultPanels.executionInfo.title')}
+                description={t('historyRoute.resultPanels.executionInfo.description')}
                 className="history-summary-card history-summary-card--execution-info"
               >
                 <div className="request-work-surface__badges">
@@ -504,18 +511,18 @@ export function HistoryPlaceholder() {
                 </div>
                 <KeyValueMetaList
                   items={[
-                    { label: 'Execution id', value: selectedHistory.executionId },
-                    { label: 'Started', value: selectedHistory.startedAtLabel },
-                    { label: 'Completed', value: selectedHistory.completedAtLabel },
-                    { label: 'Environment', value: selectedHistory.environmentLabel },
-                    { label: 'Source', value: selectedHistory.sourceLabel },
-                    { label: 'Error code', value: selectedHistory.errorCode ?? 'No execution error code' },
-                    { label: 'Error summary', value: selectedHistory.errorSummary ?? 'No execution error was reported.' },
-                    { label: 'Request input', value: selectedHistory.requestInputSummary ?? createFallbackRequestInputSummary(selectedHistory) },
+                    { label: t('historyRoute.resultPanels.executionInfo.labels.executionId'), value: selectedHistory.executionId },
+                    { label: t('historyRoute.resultPanels.executionInfo.labels.started'), value: selectedHistory.startedAtLabel },
+                    { label: t('historyRoute.resultPanels.executionInfo.labels.completed'), value: selectedHistory.completedAtLabel },
+                    { label: t('historyRoute.resultPanels.executionInfo.labels.environment'), value: selectedHistory.environmentLabel },
+                    { label: t('historyRoute.resultPanels.executionInfo.labels.source'), value: selectedHistory.sourceLabel },
+                    { label: t('historyRoute.resultPanels.executionInfo.labels.errorCode'), value: selectedHistory.errorCode ?? t('historyRoute.resultPanels.executionInfo.noExecutionErrorCode') },
+                    { label: t('historyRoute.resultPanels.executionInfo.labels.errorSummary'), value: selectedHistory.errorSummary ?? t('historyRoute.resultPanels.executionInfo.noExecutionErrorSummary') },
+                    { label: t('historyRoute.resultPanels.executionInfo.labels.requestInput'), value: selectedHistory.requestInputSummary ?? createFallbackRequestInputSummary(selectedHistory, t) },
                   ]}
                 />
                 {selectedStageSummaries.length > 0 ? (
-                  <ul className="history-preview-list" aria-label="Execution stage summary">
+                  <ul className="history-preview-list" aria-label={t('historyRoute.resultPanels.executionInfo.stageSummaryAriaLabel')}>
                     {selectedStageSummaries.map((summary) => (
                       <li key={`${selectedHistory.executionId}-${summary.stageId}`}>
                         <strong>{summary.label}</strong>: {summary.status} - {summary.summary}
@@ -524,8 +531,8 @@ export function HistoryPlaceholder() {
                   </ul>
                 ) : null}
                 <EmptyStateCallout
-                  title="Advanced execution diagnostics are deferred"
-                  description="Cancellation controls, live stage streams, and diff viewers remain outside this history observation slice."
+                  title={t('historyRoute.resultPanels.executionInfo.deferredDetailTitle')}
+                  description={t('historyRoute.resultPanels.executionInfo.deferredDetailDescription')}
                 />
               </DetailViewerSection>
             ) : null}
@@ -537,30 +544,30 @@ export function HistoryPlaceholder() {
         {!selectedHistory ? (
           <div className="workspace-detail-panel workspace-detail-panel--empty">
             <EmptyStateCallout
-              title="Compact timeline placeholder"
-              description="Execution stage summaries and deferred notes appear after a persisted history row is selected."
+              title={t('historyRoute.empty.timelinePlaceholder.title')}
+              description={t('historyRoute.empty.timelinePlaceholder.description')}
             />
           </div>
         ) : (
           <div className="workspace-detail-panel">
             <header className="workspace-detail-panel__header">
               <div>
-                <p className="section-placeholder__eyebrow">Observation panel</p>
-                <h2>Execution stage summary</h2>
-                <p>Compact persisted stage summaries only. Unified timelines, diff viewers, and deep traces remain out of scope.</p>
+                <p className="section-placeholder__eyebrow">{t('historyRoute.timelinePanel.header.eyebrow')}</p>
+                <h2>{t('historyRoute.timelinePanel.header.title')}</h2>
+                <p>{t('historyRoute.timelinePanel.header.description')}</p>
                 <div className="workspace-explorer__role-strip" aria-label="History timeline role">
-                  <span className="workspace-chip">Observation</span>
-                  <span className="workspace-chip workspace-chip--secondary">Stage summary</span>
+                  <span className="workspace-chip">{t('roles.observation')}</span>
+                  <span className="workspace-chip workspace-chip--secondary">{t('historyRoute.timelinePanel.header.roleChip')}</span>
                 </div>
               </div>
             </header>
 
             <DetailViewerSection
-              title="Compact timeline"
-              description="History keeps stage summaries compact and human-readable rather than turning into a deep trace viewer."
+              title={t('historyRoute.timelinePanel.timelineSummary.title')}
+              description={t('historyRoute.timelinePanel.timelineSummary.description')}
               className="history-summary-card history-summary-card--timeline"
             >
-              <ol className="history-timeline" aria-label="History timeline">
+              <ol className="history-timeline" aria-label={t('historyRoute.timelinePanel.timelineSummary.ariaLabel')}>
                 {selectedHistory.timelineEntries.map((entry) => (
                   <li key={entry.id} className="history-timeline__item">
                     <DetailViewerSection title={entry.title} description={entry.summary} tone="muted" />
@@ -570,14 +577,14 @@ export function HistoryPlaceholder() {
             </DetailViewerSection>
 
             <DetailViewerSection
-              title="Deferred runtime detail"
-              description="Persisted history detail is intentionally bounded, and replay continues to use an explicit edit-first bridge into Workspace."
+              title={t('historyRoute.timelinePanel.deferred.title')}
+              description={t('historyRoute.timelinePanel.deferred.description')}
               className="history-summary-card history-summary-card--deferred"
               tone="muted"
             >
               <EmptyStateCallout
-                title="Replay defaults to edit-first"
-                description="Open Replay Draft creates a new request-builder draft without turning history detail into editable state."
+                title={t('historyRoute.timelinePanel.deferred.emptyTitle')}
+                description={t('historyRoute.timelinePanel.deferred.emptyDescription')}
               />
             </DetailViewerSection>
           </div>

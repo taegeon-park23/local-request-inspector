@@ -219,6 +219,35 @@ describe('History S18 fidelity refinement', () => {
     ).toBe(true);
   });
 
+  it('renders client-owned history-route copy in Korean without changing the English-default contracts', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/execution-histories' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [] });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />, {
+      initialEntries: ['/history'],
+      initialLocale: 'ko',
+    });
+
+    expect(screen.getByRole('heading', { name: '히스토리' })).toBeInTheDocument();
+    expect(screen.getByText('히스토리 목록')).toBeInTheDocument();
+    expect(screen.getByLabelText('히스토리 검색')).toBeInTheDocument();
+    expect(screen.getByLabelText('실행 결과 필터')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('히스토리가 아직 없습니다')).toBeInTheDocument());
+    expect(screen.getByRole('heading', { name: '선택된 히스토리가 없습니다' })).toBeInTheDocument();
+  });
+
   it('keeps detail selection aligned with the filtered list and resets stale selection to the next visible persisted row', async () => {
     const user = userEvent.setup();
     const [firstHistory, secondHistory] = defaultHistoryFixtureScenario.listItems as [typeof defaultHistoryFixtureScenario.listItems[number], typeof defaultHistoryFixtureScenario.listItems[number]];
