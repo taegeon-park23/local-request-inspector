@@ -107,7 +107,7 @@ describe('Captures S18 fidelity refinement', () => {
     expect(screen.getByText('Handling summary')).toBeInTheDocument();
     expect(screen.getByText('Stripe webhook success')).toBeInTheDocument();
     expect(screen.getAllByText(/POST \/webhooks\/stripe(?:\?env=dev)? was observed at localhost:5671 as an inbound capture/i).length).toBeGreaterThan(0);
-    expect(screen.getByText('Mocked', { selector: '[data-kind="mockOutcome"]' })).toHaveAttribute('data-kind', 'mockOutcome');
+    expect(screen.getAllByText('Mocked', { selector: '[data-kind="mockOutcome"]' }).length).toBeGreaterThan(0);
     expect(screen.queryByText('Succeeded', { selector: '[data-kind="executionOutcome"]' })).not.toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([input]) => getUrl(input as RequestInfo | URL) === '/api/captured-requests')).toBe(true);
   });

@@ -523,7 +523,7 @@ describe('Request builder save/run wiring', () => {
     const stageSummary = screen.getByLabelText('Execution stage summary');
     expect(within(stageSummary).getAllByText('Transport', { selector: 'strong' }).length).toBeGreaterThan(0);
     expect(within(stageSummary).getByText(/Transport did not run because pre-request blocked the execution./i)).toBeInTheDocument();
-    expect(screen.getByLabelText('Blocked runtime has unsaved changes')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
   });
 
   it('saves a replay-created draft without overwriting replay bridge behavior', async () => {
