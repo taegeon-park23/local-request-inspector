@@ -80,17 +80,19 @@ export function SectionPlaceholder({
   detailLabel,
   children,
 }: SectionPlaceholderProps) {
+  const { t } = useI18n();
+
   return (
     <RoutePanelTabsLayout
       defaultActiveTab="main"
       explorer={(
-        <section className="shell-panel shell-panel--sidebar" aria-label="Section explorer">
+        <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
           <h2>{title} explorer</h2>
           <p>{sidebarLabel}</p>
         </section>
       )}
       main={(
-        <section className="shell-panel shell-panel--main" aria-label="Main work surface">
+        <section className="shell-panel shell-panel--main" aria-label={t('shell.routePanels.mainRegion')}>
           <header className="section-placeholder__header">
             <p className="section-placeholder__eyebrow">Top-level section</p>
             <h1>{title}</h1>
@@ -101,7 +103,7 @@ export function SectionPlaceholder({
         </section>
       )}
       detail={(
-        <aside className="shell-panel shell-panel--detail" aria-label="Contextual detail panel">
+        <aside className="shell-panel shell-panel--detail" aria-label={t('shell.routePanels.detailRegion')}>
           <h2>{title} detail</h2>
           <p>{detailLabel}</p>
         </aside>

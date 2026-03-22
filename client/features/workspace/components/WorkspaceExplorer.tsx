@@ -90,7 +90,7 @@ export function WorkspaceExplorer({
                   : t('workspaceRoute.explorer.actions.importResources')}
             </IconLabel>
             <input
-              aria-label="Import authored resources"
+              aria-label={t('workspaceRoute.explorer.actions.importResourcesInput')}
               className="workspace-explorer__file-input"
               type="file"
               accept="application/json,.json"
@@ -185,7 +185,7 @@ function WorkspaceExplorerNodeList({
                 <button
                   type="button"
                   className={isSelected ? 'workspace-request workspace-request--selected' : 'workspace-request'}
-                  aria-label={`Open ${node.request.name}`}
+                  aria-label={t('workspaceRoute.explorer.actions.openRequest', { name: node.request.name })}
                   aria-pressed={isSelected}
                   data-kind={node.kind}
                   data-resource-kind={node.request.resourceKind}
@@ -216,7 +216,7 @@ function WorkspaceExplorerNodeList({
                   <button
                     type="button"
                     className="workspace-button workspace-button--ghost workspace-request-row__export"
-                    aria-label={`Export ${node.request.name}`}
+                    aria-label={t('workspaceRoute.explorer.actions.exportRequest', { name: node.request.name })}
                     onClick={() => onExportRequest(node.request)}
                   >
                     <IconLabel icon="export">{t('workspaceRoute.explorer.actions.exportSingle')}</IconLabel>

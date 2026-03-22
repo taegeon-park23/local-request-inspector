@@ -3,7 +3,7 @@
 - **Purpose:** Define the bounded client-side internationalization model for English and Korean so later localization work can expand surface-by-surface without re-choosing provider, storage, or key conventions.
 - **Created:** 2026-03-23
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `../tasks/task-037-client-i18n-foundation-and-korean-locale-bootstrap.md`, `../tasks/task-038-environments-and-scripts-route-localization-pass.md`, `../tasks/task-039-workspace-authoring-localization-pass.md`, `../tasks/task-040-workspace-result-panel-localization-pass.md`, `../tasks/task-041-captures-observation-route-localization-pass.md`, `../tasks/task-042-history-observation-route-localization-pass.md`, `../tasks/task-045-mocks-route-localization-pass.md`, `material-3-adoption-plan.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`
+- **Related Documents:** `../tasks/task-037-client-i18n-foundation-and-korean-locale-bootstrap.md`, `../tasks/task-038-environments-and-scripts-route-localization-pass.md`, `../tasks/task-039-workspace-authoring-localization-pass.md`, `../tasks/task-040-workspace-result-panel-localization-pass.md`, `../tasks/task-041-captures-observation-route-localization-pass.md`, `../tasks/task-042-history-observation-route-localization-pass.md`, `../tasks/task-045-mocks-route-localization-pass.md`, `../tasks/task-046-shell-and-management-generated-aria-localization-pass.md`, `material-3-adoption-plan.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`
 - **Update Rule:** Update when locale ownership, message-key shape, supported locales, or first-slice coverage rules change.
 
 ## 1. Scope
@@ -52,6 +52,7 @@ After the foundation slice, the following bounded localization passes are now la
 - `T041`: Captures route sidebar/detail/timeline chrome, route-local empty states, replay-bridge actions, and client-owned fallback helper text now translate through the shared i18n layer without changing runtime DTO ownership.
 - `T042`: History route sidebar/detail/timeline chrome, route-local empty states, replay-bridge actions, result-tab labels, and client-owned fallback helper text now translate through the shared i18n layer without changing runtime DTO ownership.
 - `T045`: Mocks route sidebar/detail/contextual chrome, route-local empty states, authored-rule action labels, detail-tab labels, and helper-generated authored-rule summaries now translate through the shared i18n layer without changing runtime DTO ownership.
+- `T046`: Shell route-panel regions plus Environments, Scripts, and Workspace explorer generated ARIA/action labels now translate through the shared i18n layer without claiming a full app-wide ARIA-contract pass.
 
 ## 8. Deferred Follow-Up Boundaries
 The following are explicitly deferred beyond the currently landed slices:
@@ -59,6 +60,7 @@ The following are explicitly deferred beyond the currently landed slices:
 - backend-driven locale negotiation
 - translation import/export tooling
 - runtime enum/status token localization where CSS or test contracts still depend on English values
+- request-builder generated ARIA-label localization across tab-strip, key/value row, and script-stage field contracts
 
 ## 9. Future Task Guidance
 When later localization tasks begin:
@@ -67,4 +69,4 @@ When later localization tasks begin:
 3. keep English fallback intact
 4. avoid mixing localized and hard-coded literals inside the same component area when a bounded conversion is practical
 5. update tests to pin either explicit English fallback behavior or explicit Korean rendering for the translated surface
-6. treat Environments/Scripts, Workspace authoring, Workspace result-panel copy, Captures, History, and Mocks as the current bounded reference patterns before starting broader cross-route localization work
+6. treat Environments/Scripts, Workspace authoring, Workspace result-panel copy, Captures, History, Mocks, and the shell/management/workspace-explorer generated-ARIA slice as the current bounded reference patterns before starting broader cross-route localization work

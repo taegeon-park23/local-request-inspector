@@ -201,6 +201,7 @@ describe('Environments MVP route', () => {
     expect(screen.getByRole('heading', { name: '환경' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '환경 목록' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '새 환경' })).toBeInTheDocument();
-    expect(await screen.findByRole('button', { name: 'Open environment Local API' })).toBeInTheDocument();
+    expect(screen.getByLabelText('환경 검색')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: '환경 열기 Local API' })).toBeInTheDocument();
   });
 });

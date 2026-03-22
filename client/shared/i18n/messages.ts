@@ -45,6 +45,9 @@ const enCatalog = {
       explorer: 'Explorer',
       main: 'Surface',
       detail: 'Details',
+      explorerRegion: 'Section explorer',
+      mainRegion: 'Main work surface',
+      detailRegion: 'Contextual detail panel',
     },
   },
   roles: {
@@ -304,6 +307,9 @@ const koCatalog: CatalogShape<typeof enCatalog> = {
       explorer: '탐색',
       main: '작업면',
       detail: '세부 정보',
+      explorerRegion: '섹션 탐색기',
+      mainRegion: '메인 작업면',
+      detailRegion: '컨텍스트 상세 패널',
     },
   },
   roles: {

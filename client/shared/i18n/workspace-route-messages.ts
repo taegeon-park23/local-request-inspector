@@ -14,11 +14,14 @@ export const workspaceRouteMessagesEn = {
         exportResources: 'Export Resources',
         exportingResources: 'Exporting resources',
         importResources: 'Import Resources',
+        importResourcesInput: 'Import authored resources',
         previewingImport: 'Previewing import',
         importingResources: 'Importing resources',
         confirmImport: 'Confirm Import',
         cancelPreview: 'Cancel Preview',
         exportSingle: 'Export',
+        openRequest: 'Open {name}',
+        exportRequest: 'Export {name}',
       },
       notes: {
         boundary:
@@ -75,6 +78,9 @@ export const workspaceRouteMessagesEn = {
       empty:
         'No request tabs are open yet. Start a new draft or open a saved request from the workspace explorer.',
       newRequest: 'New Request',
+      ariaLabel: 'Request tab strip',
+      dirtyIndicator: '{title} has unsaved changes',
+      closeTab: 'Close {title}',
     },
     requestBuilder: {
       empty: {
@@ -230,6 +236,7 @@ export const workspaceRouteMessagesEn = {
         value: '{rowLabel} row {index} value',
       },
       removeAction: 'Remove',
+      removeAriaLabel: 'Remove {rowLabel} row {index}',
     },
     scriptsEditor: {
       header: {
@@ -240,6 +247,9 @@ export const workspaceRouteMessagesEn = {
       stages: {
         preRequest: {
           label: 'Pre-request',
+          ariaLabel: 'Pre-request',
+          fieldAriaLabel: 'Pre-request script',
+          guidanceAriaLabel: 'Pre-request guidance',
           eyebrow: 'Before transport',
           title: 'Prepare request inputs',
           description:
@@ -254,6 +264,9 @@ export const workspaceRouteMessagesEn = {
         },
         postResponse: {
           label: 'Post-response',
+          ariaLabel: 'Post-response',
+          fieldAriaLabel: 'Post-response script',
+          guidanceAriaLabel: 'Post-response guidance',
           eyebrow: 'After transport',
           title: 'Summarize response handling intent',
           description:
@@ -268,6 +281,9 @@ export const workspaceRouteMessagesEn = {
         },
         tests: {
           label: 'Tests',
+          ariaLabel: 'Tests',
+          fieldAriaLabel: 'Tests script',
+          guidanceAriaLabel: 'Tests guidance',
           eyebrow: 'Assertions later',
           title: 'Plan request-bound assertions',
           description:
@@ -281,6 +297,7 @@ export const workspaceRouteMessagesEn = {
         },
       },
       guidance: {
+        tabListAriaLabel: 'Script stages',
         loadedOnDemand:
           'This editor path is loaded on demand so the rest of the request builder stays responsive when Scripts is not active, even after stage execution wiring landed.',
       },
@@ -465,11 +482,14 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         exportResources: '리소스 내보내기',
         exportingResources: '리소스를 내보내는 중',
         importResources: '리소스 가져오기',
+        importResourcesInput: '작성 리소스 가져오기',
         previewingImport: '가져오기 미리보기 중',
         importingResources: '리소스를 가져오는 중',
         confirmImport: '가져오기 확정',
         cancelPreview: '미리보기 취소',
         exportSingle: '내보내기',
+        openRequest: '{name} 열기',
+        exportRequest: '{name} 내보내기',
       },
       notes: {
         boundary:
@@ -526,6 +546,9 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
       empty:
         '아직 열린 요청 탭이 없습니다. 새 draft를 시작하거나 작업공간 탐색기에서 저장된 요청을 여세요.',
       newRequest: '새 요청',
+      ariaLabel: '요청 탭 스트립',
+      dirtyIndicator: '{title}에 저장되지 않은 변경이 있습니다',
+      closeTab: '{title} 닫기',
     },
     requestBuilder: {
       empty: {
@@ -681,6 +704,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         value: '{rowLabel} {index}행 값',
       },
       removeAction: '제거',
+      removeAriaLabel: '{rowLabel} {index}행 제거',
     },
     scriptsEditor: {
       header: {
@@ -691,6 +715,9 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
       stages: {
         preRequest: {
           label: '사전 요청',
+          ariaLabel: '사전 요청',
+          fieldAriaLabel: '사전 요청 스크립트',
+          guidanceAriaLabel: '사전 요청 가이드',
           eyebrow: '전송 전',
           title: '요청 입력 준비',
           description:
@@ -705,6 +732,9 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         },
         postResponse: {
           label: '응답 후',
+          ariaLabel: '응답 후',
+          fieldAriaLabel: '응답 후 스크립트',
+          guidanceAriaLabel: '응답 후 가이드',
           eyebrow: '전송 후',
           title: '응답 처리 의도 요약',
           description:
@@ -719,6 +749,9 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         },
         tests: {
           label: '테스트',
+          ariaLabel: '테스트',
+          fieldAriaLabel: '테스트 스크립트',
+          guidanceAriaLabel: '테스트 가이드',
           eyebrow: '나중에 단언',
           title: '요청 단위 단언 계획',
           description:
@@ -733,6 +766,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         },
       },
       guidance: {
+        tabListAriaLabel: '스크립트 단계',
         loadedOnDemand:
           '이 편집기 경로는 필요할 때만 로드되므로, Scripts가 비활성일 때는 단계 실행 연결이 들어온 이후에도 나머지 요청 빌더가 반응성을 유지합니다.',
       },

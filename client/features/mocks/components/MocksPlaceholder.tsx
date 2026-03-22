@@ -563,7 +563,7 @@ export function MocksPlaceholder() {
     <RoutePanelTabsLayout
       defaultActiveTab="explorer"
       explorer={(
-        <section className="shell-panel shell-panel--sidebar" aria-label="Section explorer">
+        <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
         <div className="mocks-explorer">
           <header className="mocks-explorer__header">
             <div>
@@ -638,7 +638,7 @@ export function MocksPlaceholder() {
         </section>
       )}
       main={(
-        <section className="shell-panel shell-panel--main" aria-label="Main work surface">
+        <section className="shell-panel shell-panel--main" aria-label={t('shell.routePanels.mainRegion')}>
         <SectionHeading
             icon="mocks"
             title={t('routes.mocks.title')}
@@ -926,7 +926,7 @@ export function MocksPlaceholder() {
         </section>
       )}
       detail={(
-        <aside className="shell-panel shell-panel--detail" aria-label="Contextual detail panel">
+        <aside className="shell-panel shell-panel--detail" aria-label={t('shell.routePanels.detailRegion')}>
         {!isCreatingRule && !selectedRule ? (
           <div className="workspace-detail-panel workspace-detail-panel--empty">
             <EmptyStateCallout title={t('mocksRoute.contextual.empty.title')} description={t('mocksRoute.contextual.empty.description')} />

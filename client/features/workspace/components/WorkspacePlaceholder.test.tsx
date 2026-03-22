@@ -1022,10 +1022,11 @@ describe('Workspace request builder authoring shell', () => {
     const user = userEvent.setup();
     renderApp(<AppRouter />, { initialLocale: 'ko' });
 
-    const explorer = screen.getByLabelText('Section explorer');
+    const explorer = screen.getByLabelText('섹션 탐색기');
+    expect(screen.getByLabelText('작성 리소스 가져오기')).toBeInTheDocument();
     await user.click(within(explorer).getByRole('button', { name: '새 요청' }));
 
-    const detailPanel = screen.getByLabelText('Contextual detail panel');
+    const detailPanel = screen.getByLabelText('컨텍스트 상세 패널');
     expect(within(detailPanel).getByRole('heading', { name: 'Untitled Request에 대한 관측' })).toBeInTheDocument();
     expect(within(detailPanel).getByRole('tablist', { name: '결과 패널 탭' })).toBeInTheDocument();
     expect(within(detailPanel).getByRole('tab', { name: '응답' })).toBeInTheDocument();

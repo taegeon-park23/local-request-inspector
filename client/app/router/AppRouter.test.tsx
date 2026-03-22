@@ -31,6 +31,10 @@ describe('AppRouter shell bootstrap', () => {
     expect(screen.getByText('런타임 연결')).toBeInTheDocument();
     expect(screen.getByText('작업공간')).toBeInTheDocument();
     expect(screen.getByText('설정')).toBeInTheDocument();
+    expect(screen.getByRole('tablist', { name: '라우트 패널 탭' })).toBeInTheDocument();
+    expect(screen.getByLabelText('섹션 탐색기')).toBeInTheDocument();
+    expect(screen.getByLabelText('메인 작업면')).toBeInTheDocument();
+    expect(screen.getByLabelText('컨텍스트 상세 패널')).toBeInTheDocument();
   });
 
   it('switches top-level placeholder sections from the navigation rail', async () => {

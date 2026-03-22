@@ -152,6 +152,7 @@ describe('Scripts MVP route', () => {
     expect(screen.getByRole('heading', { name: '스크립트' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '스크립트 목록' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '새 스크립트' })).toBeInTheDocument();
-    expect(await screen.findByRole('button', { name: 'Open script Health status assertions' })).toBeInTheDocument();
+    expect(screen.getByLabelText('스크립트 검색')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: '스크립트 열기 Health status assertions' })).toBeInTheDocument();
   });
 });
