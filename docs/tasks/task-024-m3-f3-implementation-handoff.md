@@ -59,3 +59,7 @@ This task is done when all of the following are true:
 
 ## 10. Closure Decision
 T024 remains closed as **done** at the documentation level. The repo now has both a stable exact handoff and the applied M3-F3 wrapper/CSS patch in code, but the latest sandbox rerun of the official gate is still environment-blocked, so repo-native transform validation remains a follow-up rather than a completed proof point.
+
+## 11. Validation Follow-Up Log
+- 2026-03-22: A second UI-test assertion-stabilization pass updated the remaining stale selectors in `AppRouter.test.tsx`, `CapturesPlaceholder.test.tsx`, `HistoryPlaceholder.test.tsx`, `MocksPlaceholder.test.tsx`, `RequestBuilderCommands.test.tsx`, and `replay-bridge.test.tsx` so the tests follow the current M3-F3 DOM, persisted-source copy, and replay draft behavior rather than duplicated text nodes or pre-refactor selection assumptions.
+- 2026-03-22: `npm.cmd run lint:client` and `npm.cmd run typecheck` passed after this follow-up. A fresh `npm.cmd run test:ui` rerun is still required outside the current sandbox because prior in-sandbox Vite/esbuild startup remained environment-blocked.

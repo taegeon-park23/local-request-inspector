@@ -8,13 +8,14 @@ describe('AppRouter shell bootstrap', () => {
     renderApp(<AppRouter />);
 
     expect(screen.getByLabelText('Top bar')).toBeInTheDocument();
-    expect(screen.getByLabelText('Navigation rail')).toBeInTheDocument();
+    const navigationRail = screen.getByLabelText('Navigation rail');
+    expect(navigationRail).toBeInTheDocument();
     expect(screen.getByLabelText('Section explorer')).toBeInTheDocument();
     expect(screen.getByLabelText('Main work surface')).toBeInTheDocument();
     expect(screen.getByLabelText('Contextual detail panel')).toBeInTheDocument();
 
     for (const label of ['Workspace', 'Captures', 'History', 'Mocks', 'Environments', 'Scripts', 'Settings']) {
-      expect(screen.getByRole('link', { name: new RegExp(`^${label}\\b`, 'i') })).toBeInTheDocument();
+      expect(within(navigationRail).getByText(label)).toBeInTheDocument();
     }
   });
 
@@ -74,6 +75,3 @@ describe('AppRouter shell bootstrap', () => {
     expect(screen.getByRole('button', { name: 'Save rule' })).toBeEnabled();
   });
 });
-
-
-

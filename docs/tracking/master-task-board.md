@@ -41,7 +41,7 @@
 | T024 | M3-F3 implementation handoff | Capture the exact pending request-builder/result-panel TSX and CSS patch for `M3-F3` so the active presentation slice can resume without re-auditing scope. | P2 | done | Preserves execution continuity after `gate_clear` by documenting the exact pending wrapper/class patch instead of reopening Material 3 scope discussion. | T018, `M3-F3` gate clear, current request-builder/result-panel DOM | Task doc, `m3-f3-implementation-handoff.md`, tracking alignment | Delivery / Tracking Agent | Can over-document the patch or accidentally imply `M3-F3` is blocked again | Completed as a documentation task; `M3-F3` remains the active next implementation slice, and the repo now has a canonical exact-patch handoff note for the pending request-builder/result-panel wrapper cleanup |
 
 ## Current Focus
-- **Active highest-priority next step:** rerun `M3-F3` validation outside the current sandbox or in any environment where Vite/esbuild can spawn normally. The request-builder/result-panel wrapper patch is now applied in code, the UI test lane now includes local URL/blob/file polyfills plus stale-assertion and timing-fix follow-ups for the current M3-F3 DOM, and `npm.cmd run typecheck` plus `npm.cmd run lint:client` passed on 2026-03-22, but a fresh direct `npm.cmd run check:m3f3-gate` / `npm.cmd run test:ui` in this sandbox still returned environment-blocked esbuild startup (`env_blocked_transform` / `spawn EPERM`).
+- **Active highest-priority next step:** rerun `M3-F3` validation outside the current sandbox or in any environment where Vite/esbuild can spawn normally. The request-builder/result-panel wrapper patch is now applied in code, the UI test lane now includes local URL/blob/file polyfills plus two stale-assertion stabilization passes for the current M3-F3 DOM and replay behavior, and `npm.cmd run typecheck` plus `npm.cmd run lint:client` passed on 2026-03-22, but a fresh direct `npm.cmd run check:m3f3-gate` / `npm.cmd run test:ui` in this sandbox still returned environment-blocked esbuild startup (`env_blocked_transform` / `spawn EPERM`).
 - Use `m3-f3-implementation-handoff.md` as the canonical applied-patch reference plus validation-resume note instead of reopening the wrapper/CSS scope audit.
 - T015, T018, T019, T020, T021, T022, and T023 are now closed. Post-M3 priority review, Candidate A narrowing, Candidate B lane comparison, Candidate B import-migration approach decision, Candidate C gap inventory, and the no-promotion reviews delivered bounded authored-resource, compatibility, packaging, and hold-state planning follow-ups, while later migration-engine implementation, Candidate 2, and bounded packaging polish remain parked rather than reopening shell scope or broad backlog themes.
 - Candidate 2 remains parked after `T019` because the repo still treats import ownership as workspace-level mixed-bundle flow rather than a clearly local `/mocks` import seam, so route-local import symmetry would still reopen broader resource-tooling ambiguity.
@@ -87,12 +87,3 @@
 - T010 shell slices S1-S26 are now landed. `T019`, `T020`, `T021`, `T022`, and `T023` are also landed. `M3-F3` now has its bounded request-builder/result-panel wrapper patch applied, but the latest direct `npm.cmd run check:m3f3-gate` on 2026-03-22 returned `env_blocked_transform`, so final repo-native transform confirmation remains blocked in this sandbox while broader optional work stays parked.
 - `M3-F3` is currently blocked by environment-level validation rather than by TypeScript correctness. `npm.cmd run typecheck` passed, but the latest official gate re-check failed before Vite/esbuild could transform `/app/bootstrap/main.tsx`, `RequestWorkSurfacePlaceholder.tsx`, and `RequestResultPanelPlaceholder.tsx` because worker startup hit `spawn EPERM`.
 - Architecture, schema, safety, persistence, request-builder, script-UX, mock-rule, history/inspector, QA, tooling, and shell-slicing inputs are now documented.
-
-
-
-
-
-
-
-
-

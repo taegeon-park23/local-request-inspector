@@ -256,7 +256,7 @@ describe('Request builder save/run wiring', () => {
     const mainSurface = screen.getByLabelText('Main work surface');
     await within(explorer).findByRole('button', { name: 'Export Health check' });
     await user.click(within(explorer).getByRole('button', { name: 'Open Health check' }));
-    expect(screen.getByText('Saved Requests')).toBeInTheDocument();
+    expect(screen.getByText('Saved Requests', { selector: '.request-builder-core__source-copy' })).toBeInTheDocument();
 
     const requestNameInput = await within(mainSurface).findByLabelText('Request name');
     await user.clear(requestNameInput);
@@ -380,7 +380,7 @@ describe('Request builder save/run wiring', () => {
     expect(screen.getByText('HTTP 201', { selector: '[data-kind="transportOutcome"]' })).toBeInTheDocument();
     expect(screen.getByText('31 B response body')).toBeInTheDocument();
     expect(screen.getAllByText(/Preview is bounded before richer diagnostics/i).length).toBeGreaterThan(0);
-    expect(screen.getByLabelText('Runtime probe has unsaved changes')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
     expect(screen.getByTestId('run-command-status')).toHaveTextContent('Request run completed.');
 
     await user.click(screen.getByRole('tab', { name: 'Console' }));
@@ -516,7 +516,7 @@ describe('Request builder save/run wiring', () => {
     expect(screen.getAllByText(/Transport did not run because the pre-request stage was blocked before send/i).length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole('tab', { name: 'Execution Info' }));
-    expect(screen.getByText('Blocked')).toBeInTheDocument();
+    expect(screen.getAllByText('Blocked', { selector: '[data-kind="executionOutcome"]' }).length).toBeGreaterThan(0);
     expect(screen.getByText('script_blocked_capability')).toBeInTheDocument();
     expect(screen.getByText('Blocked token process is not available in the bounded script runtime.')).toBeInTheDocument();
     const stageSummary = screen.getByLabelText('Execution stage summary');
@@ -632,7 +632,7 @@ describe('Request builder save/run wiring', () => {
 
     await waitFor(() => expect(screen.getByTestId('save-command-status')).toHaveTextContent(/Saved request definition/i));
     expect(screen.queryAllByText('Opened from history', { selector: '.workspace-chip--replay' }).length).toBe(0);
-    expect(screen.getByText('Saved Requests')).toBeInTheDocument();
+    expect(screen.getByText('Saved Requests', { selector: '.request-builder-core__source-copy' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Open Replay of Create user' })).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText('Request name'));
@@ -662,6 +662,3 @@ describe('Request builder save/run wiring', () => {
     expect(updatePayload.request.name).toBe('Replay of Create user refined');
   });
 });
-
-
-

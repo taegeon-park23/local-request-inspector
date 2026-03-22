@@ -175,7 +175,7 @@ describe('History S18 fidelity refinement', () => {
     expect(screen.getByRole('tablist', { name: 'History result tabs' })).toBeInTheDocument();
     expect(screen.getByText('73 B preview')).toBeInTheDocument();
     expect(screen.getAllByText(/bounded and redacted before deeper diagnostics/i).length).toBeGreaterThan(0);
-    expect(screen.getByText('Saved request snapshot')).toBeInTheDocument();
+    expect(screen.getByText('Saved request snapshot', { selector: '.workspace-chip--secondary' })).toBeInTheDocument();
     expect(screen.getByText('request-create-user')).toBeInTheDocument();
     expect(screen.getByText('Saved Requests / Core Flows')).toBeInTheDocument();
     expect(screen.getByText('0 params · 3 headers · json body · bearer')).toBeInTheDocument();
@@ -511,5 +511,3 @@ describe('History S18 fidelity refinement', () => {
     expect(Object.keys(useRequestDraftStore.getState().draftsByTabId)).toHaveLength(1);
   });
 });
-
-

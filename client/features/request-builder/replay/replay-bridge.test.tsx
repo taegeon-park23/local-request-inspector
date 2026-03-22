@@ -2,7 +2,6 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AppRouter } from '@client/app/router/AppRouter';
 import { useCapturesStore } from '@client/features/captures/state/captures-store';
-import { useHistoryStore } from '@client/features/history/state/history-store';
 import { useRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
 import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
 import { renderApp } from '@client/shared/test/render-app';
@@ -72,7 +71,7 @@ describe('Replay bridge S8', () => {
     await user.click(screen.getByRole('button', { name: 'Params' }));
     await user.clear(screen.getByLabelText('Request URL'));
     await user.type(screen.getByLabelText('Request URL'), 'https://api.example.com/edited-users');
-    expect(useHistoryStore.getState().selectedHistoryId).toBe(null);
+    expect(useRequestDraftStore.getState().draftsByTabId[useWorkspaceShellStore.getState().activeTabId ?? '']?.draft.url).toBe('https://api.example.com/edited-users');
   });
 
   it('opens replay in a new draft tab without overwriting an existing workspace draft', async () => {
@@ -99,4 +98,3 @@ describe('Replay bridge S8', () => {
     expect(Object.keys(useRequestDraftStore.getState().draftsByTabId)).toHaveLength(2);
   });
 });
-

@@ -101,12 +101,12 @@ describe('Captures S18 fidelity refinement', () => {
     expect(screen.getByRole('heading', { name: 'Persistence summary' })).toBeInTheDocument();
     expect(screen.getByText('Inbound request snapshot')).toBeInTheDocument();
     expect(screen.getByText(/Persisted capture keeps/i)).toBeInTheDocument();
-    expect(await screen.findByText(/Persisted capture keeps .*one bounded request-body preview/i)).toBeInTheDocument();
+    expect(screen.getByText('JSON body · 2 field(s)')).toBeInTheDocument();
     expect(screen.getAllByText(/Preview policy/i).length).toBeGreaterThan(0);
     expect(screen.getByText('Stored summary')).toBeInTheDocument();
     expect(screen.getByText('Handling summary')).toBeInTheDocument();
     expect(screen.getByText('Stripe webhook success')).toBeInTheDocument();
-    expect(screen.getAllByText(/POST \/webhooks\/stripe was observed at localhost:5671 as an inbound capture/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/POST \/webhooks\/stripe(?:\?env=dev)? was observed at localhost:5671 as an inbound capture/i).length).toBeGreaterThan(0);
     expect(screen.getByText('Mocked', { selector: '[data-kind="mockOutcome"]' })).toHaveAttribute('data-kind', 'mockOutcome');
     expect(screen.queryByText('Succeeded', { selector: '[data-kind="executionOutcome"]' })).not.toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([input]) => getUrl(input as RequestInfo | URL) === '/api/captured-requests')).toBe(true);
@@ -275,7 +275,7 @@ describe('Captures S18 fidelity refinement', () => {
     expect(await screen.findByRole('button', { name: /Open capture GET \/health/i })).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole('button', { name: /Open capture GET \/health/i })).not.toBeInTheDocument());
     expect(screen.getByRole('button', { name: /Open capture POST \/webhooks\/stripe/i })).toBeInTheDocument();
-    expect((await screen.findAllByText(/POST \/webhooks\/stripe was observed at localhost:5671 as an inbound capture/i)).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/POST \/webhooks\/stripe(?:\?env=dev)? was observed at localhost:5671 as an inbound capture/i)).length).toBeGreaterThan(0);
     expect(useCapturesStore.getState().selectedCaptureId).toBe(refreshedCapture.id);
     expect(listCallCount).toBeGreaterThanOrEqual(2);
   });
@@ -319,7 +319,3 @@ describe('Captures S18 fidelity refinement', () => {
     expect(Object.keys(useRequestDraftStore.getState().draftsByTabId)).toHaveLength(1);
   });
 });
-
-
-
-
