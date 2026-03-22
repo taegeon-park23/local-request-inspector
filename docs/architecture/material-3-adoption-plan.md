@@ -1,0 +1,162 @@
+# Material 3 Adoption Plan
+
+- **Purpose:** Define the safe, incremental adoption path for Material 3 foundations in the current shell-first React workbench without changing feature semantics or state ownership.
+- **Created:** 2026-03-22
+- **Last Updated:** 2026-03-22
+- **Related Documents:** `overview.md`, `frontend-stack-and-shell.md`, `request-builder-mvp.md`, `script-editor-and-automation-ux.md`, `mock-engine-rules-spec.md`, `history-and-inspector-behavior.md`, `frontend-workspace-shell-implementation-plan.md`, `../tasks/task-010-frontend-workspace-shell-implementation-plan.md`
+- **Status:** done
+- **Update Rule:** Update when the Material 3 foundation strategy, token model, component mapping, or rollout slices materially change.
+
+## 1. Goal
+Apply Material 3 foundations to the current workspace shell in a way that:
+- preserves shell-first composition
+- preserves authoring vs observation separation
+- preserves family-aware status separation
+- avoids a big-bang visual rewrite
+- supports incremental code review through small slices
+
+This document is not a component-library migration proposal. It is a token-first visual-system plan for the existing custom shell.
+
+## 2. Current UI Diagnosis
+### Good boundaries worth preserving
+- `client/app`, `client/features/*`, and `client/shared/*` are already separated cleanly.
+- `Workspace` and `request-builder` remain authoring surfaces.
+- `Captures` and `History` remain observation surfaces.
+- `Mocks` remains authored rule management rather than runtime observation.
+- `StatusBadge` already preserves distinct status families for connection, mock outcome, execution outcome, transport outcome, and test summary.
+- `PanelTabs`, `DetailViewerSection`, `KeyValueMetaList`, and `EmptyStateCallout` are reusable seams that can be reskinned without changing feature ownership.
+
+### Current design-system reality
+- The visual system is effectively ad hoc and centralized in `client/app/shell/shell.css`.
+- Color, spacing, radius, and typography values are repeated directly rather than expressed through design tokens.
+- The shell is dark-first, but there is no light-ready token layer or theme structure.
+- Many controls are visually similar while serving different roles, which weakens hierarchy between authoring, observation, and management surfaces.
+
+## 3. Material 3 Adoption Principles
+### Foundation rules
+- Use Material 3 color roles and surface tiers as the baseline.
+- Use a compact subset of the Material 3 typography scale suited to a dense desktop workbench.
+- Use shape, elevation, and state-layer tokens rather than one-off per-feature values.
+- Keep explicit focus visibility, keyboard support, and readable contrast above decorative polish.
+
+### Product-specific guardrails
+- Do not collapse authoring and observation into one visual model.
+- Do not collapse status families into one generic badge system.
+- Do not mix semantics work with visual-system work in the same slice.
+- Do not assume a full Material component library is required.
+
+## 4. Recommended Strategy
+### Recommendation
+Use a **token-first custom implementation**:
+- CSS variables as the runtime source of truth
+- thin shared-primitives reskinning
+- feature-local composition kept intact
+- no MUI or other full component-library adoption in the first phase
+
+### Why this fits the repo
+- The repo already uses a custom React shell and custom shared primitives.
+- Existing feature boundaries map well to Material 3 surface roles without changing state ownership.
+- A library-first rewrite would force DOM, class, and interaction changes that are out of scope for a safe visual refresh.
+
+## 5. Token / Theme Architecture
+### Foundation token groups
+- Color roles: primary, secondary, tertiary, error, surface, surface-container tiers, outline, scrim
+- Typography: headline-small, title-large, title-medium, body-large, body-medium, label-large, label-medium, label-small
+- Shape: xs, s, m, l, xl, full
+- Elevation: 0 through 3
+- State: hover, pressed, selected, focus ring
+- Spacing and density: 4dp-aligned compact desktop rhythm
+- Motion: short and medium transitions only
+
+### Theme structure
+- Dark remains the default active theme.
+- Light tokens exist from the start so the system is light-ready.
+- Theme Builder output is a reference/generation artifact, not the runtime source of truth.
+- Repo-maintained CSS variables remain canonical.
+
+## 6. Surface Mapping
+### Shell chrome
+- Top app bar maps to a small top bar with distinct surface treatment and status slot.
+- Navigation becomes a Material-style rail treatment while keeping route-backed section ownership.
+- Explorer, main surface, and detail panel keep the existing three-panel structure but receive clearer surface hierarchy.
+
+### Shared primitives
+- `PanelTabs` maps to a Material-style secondary tab or segmented treatment depending on context.
+- `DetailViewerSection` maps to a card/section container with stronger surface, border, and type hierarchy.
+- `KeyValueMetaList` keeps `dl` semantics and gains label/value rhythm consistent with Material 3.
+- `EmptyStateCallout` becomes a supporting card rather than a dashed placeholder box.
+- `StatusBadge` keeps family-aware semantics and only changes visual tone and state tokens.
+
+### Feature surfaces
+- Request builder keeps stronger authoring emphasis through clearer field affordances and control hierarchy.
+- Captures and History keep observation emphasis through clearer summary cards, result tabs, and list-row hierarchy.
+- Mocks keeps authored management emphasis with neutral rule-state treatment and no collapse into capture-side outcome vocabulary.
+
+## 7. Incremental Rollout
+### M3-1 Foundation
+- Add token/theme layer
+- Dark default plus light-ready tokens
+- Global focus, shape, spacing, and elevation baselines
+
+### M3-2 Shell and shared primitives
+- Top bar, navigation rail, panel surfaces
+- `PanelTabs`, `DetailViewerSection`, `EmptyStateCallout`, `StatusBadge`
+
+### M3-3 Authoring controls
+- Request tabs
+- request-builder inputs, field groups, buttons, scripts authoring shell
+
+### M3-4 Observation surfaces
+- Request result panel
+- Captures
+- History
+
+### M3-5 Management and secondary surfaces
+- Mocks
+- Workspace explorer
+- placeholder sections and remaining shell affordances
+
+### M3-6 Accessibility and polish
+- contrast tuning
+- keyboard/focus verification
+- density tuning
+- light theme activation and restrained motion refinement
+
+## 8. Figma and Workflow
+- Use Material 3 Design Kit as a component anatomy and spacing reference.
+- Use Material Theme Builder to generate initial role sets from the chosen seed color.
+- Keep code tokens as the canonical source of truth.
+- Keep Figma lightweight: foundations, shell mapping, primitives, and three representative feature surfaces only.
+
+## 9. Accessibility and Quality Baseline
+- Contrast: 4.5:1 for body text on primary surfaces
+- Explicit focus ring on interactive controls
+- Keyboard-reachable nav rail, tabs, rows, and action buttons
+- Minimum practical touch targets for buttons and row actions
+- Status badges remain distinguishable by label, border, placement, and color
+- Empty, deferred, and disabled messaging must stay explicit and not appear broken
+
+## 10. Open Questions / 확실하지 않음
+### Ready to lock now
+- Token-first custom implementation is the preferred path.
+- Dark default with light-ready tokens is appropriate.
+- Theme Builder is a reference tool, not runtime state.
+
+### Still requires implementation judgment
+- Final seed color can stay close to the current cyan continuity or be neutralized later.
+- Typography can move to Roboto/Roboto Flex later if local availability and rendering quality justify it.
+- Navigation rail iconography can stay lightweight in the first implementation phase and be refined later.
+
+### Explicitly deferred
+- Dynamic/system color
+- Material Expressive motion
+- full component-library migration
+- layout/docking redesign
+- command palette redesign tied to visual-system work
+
+## 11. Implementation Notes
+- Keep all changes visual-system-scoped.
+- Do not change save/run/history/captures/mocks/scripts/replay semantics.
+- Do not move canonical ownership of any feature state.
+- Prefer CSS-token and shared-primitives work before deeper per-feature markup changes.
+- **Implementation follow-up (2026-03-22):** the initial rollout now includes a Material 3 token layer, dark-default light-ready theme attributes, shell chrome materialization, route-role cues in the navigation rail, and a first-pass reskin across shared primitives, request-builder controls, and observation/management cards without changing feature semantics.

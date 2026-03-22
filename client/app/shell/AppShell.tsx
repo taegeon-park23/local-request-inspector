@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { appSections } from '@client/app/router/sections';
 import { useShellStore } from '@client/app/providers/shell-store';
+import { StatusBadge } from '@client/shared/ui/StatusBadge';
 
 export function AppShell() {
   const runtimeConnectionHealth = useShellStore((state) => state.runtimeConnectionHealth);
@@ -8,11 +9,17 @@ export function AppShell() {
   return (
     <div className="shell-layout" data-testid="app-shell">
       <header className="shell-topbar" aria-label="Top bar">
-        <div>
+        <div className="shell-topbar__brand">
           <p className="shell-topbar__eyebrow">Local Request Inspector</p>
           <h1>Local API Workbench shell</h1>
+          <p className="shell-topbar__supporting">
+            Shell-first authoring and observation surfaces stay split while Material 3 tokens provide a shared visual foundation.
+          </p>
         </div>
-        <p className="shell-health">Runtime connection: {runtimeConnectionHealth}</p>
+        <div className="shell-topbar__status">
+          <span className="shell-topbar__status-label">Runtime connection</span>
+          <StatusBadge kind="connection" value={runtimeConnectionHealth} />
+        </div>
       </header>
       <div className="shell-body">
         <nav className="shell-nav" aria-label="Navigation rail">
@@ -25,8 +32,18 @@ export function AppShell() {
                     isActive ? 'shell-nav__link shell-nav__link--active' : 'shell-nav__link'
                   }
                 >
-                  <span>{section.label}</span>
-                  <small>{section.path}</small>
+                  <span className="shell-nav__monogram" aria-hidden="true">
+                    {section.label.slice(0, 2).toUpperCase()}
+                  </span>
+                  <span className="shell-nav__copy">
+                    <span className="shell-nav__title-row">
+                      <span className="shell-nav__title">{section.label}</span>
+                      <span className="shell-nav__role" data-role={section.role.toLowerCase()}>
+                        {section.role}
+                      </span>
+                    </span>
+                    <small className="shell-nav__summary">{section.summary}</small>
+                  </span>
                 </NavLink>
               </li>
             ))}
