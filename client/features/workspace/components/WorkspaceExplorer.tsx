@@ -1,5 +1,6 @@
 import type { WorkspaceSavedRequestSeed, WorkspaceExplorerNode } from '@client/features/workspace/data/workspace-explorer-fixtures';
 import type { AuthoredResourceBundleImportPreviewResult } from '@client/features/workspace/resource-bundle.api';
+import { useI18n } from '@client/app/providers/useI18n';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 
 type ResourceTransferTone = 'success' | 'error' | 'info';
@@ -54,21 +55,21 @@ export function WorkspaceExplorer({
   isPreviewingImport,
   isImporting,
 }: WorkspaceExplorerProps) {
+  const { t } = useI18n();
+
   return (
     <div className="workspace-explorer">
       <header className="workspace-explorer__header">
-        <p className="section-placeholder__eyebrow">Workspace explorer</p>
-        <h2>Collections</h2>
-        <p>
-          Persisted saved requests are the canonical explorer source. Starter fixtures only appear until the first real request definitions are stored in the resource lane.
-        </p>
+        <p className="section-placeholder__eyebrow">{t('workspaceRoute.explorer.header.eyebrow')}</p>
+        <h2>{t('workspaceRoute.explorer.header.title')}</h2>
+        <p>{t('workspaceRoute.explorer.header.summary')}</p>
         <div className="workspace-explorer__role-strip" aria-label="Explorer surface role">
-          <span className="workspace-chip">Authoring</span>
-          <span className="workspace-chip workspace-chip--secondary">Resource lane</span>
+          <span className="workspace-chip">{t('workspaceRoute.explorer.header.authoringChip')}</span>
+          <span className="workspace-chip workspace-chip--secondary">{t('workspaceRoute.explorer.header.resourceLaneChip')}</span>
         </div>
         <div className="workspace-explorer__header-actions">
           <button type="button" className="workspace-button" onClick={onCreateRequest}>
-            <IconLabel icon="new">New Request</IconLabel>
+            <IconLabel icon="new">{t('workspaceRoute.explorer.actions.newRequest')}</IconLabel>
           </button>
           <button
             type="button"
@@ -76,10 +77,18 @@ export function WorkspaceExplorer({
             onClick={onExportResources}
             disabled={isExporting || isPreviewingImport || isImporting}
           >
-            <IconLabel icon="export">{isExporting ? 'Exporting resources' : 'Export Resources'}</IconLabel>
+            <IconLabel icon="export">
+              {isExporting ? t('workspaceRoute.explorer.actions.exportingResources') : t('workspaceRoute.explorer.actions.exportResources')}
+            </IconLabel>
           </button>
           <label className="workspace-button workspace-button--secondary workspace-explorer__import-label">
-            <IconLabel icon="import">{isPreviewingImport ? 'Previewing import' : isImporting ? 'Importing resources' : 'Import Resources'}</IconLabel>
+            <IconLabel icon="import">
+              {isPreviewingImport
+                ? t('workspaceRoute.explorer.actions.previewingImport')
+                : isImporting
+                  ? t('workspaceRoute.explorer.actions.importingResources')
+                  : t('workspaceRoute.explorer.actions.importResources')}
+            </IconLabel>
             <input
               aria-label="Import authored resources"
               className="workspace-explorer__file-input"
@@ -99,7 +108,7 @@ export function WorkspaceExplorer({
           </label>
         </div>
         <p className="shared-readiness-note">
-          Export and import stay limited to authored request definitions and mock rules. Runtime history, captures, and execution artifacts remain outside this bundle.
+          {t('workspaceRoute.explorer.notes.boundary')}
         </p>
         {transferStatusMessage ? (
           <div
@@ -117,7 +126,7 @@ export function WorkspaceExplorer({
             {importPreview ? (
               <>
                 <p className="workspace-explorer__preview-note">
-                  Preview is advisory only. Workspace changes before confirm can still change imported names or validation outcomes for {importPreview.fileName}.
+                  {t('workspaceRoute.explorer.notes.previewAdvisory', { fileName: importPreview.fileName })}
                 </p>
                 <div className="workspace-explorer__preview-actions">
                   <button
@@ -126,7 +135,9 @@ export function WorkspaceExplorer({
                     onClick={onConfirmImportPreview}
                     disabled={isImporting || importPreview.result.summary.acceptedCount === 0}
                   >
-                    <IconLabel icon="import">{isImporting ? 'Importing resources' : 'Confirm Import'}</IconLabel>
+                    <IconLabel icon="import">
+                      {isImporting ? t('workspaceRoute.explorer.actions.importingResources') : t('workspaceRoute.explorer.actions.confirmImport')}
+                    </IconLabel>
                   </button>
                   <button
                     type="button"
@@ -134,7 +145,7 @@ export function WorkspaceExplorer({
                     onClick={onCancelImportPreview}
                     disabled={isImporting}
                   >
-                    <IconLabel icon="delete">Cancel Preview</IconLabel>
+                    <IconLabel icon="delete">{t('workspaceRoute.explorer.actions.cancelPreview')}</IconLabel>
                   </button>
                 </div>
               </>
@@ -160,6 +171,8 @@ function WorkspaceExplorerNodeList({
   onOpenSavedRequest,
   onExportRequest,
 }: WorkspaceExplorerNodeListProps) {
+  const { t } = useI18n();
+
   return (
     <ul className="workspace-explorer__tree" data-depth={depth}>
       {nodes.map((node) => {
@@ -189,7 +202,9 @@ function WorkspaceExplorerNodeList({
                             : 'workspace-chip workspace-chip--accent'
                         }
                       >
-                        {node.request.resourceKind === 'persisted' ? 'Saved' : 'Starter'}
+                        {node.request.resourceKind === 'persisted'
+                          ? t('workspaceRoute.explorer.tree.savedChip')
+                          : t('workspaceRoute.explorer.tree.starterChip')}
                       </span>
                     </span>
                   </span>
@@ -204,7 +219,7 @@ function WorkspaceExplorerNodeList({
                     aria-label={`Export ${node.request.name}`}
                     onClick={() => onExportRequest(node.request)}
                   >
-                    <IconLabel icon="export">Export</IconLabel>
+                    <IconLabel icon="export">{t('workspaceRoute.explorer.actions.exportSingle')}</IconLabel>
                   </button>
                 ) : null}
               </div>
@@ -215,7 +230,11 @@ function WorkspaceExplorerNodeList({
         return (
           <li key={node.id}>
             <div className="workspace-tree-node" data-kind={node.kind}>
-              <span className="workspace-tree-node__kind">{node.kind}</span>
+              <span className="workspace-tree-node__kind">
+                {node.kind === 'collection'
+                  ? t('workspaceRoute.explorer.tree.kindCollection')
+                  : t('workspaceRoute.explorer.tree.kindFolder')}
+              </span>
               <span className="workspace-tree-node__label">{node.name}</span>
             </div>
             <WorkspaceExplorerNodeList

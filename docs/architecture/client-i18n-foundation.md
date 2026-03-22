@@ -3,7 +3,7 @@
 - **Purpose:** Define the bounded client-side internationalization model for English and Korean so later localization work can expand surface-by-surface without re-choosing provider, storage, or key conventions.
 - **Created:** 2026-03-23
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `../tasks/task-037-client-i18n-foundation-and-korean-locale-bootstrap.md`, `material-3-adoption-plan.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`
+- **Related Documents:** `../tasks/task-037-client-i18n-foundation-and-korean-locale-bootstrap.md`, `../tasks/task-038-environments-and-scripts-route-localization-pass.md`, `../tasks/task-039-workspace-authoring-localization-pass.md`, `material-3-adoption-plan.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`
 - **Update Rule:** Update when locale ownership, message-key shape, supported locales, or first-slice coverage rules change.
 
 ## 1. Scope
@@ -44,18 +44,24 @@ The first proof-of-use surface is intentionally bounded to:
 
 This first slice is enough to validate provider wiring, locale persistence, catalog shape, and UI switching without forcing full-route localization across every feature surface immediately.
 
-## 7. Deferred Follow-Up Boundaries
-The following are explicitly deferred beyond this foundation slice:
-- full translation of workspace request builder controls and validation copy
-- full translation of captures, history, mocks, environments, and scripts detail internals
+## 7. Landed Follow-Up Slices
+After the foundation slice, the following bounded localization passes are now landed:
+- `T038`: Environments and Scripts route internals now translate client-owned management copy, empty states, validation text, and action labels.
+- `T039`: Workspace explorer chrome, request tab shell, request-builder authoring copy, request-bound scripts authoring surface, and explorer-owned authored-resource transfer messaging now translate through the shared i18n layer.
+
+## 8. Deferred Follow-Up Boundaries
+The following are explicitly deferred beyond the currently landed slices:
+- full translation of the workspace result panel and execution-observation copy
+- full translation of captures, history, and mocks observation-route internals
 - broad ARIA-label localization across the whole app in one pass
 - backend-driven locale negotiation
 - translation import/export tooling
 
-## 8. Future Task Guidance
+## 9. Future Task Guidance
 When later localization tasks begin:
 1. add new keys to the shared catalogs first
 2. prefer converting one coherent surface at a time
 3. keep English fallback intact
 4. avoid mixing localized and hard-coded literals inside the same component area when a bounded conversion is practical
 5. update tests to pin either explicit English fallback behavior or explicit Korean rendering for the translated surface
+6. treat Environments/Scripts and Workspace authoring as the current bounded reference patterns before starting any observation-surface translation work

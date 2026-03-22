@@ -1,5 +1,6 @@
-﻿import { IconLabel } from '@client/shared/ui/IconLabel';
+import { useI18n } from '@client/app/providers/useI18n';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
+import { IconLabel } from '@client/shared/ui/IconLabel';
 
 interface RequestTabShellProps {
   tabs: RequestTabRecord[];
@@ -16,11 +17,13 @@ export function RequestTabShell({
   onSelectTab,
   onCloseTab,
 }: RequestTabShellProps) {
+  const { t } = useI18n();
+
   return (
     <div className="request-tab-shell">
       <div className="request-tab-shell__strip" role="tablist" aria-label="Request tab strip">
         {tabs.length === 0 ? (
-          <p className="request-tab-shell__strip-empty">No request tabs are open yet. Start a new draft or open a saved request from the workspace explorer.</p>
+          <p className="request-tab-shell__strip-empty">{t('workspaceRoute.tabShell.empty')}</p>
         ) : null}
 
         {tabs.map((tab) => {
@@ -62,7 +65,7 @@ export function RequestTabShell({
         })}
 
         <button type="button" className="request-tab-shell__new-tab" onClick={onCreateRequest}>
-          <IconLabel icon="new">New Request</IconLabel>
+          <IconLabel icon="new">{t('workspaceRoute.tabShell.newRequest')}</IconLabel>
         </button>
       </div>
     </div>

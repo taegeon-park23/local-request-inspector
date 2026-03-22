@@ -61,30 +61,36 @@ function resolvePresentationTab(
   };
 }
 
-function createImportStatusMessage(result: AuthoredResourceBundleImportResult) {
-  const details = createImportSummaryDetails(result.summary);
+function createImportStatusMessage(
+  result: AuthoredResourceBundleImportResult,
+  t: ReturnType<typeof useI18n>['t'],
+) {
+  const details = createImportSummaryDetails(result.summary, t);
   const {
     acceptedCount,
     rejectedCount,
   } = result.summary;
-  const acceptedSummary = `${acceptedCount} authored resource${acceptedCount === 1 ? '' : 's'} imported`;
+  const acceptedSummary = t('workspaceRoute.explorer.status.acceptedSummary', { count: acceptedCount });
 
   if (rejectedCount === 0) {
     return {
       tone: 'success' as const,
-      message: `${acceptedSummary}. Imported resources received new identities so existing saved resources were not overwritten.`,
+      message: t('workspaceRoute.explorer.status.importSuccess', { acceptedSummary }),
       details,
     };
   }
 
   return {
     tone: acceptedCount === 0 ? 'error' as const : 'info' as const,
-    message: `${acceptedSummary}. ${rejectedCount} resource${rejectedCount === 1 ? '' : 's'} were rejected during validation and left unchanged.`,
+    message: t('workspaceRoute.explorer.status.importRejected', { acceptedSummary, rejectedCount }),
     details,
   };
 }
 
-function createImportSummaryDetails(summary: AuthoredResourceBundleImportResult['summary']) {
+function createImportSummaryDetails(
+  summary: AuthoredResourceBundleImportResult['summary'],
+  t: ReturnType<typeof useI18n>['t'],
+) {
   const {
     createdRequestCount,
     createdMockRuleCount,
@@ -94,25 +100,33 @@ function createImportSummaryDetails(summary: AuthoredResourceBundleImportResult[
     rejectedCount,
   } = summary;
   const details = [
-    `Created requests: ${createdRequestCount}`,
-    `Created mock rules: ${createdMockRuleCount}`,
-    `Renamed on import: ${renamedCount}`,
-    `Rejected during validation: ${rejectedCount}`,
+    t('workspaceRoute.explorer.status.createdRequests', { count: createdRequestCount }),
+    t('workspaceRoute.explorer.status.createdMockRules', { count: createdMockRuleCount }),
+    t('workspaceRoute.explorer.status.renamedOnImport', { count: renamedCount }),
+    t('workspaceRoute.explorer.status.rejectedDuringValidation', { count: rejectedCount }),
   ];
 
   if (importedNamesPreview.length > 0) {
-    details.push(`Imported preview: ${importedNamesPreview.join(', ')}`);
+    details.push(t('workspaceRoute.explorer.status.importedPreview', { names: importedNamesPreview.join(', ') }));
   }
 
   if (rejectedReasonSummary.length > 0) {
-    details.push(`Rejected reasons: ${rejectedReasonSummary.map((entry) => `${entry.reason} (${entry.count})`).join(' · ')}`);
+    details.push(
+      t('workspaceRoute.explorer.status.rejectedReasons', {
+        reasons: rejectedReasonSummary.map((entry) => `${entry.reason} (${entry.count})`).join(' · '),
+      }),
+    );
   }
 
   return details;
 }
 
-function createPreviewStatusMessage(fileName: string, result: AuthoredResourceBundleImportPreviewResult) {
-  const details = createImportSummaryDetails(result.summary);
+function createPreviewStatusMessage(
+  fileName: string,
+  result: AuthoredResourceBundleImportPreviewResult,
+  t: ReturnType<typeof useI18n>['t'],
+) {
+  const details = createImportSummaryDetails(result.summary, t);
   const {
     acceptedCount,
     rejectedCount,
@@ -122,43 +136,51 @@ function createPreviewStatusMessage(fileName: string, result: AuthoredResourceBu
     if (rejectedCount === 0) {
       return {
         tone: 'error' as const,
-        message: `Preview found no saved-request or mock-rule resources in ${fileName}. Nothing will be written until you choose a bundle with authored resources.`,
+        message: t('workspaceRoute.explorer.status.previewNoResources', { fileName }),
         details,
       };
     }
 
     return {
       tone: 'error' as const,
-      message: `Preview found no importable authored resources in ${fileName}. ${rejectedCount} resource${rejectedCount === 1 ? '' : 's'} would be rejected and nothing will be written until you choose a different bundle.`,
+      message: t('workspaceRoute.explorer.status.previewNoImportable', { fileName, rejectedCount }),
       details,
     };
   }
 
-  const acceptedSummary = `${acceptedCount} authored resource${acceptedCount === 1 ? '' : 's'}`;
+  const acceptedSummary = t('workspaceRoute.explorer.status.acceptedSummary', { count: acceptedCount });
 
   if (rejectedCount === 0) {
     return {
       tone: 'info' as const,
-      message: `Preview ready for ${fileName}. Confirm import to write ${acceptedSummary} with new identities.`,
+      message: t('workspaceRoute.explorer.status.previewReady', { fileName, acceptedSummary }),
       details,
     };
   }
 
   return {
     tone: 'info' as const,
-    message: `Preview ready for ${fileName}. Confirm import to write ${acceptedSummary}; ${rejectedCount} resource${rejectedCount === 1 ? '' : 's'} would still be rejected and left unchanged.`,
+    message: t('workspaceRoute.explorer.status.previewReadyRejected', {
+      fileName,
+      acceptedSummary,
+      rejectedCount,
+    }),
     details,
   };
 }
 
-function createExportStatusMessage(bundle: AuthoredResourceBundleExport, label: string) {
+function createExportStatusMessage(
+  bundle: AuthoredResourceBundleExport,
+  label: string,
+  t: ReturnType<typeof useI18n>['t'],
+) {
   return {
     tone: 'success' as const,
-    message: `Exported ${label} from the authored resource lane.`,
+    message: t('workspaceRoute.explorer.status.exportCompleted', { label }),
     details: [
-      `Saved requests in bundle: ${bundle.requests.length}`,
-      `Mock rules in bundle: ${bundle.mockRules.length}`,
-      'Runtime history, captures, and execution artifacts remain excluded.',
+      t('workspaceRoute.explorer.status.bundleRequestCount', { count: bundle.requests.length }),
+      t('workspaceRoute.explorer.status.bundleMockRuleCount', { count: bundle.mockRules.length }),
+      t('workspaceRoute.explorer.status.runtimeExcluded'),
     ],
   };
 }
@@ -172,7 +194,7 @@ function resolveSeededEnvironmentId(draftSeed: RequestDraftSeed | undefined, def
 }
 export function WorkspacePlaceholder() {
   const queryClient = useQueryClient();
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const [resourceTransferStatus, setResourceTransferStatus] = useState<ResourceTransferStatus | null>(null);
   const [pendingImportPreview, setPendingImportPreview] = useState<PendingImportPreview | null>(null);
   const tabs = useWorkspaceShellStore((state) => state.tabs);
@@ -205,15 +227,23 @@ export function WorkspacePlaceholder() {
       return bundle;
     },
     onSuccess: (bundle) => {
-      setResourceTransferStatus(createExportStatusMessage(
-        bundle,
-        `${bundle.requests.length} saved request definition${bundle.requests.length === 1 ? '' : 's'} and ${bundle.mockRules.length} mock rule${bundle.mockRules.length === 1 ? '' : 's'}`,
-      ));
+      setResourceTransferStatus(
+        createExportStatusMessage(
+          bundle,
+          locale === 'ko'
+            ? t('workspaceRoute.explorer.status.exportBundleLabel', {
+                requestCount: bundle.requests.length,
+                mockRuleCount: bundle.mockRules.length,
+              })
+            : `${bundle.requests.length} saved request definition${bundle.requests.length === 1 ? '' : 's'} and ${bundle.mockRules.length} mock rule${bundle.mockRules.length === 1 ? '' : 's'}`,
+          t,
+        ),
+      );
     },
     onError: (error) => {
       setResourceTransferStatus({
         tone: 'error',
-        message: error instanceof Error ? error.message : 'Resource export failed before a bundle could be downloaded.',
+        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.exportFailed'),
       });
     },
   });
@@ -231,12 +261,20 @@ export function WorkspacePlaceholder() {
       };
     },
     onSuccess: ({ request, bundle }) => {
-      setResourceTransferStatus(createExportStatusMessage(bundle, `saved request ${request.name}`));
+      setResourceTransferStatus(
+        createExportStatusMessage(
+          bundle,
+          locale === 'ko'
+            ? t('workspaceRoute.explorer.status.exportSavedRequestLabel', { name: request.name })
+            : `saved request ${request.name}`,
+          t,
+        ),
+      );
     },
     onError: (error) => {
       setResourceTransferStatus({
         tone: 'error',
-        message: error instanceof Error ? error.message : 'Saved request export failed before a bundle could be downloaded.',
+        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.exportSingleFailed'),
       });
     },
   });
@@ -251,13 +289,13 @@ export function WorkspacePlaceholder() {
         fileName: variables.fileName,
         result,
       });
-      setResourceTransferStatus(createPreviewStatusMessage(variables.fileName, result));
+      setResourceTransferStatus(createPreviewStatusMessage(variables.fileName, result, t));
     },
     onError: (error) => {
       setPendingImportPreview(null);
       setResourceTransferStatus({
         tone: 'error',
-        message: error instanceof Error ? error.message : 'Import preview failed before any authored resources were written.',
+        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.fileReadFailed'),
       });
     },
   });
@@ -270,14 +308,14 @@ export function WorkspacePlaceholder() {
         queryClient.invalidateQueries({ queryKey: workspaceSavedRequestsQueryKey }),
         queryClient.invalidateQueries({ queryKey: workspaceMockRulesQueryKey }),
       ]);
-      setResourceTransferStatus(createImportStatusMessage(result));
+      setResourceTransferStatus(createImportStatusMessage(result, t));
     },
     onError: (error) => {
       setResourceTransferStatus({
         tone: 'error',
         message: error instanceof Error
           ? error.message
-          : 'Resource import failed before the authored-resource transfer completed. Already-written resources, if any, were not rolled back automatically.',
+          : t('workspaceRoute.explorer.status.importFailed'),
       });
     },
   });
@@ -361,7 +399,7 @@ export function WorkspacePlaceholder() {
       setPendingImportPreview(null);
       setResourceTransferStatus({
         tone: 'info',
-        message: `Previewing authored resources from ${file.name}. No changes will be written until you confirm import.`,
+        message: t('workspaceRoute.explorer.status.previewingFile', { fileName: file.name }),
       });
       const bundleText = await file.text();
       previewResourcesMutation.mutate({
@@ -372,7 +410,7 @@ export function WorkspacePlaceholder() {
       setPendingImportPreview(null);
       setResourceTransferStatus({
         tone: 'error',
-        message: error instanceof Error ? error.message : 'Selected file could not be read for import.',
+        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.fileReadFailed'),
       });
     }
   };
@@ -384,8 +422,8 @@ export function WorkspacePlaceholder() {
 
     setResourceTransferStatus({
       tone: 'info',
-      message: `Importing authored resources from ${pendingImportPreview.fileName}. Preview remains advisory until the write completes.`,
-      details: createImportSummaryDetails(pendingImportPreview.result.summary),
+      message: t('workspaceRoute.explorer.status.importStarting', { fileName: pendingImportPreview.fileName }),
+      details: createImportSummaryDetails(pendingImportPreview.result.summary, t),
     });
     importResourcesMutation.mutate(pendingImportPreview.bundleText);
   };
@@ -394,7 +432,7 @@ export function WorkspacePlaceholder() {
     setPendingImportPreview(null);
     setResourceTransferStatus({
       tone: 'info',
-      message: 'Import preview cleared. No authored resources were written.',
+      message: t('workspaceRoute.explorer.status.importCleared'),
     });
   };
 

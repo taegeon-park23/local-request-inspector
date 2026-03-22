@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Suspense, lazy } from 'react';
+import { useI18n } from '@client/app/providers/useI18n';
 import {
   listWorkspaceEnvironments,
   workspaceEnvironmentsQueryKey,
@@ -25,6 +26,26 @@ const requestEditorTabs: Array<{ id: RequestDraftState['activeEditorTab']; label
   { id: 'scripts', label: 'Scripts', icon: 'scripts' },
 ];
 
+function getLocalizedRequestEditorTabLabel(
+  tabId: RequestDraftState['activeEditorTab'],
+  t: ReturnType<typeof useI18n>['t'],
+) {
+  switch (tabId) {
+    case 'params':
+      return t('workspaceRoute.requestBuilder.tabs.params');
+    case 'headers':
+      return t('workspaceRoute.requestBuilder.tabs.headers');
+    case 'body':
+      return t('workspaceRoute.requestBuilder.tabs.body');
+    case 'auth':
+      return t('workspaceRoute.requestBuilder.tabs.auth');
+    case 'scripts':
+      return t('workspaceRoute.requestBuilder.tabs.scripts');
+    default:
+      return tabId;
+  }
+}
+
 const httpMethodOptions: RequestDraftState['method'][] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 const bodyModeOptions: Array<{ value: RequestDraftState['bodyMode']; label: string }> = [
   { value: 'none', label: 'None' },
@@ -45,18 +66,24 @@ interface RequestWorkSurfacePlaceholderProps {
   onCreateRequest: () => void;
 }
 
-function formatSavedAt(savedAt: string | null) {
+function formatSavedAt(
+  savedAt: string | null,
+  savedAtMessage: (time: string) => string,
+  upToDateMessage: string,
+  formatDateTime: (value: Date | number | string, options?: Intl.DateTimeFormatOptions) => string,
+) {
   if (!savedAt) {
-    return 'Saved request definition is up to date.';
+    return upToDateMessage;
   }
 
-  return `Saved request definition at ${new Date(savedAt).toLocaleTimeString()}.`;
+  return savedAtMessage(formatDateTime(savedAt, { timeStyle: 'short' }));
 }
 
 export function RequestWorkSurfacePlaceholder({
   activeTab,
   onCreateRequest,
 }: RequestWorkSurfacePlaceholderProps) {
+  const { t, formatDateTime } = useI18n();
   const draft = useRequestDraftStore((state) =>
     activeTab ? state.draftsByTabId[activeTab.id]?.draft ?? null : null,
   );
@@ -86,12 +113,12 @@ export function RequestWorkSurfacePlaceholder({
   if (!activeTab) {
     return (
       <div className="request-work-surface request-work-surface--empty" data-testid="request-tab-empty-state">
-        <h2>No request tab selected</h2>
+        <h2>{t('workspaceRoute.requestBuilder.empty.noSelectionTitle')}</h2>
         <p>
-          Open a saved request or create a draft to begin authoring. Response stays in the right-hand observation panel, while history, captures, and mocks remain separate observation or rule-management routes.
+          {t('workspaceRoute.requestBuilder.empty.noSelectionDescription')}
         </p>
         <button type="button" className="workspace-button" onClick={onCreateRequest}>
-          <IconLabel icon="new">Create Draft Request</IconLabel>
+          <IconLabel icon="new">{t('workspaceRoute.requestBuilder.empty.createDraftAction')}</IconLabel>
         </button>
       </div>
     );
@@ -100,62 +127,68 @@ export function RequestWorkSurfacePlaceholder({
   if (!draft) {
     return (
       <div className="request-work-surface request-work-surface--empty">
-        <h2>Preparing request draft</h2>
-        <p>This tab is creating a fresh authoring context. Replay and other observation records are always copied into a new draft instead of being edited in place.</p>
+        <h2>{t('workspaceRoute.requestBuilder.empty.preparingTitle')}</h2>
+        <p>{t('workspaceRoute.requestBuilder.empty.preparingDescription')}</p>
       </div>
     );
   }
 
-  const displayTitle = draft.name.trim() || 'Untitled Request';
+    const displayTitle = draft.name.trim() || 'Untitled Request';
   const replaySource = activeTab.source === 'replay' ? activeTab.replaySource ?? null : null;
   const locationSummary = replaySource
     ? replaySource.description
     : activeTab.source === 'saved'
       ? `${draft.collectionName}${draft.folderName ? ` / ${draft.folderName}` : ''}`
       : draft.collectionName
-        ? `Default save placement: ${draft.collectionName}${draft.folderName ? ` / ${draft.folderName}` : ''}`
-        : 'Unsaved draft';
+        ? t('workspaceRoute.requestBuilder.location.defaultSavePlacement', { path: `${draft.collectionName}${draft.folderName ? ` / ${draft.folderName}` : ''}` })
+        : t('workspaceRoute.requestBuilder.location.unsavedDraft');
   const saveStatusCopy = saveStatus.status === 'success'
-    ? formatSavedAt(saveStatus.savedAt)
-    : saveStatus.message ?? (saveDisabledReason ?? 'Save updates the request definition only.');
-  const runStatusCopy = runStatus.message ?? (runDisabledReason ?? 'Run creates a separate observation record in the right-hand panel.');
+    ? formatSavedAt(
+      saveStatus.savedAt,
+      (time) => t('workspaceRoute.requestBuilder.status.saveAtTime', { time }),
+      t('workspaceRoute.requestBuilder.status.saveUpToDate'),
+      formatDateTime,
+    )
+    : saveStatus.message ?? (saveDisabledReason ?? t('workspaceRoute.requestBuilder.status.saveFallback'));
+  const runStatusCopy = runStatus.message ?? (runDisabledReason ?? t('workspaceRoute.requestBuilder.status.runFallback'));
   const environmentSelectValue = draft.selectedEnvironmentId ?? '';
   const selectedEnvironment = (environmentsQuery.data ?? []).find((environment) => environment.id === draft.selectedEnvironmentId) ?? null;
   const hasMissingEnvironmentReference = environmentSelectValue.length > 0 && environmentsQuery.isSuccess && !selectedEnvironment;
   const environmentSupportCopy = environmentsQuery.isPending
-    ? 'Loading workspace environments for request-level selection.'
+    ? t('workspaceRoute.requestBuilder.environment.loading')
     : environmentsQuery.isError
-      ? 'Environment list is degraded. Saved-environment validation may stay unavailable until the environments route responds again.'
+      ? t('workspaceRoute.requestBuilder.environment.degraded')
       : hasMissingEnvironmentReference
-        ? 'The selected environment reference is missing from this workspace. Choose another environment or No environment before saving or running.'
+        ? t('workspaceRoute.requestBuilder.environment.missing')
         : selectedEnvironment
-          ? `${selectedEnvironment.name} contributes ${selectedEnvironment.enabledVariableCount} enabled variable(s) to this request at run time.`
-          : 'No environment is selected. This request runs with authored values only.';
+          ? t('workspaceRoute.requestBuilder.environment.selected', { name: selectedEnvironment.name, count: selectedEnvironment.enabledVariableCount })
+          : t('workspaceRoute.requestBuilder.environment.noneSelected');
 
   return (
     <div className="request-work-surface request-builder-core" data-testid="request-work-surface">
       <header className="request-work-surface__header request-builder-core__header">
         <div className="request-work-surface__header-copy">
-          <p className="section-placeholder__eyebrow">Request builder core</p>
+          <p className="section-placeholder__eyebrow">{t('workspaceRoute.requestBuilder.header.eyebrow')}</p>
           <h2>{displayTitle}</h2>
-          <p>This tab owns editable request state only. Save updates the request definition, while Run creates separate observation in the right-hand panel without mutating history or captures.</p>
+          <p>{t('workspaceRoute.requestBuilder.header.description')}</p>
         </div>
         <div className="request-work-surface__badges">
           <span className="workspace-chip">{draft.method}</span>
           {replaySource ? (
             <span className="workspace-chip workspace-chip--replay">{replaySource.label}</span>
           ) : (
-            <span className="workspace-chip">{activeTab.source === 'saved' ? 'Saved request' : 'New draft'}</span>
+            <span className="workspace-chip">{activeTab.source === 'saved' ? t('workspaceRoute.requestBuilder.badges.savedRequest') : t('workspaceRoute.requestBuilder.badges.newDraft')}</span>
           )}
-          {draft.dirty ? <span className="workspace-chip workspace-chip--accent">Dirty</span> : null}
+          {draft.dirty ? <span className="workspace-chip workspace-chip--accent">{t('workspaceRoute.requestBuilder.badges.dirty')}</span> : null}
         </div>
       </header>
 
       <div className="request-work-surface__header-strip request-builder-core__header-strip">
         <div className="request-builder-core__identity">
           <label className="request-field">
-            <span>Request name</span>
+            <span>{t('workspaceRoute.requestBuilder.fields.requestName')}</span>
             <input
+              aria-label="Request name"
               type="text"
               value={draft.name}
               onChange={(event) => updateDraftName(draft.tabId, event.currentTarget.value)}
@@ -164,26 +197,26 @@ export function RequestWorkSurfacePlaceholder({
           <div className="request-builder-core__identity-support">
             <p className="request-builder-core__source-copy">{locationSummary}</p>
             <label className="request-field request-field--compact">
-              <span>Request environment</span>
+              <span>{t('workspaceRoute.requestBuilder.fields.requestEnvironment')}</span>
               <select
                 aria-label="Request environment"
                 value={environmentSelectValue}
                 onChange={(event) => updateSelectedEnvironmentId(draft.tabId, event.currentTarget.value || null)}
               >
-                <option value="">No environment</option>
+                <option value="">{t('workspaceRoute.requestBuilder.environment.noEnvironment')}</option>
                 {(environmentsQuery.data ?? []).map((environment) => (
                   <option key={environment.id} value={environment.id}>
                     {environment.name}
                   </option>
                 ))}
                 {hasMissingEnvironmentReference ? (
-                  <option value={environmentSelectValue}>Missing environment reference</option>
+                  <option value={environmentSelectValue}>{t('workspaceRoute.requestBuilder.environment.missingReferenceOption')}</option>
                 ) : null}
               </select>
             </label>
             <div className="request-work-surface__badges">
-              {selectedEnvironment?.isDefault ? <span className="workspace-chip workspace-chip--secondary">Default environment</span> : null}
-              {hasMissingEnvironmentReference ? <span className="workspace-chip workspace-chip--replay">Missing environment</span> : null}
+              {selectedEnvironment?.isDefault ? <span className="workspace-chip workspace-chip--secondary">{t('workspaceRoute.requestBuilder.environment.defaultBadge')}</span> : null}
+              {hasMissingEnvironmentReference ? <span className="workspace-chip workspace-chip--replay">{t('workspaceRoute.requestBuilder.environment.missingBadge')}</span> : null}
             </div>
             <p className="shared-readiness-note">{environmentSupportCopy}</p>
           </div>
@@ -196,10 +229,10 @@ export function RequestWorkSurfacePlaceholder({
               onClick={handleSave}
               disabled={Boolean(saveDisabledReason)}
             >
-              <IconLabel icon="save">{saveStatus.status === 'pending' ? 'Saving...' : 'Save'}</IconLabel>
+              <IconLabel icon="save">{saveStatus.status === 'pending' ? t('workspaceRoute.requestBuilder.commands.saving') : t('workspaceRoute.requestBuilder.commands.save')}</IconLabel>
             </button>
             <button type="button" className="workspace-button workspace-button--secondary" disabled>
-              <IconLabel icon="duplicate">Duplicate</IconLabel>
+              <IconLabel icon="duplicate">{t('workspaceRoute.requestBuilder.commands.duplicate')}</IconLabel>
             </button>
             <button
               type="button"
@@ -207,15 +240,15 @@ export function RequestWorkSurfacePlaceholder({
               onClick={handleRun}
               disabled={Boolean(runDisabledReason)}
             >
-              <IconLabel icon="run">{runStatus.status === 'pending' ? 'Running...' : 'Run'}</IconLabel>
+              <IconLabel icon="run">{runStatus.status === 'pending' ? t('workspaceRoute.requestBuilder.commands.running') : t('workspaceRoute.requestBuilder.commands.run')}</IconLabel>
             </button>
           </div>
           <div className="request-builder-core__command-copy-group">
             <div className="request-builder-core__command-intro">
               <p className="request-builder-core__command-copy">
                 {replaySource
-                  ? 'Replay drafts still open in edit-first mode. Save creates or updates a request definition, while Run creates separate observation for this draft only.'
-                  : 'Save updates the request definition. Run does not save automatically and does not clear unsaved authoring changes.'}
+                  ? t('workspaceRoute.requestBuilder.commands.replayIntro')
+                  : t('workspaceRoute.requestBuilder.commands.defaultIntro')}
               </p>
             </div>
             <div className="request-builder-core__command-status-list">
@@ -223,7 +256,7 @@ export function RequestWorkSurfacePlaceholder({
               <p className="shared-readiness-note" data-testid="run-command-status">{runStatusCopy}</p>
             </div>
             <div className="request-builder-core__command-support">
-              <p className="shared-readiness-note">Duplicate stays deferred until saved-request copy semantics are added in a later slice.</p>
+              <p className="shared-readiness-note">{t('workspaceRoute.requestBuilder.commands.duplicateDeferred')}</p>
             </div>
           </div>
         </div>
@@ -232,7 +265,7 @@ export function RequestWorkSurfacePlaceholder({
       <section className="workspace-surface-card request-editor-card request-editor-card--primary">
         <div className="request-editor-card__grid">
           <label className="request-field request-field--compact">
-            <span>Request method</span>
+            <span>{t('workspaceRoute.requestBuilder.fields.requestMethod')}</span>
             <select
               aria-label="Request method"
               value={draft.method}
@@ -246,7 +279,7 @@ export function RequestWorkSurfacePlaceholder({
             </select>
           </label>
           <label className="request-field request-field--wide">
-            <span>Request URL</span>
+            <span>{t('workspaceRoute.requestBuilder.fields.requestUrl')}</span>
             <input
               aria-label="Request URL"
               placeholder="https://api.example.com/resource"
@@ -267,7 +300,9 @@ export function RequestWorkSurfacePlaceholder({
             aria-pressed={draft.activeEditorTab === tab.id}
             onClick={() => setActiveEditorTab(draft.tabId, tab.id)}
           >
-            <span className="workspace-subtab__content"><IconLabel icon={tab.icon}>{tab.label}</IconLabel></span>
+            <span className="workspace-subtab__content">
+              <IconLabel icon={tab.icon}>{getLocalizedRequestEditorTabLabel(tab.id, t)}</IconLabel>
+            </span>
           </button>
         ))}
       </div>
@@ -275,12 +310,12 @@ export function RequestWorkSurfacePlaceholder({
       <div className="request-work-surface__body request-work-surface__body--single">
         {draft.activeEditorTab === 'params' ? (
           <RequestKeyValueEditor
-            addButtonLabel="Add param"
-            description="Edit query params as request authoring inputs. Run applies only enabled rows, and save persists the authored definition as-is."
-            emptyCopy="No params yet. Add rows only if this request needs query input."
-            rowLabel="Param"
+            addButtonLabel={t('workspaceRoute.requestBuilder.paramsEditor.addAction')}
+            description={t('workspaceRoute.requestBuilder.paramsEditor.description')}
+            emptyCopy={t('workspaceRoute.requestBuilder.paramsEditor.empty')}
+            rowLabel={t('workspaceRoute.requestBuilder.paramsEditor.rowLabel')}
             rows={draft.params}
-            title="Params"
+            title={t('workspaceRoute.requestBuilder.paramsEditor.title')}
             onAddRow={() => addRow(draft.tabId, 'params')}
             onRemoveRow={(rowId) => removeRow(draft.tabId, 'params', rowId)}
             onUpdateRow={(rowId, field, value) => updateRow(draft.tabId, 'params', rowId, field, value)}
@@ -289,12 +324,12 @@ export function RequestWorkSurfacePlaceholder({
 
         {draft.activeEditorTab === 'headers' ? (
           <RequestKeyValueEditor
-            addButtonLabel="Add header"
-            description="Edit request headers without coupling them to runtime history or captures. Save persists them, and Run applies enabled rows only to this execution."
-            emptyCopy="No headers yet. Add rows when this request needs explicit header values."
-            rowLabel="Header"
+            addButtonLabel={t('workspaceRoute.requestBuilder.headersEditor.addAction')}
+            description={t('workspaceRoute.requestBuilder.headersEditor.description')}
+            emptyCopy={t('workspaceRoute.requestBuilder.headersEditor.empty')}
+            rowLabel={t('workspaceRoute.requestBuilder.headersEditor.rowLabel')}
             rows={draft.headers}
-            title="Headers"
+            title={t('workspaceRoute.requestBuilder.headersEditor.title')}
             onAddRow={() => addRow(draft.tabId, 'headers')}
             onRemoveRow={(rowId) => removeRow(draft.tabId, 'headers', rowId)}
             onUpdateRow={(rowId, field, value) => updateRow(draft.tabId, 'headers', rowId, field, value)}
@@ -305,32 +340,36 @@ export function RequestWorkSurfacePlaceholder({
           <section className="workspace-surface-card request-editor-card">
             <header className="request-editor-card__header">
               <div>
-                <h3>Body</h3>
-                <p>Choose a lightweight authoring mode. Save persists body inputs, while Run sends the current authored body without pulling observation state back into the draft.</p>
+                <h3>{t('workspaceRoute.requestBuilder.bodyEditor.title')}</h3>
+                <p>{t('workspaceRoute.requestBuilder.bodyEditor.description')}</p>
               </div>
             </header>
 
             <label className="request-field request-field--compact">
-              <span>Body mode</span>
+              <span>{t('workspaceRoute.requestBuilder.bodyEditor.modeLabel')}</span>
               <select
                 value={draft.bodyMode}
                 onChange={(event) => updateBodyMode(draft.tabId, event.currentTarget.value as RequestDraftState['bodyMode'])}
               >
                 {bodyModeOptions.map((bodyMode) => (
                   <option key={bodyMode.value} value={bodyMode.value}>
-                    {bodyMode.label}
+                    {bodyMode.value === 'none' ? t('workspaceRoute.requestBuilder.bodyModeOptions.none') : bodyMode.value === 'json' ? t('workspaceRoute.requestBuilder.bodyModeOptions.json') : bodyMode.value === 'text' ? t('workspaceRoute.requestBuilder.bodyModeOptions.text') : bodyMode.value === 'form-urlencoded' ? t('workspaceRoute.requestBuilder.bodyModeOptions.formUrlencoded') : t('workspaceRoute.requestBuilder.bodyModeOptions.multipartFormData')}
                   </option>
                 ))}
               </select>
             </label>
 
             {draft.bodyMode === 'none' ? (
-              <p className="request-editor-card__empty">No body content is attached to this request draft.</p>
+              <p className="request-editor-card__empty">{t('workspaceRoute.requestBuilder.bodyEditor.empty')}</p>
             ) : null}
 
             {draft.bodyMode === 'json' || draft.bodyMode === 'text' ? (
               <label className="request-field">
-                <span>{draft.bodyMode === 'json' ? 'Body content (JSON)' : 'Body content (Text)'}</span>
+                <span>
+                  {draft.bodyMode === 'json'
+                    ? t('workspaceRoute.requestBuilder.bodyEditor.contentJsonLabel')
+                    : t('workspaceRoute.requestBuilder.bodyEditor.contentTextLabel')}
+                </span>
                 <textarea
                   rows={10}
                   value={draft.bodyText}
@@ -341,12 +380,12 @@ export function RequestWorkSurfacePlaceholder({
 
             {draft.bodyMode === 'form-urlencoded' ? (
               <RequestKeyValueEditor
-                addButtonLabel="Add form field"
-                description="Scaffold x-www-form-urlencoded request bodies as key/value rows. Save persists them, and Run encodes only enabled rows."
-                emptyCopy="No form fields yet. Add rows to prepare encoded body inputs."
-                rowLabel="Form field"
+                addButtonLabel={t('workspaceRoute.requestBuilder.bodyEditor.formAddAction')}
+                description={t('workspaceRoute.requestBuilder.bodyEditor.formDescription')}
+                emptyCopy={t('workspaceRoute.requestBuilder.bodyEditor.formEmpty')}
+                rowLabel={t('workspaceRoute.requestBuilder.bodyEditor.formRowLabel')}
                 rows={draft.formBody}
-                title="Form body"
+                title={t('workspaceRoute.requestBuilder.bodyEditor.formTitle')}
                 onAddRow={() => addRow(draft.tabId, 'formBody')}
                 onRemoveRow={(rowId) => removeRow(draft.tabId, 'formBody', rowId)}
                 onUpdateRow={(rowId, field, value) => updateRow(draft.tabId, 'formBody', rowId, field, value)}
@@ -355,12 +394,12 @@ export function RequestWorkSurfacePlaceholder({
 
             {draft.bodyMode === 'multipart-form-data' ? (
               <RequestKeyValueEditor
-                addButtonLabel="Add multipart field"
-                description="Scaffold multipart rows only. Real file attachment UX is still deferred, but enabled rows are already preserved in the saved definition."
-                emptyCopy="No multipart rows yet. Add basic fields or file placeholders for later implementation."
-                rowLabel="Multipart field"
+                addButtonLabel={t('workspaceRoute.requestBuilder.bodyEditor.multipartAddAction')}
+                description={t('workspaceRoute.requestBuilder.bodyEditor.multipartDescription')}
+                emptyCopy={t('workspaceRoute.requestBuilder.bodyEditor.multipartEmpty')}
+                rowLabel={t('workspaceRoute.requestBuilder.bodyEditor.multipartRowLabel')}
                 rows={draft.multipartBody}
-                title="Multipart body"
+                title={t('workspaceRoute.requestBuilder.bodyEditor.multipartTitle')}
                 onAddRow={() => addRow(draft.tabId, 'multipartBody')}
                 onRemoveRow={(rowId) => removeRow(draft.tabId, 'multipartBody', rowId)}
                 onUpdateRow={(rowId, field, value) => updateRow(draft.tabId, 'multipartBody', rowId, field, value)}
@@ -373,33 +412,34 @@ export function RequestWorkSurfacePlaceholder({
           <section className="workspace-surface-card request-editor-card">
             <header className="request-editor-card__header">
               <div>
-                <h3>Auth</h3>
-                <p>Auth stays lightweight here. Save persists authored auth fields, while Run applies them for this request only without reusing history or capture observation state.</p>
+                <h3>{t('workspaceRoute.requestBuilder.authEditor.title')}</h3>
+                <p>{t('workspaceRoute.requestBuilder.authEditor.description')}</p>
               </div>
             </header>
 
             <label className="request-field request-field--compact">
-              <span>Auth type</span>
+              <span>{t('workspaceRoute.requestBuilder.authEditor.typeLabel')}</span>
               <select
                 value={draft.auth.type}
                 onChange={(event) => updateAuthType(draft.tabId, event.currentTarget.value as RequestDraftState['auth']['type'])}
               >
                 {authTypeOptions.map((authType) => (
                   <option key={authType.value} value={authType.value}>
-                    {authType.label}
+                    {authType.value === 'none' ? t('workspaceRoute.requestBuilder.authTypeOptions.none') : authType.value === 'bearer' ? t('workspaceRoute.requestBuilder.authTypeOptions.bearer') : authType.value === 'basic' ? t('workspaceRoute.requestBuilder.authTypeOptions.basic') : t('workspaceRoute.requestBuilder.authTypeOptions.apiKey')}
                   </option>
                 ))}
               </select>
             </label>
 
             {draft.auth.type === 'none' ? (
-              <p className="request-editor-card__empty">No auth is attached to this request draft.</p>
+              <p className="request-editor-card__empty">{t('workspaceRoute.requestBuilder.authEditor.empty')}</p>
             ) : null}
 
-            {draft.auth.type === 'bearer' ? (
+                        {draft.auth.type === 'bearer' ? (
               <label className="request-field">
-                <span>Bearer token</span>
+                <span>{t('workspaceRoute.requestBuilder.authEditor.bearerToken')}</span>
                 <input
+                  aria-label="Bearer token"
                   type="text"
                   value={draft.auth.bearerToken}
                   onChange={(event) => updateAuthField(draft.tabId, 'bearerToken', event.currentTarget.value)}
@@ -410,16 +450,18 @@ export function RequestWorkSurfacePlaceholder({
             {draft.auth.type === 'basic' ? (
               <div className="request-editor-card__grid">
                 <label className="request-field">
-                  <span>Username</span>
+                  <span>{t('workspaceRoute.requestBuilder.authEditor.username')}</span>
                   <input
+                    aria-label="Username"
                     type="text"
                     value={draft.auth.basicUsername}
                     onChange={(event) => updateAuthField(draft.tabId, 'basicUsername', event.currentTarget.value)}
                   />
                 </label>
                 <label className="request-field">
-                  <span>Password</span>
+                  <span>{t('workspaceRoute.requestBuilder.authEditor.password')}</span>
                   <input
+                    aria-label="Password"
                     type="password"
                     value={draft.auth.basicPassword}
                     onChange={(event) => updateAuthField(draft.tabId, 'basicPassword', event.currentTarget.value)}
@@ -431,29 +473,32 @@ export function RequestWorkSurfacePlaceholder({
             {draft.auth.type === 'api-key' ? (
               <div className="request-editor-card__grid">
                 <label className="request-field">
-                  <span>API key name</span>
+                  <span>{t('workspaceRoute.requestBuilder.authEditor.apiKeyName')}</span>
                   <input
+                    aria-label="API key name"
                     type="text"
                     value={draft.auth.apiKeyName}
                     onChange={(event) => updateAuthField(draft.tabId, 'apiKeyName', event.currentTarget.value)}
                   />
                 </label>
                 <label className="request-field">
-                  <span>API key value</span>
+                  <span>{t('workspaceRoute.requestBuilder.authEditor.apiKeyValue')}</span>
                   <input
+                    aria-label="API key value"
                     type="text"
                     value={draft.auth.apiKeyValue}
                     onChange={(event) => updateAuthField(draft.tabId, 'apiKeyValue', event.currentTarget.value)}
                   />
                 </label>
                 <label className="request-field request-field--compact">
-                  <span>API key placement</span>
+                  <span>{t('workspaceRoute.requestBuilder.authEditor.apiKeyPlacement')}</span>
                   <select
+                    aria-label="API key placement"
                     value={draft.auth.apiKeyPlacement}
                     onChange={(event) => updateAuthField(draft.tabId, 'apiKeyPlacement', event.currentTarget.value)}
                   >
-                    <option value="header">Header</option>
-                    <option value="query">Query</option>
+                    <option value="header">{t('workspaceRoute.requestBuilder.apiKeyPlacementOptions.header')}</option>
+                    <option value="query">{t('workspaceRoute.requestBuilder.apiKeyPlacementOptions.query')}</option>
                   </select>
                 </label>
               </div>
@@ -467,17 +512,17 @@ export function RequestWorkSurfacePlaceholder({
               <section className="workspace-surface-card request-editor-card request-editor-card--scripts request-script-loading" data-testid="script-editor-loading">
                 <header className="request-editor-card__header">
                   <div>
-                    <h3>Scripts</h3>
+                    <h3>{t('workspaceRoute.requestBuilder.loadingScripts.title')}</h3>
                     <p>
-                      Loading the stage-aware script editor on demand so Params, Headers, Body, and Auth stay responsive while the heavier authoring path initializes.
+                      {t('workspaceRoute.requestBuilder.loadingScripts.description')}
                     </p>
                   </div>
                 </header>
                 <div className="request-script-loading__body">
                   <article className="workspace-surface-card workspace-surface-card--muted">
-                    <h4>Lazy editor path</h4>
+                    <h4>{t('workspaceRoute.requestBuilder.loadingScripts.lazyPathTitle')}</h4>
                     <p>
-                      This fallback explains the wait: the script editor bundle is loaded only when Scripts is active. Advanced editor assistance remains deferred even though bounded script execution already writes observation summaries elsewhere.
+                      {t('workspaceRoute.requestBuilder.loadingScripts.lazyPathDescription')}
                     </p>
                   </article>
                 </div>
