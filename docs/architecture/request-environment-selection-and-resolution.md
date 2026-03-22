@@ -1,0 +1,126 @@
+# Request Environment Selection And Resolution
+
+- **Purpose:** Define the bounded next-step design for request-level environment selection and server-owned environment resolution after `T027` made environments a real persisted workflow surface.
+- **Created:** 2026-03-22
+- **Last Updated:** 2026-03-22
+- **Related Documents:** `request-builder-mvp.md`, `internal-api-contracts.md`, `script-execution-safety-model.md`, `workspace-flows.md`, `../tasks/task-011-request-builder-mvp-design.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`
+- **Status:** draft accepted
+- **Update Rule:** Update when request-level environment selection, environment resolution ownership, or runtime secret-handling boundaries materially change.
+
+## 1. Summary
+This document narrows the next environment-related implementation step after `T027`. The next slice is request-level environment selection inside the `Workspace` request header plus server-owned environment resolution during request execution. The next slice explicitly does **not** include a top-bar global environment selector, full resolved-preview UI, or environment import/export expansion.
+
+## 2. Why This Exists Now
+- `T027` made `/environments` a real persisted management surface, so the repo now has an actual environment workflow object rather than just planning language.
+- The request builder already assumes environment selection and environment resolution conceptually, but the current code and docs still need one bounded design before implementation resumes.
+- Secret rows are now write-only in the environment route, which means client-side resolution would be the wrong ownership model for the next step.
+
+## 3. Goals
+- add one request-level environment selector to the request header strip
+- make save/run behavior deterministic for selected environments
+- keep secret resolution server-owned
+- preserve the request-definition lane versus execution-history lane split
+- define missing-reference behavior before implementation starts
+
+## 4. Non-Goals
+- no top-bar or cross-tab global environment selector
+- no environment management changes inside `/environments`
+- no full resolved-request preview panel
+- no environment import/export support
+- no settings mutation or preferences
+- no request-stage standalone script attachment/reference work
+
+## 5. Selected Product Decisions
+### 5.1 Selector placement
+- The selector lives in the request header strip inside the active request work surface.
+- It is request-specific, not global to the shell.
+- Top-bar environment selection stays deferred.
+
+### 5.2 Initial selection behavior
+- A newly created request tab initializes to the current workspace default environment if one exists.
+- Users can explicitly change the selection to another environment or to `No environment`.
+- The workspace default is therefore a creation-time seed, not a runtime fallback.
+
+### 5.3 Persistence rule
+- The request definition persists one field: `selectedEnvironmentId: string | null`.
+- Saving a request stores the currently selected environment id or `null` for explicit no-environment behavior.
+- Saved requests do not silently track later default-environment changes.
+
+### 5.4 Runtime rule
+- Run requests send `selectedEnvironmentId` as execution input.
+- The server resolves variables against the persisted environment record.
+- The client never resolves secret-backed values locally because the read model intentionally masks them.
+
+### 5.5 Missing-reference rule
+- If a saved request points at an environment id that no longer exists, the request builder surfaces a `Missing environment` state in the selector.
+- Save and run are blocked until the user chooses an available environment or `No environment`.
+- The system must not silently rewrite the missing selection during load.
+
+### 5.6 Default-environment change rule
+- Changing the workspace default environment affects only future new-request initialization.
+- Existing request drafts and saved requests keep their explicit selected environment unless the user changes them.
+
+## 6. Resolution Ownership
+### 6.1 Client responsibilities
+- show current selected environment label/state
+- persist `selectedEnvironmentId` in request definitions
+- send authored request input plus `selectedEnvironmentId` to the run endpoint
+- render unresolved-variable and missing-environment validation feedback returned from the server
+
+### 6.2 Server responsibilities
+- load the persisted environment record for `selectedEnvironmentId`
+- resolve variables into URL, params, headers, body, and auth inputs
+- keep secret raw values off the client DTO surface
+- produce bounded validation diagnostics and runtime history metadata
+
+### 6.3 Why server-owned resolution wins
+- `/environments` intentionally returns masked secret rows
+- runtime history already persists only bounded labels and summaries
+- script execution safety guidance already expects controlled environment access rather than a raw secret catalog
+
+## 7. Data Contract Adjustments
+### 7.1 Request definition lane
+Add to saved request definition and draft state:
+- `selectedEnvironmentId: string | null`
+
+### 7.2 Execution command lane
+Use:
+- `environmentId: string | null`
+
+### 7.3 Runtime artifact lane
+Persist:
+- `environmentId`
+- environment label used at execution time
+
+Do not persist:
+- raw resolved environment variable maps
+- raw secret values
+
+## 8. Validation Model
+### 8.1 Blocking run conditions
+- selected environment reference is missing
+- selected environment exists but required placeholders remain unresolved in required execution fields
+- malformed JSON/body/auth validation already fails independently
+
+### 8.2 Non-blocking warnings
+- unresolved placeholders in optional headers/body text that do not block transport
+- environment selected but currently contributes no variables
+
+### 8.3 Save behavior
+- Save is allowed with `No environment`
+- Save is not allowed while the request still references a deleted/missing environment id
+
+## 9. UI Scope For The Next Implementation Slice
+- request header selector with current environment chip/label
+- `No environment` option
+- visible default badge or summary for the currently selected default-seeded environment
+- inline warning for missing environment reference
+- no dedicated resolved-preview inspector yet
+
+## 10. Open Questions
+1. Whether the request header should also show a compact "default-seeded" hint for newly created requests remains **확실하지 않음**.
+2. Whether unresolved placeholders in optional body segments should always warn or only warn after first run remains **확실하지 않음**.
+3. Whether environment labels should be copied into saved-request summaries for explorer readability remains **확실하지 않음**.
+
+## 11. Canonical Decision
+The next environment-related implementation slice should be request-level selector plus server-owned run-time resolution, not a top-bar global selector. The request definition should persist explicit `selectedEnvironmentId`, new requests should seed from the current workspace default only at creation time, and deleted environment references should surface as a blocking missing-reference state instead of being silently cleared.
