@@ -164,6 +164,7 @@ Use a **token-first custom implementation**:
 - **Implementation follow-up (2026-03-22):** `M3-F2` is now landed as a CSS-first accessibility/density polish pass that strengthens focus-visible clarity, interaction-state contrast, supporting-container separation, and dense metadata/readiness/list scanability across shared tabs, action/filter groups, detail/meta primitives, and list-row surfaces without changing behavior or ownership.
 - **Implementation follow-up (2026-03-23):** `T035` is now landed as the current visual plus light-UX continuation slice. It compacts the shell header, moves the shell breadcrumb to a route-only `Workbench / section` model, introduces a local curated SVG icon primitive inspired by Material Symbols Rounded, and limits icon adoption to navigation, top-level section headers, shared tabs, empty/detail callouts, and icon-plus-label primary actions.
 - **Guardrail refresh (2026-03-23):** `T035` remains client-only. It does not change backend APIs, persisted state ownership, request/capture/history/mock semantics, or the server-owned environment-resolution contract.
+- **Implementation follow-up (2026-03-23):** `T036` is now landed as the next visual correction slice after `T035`. It tightens shape usage, reduces over-rounded grouped surfaces, caps button corners near 12px, and increases the visual separation between actionable buttons and passive badges/tabs without changing semantics or contracts.
 
 ## 12. Post-S26 Follow-Up Slices
 ### M3-F1 — Secondary surfaces and remaining shell affordances
@@ -189,6 +190,11 @@ Use a **token-first custom implementation**:
 - Scope: shell header compaction, route-only breadcrumb, navigation/icon refresh, shared-primitives icon support, and icon-plus-label primary-action polish only.
 - Guardrails: keep the slice visual plus light UX only, keep text labels canonical for accessibility and tests, and do not change backend or state ownership.
 - Status: done on 2026-03-23 as a client-only continuation of the current Material 3 baseline.
+
+### T036 — Button, badge, and radius visual hierarchy refinement
+- Scope: reduce excessive radius intensity across dense controls and grouped surfaces, make buttons more obviously actionable than chips/status badges, and tighten shared tab geometry.
+- Guardrails: keep the slice client-only, preserve accessible names and control roles, and prefer CSS/token refinement over broad TSX churn.
+- Status: done on 2026-03-23 as a bounded Material 3 control-hierarchy refinement pass.
 
 ### Explicitly Deferred Beyond This Sequence
 - light theme activation
