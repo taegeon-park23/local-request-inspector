@@ -133,6 +133,9 @@ Implementation follow-up note, 2026-03-22: shell-content column balance and navi
 Implementation follow-up note, 2026-03-22: top-level explorer and observation lists now use stronger Material 3 list-container rhythm and row min-height/line-height tuning, improving vertical scanability without changing any list or selection semantics.
 Implementation follow-up note, 2026-03-22: shared detail sections and key-value metadata rows now use tighter Material 3 card padding and two-column metadata rhythm on larger widths, improving detail scanability without changing any observation or management semantics.
 Implementation follow-up note, 2026-03-22: request tab strip cards now use tighter Material 3 tab-card spacing, active-state treatment, and close-target sizing, improving request-shell scanability without changing any tab semantics.
+Implementation follow-up note, 2026-03-22: request-builder authoring header strip, command area, and script-editor supporting surfaces now use stronger Material 3 container rhythm, reducing one of the main remaining non-materialized authoring seams without changing any request semantics.
+Implementation follow-up note, 2026-03-22: the active request observation panel could not be patched at the TSX markup level because the sandbox refresh issue still blocks that file, but result-panel tabs, bounded preview, and execution-stage summaries now use narrower CSS-only selectors for stronger Material 3 observation hierarchy without changing run semantics.
+Implementation follow-up note, 2026-03-22: keyboard-visible interactive affordances and badge/callout density now use stronger Material 3 focus and line-height treatment, improving accessibility polish without changing any feature semantics.
 
 
 
