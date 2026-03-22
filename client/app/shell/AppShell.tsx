@@ -5,16 +5,22 @@ import { StatusBadge } from '@client/shared/ui/StatusBadge';
 
 export function AppShell() {
   const runtimeConnectionHealth = useShellStore((state) => state.runtimeConnectionHealth);
+  const brandIconUrl = `${import.meta.env.BASE_URL}favicon.svg`;
 
   return (
     <div className="shell-layout" data-testid="app-shell">
       <header className="shell-topbar" aria-label="Top bar">
         <div className="shell-topbar__brand">
-          <p className="shell-topbar__eyebrow">Local Request Inspector</p>
-          <h1>Local API Workbench shell</h1>
-          <p className="shell-topbar__supporting">
-            Shell-first authoring and observation surfaces stay split while Material 3 tokens provide a shared visual foundation.
-          </p>
+          <div className="shell-topbar__brand-row">
+            <img className="shell-topbar__brand-icon" src={brandIconUrl} alt="" />
+            <div className="shell-topbar__brand-copy">
+              <p className="shell-topbar__eyebrow">Local Request Inspector</p>
+              <h1>Local API Workbench shell</h1>
+              <p className="shell-topbar__supporting">
+                Shell-first authoring and observation surfaces stay split while Material 3 tokens provide a shared visual foundation.
+              </p>
+            </div>
+          </div>
           <div className="shell-topbar__legend" aria-label="Surface roles">
             <span className="shell-topbar__legend-chip shell-topbar__legend-chip--authoring">Authoring</span>
             <span className="shell-topbar__legend-chip shell-topbar__legend-chip--observation">Observation</span>
