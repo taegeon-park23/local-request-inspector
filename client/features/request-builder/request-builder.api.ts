@@ -38,6 +38,7 @@ export interface RequestDefinitionInput {
   name: string;
   method: RequestDraftState['method'];
   url: string;
+  selectedEnvironmentId?: string | null;
   params: RequestKeyValueRow[];
   headers: RequestKeyValueRow[];
   bodyMode: RequestDraftState['bodyMode'];
@@ -99,6 +100,8 @@ export interface RequestRunObservation {
   requestBodyMode?: RequestDraftState['bodyMode'];
   authSummary?: string;
   requestResourceId?: string | null;
+  environmentId?: string | null;
+  environmentLabel?: string;
   requestCollectionName?: string;
   requestFolderName?: string;
   requestSourceLabel?: string;
@@ -216,6 +219,7 @@ export function createRequestDefinitionInput(
     name: draft.name.trim() || activeTab.title,
     method: draft.method,
     url: draft.url,
+    selectedEnvironmentId: draft.selectedEnvironmentId ?? null,
     params: cloneRows(draft.params),
     headers: cloneRows(draft.headers),
     bodyMode: draft.bodyMode,
@@ -246,6 +250,7 @@ export function mapSavedRequestResourceToWorkspaceSeed(
       name: record.name,
       method: record.method,
       url: record.url,
+      selectedEnvironmentId: record.selectedEnvironmentId ?? null,
       params: cloneRows(record.params),
       headers: cloneRows(record.headers),
       bodyMode: record.bodyMode,

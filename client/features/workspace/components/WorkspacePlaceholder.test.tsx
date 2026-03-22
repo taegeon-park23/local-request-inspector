@@ -42,6 +42,50 @@ describe('Workspace request builder authoring shell', () => {
     expect(screen.getByLabelText('Request URL')).toBeInTheDocument();
   });
 
+  it('seeds a new request with the current default environment at creation time', async () => {
+    const user = userEvent.setup();
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+      const method = init?.method ?? 'GET';
+
+      if (url === '/api/workspaces/local-workspace/requests' && method === 'GET') {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/environments' && method === 'GET') {
+        return createApiResponse({
+          items: [
+            {
+              id: 'environment-local',
+              workspaceId: 'local-workspace',
+              name: 'Local API',
+              description: 'Primary localhost defaults for development.',
+              isDefault: true,
+              variableCount: 3,
+              enabledVariableCount: 3,
+              secretVariableCount: 1,
+              resolutionSummary: '3 variables are managed here, including 1 secret-backed entry.',
+              createdAt: '2026-03-22T09:00:00.000Z',
+              updatedAt: '2026-03-22T09:00:00.000Z',
+            },
+          ],
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    await openNewRequest(user);
+
+    await waitFor(() => expect(screen.getByLabelText('Request environment')).toHaveValue('environment-local'));
+    expect(screen.getByText('Default environment')).toBeInTheDocument();
+    expect(screen.getByText(/Local API contributes 3 enabled variable\(s\) to this request at run time/i)).toBeInTheDocument();
+  });
+
   it('updates method and url draft values and shows a dirty indicator', async () => {
     const user = userEvent.setup();
     renderApp(<AppRouter />);

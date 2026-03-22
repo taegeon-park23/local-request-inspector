@@ -316,6 +316,7 @@ export function RequestResultPanelPlaceholder({
                     { label: 'Snapshot source', value: execution.requestSourceLabel ?? 'Runtime request snapshot' },
                     { label: 'Linked request', value: formatObservedLinkage(execution.requestResourceId, execution.requestSourceLabel, execution.requestCollectionName, execution.requestFolderName) },
                     { label: 'Placement', value: formatObservedPlacement(execution.requestCollectionName, execution.requestFolderName) },
+                    { label: 'Environment', value: execution.environmentLabel ?? 'No environment selected' },
                     { label: 'Error code', value: execution.errorCode ?? 'No execution error code' },
                     { label: 'Error summary', value: execution.errorSummary ?? 'No execution error was reported.' },
                     { label: 'Request input', value: execution.requestInputSummary ?? 'Request snapshot summary was not returned.' },

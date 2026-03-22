@@ -28,6 +28,10 @@ const {
   validateEnvironmentInput,
 } = require('./storage/resource/environment-record');
 const {
+  resolveExecutionRequestWithEnvironment,
+  summarizeUnresolvedEnvironmentPlaceholders,
+} = require('./storage/resource/environment-resolution');
+const {
   createSavedScriptRecord,
   normalizePersistedSavedScriptRecord,
   compareSavedScriptRecords,
@@ -244,6 +248,13 @@ function validateRequestDefinition(input) {
     return 'Request URL is required.';
   }
 
+  if (
+    input.selectedEnvironmentId != null
+    && typeof input.selectedEnvironmentId !== 'string'
+  ) {
+    return 'Selected environment id must be a string or null.';
+  }
+
   return null;
 }
 
@@ -251,6 +262,9 @@ function normalizeSavedRequest(input, existingRecord, workspaceId) {
   const now = new Date().toISOString();
   const recordId = input.id || existingRecord?.id || randomUUID();
   const collectionName = input.collectionName || existingRecord?.collectionName || 'Saved Requests';
+  const selectedEnvironmentId = typeof input.selectedEnvironmentId === 'string' && input.selectedEnvironmentId.trim().length > 0
+    ? input.selectedEnvironmentId.trim()
+    : null;
 
   return {
     resourceKind: RESOURCE_RECORD_KINDS.REQUEST,
@@ -260,6 +274,7 @@ function normalizeSavedRequest(input, existingRecord, workspaceId) {
     name: input.name.trim(),
     method: input.method,
     url: input.url,
+    selectedEnvironmentId,
     params: cloneRows(input.params),
     headers: cloneRows(input.headers),
     bodyMode: input.bodyMode || 'none',
@@ -285,6 +300,9 @@ function normalizePersistedRequestRecord(record) {
     ...record,
     resourceKind: RESOURCE_RECORD_KINDS.REQUEST,
     resourceSchemaVersion: REQUEST_RESOURCE_SCHEMA_VERSION,
+    selectedEnvironmentId: typeof record.selectedEnvironmentId === 'string' && record.selectedEnvironmentId.trim().length > 0
+      ? record.selectedEnvironmentId.trim()
+      : null,
     collectionName: record.collectionName || 'Saved Requests',
     summary: record.summary || createRequestSummary(record.method, record.url),
   };
@@ -451,6 +469,12 @@ function createExecutionObservation({
     requestResourceId: typeof requestSnapshot?.requestId === 'string' && requestSnapshot.requestId.length > 0
       ? requestSnapshot.requestId
       : null,
+    environmentId: typeof requestSnapshot?.environmentId === 'string' && requestSnapshot.environmentId.length > 0
+      ? requestSnapshot.environmentId
+      : null,
+    environmentLabel: typeof requestSnapshot?.environmentLabel === 'string' && requestSnapshot.environmentLabel.length > 0
+      ? requestSnapshot.environmentLabel
+      : 'No environment selected',
     requestCollectionName: requestSnapshot?.collectionName || undefined,
     requestFolderName: requestSnapshot?.folderName || undefined,
     requestSourceLabel: requestSnapshot?.sourceLabel || 'Runtime request snapshot',
@@ -624,6 +648,12 @@ function createPersistedRequestSnapshot(request, targetUrl) {
     bodyText: createPersistedBodyPreview(request),
     auth: createPersistedAuthSnapshot(request.auth),
     requestId: request.id || null,
+    environmentId: typeof request.selectedEnvironmentId === 'string' && request.selectedEnvironmentId.length > 0
+      ? request.selectedEnvironmentId
+      : null,
+    environmentLabel: typeof request.selectedEnvironmentLabel === 'string' && request.selectedEnvironmentLabel.length > 0
+      ? request.selectedEnvironmentLabel
+      : 'No environment selected',
     collectionName: typeof request.collectionName === 'string' ? request.collectionName : '',
     folderName: typeof request.folderName === 'string' ? request.folderName : '',
     sourceLabel: request.id ? 'Saved request snapshot' : 'Ad hoc request snapshot',
@@ -753,6 +783,12 @@ function createPersistedRequestSnapshotSafely(request, targetUrl) {
       bodyText: createPersistedBodyPreview(request || {}),
       auth: createPersistedAuthSnapshot(request?.auth),
       requestId: request?.id || null,
+      environmentId: typeof request?.selectedEnvironmentId === 'string' && request.selectedEnvironmentId.length > 0
+        ? request.selectedEnvironmentId
+        : null,
+      environmentLabel: typeof request?.selectedEnvironmentLabel === 'string' && request.selectedEnvironmentLabel.length > 0
+        ? request.selectedEnvironmentLabel
+        : 'No environment selected',
       collectionName: typeof request?.collectionName === 'string' ? request.collectionName : '',
       folderName: typeof request?.folderName === 'string' ? request.folderName : '',
       sourceLabel: request?.id ? 'Saved request snapshot' : 'Ad hoc request snapshot',
@@ -767,6 +803,9 @@ function createExecutionRequestSeed(input) {
     name: input.name,
     method: input.method,
     url: input.url,
+    selectedEnvironmentId: typeof input.selectedEnvironmentId === 'string' && input.selectedEnvironmentId.trim().length > 0
+      ? input.selectedEnvironmentId.trim()
+      : null,
     params: cloneRows(input.params),
     headers: cloneRows(input.headers),
     bodyMode: input.bodyMode || 'none',
@@ -1385,6 +1424,17 @@ function createSkippedScriptStageAfterTransport(stageId, reason) {
   return createEmptyScriptStageResult(stageId, reason);
 }
 
+function createTransportBlockedStageResult(summary, errorCode, errorSummary) {
+  return createStageStatusRecord('transport', 'blocked', summary, {
+    ...(errorCode ? { errorCode } : {}),
+    ...(errorSummary ? { errorSummary } : {}),
+  });
+}
+
+function createResolvedEnvironmentLabel(environmentRecord) {
+  return environmentRecord?.name || 'No environment selected';
+}
+
 function deriveExecutionOutcome(stageResults) {
   const normalizedResults = Object.values(stageResults || {}).filter(Boolean);
 
@@ -1809,6 +1859,14 @@ function createHistoryRecord(runtimeRecord) {
   const requestParams = Array.isArray(requestSnapshot.params) ? requestSnapshot.params : [];
   const requestHeaders = Array.isArray(requestSnapshot.headers) ? requestSnapshot.headers : [];
   const responseBodyPreview = typeof runtimeRecord.responseBodyPreview === 'string' ? runtimeRecord.responseBodyPreview : '';
+  const environmentId = typeof requestSnapshot.environmentId === 'string' && requestSnapshot.environmentId.length > 0
+    ? requestSnapshot.environmentId
+    : runtimeRecord.environmentId || null;
+  const environmentLabel = typeof requestSnapshot.environmentLabel === 'string' && requestSnapshot.environmentLabel.length > 0
+    ? requestSnapshot.environmentLabel
+    : environmentId
+      ? 'Selected environment'
+      : 'No environment selected';
   const persistedStageResults = createPersistedStageResults(runtimeRecord, executionOutcome, transportOutcome);
   const stageSummaries = createObservationStageSummaries(persistedStageResults);
   const consoleLogCount = Number(runtimeRecord.logSummary?.consoleEntries || 0);
@@ -1852,6 +1910,7 @@ function createHistoryRecord(runtimeRecord) {
     requestBodyText: requestSnapshot.bodyText || '',
     requestAuth: requestSnapshot.auth || createPersistedAuthSnapshot(),
     requestResourceId: runtimeRecord.requestId || requestSnapshot.requestId || null,
+    environmentId,
     requestCollectionName: requestSnapshot.collectionName || undefined,
     requestFolderName: requestSnapshot.folderName || undefined,
     responseSummary:
@@ -1894,7 +1953,7 @@ function createHistoryRecord(runtimeRecord) {
     testsPreview: tests.preview,
     startedAtLabel: runtimeRecord.startedAt,
     completedAtLabel: runtimeRecord.completedAt || runtimeRecord.startedAt,
-    environmentLabel: runtimeRecord.environmentId || 'No environment persisted',
+    environmentLabel,
     sourceLabel: requestSnapshot.sourceLabel || 'Runtime request snapshot',
     errorCode: runtimeRecord.errorCode || null,
     errorSummary: runtimeRecord.errorMessage || 'No execution error was reported.',
@@ -2346,6 +2405,22 @@ function reconcileWorkspaceEnvironmentDefaults(workspaceId) {
   return reconciledRecords;
 }
 
+function readWorkspaceEnvironmentReference(workspaceId, environmentId) {
+  if (typeof environmentId !== 'string' || environmentId.trim().length === 0) {
+    return null;
+  }
+
+  const environment = normalizePersistedEnvironmentRecord(
+    resourceStorage.read('environment', environmentId.trim()),
+  );
+
+  if (!environment || environment.workspaceId !== workspaceId) {
+    return null;
+  }
+
+  return environment;
+}
+
 function createImportedResourceRejection(kind, reason, name) {
   return {
     kind,
@@ -2494,6 +2569,23 @@ app.post('/api/workspaces/:workspaceId/requests', (req, res) => {
     });
   }
 
+  if (
+    typeof input?.selectedEnvironmentId === 'string'
+    && input.selectedEnvironmentId.trim().length > 0
+    && !readWorkspaceEnvironmentReference(req.params.workspaceId, input.selectedEnvironmentId)
+  ) {
+    return sendError(
+      res,
+      400,
+      'request_environment_not_found',
+      'Selected environment was not found in this workspace.',
+      {
+        workspaceId: req.params.workspaceId,
+        environmentId: input.selectedEnvironmentId,
+      },
+    );
+  }
+
   try {
     const record = normalizeSavedRequest(input, null, req.params.workspaceId);
     resourceStorage.save('request', record);
@@ -2522,6 +2614,23 @@ app.patch('/api/requests/:requestId', (req, res) => {
       return sendError(res, 404, 'request_not_found', 'Saved request was not found.', {
         requestId: req.params.requestId,
       });
+    }
+
+    if (
+      typeof input?.selectedEnvironmentId === 'string'
+      && input.selectedEnvironmentId.trim().length > 0
+      && !readWorkspaceEnvironmentReference(existingRecord.workspaceId || DEFAULT_WORKSPACE_ID, input.selectedEnvironmentId)
+    ) {
+      return sendError(
+        res,
+        400,
+        'request_environment_not_found',
+        'Selected environment was not found in this workspace.',
+        {
+          requestId: req.params.requestId,
+          environmentId: input.selectedEnvironmentId,
+        },
+      );
     }
 
     const record = normalizeSavedRequest(
@@ -3095,6 +3204,11 @@ app.post('/api/executions/run', async (req, res) => {
     let responseStatus = null;
     let responseHeaders = [];
     let responseBodyText = '';
+    let resolvedExecutionRequest = {
+      ...executionRequest,
+      selectedEnvironmentLabel: 'No environment selected',
+    };
+    let resolvedEnvironmentRecord = null;
 
     stageResults['pre-request'] = executeScriptStage('pre-request', executionRequest.scripts.preRequest, {
       executionRequest,
@@ -3115,53 +3229,144 @@ app.post('/api/executions/run', async (req, res) => {
         'Tests did not run because transport never started.',
       );
     } else {
-      try {
-        target = createExecutionRequestTarget(executionRequest.url, executionRequest.params, executionRequest.auth);
-        const headers = createExecutionHeaders(executionRequest.headers, executionRequest.auth);
-        const body = createExecutionBody(executionRequest, headers);
-        const response = await fetch(target.toString(), {
-          method: executionRequest.method,
-          headers,
-          ...(body !== undefined ? { body } : {}),
-        });
+      if (executionRequest.selectedEnvironmentId) {
+        resolvedEnvironmentRecord = readWorkspaceEnvironmentReference(
+          executionRequest.workspaceId || DEFAULT_WORKSPACE_ID,
+          executionRequest.selectedEnvironmentId,
+        );
 
-        responseStatus = response.status;
-        responseBodyText = await response.text();
-        responseHeaders = Array.from(response.headers.entries()).map(([name, value]) => ({ name, value }));
-        stageResults.transport = createTransportStageResult(
-          response.status,
-          createHostPathHint(target.toString()),
-        );
-        stageResults['post-response'] = executeScriptStage('post-response', executionRequest.scripts.postResponse, {
+        if (!resolvedEnvironmentRecord) {
+          resolvedExecutionRequest = {
+            ...executionRequest,
+            selectedEnvironmentLabel: 'Missing environment reference',
+          };
+          stageResults.transport = createTransportBlockedStageResult(
+            'Transport did not run because the selected environment reference is missing.',
+            'request_environment_not_found',
+            'Selected environment was not found in this workspace.',
+          );
+          stageResults['post-response'] = createSkippedScriptStageAfterTransport(
+            'post-response',
+            'Post-response did not run because transport never started.',
+          );
+          stageResults.tests = createSkippedScriptStageAfterTransport(
+            'tests',
+            'Tests did not run because transport never started.',
+          );
+        }
+      }
+
+      if (!stageResults.transport) {
+        const resolution = resolveExecutionRequestWithEnvironment(
           executionRequest,
-          target,
-          responseStatus,
-          responseHeaders,
-          responseBodyText,
-        });
-        stageResults.tests = executeScriptStage('tests', executionRequest.scripts.tests, {
-          executionRequest,
-          target,
-          responseStatus,
-          responseHeaders,
-          responseBodyText,
-        });
-      } catch (error) {
-        stageResults.transport = createTransportFailureStageResult(error);
-        stageResults['post-response'] = createSkippedScriptStageAfterTransport(
-          'post-response',
-          'Post-response did not run because transport failed before a response snapshot was available.',
+          resolvedEnvironmentRecord,
         );
-        stageResults.tests = createSkippedScriptStageAfterTransport(
-          'tests',
-          'Tests did not run because transport failed before a response snapshot was available.',
-        );
+
+        resolvedExecutionRequest = {
+          ...resolution.request,
+          selectedEnvironmentLabel: createResolvedEnvironmentLabel(resolvedEnvironmentRecord),
+        };
+
+        if (resolution.unresolved.length > 0) {
+          const unresolvedSummary = summarizeUnresolvedEnvironmentPlaceholders(resolution.unresolved);
+
+          stageResults.transport = createTransportBlockedStageResult(
+            'Transport did not run because environment resolution left placeholders unresolved.',
+            'environment_resolution_unresolved',
+            unresolvedSummary,
+          );
+          stageResults['post-response'] = createSkippedScriptStageAfterTransport(
+            'post-response',
+            'Post-response did not run because transport never started.',
+          );
+          stageResults.tests = createSkippedScriptStageAfterTransport(
+            'tests',
+            'Tests did not run because transport never started.',
+          );
+        } else if (resolvedExecutionRequest.bodyMode === 'json' && resolvedExecutionRequest.bodyText.trim().length > 0) {
+          try {
+            JSON.parse(resolvedExecutionRequest.bodyText);
+          } catch {
+            stageResults.transport = createTransportBlockedStageResult(
+              'Transport did not run because environment resolution produced invalid JSON body content.',
+              'environment_resolution_invalid_json',
+              'Resolved JSON body is invalid after environment substitution.',
+            );
+            stageResults['post-response'] = createSkippedScriptStageAfterTransport(
+              'post-response',
+              'Post-response did not run because transport never started.',
+            );
+            stageResults.tests = createSkippedScriptStageAfterTransport(
+              'tests',
+              'Tests did not run because transport never started.',
+            );
+          }
+        }
+      }
+
+      if (!stageResults.transport) {
+        try {
+          target = createExecutionRequestTarget(
+            resolvedExecutionRequest.url,
+            resolvedExecutionRequest.params,
+            resolvedExecutionRequest.auth,
+          );
+          const headers = createExecutionHeaders(
+            resolvedExecutionRequest.headers,
+            resolvedExecutionRequest.auth,
+          );
+          const body = createExecutionBody(resolvedExecutionRequest, headers);
+          const response = await fetch(target.toString(), {
+            method: resolvedExecutionRequest.method,
+            headers,
+            ...(body !== undefined ? { body } : {}),
+          });
+
+          responseStatus = response.status;
+          responseBodyText = await response.text();
+          responseHeaders = Array.from(response.headers.entries()).map(([name, value]) => ({
+            name,
+            value,
+          }));
+          stageResults.transport = createTransportStageResult(
+            response.status,
+            createHostPathHint(target.toString()),
+          );
+          stageResults['post-response'] = executeScriptStage(
+            'post-response',
+            executionRequest.scripts.postResponse,
+            {
+              executionRequest: resolvedExecutionRequest,
+              target,
+              responseStatus,
+              responseHeaders,
+              responseBodyText,
+            },
+          );
+          stageResults.tests = executeScriptStage('tests', executionRequest.scripts.tests, {
+            executionRequest: resolvedExecutionRequest,
+            target,
+            responseStatus,
+            responseHeaders,
+            responseBodyText,
+          });
+        } catch (error) {
+          stageResults.transport = createTransportFailureStageResult(error);
+          stageResults['post-response'] = createSkippedScriptStageAfterTransport(
+            'post-response',
+            'Post-response did not run because transport failed before a response snapshot was available.',
+          );
+          stageResults.tests = createSkippedScriptStageAfterTransport(
+            'tests',
+            'Tests did not run because transport failed before a response snapshot was available.',
+          );
+        }
       }
     }
 
     const completedAt = new Date().toISOString();
     const durationMs = Date.now() - startedAtMs;
-    const requestSnapshot = createPersistedRequestSnapshotSafely(executionRequest, target);
+    const requestSnapshot = createPersistedRequestSnapshotSafely(resolvedExecutionRequest, target);
     const responseBodyPreview = responseBodyText.slice(0, 4000);
     const executionOutcome = deriveExecutionOutcome(stageResults);
     const consoleEntries = createCombinedConsoleEntries(stageResults);
@@ -3196,7 +3401,7 @@ app.post('/api/executions/run', async (req, res) => {
       id: executionId,
       workspaceId: input.workspaceId || null,
       requestId: input.id || null,
-      environmentId: null,
+      environmentId: resolvedExecutionRequest.selectedEnvironmentId || null,
       status: createPersistedExecutionStatus(executionOutcome),
       cancellationOutcome: null,
       startedAt,
@@ -3227,7 +3432,10 @@ app.post('/api/executions/run', async (req, res) => {
   } catch (error) {
     const completedAt = new Date().toISOString();
     const durationMs = Date.now() - startedAtMs;
-    const requestSnapshot = createPersistedRequestSnapshotSafely(input, null);
+    const requestSnapshot = createPersistedRequestSnapshotSafely({
+      ...input,
+      selectedEnvironmentLabel: 'No environment selected',
+    }, null);
 
     const execution = createExecutionObservation({
       executionId,
@@ -3259,7 +3467,9 @@ app.post('/api/executions/run', async (req, res) => {
         id: executionId,
         workspaceId: input.workspaceId || null,
         requestId: input.id || null,
-        environmentId: null,
+        environmentId: typeof input?.selectedEnvironmentId === 'string' && input.selectedEnvironmentId.trim().length > 0
+          ? input.selectedEnvironmentId.trim()
+          : null,
         status: 'failed',
         cancellationOutcome: null,
         startedAt,
@@ -3601,9 +3811,3 @@ app.listen(PORT, () => {
       : `[Ready] Built app shell unavailable at ${appShellStatus.appRoute}. Run "${appShellStatus.buildCommand}" or use ${appShellStatus.devClientUrl} for development.`,
   );
 });
-
-
-
-
-
-

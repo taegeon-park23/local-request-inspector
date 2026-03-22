@@ -80,6 +80,26 @@ describe('Request builder save/run wiring', () => {
         return createApiResponse({ items: [] });
       }
 
+      if (url === '/api/workspaces/local-workspace/environments' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({
+          items: [
+            {
+              id: 'environment-local',
+              workspaceId: 'local-workspace',
+              name: 'Local API',
+              description: 'Primary localhost defaults for development.',
+              isDefault: true,
+              variableCount: 3,
+              enabledVariableCount: 3,
+              secretVariableCount: 1,
+              resolutionSummary: '3 variables are managed here, including 1 secret-backed entry.',
+              createdAt: '2026-03-22T09:00:00.000Z',
+              updatedAt: '2026-03-22T09:00:00.000Z',
+            },
+          ],
+        });
+      }
+
       if (url === '/api/workspaces/local-workspace/requests' && init?.method === 'POST') {
         return createApiResponse({
           request: {
@@ -88,6 +108,7 @@ describe('Request builder save/run wiring', () => {
             name: 'Checkout flow',
             method: 'POST',
             url: 'https://api.example.com/orders',
+            selectedEnvironmentId: 'environment-local',
             params: [],
             headers: [],
             bodyMode: 'json',
@@ -153,6 +174,7 @@ describe('Request builder save/run wiring', () => {
 
     const savePayload = JSON.parse(String(saveCall?.[1]?.body)) as {
       request: {
+        selectedEnvironmentId?: string | null;
         scripts: {
           preRequest: string;
         };
@@ -160,6 +182,7 @@ describe('Request builder save/run wiring', () => {
       };
     };
 
+    expect(savePayload.request.selectedEnvironmentId).toBe('environment-local');
     expect(savePayload.request.scripts.preRequest).toContain('checkout-1');
     expect(savePayload.request.bodyText).toContain('sku');
   });
@@ -272,6 +295,88 @@ describe('Request builder save/run wiring', () => {
     expect(fetchMock.mock.calls.some(([input, init]) => getUrl(input as RequestInfo | URL) === '/api/workspaces/local-workspace/requests' && init?.method === 'POST')).toBe(false);
   });
 
+  it('blocks save and run when a saved request references a missing environment id', async () => {
+    const user = userEvent.setup();
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || init.method === undefined)) {
+        return createApiResponse({
+          items: [
+            {
+              id: 'request-env-missing',
+              workspaceId: 'local-workspace',
+              name: 'Environment missing',
+              method: 'GET',
+              url: 'https://api.example.com/env-missing',
+              selectedEnvironmentId: 'environment-missing',
+              params: [],
+              headers: [],
+              bodyMode: 'none',
+              bodyText: '',
+              formBody: [],
+              multipartBody: [],
+              auth: {
+                type: 'none',
+                bearerToken: '',
+                basicUsername: '',
+                basicPassword: '',
+                apiKeyName: '',
+                apiKeyValue: '',
+                apiKeyPlacement: 'header',
+              },
+              scripts: {
+                activeStage: 'pre-request',
+                preRequest: '',
+                postResponse: '',
+                tests: '',
+              },
+              summary: 'GET https://api.example.com/env-missing',
+              collectionName: 'Saved Requests',
+              createdAt: '2026-03-20T10:00:00.000Z',
+              updatedAt: '2026-03-20T10:00:00.000Z',
+            },
+          ],
+        });
+      }
+
+      if (url === '/api/workspaces/local-workspace/environments' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({
+          items: [
+            {
+              id: 'environment-local',
+              workspaceId: 'local-workspace',
+              name: 'Local API',
+              description: 'Primary localhost defaults for development.',
+              isDefault: true,
+              variableCount: 3,
+              enabledVariableCount: 3,
+              secretVariableCount: 1,
+              resolutionSummary: '3 variables are managed here, including 1 secret-backed entry.',
+              createdAt: '2026-03-22T09:00:00.000Z',
+              updatedAt: '2026-03-22T09:00:00.000Z',
+            },
+          ],
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    const explorer = screen.getByLabelText('Section explorer');
+    await within(explorer).findByRole('button', { name: 'Open Environment missing' });
+    await user.click(within(explorer).getByRole('button', { name: 'Open Environment missing' }));
+
+    await waitFor(() => expect(screen.getByLabelText('Request environment')).toHaveValue('environment-missing'));
+    expect(screen.getByText('Missing environment')).toBeInTheDocument();
+    expect(screen.getByText(/Choose another environment or No environment before saving or running/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Run' })).toBeDisabled();
+  });
   it('runs an unsaved draft, sends script content, and renders stage-aware diagnostics without clearing dirty state', async () => {
     const user = userEvent.setup();
     let resolveRun!: (value: Response) => void;
@@ -281,6 +386,26 @@ describe('Request builder save/run wiring', () => {
 
       if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
         return Promise.resolve(createApiResponse({ items: [] }));
+      }
+
+      if (url === '/api/workspaces/local-workspace/environments' && (!init || !init.method || init.method === 'GET')) {
+        return Promise.resolve(createApiResponse({
+          items: [
+            {
+              id: 'environment-local',
+              workspaceId: 'local-workspace',
+              name: 'Local API',
+              description: 'Primary localhost defaults for development.',
+              isDefault: true,
+              variableCount: 3,
+              enabledVariableCount: 3,
+              secretVariableCount: 1,
+              resolutionSummary: '3 variables are managed here, including 1 secret-backed entry.',
+              createdAt: '2026-03-22T09:00:00.000Z',
+              updatedAt: '2026-03-22T09:00:00.000Z',
+            },
+          ],
+        }));
       }
 
       if (url === '/api/executions/run' && init?.method === 'POST') {
@@ -344,6 +469,8 @@ describe('Request builder save/run wiring', () => {
           requestParamCount: 0,
           requestBodyMode: 'none',
           authSummary: 'No auth',
+          environmentId: 'environment-local',
+          environmentLabel: 'Local API',
           stageSummaries: [
             {
               stageId: 'pre-request',
@@ -400,6 +527,7 @@ describe('Request builder save/run wiring', () => {
     expect(screen.getByText('Runtime request snapshot')).toBeInTheDocument();
     expect(screen.getByText('No linked saved request')).toBeInTheDocument();
     expect(screen.getByText('No saved placement recorded')).toBeInTheDocument();
+    expect(screen.getByText('Local API')).toBeInTheDocument();
     expect(screen.getByText('0 params · 1 headers · No body · No auth')).toBeInTheDocument();
 
     const runCall = fetchMock.mock.calls.find(
@@ -410,6 +538,7 @@ describe('Request builder save/run wiring', () => {
 
     const runPayload = JSON.parse(String(runCall?.[1]?.body)) as {
       request: {
+        selectedEnvironmentId?: string | null;
         scripts: {
           preRequest: string;
           postResponse: string;
@@ -418,6 +547,7 @@ describe('Request builder save/run wiring', () => {
       };
     };
 
+    expect(runPayload.request.selectedEnvironmentId).toBe('environment-local');
     expect(runPayload.request.scripts.preRequest).toContain('x-trace-id');
     expect(runPayload.request.scripts.postResponse).toContain('captured response');
     expect(runPayload.request.scripts.tests).toContain('assert');

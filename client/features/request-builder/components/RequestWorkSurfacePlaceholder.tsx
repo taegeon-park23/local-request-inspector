@@ -1,4 +1,9 @@
+import { useQuery } from '@tanstack/react-query';
 import { Suspense, lazy } from 'react';
+import {
+  listWorkspaceEnvironments,
+  workspaceEnvironmentsQueryKey,
+} from '@client/features/environments/environment.api';
 import { useRequestBuilderCommands } from '@client/features/request-builder/hooks/useRequestBuilderCommands';
 import type { RequestDraftState } from '@client/features/request-builder/request-draft.types';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
@@ -66,6 +71,11 @@ export function RequestWorkSurfacePlaceholder({
   const updateAuthField = useRequestDraftStore((state) => state.updateAuthField);
   const setActiveScriptStage = useRequestDraftStore((state) => state.setActiveScriptStage);
   const updateScriptContent = useRequestDraftStore((state) => state.updateScriptContent);
+  const updateSelectedEnvironmentId = useRequestDraftStore((state) => state.updateSelectedEnvironmentId);
+  const environmentsQuery = useQuery({
+    queryKey: workspaceEnvironmentsQueryKey,
+    queryFn: listWorkspaceEnvironments,
+  });
   const { saveStatus, runStatus, saveDisabledReason, runDisabledReason, handleSave, handleRun } = useRequestBuilderCommands(
     activeTab,
     draft,
@@ -107,6 +117,18 @@ export function RequestWorkSurfacePlaceholder({
     ? formatSavedAt(saveStatus.savedAt)
     : saveStatus.message ?? (saveDisabledReason ?? 'Save updates the request definition only.');
   const runStatusCopy = runStatus.message ?? (runDisabledReason ?? 'Run creates a separate observation record in the right-hand panel.');
+  const environmentSelectValue = draft.selectedEnvironmentId ?? '';
+  const selectedEnvironment = (environmentsQuery.data ?? []).find((environment) => environment.id === draft.selectedEnvironmentId) ?? null;
+  const hasMissingEnvironmentReference = environmentSelectValue.length > 0 && environmentsQuery.isSuccess && !selectedEnvironment;
+  const environmentSupportCopy = environmentsQuery.isPending
+    ? 'Loading workspace environments for request-level selection.'
+    : environmentsQuery.isError
+      ? 'Environment list is degraded. Saved-environment validation may stay unavailable until the environments route responds again.'
+      : hasMissingEnvironmentReference
+        ? 'The selected environment reference is missing from this workspace. Choose another environment or No environment before saving or running.'
+        : selectedEnvironment
+          ? `${selectedEnvironment.name} contributes ${selectedEnvironment.enabledVariableCount} enabled variable(s) to this request at run time.`
+          : 'No environment is selected. This request runs with authored values only.';
 
   return (
     <div className="request-work-surface request-builder-core" data-testid="request-work-surface">
@@ -139,6 +161,29 @@ export function RequestWorkSurfacePlaceholder({
           </label>
           <div className="request-builder-core__identity-support">
             <p className="request-builder-core__source-copy">{locationSummary}</p>
+            <label className="request-field request-field--compact">
+              <span>Request environment</span>
+              <select
+                aria-label="Request environment"
+                value={environmentSelectValue}
+                onChange={(event) => updateSelectedEnvironmentId(draft.tabId, event.currentTarget.value || null)}
+              >
+                <option value="">No environment</option>
+                {(environmentsQuery.data ?? []).map((environment) => (
+                  <option key={environment.id} value={environment.id}>
+                    {environment.name}
+                  </option>
+                ))}
+                {hasMissingEnvironmentReference ? (
+                  <option value={environmentSelectValue}>Missing environment reference</option>
+                ) : null}
+              </select>
+            </label>
+            <div className="request-work-surface__badges">
+              {selectedEnvironment?.isDefault ? <span className="workspace-chip workspace-chip--secondary">Default environment</span> : null}
+              {hasMissingEnvironmentReference ? <span className="workspace-chip workspace-chip--replay">Missing environment</span> : null}
+            </div>
+            <p className="shared-readiness-note">{environmentSupportCopy}</p>
           </div>
         </div>
         <div className="request-builder-core__command-area">

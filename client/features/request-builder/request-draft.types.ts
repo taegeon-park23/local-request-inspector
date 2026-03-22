@@ -50,6 +50,7 @@ export interface RequestDraftState {
   name: string;
   method: HttpMethodLabel;
   url: string;
+  selectedEnvironmentId?: string | null;
   params: RequestKeyValueRow[];
   headers: RequestKeyValueRow[];
   bodyMode: RequestBodyMode;
@@ -68,6 +69,7 @@ export interface RequestDraftSeed {
   name?: string;
   method?: HttpMethodLabel;
   url?: string;
+  selectedEnvironmentId?: string | null;
   params?: RequestKeyValueRow[];
   headers?: RequestKeyValueRow[];
   bodyMode?: RequestBodyMode;

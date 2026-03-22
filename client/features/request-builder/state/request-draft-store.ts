@@ -30,6 +30,7 @@ interface RequestDraftStoreState {
   updateDraftName: (tabId: string, name: string) => void;
   updateDraftMethod: (tabId: string, method: RequestDraftState['method']) => void;
   updateDraftUrl: (tabId: string, url: string) => void;
+  updateSelectedEnvironmentId: (tabId: string, selectedEnvironmentId: string | null) => void;
   setActiveEditorTab: (tabId: string, editorTab: RequestEditorTabId) => void;
   addRow: (tabId: string, target: DraftRowTarget) => void;
   updateRow: (tabId: string, target: DraftRowTarget, rowId: string, field: DraftRowField, value: string | boolean) => void;
@@ -83,6 +84,7 @@ function createDraftSnapshotString(draft: RequestDraftState) {
     name: draft.name,
     method: draft.method,
     url: draft.url,
+    selectedEnvironmentId: draft.selectedEnvironmentId ?? null,
     params: draft.params,
     headers: draft.headers,
     bodyMode: draft.bodyMode,
@@ -120,6 +122,7 @@ function createDraftFromTab(tab: RequestTabRecord, explicitDraftSeed?: RequestDr
     name: draftSeed?.name ?? tab.title,
     method: draftSeed?.method ?? tab.methodLabel,
     url: draftSeed?.url ?? '',
+    selectedEnvironmentId: draftSeed?.selectedEnvironmentId ?? null,
     params: cloneRows(draftSeed?.params),
     headers: cloneRows(draftSeed?.headers),
     bodyMode: draftSeed?.bodyMode ?? 'none',
@@ -219,6 +222,13 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
   updateDraftUrl: (tabId, url) =>
     set((state) =>
       updateDraftEntry(state, tabId, (entry) => withDirtyState(entry, { ...entry.draft, url })),
+    ),
+  updateSelectedEnvironmentId: (tabId, selectedEnvironmentId) =>
+    set((state) =>
+      updateDraftEntry(state, tabId, (entry) => withDirtyState(entry, {
+        ...entry.draft,
+        selectedEnvironmentId,
+      })),
     ),
   setActiveEditorTab: (tabId, editorTab) =>
     set((state) =>
@@ -347,7 +357,3 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
 export function resetRequestDraftStore() {
   useRequestDraftStore.setState(initialRequestDraftStoreState);
 }
-
-
-
-

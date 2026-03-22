@@ -3,12 +3,12 @@
 - **Purpose:** Define the bounded next-step design for request-level environment selection and server-owned environment resolution after `T027` made environments a real persisted workflow surface.
 - **Created:** 2026-03-22
 - **Last Updated:** 2026-03-22
-- **Related Documents:** `request-builder-mvp.md`, `internal-api-contracts.md`, `script-execution-safety-model.md`, `workspace-flows.md`, `../tasks/task-011-request-builder-mvp-design.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`
-- **Status:** draft accepted
+- **Related Documents:** `request-builder-mvp.md`, `internal-api-contracts.md`, `script-execution-safety-model.md`, `workspace-flows.md`, `../tasks/task-011-request-builder-mvp-design.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`
+- **Status:** implemented baseline
 - **Update Rule:** Update when request-level environment selection, environment resolution ownership, or runtime secret-handling boundaries materially change.
 
 ## 1. Summary
-This document narrows the next environment-related implementation step after `T027`. The next slice is request-level environment selection inside the `Workspace` request header plus server-owned environment resolution during request execution. The next slice explicitly does **not** include a top-bar global environment selector, full resolved-preview UI, or environment import/export expansion.
+This document originally narrowed the next environment-related implementation step after `T027`, and now also records the implemented baseline from `T030`. The current baseline is request-level environment selection inside the `Workspace` request header plus server-owned environment resolution during request execution. The implemented slice still does **not** include a top-bar global environment selector, full resolved-preview UI, or environment import/export expansion.
 
 ## 2. Why This Exists Now
 - `T027` made `/environments` a real persisted management surface, so the repo now has an actual environment workflow object rather than just planning language.
@@ -99,11 +99,11 @@ Do not persist:
 ## 8. Validation Model
 ### 8.1 Blocking run conditions
 - selected environment reference is missing
-- selected environment exists but required placeholders remain unresolved in required execution fields
+- selected environment exists but placeholder substitution still leaves unresolved placeholders in active execution inputs
 - malformed JSON/body/auth validation already fails independently
 
 ### 8.2 Non-blocking warnings
-- unresolved placeholders in optional headers/body text that do not block transport
+- unresolved placeholders warning tiers beyond the current blocking model remain deferred
 - environment selected but currently contributes no variables
 
 ### 8.3 Save behavior
@@ -119,8 +119,8 @@ Do not persist:
 
 ## 10. Open Questions
 1. Whether the request header should also show a compact "default-seeded" hint for newly created requests remains **확실하지 않음**.
-2. Whether unresolved placeholders in optional body segments should always warn or only warn after first run remains **확실하지 않음**.
+2. Whether unresolved placeholders should later split into blocking vs warning-only tiers remains **확실하지 않음**.
 3. Whether environment labels should be copied into saved-request summaries for explorer readability remains **확실하지 않음**.
 
 ## 11. Canonical Decision
-The next environment-related implementation slice should be request-level selector plus server-owned run-time resolution, not a top-bar global selector. The request definition should persist explicit `selectedEnvironmentId`, new requests should seed from the current workspace default only at creation time, and deleted environment references should surface as a blocking missing-reference state instead of being silently cleared.
+The implemented environment baseline is request-level selector plus server-owned run-time resolution, not a top-bar global selector. The request definition persists explicit `selectedEnvironmentId`, new requests seed from the current workspace default only at creation time, and deleted environment references surface as a blocking missing-reference state instead of being silently cleared.

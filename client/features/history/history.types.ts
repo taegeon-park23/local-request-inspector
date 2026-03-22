@@ -83,6 +83,7 @@ export interface HistoryRecord {
   testsPreview: string[];
   startedAtLabel: string;
   completedAtLabel: string;
+  environmentId?: string | null;
   environmentLabel: string;
   sourceLabel: string;
   errorCode?: string | null;

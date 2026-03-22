@@ -151,6 +151,7 @@ function buildHistoryReplayPayload(history: HistoryRecord): ReplayDraftBridgePay
       name: replayTitle,
       method: methodLabel,
       url: parsedUrl.url,
+      selectedEnvironmentId: history.environmentId ?? null,
       params: explicitParams,
       headers: createDraftRows(history.requestHeaders, `history-header-${history.id}`),
       bodyMode: history.requestBodyMode,

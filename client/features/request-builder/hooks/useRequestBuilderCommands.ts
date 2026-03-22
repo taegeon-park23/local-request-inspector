@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { listWorkspaceEnvironments, workspaceEnvironmentsQueryKey } from '@client/features/environments/environment.api';
 import { executionHistoryListQueryKey } from '@client/features/history/history.api';
 import {
   createRequestDefinitionInput,
@@ -111,6 +112,9 @@ function createFailedExecutionObservation(
     requestParamCount: countEnabledRows(draft.params),
     requestBodyMode: draft.bodyMode,
     authSummary: createAuthSummary(draft),
+    environmentId: draft.selectedEnvironmentId ?? null,
+    ...(draft.collectionName ? { requestCollectionName: draft.collectionName } : {}),
+    ...(draft.folderName ? { requestFolderName: draft.folderName } : {}),
     errorCode: error instanceof RequestBuilderApiError ? error.code : 'execution_failed',
     errorSummary: error.message,
     stageSummaries: [
@@ -151,6 +155,10 @@ export function useRequestBuilderCommands(
   draft: RequestDraftState | null,
 ): UseRequestBuilderCommandsResult {
   const queryClient = useQueryClient();
+  const environmentsQuery = useQuery({
+    queryKey: workspaceEnvironmentsQueryKey,
+    queryFn: listWorkspaceEnvironments,
+  });
   const commandEntry = useRequestCommandStore((state) =>
     activeTab ? state.byTabId[activeTab.id] : undefined,
   );
@@ -174,25 +182,50 @@ export function useRequestBuilderCommands(
     latestExecution: null,
   };
 
+  const selectedEnvironmentId = typeof draft?.selectedEnvironmentId === 'string' && draft.selectedEnvironmentId.trim().length > 0
+    ? draft.selectedEnvironmentId.trim()
+    : null;
+  const availableEnvironments = environmentsQuery.data ?? [];
+  const selectedEnvironmentExists = selectedEnvironmentId === null
+    ? true
+    : availableEnvironments.some((environment) => environment.id === selectedEnvironmentId);
+  const missingSelectedEnvironment = selectedEnvironmentId !== null
+    && environmentsQuery.isSuccess
+    && !selectedEnvironmentExists;
+  const environmentLoadingBlock = selectedEnvironmentId !== null && environmentsQuery.isPending;
+  const environmentDegradedBlock = selectedEnvironmentId !== null && environmentsQuery.isError;
+
   const saveDisabledReason = !draft
     ? 'Open a request tab before saving.'
     : draft.name.trim().length === 0
       ? 'Enter a request name before saving.'
       : draft.url.trim().length === 0
         ? 'Enter a request URL before saving.'
-        : saveStatus.status === 'pending'
-          ? 'Save is already in progress.'
-          : null;
+        : missingSelectedEnvironment
+          ? 'Choose an available environment or No environment before saving.'
+          : environmentLoadingBlock
+            ? 'Request environment details are still loading.'
+            : environmentDegradedBlock
+              ? 'Environment list is unavailable while this request references a saved environment.'
+              : saveStatus.status === 'pending'
+                ? 'Save is already in progress.'
+                : null;
 
   const runDisabledReason = !draft
     ? 'Open a request tab before running.'
     : draft.url.trim().length === 0
       ? 'Enter a request URL before running.'
-      : isJsonBodyMalformed(draft)
-        ? 'Fix malformed JSON body before running.'
-        : runStatus.status === 'pending'
-          ? 'Run is already in progress.'
-          : null;
+      : missingSelectedEnvironment
+        ? 'Choose an available environment or No environment before running.'
+        : environmentLoadingBlock
+          ? 'Request environment details are still loading.'
+          : environmentDegradedBlock
+            ? 'Environment list is unavailable while this request references a saved environment.'
+            : isJsonBodyMalformed(draft)
+              ? 'Fix malformed JSON body before running.'
+              : runStatus.status === 'pending'
+                ? 'Run is already in progress.'
+                : null;
 
   const buildDefinitionInput = () => {
     if (!activeTab || !draft) {
@@ -292,5 +325,3 @@ export function useRequestBuilderCommands(
     },
   };
 }
-
-

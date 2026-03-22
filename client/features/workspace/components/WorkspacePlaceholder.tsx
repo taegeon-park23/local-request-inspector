@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import {
+  listWorkspaceEnvironments,
+  workspaceEnvironmentsQueryKey,
+} from '@client/features/environments/environment.api';
+import {
   listWorkspaceSavedRequests,
   workspaceSavedRequestsQueryKey,
 } from '@client/features/request-builder/request-builder.api';
@@ -157,6 +161,14 @@ function createExportStatusMessage(bundle: AuthoredResourceBundleExport, label: 
   };
 }
 
+function resolveSeededEnvironmentId(draftSeed: RequestDraftSeed | undefined, defaultEnvironmentId: string | null) {
+  if (draftSeed && 'selectedEnvironmentId' in draftSeed) {
+    return draftSeed.selectedEnvironmentId ?? null;
+  }
+
+  return defaultEnvironmentId;
+}
+
 export function WorkspacePlaceholder() {
   const queryClient = useQueryClient();
   const [resourceTransferStatus, setResourceTransferStatus] = useState<ResourceTransferStatus | null>(null);
@@ -273,7 +285,7 @@ export function WorkspacePlaceholder() {
   const activeTab = resolvedTabs.find((tab) => tab.id === activeTabId) ?? null;
   const activeTabKey = activeTab?.id ?? 'empty';
 
-  const openDraftFromSeed = (draftSeed?: RequestDraftSeed) => {
+  const openDraftFromSeed = async (draftSeed?: RequestDraftSeed) => {
     const previousTabIds = new Set(useWorkspaceShellStore.getState().tabs.map((tab) => tab.id));
     openNewRequest();
     const nextTab = useWorkspaceShellStore
@@ -281,17 +293,32 @@ export function WorkspacePlaceholder() {
       .tabs.find((tab) => !previousTabIds.has(tab.id));
 
     if (nextTab) {
-      ensureDraftForTab(nextTab, draftSeed);
+      let defaultEnvironmentId: string | null = null;
+
+      try {
+        const environments = await queryClient.ensureQueryData({
+          queryKey: workspaceEnvironmentsQueryKey,
+          queryFn: listWorkspaceEnvironments,
+        });
+        defaultEnvironmentId = environments.find((environment) => environment.isDefault)?.id ?? null;
+      } catch {
+        defaultEnvironmentId = null;
+      }
+
+      ensureDraftForTab(nextTab, {
+        ...(draftSeed ?? {}),
+        selectedEnvironmentId: resolveSeededEnvironmentId(draftSeed, defaultEnvironmentId),
+      });
     }
   };
 
   const handleCreateRequest = () => {
-    openDraftFromSeed();
+    void openDraftFromSeed();
   };
 
   const handleOpenSavedRequest = (request: WorkspaceSavedRequestSeed) => {
     if (request.resourceKind === 'starter') {
-      openDraftFromSeed({
+      void openDraftFromSeed({
         name: request.name,
         method: request.methodLabel,
         ...(request.draftSeed ?? {}),
