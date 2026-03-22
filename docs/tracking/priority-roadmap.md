@@ -2,8 +2,8 @@
 
 - **Purpose:** Explain sequencing logic and show which work should happen first, next, and later.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-22
-- **Related Documents:** `master-task-board.md`, `post-m3-reactivation-guide.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../prd/overview.md`, `../tasks/task-001-foundation-architecture.md`
+- **Last Updated:** 2026-03-23
+- **Related Documents:** `master-task-board.md`, `post-m3-reactivation-guide.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md`, `../prd/overview.md`, `../tasks/task-001-foundation-architecture.md`
 - **Update Rule:** Update when priorities, dependencies, or milestone assumptions change.
 
 ## Priority Principles
@@ -66,10 +66,13 @@ Tasks are prioritized using these criteria:
 ### Phase I — Request Environment Implementation
 33. **T030** Request environment selection and runtime resolution — complete
 
-### Phase J — Parked Optional Future Work
-34. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule bundle scope
-35. Later write-time migration-engine work if compatibility pressure justifies it
-36. Bounded packaging polish only if a delivery milestone identifies a concrete readiness gap
+### Phase J — Post-T030 Readiness Refresh
+34. **T031** Post-T030 priority and Candidate A refresh — complete
+
+### Phase K — Parked Optional Future Work
+35. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule bundle scope
+36. Later write-time migration-engine work if compatibility pressure justifies it
+37. Bounded packaging polish only if a delivery milestone identifies a concrete readiness gap
 
 ## Why T001 Is First
 `T001` is the first execution task because it has the highest leverage:
@@ -112,6 +115,7 @@ Ready to start now:
 - `T028` is landed: Candidate A guidance now reflects that environments and standalone saved scripts are real workflow objects after `T027`, but no new authored-resource transfer task is promoted automatically from that fact
 - `T029` is landed: the next request-builder environment slice is now bounded to request-level selector plus server-owned run-time resolution rather than top-bar global state
 - `T030` is landed: request drafts and saved requests now persist `selectedEnvironmentId`, the workspace request header now exposes request-level environment selection, and runtime execution/history now carry server-owned environment resolution metadata without widening into top-bar selector scope
+- `T031` is landed: `T030` does not automatically promote environment transfer, top-bar selector work, or another parked candidate, and the environment-transfer lane is now explicitly treated as more concrete but still too broad because request-reference and run/history coupling now matter
 - `T024` remains the canonical exact-patch reference plus local-verification handoff record for what landed in `M3-F3`, so future contributors can resume validation without repeating the scope audit
 - `T025` is landed: the repo now records one current post-M3-F3 closure review, and that review still promotes no new implementation task
 - `T026` is landed: blocker triage confirmed that the current repo already covers the main wrapper/config mitigations, so future sandbox-blocked confirmation should be requested locally rather than reopened as repo-side packaging work

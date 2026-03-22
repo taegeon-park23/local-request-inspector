@@ -2,8 +2,8 @@
 
 - **Purpose:** Provide a grounded inventory of current Candidate A gap candidates so future contributors can start from actual authored-resource seams in the shipped repo instead of broad "resource tooling" ideas.
 - **Created:** 2026-03-22
-- **Last Updated:** 2026-03-22
-- **Related Documents:** `candidate-a-promotion-readiness.md`, `candidate-a-narrow-candidate-comparison.md`, `post-m3-reactivation-guide.md`, `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `../tasks/task-015-import-export-strategy.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`
+- **Last Updated:** 2026-03-23
+- **Related Documents:** `candidate-a-promotion-readiness.md`, `candidate-a-narrow-candidate-comparison.md`, `post-m3-reactivation-guide.md`, `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `../tasks/task-015-import-export-strategy.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md`
 - **Status:** active reference
 - **Update Rule:** Update when the shipped authored-resource workflow changes or when a currently inventoried gap is promoted, closed, or reclassified.
 
@@ -14,6 +14,7 @@
 - Current import feedback already includes accepted and rejected counts, imported-name previews, rejected-reason summaries, and immediate refresh of workspace explorer and mocks data.
 - Runtime history, captures, execution results, and runtime mock outcomes remain intentionally outside authored-resource transfer scope.
 - Environments and standalone saved scripts are now first-class persisted workflow surfaces, but neither resource kind is part of the shipped authored-resource transfer lane yet.
+- `T030` now also makes environments part of request draft persistence, save/run validation, server-owned placeholder resolution, and execution/history metadata, which increases the amount of workflow coupling a future environment-transfer contract would have to define.
 
 ## 2. Classification Model
 - `already covered`: the current shipped workflow already addresses the need closely enough that it should not drive Candidate A promotion now.
@@ -62,8 +63,8 @@
 ### Gap 6 - Environments as transferable authored resources
 - **Affected surface / resource kind:** Environment resources.
 - **Why it might matter:** environments are a natural authored-resource concept for a local API workbench, but they are not currently part of the shipped transfer lane.
-- **What is already shipped that overlaps:** persisted environment CRUD, default-environment enforcement, masked secret handling, and a dedicated route-level management surface now exist.
-- **Evidence from repo/docs:** `client/features/environments/components/EnvironmentsRoute.tsx`, `storage/resource/environment-record.js`, `../tasks/task-027-placeholder-route-mvp.md`
+- **What is already shipped that overlaps:** persisted environment CRUD, default-environment enforcement, masked secret handling, a dedicated route-level management surface, request-level `selectedEnvironmentId` persistence, server-owned placeholder resolution, and execution/history environment metadata now exist.
+- **Evidence from repo/docs:** `client/features/environments/components/EnvironmentsRoute.tsx`, `storage/resource/environment-record.js`, `storage/resource/environment-resolution.js`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../architecture/request-environment-selection-and-resolution.md`
 - **Classification:** `real but broad`
 
 ### Gap 7 - Standalone reusable script resources
@@ -97,7 +98,7 @@
 - Broad interoperability such as cURL, OpenAPI, or Postman import.
 - "Improve import/export generally" without one missing step or affected resource kind.
 - Expanding transfer to all authored-resource types at once.
-- Environments or standalone scripts without first narrowing bundle boundaries, secret/template policy, and non-goals.
+- Environments or standalone scripts without first narrowing bundle boundaries, secret/template policy, request-reference behavior, and non-goals.
 - Umbrella resource-management initiatives that combine transfer, browsing, organization, and interoperability into one promotion request.
 
 ## 6. Recommendation
@@ -105,12 +106,13 @@ One Candidate A gap is now promoted, one remains parked as the strongest narrow 
 
 - Gap 3, pre-import validation preview before writes occur, is now landed as `../tasks/task-019-server-backed-pre-import-preview.md`.
 - Gap 4, mock-rule-local import entrypoint for the existing bundle scope, remains parked because the underlying import capability already exists in the workspace flow and the route-local ownership seam is still too ambiguous.
-- Gaps 6 and 7 are no longer blocked by missing workflow-object promotion after `T027`, but they still remain too broad because the repo has not yet chosen one narrow authored-resource transfer contract for environments or standalone saved scripts.
+- Gap 6 is now more obviously real after `T030`, but it also stays broad for a stronger reason than in `T028`: the repo has not yet chosen one narrow authored-resource contract for environments that covers secret/default behavior, request `selectedEnvironmentId` references, missing-reference outcomes after import, and environment labels already used in run/history metadata.
+- Gap 7 remains too broad because the repo still has not chosen one narrow transfer contract for standalone saved scripts versus request-bound scripts and templates.
 
 Everything else in the current inventory is either already covered or still too broad.
 
 ## 7. Explicit Uncertainties / 확실하지 않음
 - Dedicated preview endpoint chosen for `T019`; broader authored-resource preview/staging work remains out of scope.
-- **확실하지 않음:** whether environments can be narrowed to one authored-resource transfer contract without reopening secret/default-environment semantics too broadly.
+- **확실하지 않음:** whether environments can be narrowed to one authored-resource transfer contract without reopening secret/default-environment semantics, request references, and run/history coupling too broadly.
 - **확실하지 않음:** whether standalone saved scripts can be narrowed to one transfer contract without reopening request-bound linkage, template ownership, or reference semantics.
 - **확실하지 않음:** whether any future authored-resource management/discovery gap can be kept narrow enough to avoid collapsing into a broad resource-tooling initiative.

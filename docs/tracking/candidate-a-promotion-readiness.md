@@ -2,8 +2,8 @@
 
 - **Purpose:** Provide the canonical readiness note for Candidate A so future contributors can distinguish the authored-resource functionality that is already shipped from the narrower authored-resource gaps that could justify a future promotion.
 - **Created:** 2026-03-22
-- **Last Updated:** 2026-03-22
-- **Related Documents:** `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `post-m3-reactivation-guide.md`, `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `../tasks/task-015-import-export-strategy.md`, `../tasks/task-018-delivery-milestone-plan.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`
+- **Last Updated:** 2026-03-23
+- **Related Documents:** `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `post-m3-reactivation-guide.md`, `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `../tasks/task-015-import-export-strategy.md`, `../tasks/task-018-delivery-milestone-plan.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md`
 - **Status:** active reference
 - **Update Rule:** Update when the shipped authored-resource baseline changes, when a new authored-resource type becomes first-class, or when Candidate A promotion criteria materially change.
 
@@ -17,7 +17,7 @@
 
 ## 2. Current Authored-Resource Boundaries
 - First-class authored-resource transfer today is limited to saved requests and mock rules.
-- Environments are now first-class persisted workflow objects in the shipped shell, but they are not yet authored-resource transfer types.
+- Environments are now first-class persisted workflow objects in the shipped shell, and `T030` also makes them request-linked execution inputs through `selectedEnvironmentId`, server-owned placeholder resolution, and execution/history environment metadata. They are still not authored-resource transfer types.
 - Route-level Scripts is also now a first-class persisted workflow surface with standalone saved scripts plus read-only templates, but it is not yet part of the authored-resource transfer lane.
 - Collection and folder labels exist as organization metadata on saved requests, but collections and folders are not currently standalone authored-resource transfer objects.
 - Broader interoperability such as cURL, OpenAPI, and Postman import remains deferred and should not be treated as implied Candidate A scope.
@@ -35,7 +35,7 @@
 
 ### Additional Authored-Resource Transfer Types
 - Resource kinds that are now real workflow objects but still lack a narrow authored-resource transfer contract.
-- Examples: environments with secret/default semantics, or standalone saved scripts with template and request-bound-script boundaries.
+- Examples: environments with secret/default semantics plus request-reference/runtime-label coupling, or standalone saved scripts with template and request-bound-script boundaries.
 
 ### Management and Discovery Improvements
 - Better authored-resource browsing or management around the current persisted resource lane.
@@ -53,6 +53,7 @@
 - The validation path must be credible in the current environment and must not depend on reopening `M3-F3`.
 - The proposal must avoid broad schema churn, platform churn, or umbrella “resource tooling” language.
 - If a new resource type is involved, the proposal must show both that the resource type is already a real workflow object and that one narrow transfer contract can be defined without reopening broader workflow semantics.
+- Environment-transfer proposals must now also explain how imported request `selectedEnvironmentId` references, missing environment references after import, and run/history environment-label expectations are supposed to behave.
 - Board, roadmap, and progress updates must be cleanly expressible as one narrow task rather than a multi-track initiative.
 
 ## 5. Non-Promotion Examples
@@ -60,7 +61,7 @@
 - “Add better resource tooling.”
 - “Support all authored-resource types.”
 - “Do OpenAPI/Postman/cURL interoperability.”
-- “Add environments and scripts to bundles” without first narrowing secret/default/template boundaries and the exact transfer contract.
+- “Add environments and scripts to bundles” without first narrowing secret/default/template boundaries, request-reference behavior, and the exact transfer contract.
 - “Unify all authored-resource management” without one clearly named user-facing gap and validation path.
 
 ## 6. Re-Entry Checklist
@@ -73,7 +74,7 @@
 7. Can `master-task-board.md`, `priority-roadmap.md`, and `progress-status.md` be updated around one narrow task instead of a vague future-work bucket?
 
 ## 7. Explicit Uncertainties / 확실하지 않음
-- **확실하지 않음:** whether environments should become a first-class authored-resource transfer type now that the workflow-object prerequisite is satisfied.
+- **확실하지 않음:** whether environments should become a first-class authored-resource transfer type now that they are also request-linked execution inputs rather than only standalone route objects.
 - **확실하지 않음:** whether standalone saved scripts should become a transfer type, or whether script authoring should remain split between request-bound scripts and standalone management for longer.
 - **확실하지 않음:** whether collections or folders should ever become standalone authored-resource transfer objects instead of remaining request metadata.
 - **확실하지 않음:** when broader interoperability should graduate from deferred strategy to a narrow promotable task.
@@ -82,6 +83,7 @@
 - Candidate A is no longer fully parked.
 - `../tasks/task-019-server-backed-pre-import-preview.md` is landed as the first narrow Candidate A delivery because a server-backed no-write preview was the cleanest fit for the shipped workspace import seams.
 - `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md` is landed as the latest planning refresh after `T027`; it confirms that environments and standalone saved scripts are now real workflow objects but still does not promote transfer implementation for either resource kind.
+- `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md` is landed as the latest planning refresh after `T030`; it confirms that request/runtime environment coupling makes environment transfer more concrete but still not narrowly promotable.
 - This document still exists to keep any further Candidate A proposals narrow rather than letting authored-resource work reopen as a broad umbrella.
 - Use `candidate-a-gap-inventory.md` as the current evidence list before deciding whether a proposed Candidate A gap is already covered, still broad, blocked by a missing first-class resource type, or worth promoting after `T019`.
 - Use `candidate-a-narrow-candidate-comparison.md` to understand why Candidate 2 stayed parked and why Candidate 1 won before `T019` was created.

@@ -2,8 +2,8 @@
 
 - **Purpose:** Provide a concise snapshot of what is done, what is next, and what is blocked.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-22
-- **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `post-m3-reactivation-guide.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-001-foundation-architecture.md`
+- **Last Updated:** 2026-03-23
+- **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `post-m3-reactivation-guide.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md`, `../tasks/task-001-foundation-architecture.md`
 - **Update Rule:** Update at the end of each meaningful planning or implementation step.
 
 ## Current State
@@ -58,10 +58,11 @@
 - T028 post-T027 Candidate A readiness refresh: **done**
 - T029 request environment selection and resolution plan: **done**
 - T030 request environment selection and runtime resolution: **done**
+- T031 post-T030 priority and Candidate A refresh: **done**
 - Material 3 adoption plan plus initial token/theme, shell chrome, top-bar role legend, route-role cues, first-pass shared-surface materialization, role-specific panel accents, role-specific tab/header treatments, feature-level list/detail/contextual role strips, and `M3-F2` accessibility/contrast/focus/density polish: **done**
 
 ## Current Next Action
-No active `M3-F3`, placeholder-route, or request-level environment-resolution blocker remains in tracking. `T030` is now the latest landed implementation task, `T028` remains the latest Candidate A planning refresh, and future environment follow-up should build from `T030` rather than reopening `T027` or `T029`: keep top-bar global selector, richer resolved-preview UX, and broader environment tooling as separate deferred work. If a future confirmation step is blocked by the sandbox rather than by repo behavior, ask for a local rerun with exact commands and expected results per `AGENTS.md`.
+No active `M3-F3`, placeholder-route, or request-level environment-resolution blocker remains in tracking. `T030` is the latest landed implementation task, and `T031` is the latest planning refresh: it records that `T030` does not automatically promote environment transfer, top-bar global selector work, or another parked candidate. Future environment follow-up should build from `T030` and `T031` together rather than reopening `T027` or `T029`: keep top-bar global selector, richer resolved-preview UX, and broader environment tooling as separate deferred work. If a future confirmation step is blocked by the sandbox rather than by repo behavior, ask for a local rerun with exact commands and expected results per `AGENTS.md`.
 
 ## Open Blockers
 - No active delivery blocker remains inside T010 or `M3-F3`.
@@ -77,6 +78,7 @@ No active `M3-F3`, placeholder-route, or request-level environment-resolution bl
 - `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md` is landed: Candidate A guidance now reflects that environments and standalone saved scripts are real workflow objects, but transfer work for those resource kinds remains broad and unpromoted.
 - `../tasks/task-029-request-environment-selection-and-resolution-plan.md` is landed as the planning boundary for the now-completed request-level environment implementation slice.
 - `../tasks/task-030-request-environment-selection-and-runtime-resolution.md` is landed: request drafts and saved requests now persist `selectedEnvironmentId`, the workspace request header exposes request-level environment selection, and execution/history metadata now carries server-owned environment resolution labels.
+- `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md` is landed: `T030` makes environment transfer more concrete but still too broad to promote, and it does not turn top-bar selector or richer resolved-preview work into automatic baseline follow-up.
 - Direct sandbox `npm.cmd run test:ui` reruns are still expected to fail before Vitest transform work with `sandbox_esbuild_transform_blocked` / `spawn EPERM`; the current local verification handoff for the repo state is `npm.cmd run test:ui` with expected result `Test Files  8 passed (8)` and `Tests  49 passed (49)`.
 - **확실하지 않음:** whether live refresh on those specific TSX surfaces is fully healthy remains unverified, but that uncertainty no longer keeps the completed `M3-F3` slice open in tracking.
 - `../tasks/task-019-server-backed-pre-import-preview.md` is landed as the current bounded Candidate A delivery: the workspace import surface now requests a server-backed no-write preview before confirm, then preserves the existing request/mock bundle import semantics after commit.
@@ -123,6 +125,7 @@ No active `M3-F3`, placeholder-route, or request-level environment-resolution bl
 23. Open `../tasks/task-027-placeholder-route-mvp.md` before proposing any environment/script/settings follow-up so deferred scope is not confused with unfinished placeholder cleanup
 24. Open `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md` before proposing environment/script authored-resource transfer so real workflow-object status is not mistaken for promotion readiness
 25. Use T010/T015/T016/T017/T018/T019/T020/T021/T022/T023/T024/T025/T026/T027/T028 handoff notes when preparing Material 3 or other follow-up prompts
+26. Open `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md` before proposing environment-transfer or top-bar selector follow-up so request/runtime coupling is treated as a broadening factor, not as automatic readiness
 
 
 
