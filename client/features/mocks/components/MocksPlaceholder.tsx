@@ -201,16 +201,10 @@ function upsertRule(records: MockRuleRecord[] | undefined, nextRule: MockRuleRec
   return sortRules([nextRule, ...(records ?? []).filter((record) => record.id !== nextRule.id)]);
 }
 
-type MockRuleDraftAction =
-  | { type: 'replace'; draft: MockRuleInput }
-  | { type: 'update'; updater: (current: MockRuleInput) => MockRuleInput };
+type MockRuleDraftAction = { type: 'replace'; draft: MockRuleInput };
 
-function mockRuleDraftReducer(state: MockRuleInput, action: MockRuleDraftAction) {
-  if (action.type === 'replace') {
-    return action.draft;
-  }
-
-  return action.updater(state);
+function mockRuleDraftReducer(_state: MockRuleInput, action: MockRuleDraftAction) {
+  return action.draft;
 }
 
 interface MockResourceTransferStatus {
@@ -366,17 +360,9 @@ export function MocksPlaceholder() {
   }, [isCreatingRule, selectedRule]);
 
   const setDraft = (nextDraft: MockRuleInput | ((current: MockRuleInput) => MockRuleInput)) => {
-    if (typeof nextDraft === 'function') {
-      draftDispatch({
-        type: 'update',
-        updater: nextDraft,
-      });
-      return;
-    }
-
     draftDispatch({
       type: 'replace',
-      draft: nextDraft,
+      draft: typeof nextDraft === 'function' ? nextDraft(draft) : nextDraft,
     });
   };
 

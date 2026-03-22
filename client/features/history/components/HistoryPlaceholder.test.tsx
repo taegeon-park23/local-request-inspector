@@ -171,7 +171,7 @@ describe('History S18 fidelity refinement', () => {
     expect(screen.getByLabelText('Search history')).toBeInTheDocument();
     expect(screen.getByLabelText('Execution outcome filter')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: 'Open history Create user' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'History detail' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'History detail' })).toBeInTheDocument();
     expect(screen.getByRole('tablist', { name: 'History result tabs' })).toBeInTheDocument();
     expect(screen.getByText('73 B preview')).toBeInTheDocument();
     expect(screen.getByText(/bounded and redacted before deeper diagnostics/i)).toBeInTheDocument();
@@ -505,6 +505,7 @@ describe('History S18 fidelity refinement', () => {
     expect(await screen.findByRole('button', { name: 'Open history Runtime probe' })).toBeInTheDocument();
     expect(screen.getByText(/GET https:\/\/api.example.com\/runtime was persisted as a bounded redacted request snapshot/i)).toBeInTheDocument();
     expect(screen.getAllByText('HTTP 201', { selector: '[data-kind="transportOutcome"]' }).length).toBeGreaterThan(0);
+    await user.click(screen.getByRole('tab', { name: 'Tests' }));
     expect(screen.getByText('1 assertion passed. No failures.')).toBeInTheDocument();
     expect(useHistoryStore.getState().selectedHistoryId).toBe(runtimeProbeHistory.id);
     expect(Object.keys(useRequestDraftStore.getState().draftsByTabId)).toHaveLength(1);

@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { AppRouter } from '@client/app/router/AppRouter';
@@ -282,17 +282,18 @@ describe('Workspace request builder authoring shell', () => {
     renderApp(<AppRouter />);
 
     const explorer = screen.getByLabelText('Section explorer');
-    const persistedButtons = await within(explorer).findAllByRole('button', { name: /^Open / });
+    await within(explorer).findByRole('button', { name: 'Open Zeta persisted' });
+    await waitFor(() => expect(within(explorer).queryByRole('button', { name: 'Open Health check' })).not.toBeInTheDocument());
+    const persistedButtons = within(explorer).getAllByRole('button', { name: /^Open / });
 
     expect(persistedButtons.map((button) => button.getAttribute('aria-label'))).toEqual([
       'Open Zeta persisted',
       'Open Alpha persisted',
     ]);
-    expect(within(explorer).queryByRole('button', { name: 'Open Health check' })).not.toBeInTheDocument();
 
     await user.click(persistedButtons[0]!);
 
-    expect(screen.getByLabelText('Request name')).toHaveValue('Zeta persisted');
+    expect(await screen.findByLabelText('Request name')).toHaveValue('Zeta persisted');
     expect(screen.getByText('Saved request')).toBeInTheDocument();
   });
 
@@ -300,7 +301,7 @@ describe('Workspace request builder authoring shell', () => {
     const user = userEvent.setup();
     renderApp(<AppRouter />, { initialEntries: ['/history'] });
 
-    await user.click(screen.getByRole('button', { name: 'Open Replay Draft' }));
+    await user.click(await screen.findByRole('button', { name: 'Open Replay Draft' }));
     expect(await screen.findByRole('heading', { name: 'Workspace' })).toBeInTheDocument();
     expect(screen.getByText('Opened from history')).toBeInTheDocument();
 

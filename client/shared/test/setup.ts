@@ -12,6 +12,64 @@ import { resetRequestCommandStore } from '@client/features/request-builder/state
 import { resetRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
 import { resetWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
 
+let objectUrlSequence = 0;
+
+async function readBlobText(blob: Blob) {
+  const buffer = await blob.arrayBuffer();
+  return new TextDecoder().decode(buffer);
+}
+
+function ensureBrowserApiPolyfills() {
+  if (typeof URL.createObjectURL !== 'function') {
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      writable: true,
+      value: () => {
+        objectUrlSequence += 1;
+        return `blob:test-object-url-${objectUrlSequence}`;
+      },
+    });
+  }
+
+  if (typeof URL.revokeObjectURL !== 'function') {
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      writable: true,
+      value: () => undefined,
+    });
+  }
+
+  const blobPrototype = globalThis.Blob?.prototype as Blob & {
+    text?: () => Promise<string>;
+  };
+
+  if (blobPrototype && typeof blobPrototype.text !== 'function') {
+    Object.defineProperty(blobPrototype, 'text', {
+      configurable: true,
+      writable: true,
+      value: function text(this: Blob) {
+        return readBlobText(this);
+      },
+    });
+  }
+
+  const filePrototype = globalThis.File?.prototype as Blob & {
+    text?: () => Promise<string>;
+  };
+
+  if (filePrototype && typeof filePrototype.text !== 'function') {
+    Object.defineProperty(filePrototype, 'text', {
+      configurable: true,
+      writable: true,
+      value: function text(this: Blob) {
+        return readBlobText(this);
+      },
+    });
+  }
+}
+
+ensureBrowserApiPolyfills();
+
 function createApiResponse(data: unknown, status = 200) {
   return new Response(JSON.stringify({ data }), {
     status,

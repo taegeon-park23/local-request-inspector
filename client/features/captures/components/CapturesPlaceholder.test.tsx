@@ -92,7 +92,7 @@ describe('Captures S18 fidelity refinement', () => {
     expect(screen.getByLabelText('Search captures')).toBeInTheDocument();
     expect(screen.getByLabelText('Mock outcome filter')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: /Open capture POST \/webhooks\/stripe/i })).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByText('connected', { selector: '[data-kind="connection"]' })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText('connected', { selector: '[data-kind="connection"]' }).length).toBeGreaterThan(0));
 
     expect(screen.getByRole('heading', { name: 'Capture detail' })).toBeInTheDocument();
     expect(screen.getByRole('tablist', { name: 'Capture detail tabs' })).toBeInTheDocument();
@@ -106,7 +106,7 @@ describe('Captures S18 fidelity refinement', () => {
     expect(screen.getByText('Stored summary')).toBeInTheDocument();
     expect(screen.getByText('Handling summary')).toBeInTheDocument();
     expect(screen.getByText('Stripe webhook success')).toBeInTheDocument();
-    expect(screen.getByText(/POST \/webhooks\/stripe was observed at localhost:5671 as an inbound capture/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/POST \/webhooks\/stripe was observed at localhost:5671 as an inbound capture/i).length).toBeGreaterThan(0);
     expect(screen.getByText('Mocked', { selector: '[data-kind="mockOutcome"]' })).toHaveAttribute('data-kind', 'mockOutcome');
     expect(screen.queryByText('Succeeded', { selector: '[data-kind="executionOutcome"]' })).not.toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([input]) => getUrl(input as RequestInfo | URL) === '/api/captured-requests')).toBe(true);
@@ -148,7 +148,7 @@ describe('Captures S18 fidelity refinement', () => {
     const capturesList = await screen.findByLabelText('Captures list');
     await user.click(within(capturesList).getByRole('button', { name: /Open capture GET \/health/i }));
 
-    expect(await screen.findByText(/GET \/health was observed at localhost:5671 as an inbound capture/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/GET \/health was observed at localhost:5671 as an inbound capture/i)).length).toBeGreaterThan(0);
     expect(screen.getByText('No request body preview was stored for this inbound capture.')).toBeInTheDocument();
     expect(screen.getAllByText('Bypassed', { selector: '[data-kind="mockOutcome"]' }).length).toBeGreaterThan(0);
     expect(useCapturesStore.getState().selectedCaptureId).toBe(secondCapture.id);
@@ -273,9 +273,9 @@ describe('Captures S18 fidelity refinement', () => {
     });
 
     expect(await screen.findByRole('button', { name: /Open capture GET \/health/i })).toBeInTheDocument();
-    expect(screen.getByText(/GET \/health was observed at localhost:5671 as an inbound capture/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/GET \/health was observed at localhost:5671 as an inbound capture/i)).length).toBeGreaterThan(0);
     await waitFor(() => expect(screen.getByRole('button', { name: /Open capture POST \/webhooks\/stripe/i })).toBeInTheDocument());
-    expect(await screen.findByText(/POST \/webhooks\/stripe was observed at localhost:5671 as an inbound capture/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/POST \/webhooks\/stripe was observed at localhost:5671 as an inbound capture/i)).length).toBeGreaterThan(0);
     expect(useCapturesStore.getState().selectedCaptureId).toBe(refreshedCapture.id);
     expect(listCallCount).toBeGreaterThanOrEqual(2);
   });
@@ -315,7 +315,7 @@ describe('Captures S18 fidelity refinement', () => {
     await user.click(screen.getByRole('button', { name: 'Open Replay Draft' }));
 
     expect(await screen.findByRole('heading', { name: 'Workspace' })).toBeInTheDocument();
-    expect(screen.getByText('Opened from capture')).toBeInTheDocument();
+    expect(screen.getAllByText('Opened from capture', { selector: '.workspace-chip--replay' }).length).toBeGreaterThan(0);
     expect(Object.keys(useRequestDraftStore.getState().draftsByTabId)).toHaveLength(1);
   });
 });

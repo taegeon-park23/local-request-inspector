@@ -15,16 +15,16 @@ describe('Replay bridge S8', () => {
     const capturesList = await screen.findByLabelText('Captures list');
     await user.click(within(capturesList).getByRole('button', { name: /Open capture POST \/webhooks\/stripe\?env=dev/i }));
 
-    expect(screen.getByRole('button', { name: 'Open Replay Draft' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Open Replay Draft' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Run Replay Now' })).toBeDisabled();
 
-    await user.click(screen.getByRole('button', { name: 'Open Replay Draft' }));
+    await user.click(await screen.findByRole('button', { name: 'Open Replay Draft' }));
 
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Workspace' })).toBeInTheDocument());
     expect(screen.getByLabelText('Request name')).toHaveValue('Replay of POST /webhooks/stripe');
     expect(screen.getByLabelText('Request method')).toHaveValue('POST');
     expect(screen.getByLabelText('Request URL')).toHaveValue('http://localhost:5671/webhooks/stripe');
-    expect(screen.getByText('Opened from capture')).toBeInTheDocument();
+    expect(screen.getAllByText('Opened from capture', { selector: '.workspace-chip--replay' }).length).toBeGreaterThan(0);
     expect(screen.getByLabelText('Param row 1 key')).toHaveValue('env');
     expect(screen.getByLabelText('Param row 1 value')).toHaveValue('dev');
 
@@ -43,10 +43,10 @@ describe('Replay bridge S8', () => {
     const user = userEvent.setup();
     renderApp(<AppRouter />, { initialEntries: ['/history'] });
 
-    expect(screen.getByRole('button', { name: 'Open Replay Draft' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Open Replay Draft' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Run Replay Now' })).toBeDisabled();
 
-    await user.click(screen.getByRole('button', { name: 'Open Replay Draft' }));
+    await user.click(await screen.findByRole('button', { name: 'Open Replay Draft' }));
 
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Workspace' })).toBeInTheDocument());
     expect(screen.getByLabelText('Request name')).toHaveValue('Replay of Create user');
@@ -84,7 +84,7 @@ describe('Replay bridge S8', () => {
     await user.type(screen.getByLabelText('Request URL'), 'https://draft-one.example');
 
     await user.click(screen.getByRole('link', { name: /history/i }));
-    await user.click(screen.getByRole('button', { name: 'Open Replay Draft' }));
+    await user.click(await screen.findByRole('button', { name: 'Open Replay Draft' }));
 
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Workspace' })).toBeInTheDocument());
 

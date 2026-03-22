@@ -301,8 +301,8 @@ describe('Mocks S16 persisted CRUD surface', () => {
     vi.stubGlobal('fetch', createMockRulesFetch());
     renderApp(<AppRouter />, { initialEntries: ['/mocks'] });
 
-    const rulesList = screen.getByLabelText('Mock rules list');
     await screen.findByRole('button', { name: 'Open mock rule Stripe webhook accepted' });
+    const rulesList = await screen.findByLabelText('Mock rules list');
 
     const getRuleOrder = () => within(rulesList)
       .getAllByRole('button', { name: /^Open mock rule / })

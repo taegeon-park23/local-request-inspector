@@ -131,7 +131,8 @@ describe('Request builder save/run wiring', () => {
     const mainSurface = screen.getByLabelText('Main work surface');
     await user.click(within(mainSurface).getByRole('button', { name: 'Body' }));
     await user.selectOptions(screen.getByLabelText('Body mode'), 'json');
-    await user.type(screen.getByLabelText('Body content (JSON)'), '{"sku":"123"}');
+    await user.click(screen.getByLabelText('Body content (JSON)'));
+    await user.paste('{"sku":"123"}');
 
     await user.click(within(mainSurface).getByRole('button', { name: 'Scripts' }));
     await screen.findByLabelText('Pre-request script');
@@ -255,8 +256,9 @@ describe('Request builder save/run wiring', () => {
     await user.click(await within(explorer).findByRole('button', { name: 'Open Health check' }));
     expect(screen.getByText('Saved Requests')).toBeInTheDocument();
 
-    await user.clear(screen.getByLabelText('Request name'));
-    await user.type(screen.getByLabelText('Request name'), 'Health check updated');
+    const requestNameInput = await screen.findByLabelText('Request name');
+    await user.clear(requestNameInput);
+    await user.type(requestNameInput, 'Health check updated');
     await user.type(screen.getByLabelText('Request URL'), '?mode=full');
 
     await user.click(screen.getByRole('button', { name: 'Save' }));
@@ -373,7 +375,7 @@ describe('Request builder save/run wiring', () => {
     await waitFor(() => expect(screen.getByTestId('request-response-preview')).toHaveTextContent('demo-1'));
     expect(screen.getByText(/This right-hand panel is reserved for run observation only/i)).toBeInTheDocument();
     expect(screen.getByText(/Run does not save automatically and does not clear unsaved authoring changes\./i)).toBeInTheDocument();
-    expect(screen.getByText('HTTP 201')).toBeInTheDocument();
+    expect(screen.getByText('HTTP 201', { selector: '[data-kind="transportOutcome"]' })).toBeInTheDocument();
     expect(screen.getByText('31 B response body')).toBeInTheDocument();
     expect(screen.getByText(/Preview is bounded before richer diagnostics/i)).toBeInTheDocument();
     expect(screen.getByLabelText('Runtime probe has unsaved changes')).toBeInTheDocument();
@@ -508,7 +510,7 @@ describe('Request builder save/run wiring', () => {
     await user.click(screen.getByRole('button', { name: 'Run' }));
 
     await waitFor(() => expect(screen.getByTestId('run-command-status')).toHaveTextContent('Request run was blocked before completion.'));
-    expect(screen.getByText('No response')).toBeInTheDocument();
+    expect(screen.getByText('No response', { selector: '[data-kind="transportOutcome"]' })).toBeInTheDocument();
     expect(screen.getByText(/Transport did not run because the pre-request stage was blocked before send/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Execution Info' }));
@@ -620,7 +622,7 @@ describe('Request builder save/run wiring', () => {
     vi.stubGlobal('fetch', fetchMock);
     renderApp(<AppRouter />, { initialEntries: ['/history'] });
 
-    await user.click(screen.getByRole('button', { name: 'Open Replay Draft' }));
+    await user.click(await screen.findByRole('button', { name: 'Open Replay Draft' }));
     await screen.findByRole('heading', { name: 'Workspace' });
     expect(screen.getByText('Opened from history')).toBeInTheDocument();
 
