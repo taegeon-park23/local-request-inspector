@@ -27,7 +27,6 @@ import type {
 import {
   mockRuleMatchesSearch,
   mockRuleMatchesStateFilter,
-  mockRuleStateFilterOptions,
   useMocksStore,
 } from '@client/features/mocks/state/mocks-store';
 import { DetailViewerSection } from '@client/shared/ui/DetailViewerSection';
@@ -40,34 +39,7 @@ import { StatusBadge } from '@client/shared/ui/StatusBadge';
 import { downloadAuthoredResourceBundle } from '@client/features/workspace/resource-bundle.api';
 import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
 
-const mockDetailTabs = [
-  { id: 'overview', label: 'Overview', icon: 'overview' },
-  { id: 'matchers', label: 'Matchers', icon: 'matchers' },
-  { id: 'response', label: 'Response', icon: 'response' },
-  { id: 'diagnostics', label: 'Diagnostics', icon: 'diagnostics' },
-] as const;
-
-const methodModeOptions = [
-  { value: 'any', label: 'Any method' },
-  { value: 'exact', label: 'Exact method' },
-] as const;
-
-const pathModeOptions = [
-  { value: 'exact', label: 'Exact path' },
-  { value: 'prefix', label: 'Path prefix' },
-] as const;
-
-const bodyMatcherModeOptions: Array<{ value: MockRuleBodyMatcherMode; label: string }> = [
-  { value: 'none', label: 'No body matcher' },
-  { value: 'exact', label: 'Exact body text' },
-  { value: 'contains', label: 'Contains text' },
-];
-
-const matcherOperatorOptions = [
-  { value: 'exists', label: 'Exists' },
-  { value: 'equals', label: 'Exact match' },
-  { value: 'contains', label: 'Contains' },
-] as const;
+type Translate = ReturnType<typeof useI18n>['t'];
 
 const httpMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 
@@ -123,7 +95,54 @@ function sortRules(records: MockRuleRecord[]) {
   return sortMockRuleRecords(records);
 }
 
-function summarizeMatcherRows(rows: MockRuleMatcherRow[], emptyLabel: string) {
+function createMockDetailTabs(t: Translate) {
+  return [
+    { id: 'overview', label: t('mocksRoute.detail.tabs.overview'), icon: 'overview' },
+    { id: 'matchers', label: t('mocksRoute.detail.tabs.matchers'), icon: 'matchers' },
+    { id: 'response', label: t('mocksRoute.detail.tabs.response'), icon: 'response' },
+    { id: 'diagnostics', label: t('mocksRoute.detail.tabs.diagnostics'), icon: 'diagnostics' },
+  ] as const;
+}
+
+function createMethodModeOptions(t: Translate) {
+  return [
+    { value: 'any', label: t('mocksRoute.detail.overview.methodModeOptions.any') },
+    { value: 'exact', label: t('mocksRoute.detail.overview.methodModeOptions.exact') },
+  ] as const;
+}
+
+function createPathModeOptions(t: Translate) {
+  return [
+    { value: 'exact', label: t('mocksRoute.detail.overview.pathModeOptions.exact') },
+    { value: 'prefix', label: t('mocksRoute.detail.overview.pathModeOptions.prefix') },
+  ] as const;
+}
+
+function createBodyMatcherModeOptions(t: Translate): Array<{ value: MockRuleBodyMatcherMode; label: string }> {
+  return [
+    { value: 'none', label: t('mocksRoute.detail.matchers.body.modeOptions.none') },
+    { value: 'exact', label: t('mocksRoute.detail.matchers.body.modeOptions.exact') },
+    { value: 'contains', label: t('mocksRoute.detail.matchers.body.modeOptions.contains') },
+  ];
+}
+
+function createMatcherOperatorOptions(t: Translate) {
+  return [
+    { value: 'exists', label: t('mocksRoute.detail.matchers.operatorOptions.exists') },
+    { value: 'equals', label: t('mocksRoute.detail.matchers.operatorOptions.equals') },
+    { value: 'contains', label: t('mocksRoute.detail.matchers.operatorOptions.contains') },
+  ] as const;
+}
+
+function createStateFilterOptions(t: Translate): Array<{ value: MockRuleStateFilter; label: string }> {
+  return [
+    { value: 'all', label: t('mocksRoute.filters.stateOptions.all') },
+    { value: 'Enabled', label: t('mocksRoute.filters.stateOptions.enabled') },
+    { value: 'Disabled', label: t('mocksRoute.filters.stateOptions.disabled') },
+  ];
+}
+
+function summarizeMatcherRows(rows: MockRuleMatcherRow[], emptyLabel: string, t: Translate) {
   const activeRows = rows.filter((row) => row.enabled !== false && row.key.trim().length > 0);
   if (activeRows.length === 0) {
     return emptyLabel;
@@ -131,33 +150,39 @@ function summarizeMatcherRows(rows: MockRuleMatcherRow[], emptyLabel: string) {
 
   return activeRows.map((row) => {
     if (row.operator === 'exists') {
-      return `${row.key} exists`;
+      return t('mocksRoute.helpers.matcherRowExists', { key: row.key });
     }
     if (row.operator === 'contains') {
-      return `${row.key} contains ${row.value}`;
+      return t('mocksRoute.helpers.matcherRowContains', { key: row.key, value: row.value });
     }
-    return `${row.key} equals ${row.value}`;
+    return t('mocksRoute.helpers.matcherRowEquals', { key: row.key, value: row.value });
   }).join(' · ');
 }
 
-function summarizeResponseHeaders(rows: MockRuleResponseHeaderRow[]) {
+function summarizeResponseHeaders(rows: MockRuleResponseHeaderRow[], t: Translate) {
   const activeRows = rows.filter((row) => row.enabled !== false && row.key.trim().length > 0);
-  return activeRows.length === 0 ? 'No static response headers' : `${activeRows.length} static response header${activeRows.length === 1 ? '' : 's'}`;
+  return activeRows.length === 0
+    ? t('mocksRoute.helpers.responseHeadersNone')
+    : t('mocksRoute.helpers.responseHeadersCount', { count: activeRows.length });
 }
 
-function presentDraft(draft: MockRuleInput, sourceLabel: string) {
-  const methodSummary = draft.methodMode === 'any' ? 'Method: any' : `Method exact: ${draft.method}`;
+function presentDraft(draft: MockRuleInput, sourceLabel: string, t: Translate) {
+  const methodSummary = draft.methodMode === 'any'
+    ? t('mocksRoute.helpers.methodAny')
+    : t('mocksRoute.helpers.methodExact', { method: draft.method });
   const pathSummary = draft.pathMode === 'prefix'
-    ? `Path prefix: ${draft.pathValue || '(missing path)'}`
-    : `Path exact: ${draft.pathValue || '(missing path)'}`;
-  const querySummary = summarizeMatcherRows(draft.queryMatchers, 'No query matcher');
-  const headerSummary = summarizeMatcherRows(draft.headerMatchers, 'No header matcher');
+    ? t('mocksRoute.helpers.pathPrefix', { path: draft.pathValue || t('mocksRoute.helpers.missingPath') })
+    : t('mocksRoute.helpers.pathExact', { path: draft.pathValue || t('mocksRoute.helpers.missingPath') });
+  const querySummary = summarizeMatcherRows(draft.queryMatchers, t('mocksRoute.helpers.noQueryMatcher'), t);
+  const headerSummary = summarizeMatcherRows(draft.headerMatchers, t('mocksRoute.helpers.noHeaderMatcher'), t);
   const bodySummary = draft.bodyMatcherMode === 'none'
-    ? 'No body matcher'
+    ? t('mocksRoute.helpers.noBodyMatcher')
     : draft.bodyMatcherMode === 'contains'
-      ? `Body contains: ${draft.bodyMatcherValue || '(missing text)'}`
-      : `Body exact: ${draft.bodyMatcherValue || '(missing text)'}`;
-  const fixedDelayLabel = draft.fixedDelayMs > 0 ? `Fixed delay: ${draft.fixedDelayMs} ms` : 'No fixed delay';
+      ? t('mocksRoute.helpers.bodyContains', { value: draft.bodyMatcherValue || t('mocksRoute.helpers.missingText') })
+      : t('mocksRoute.helpers.bodyExact', { value: draft.bodyMatcherValue || t('mocksRoute.helpers.missingText') });
+  const fixedDelayLabel = draft.fixedDelayMs > 0
+    ? t('mocksRoute.helpers.fixedDelayValue', { delayMs: draft.fixedDelayMs })
+    : t('mocksRoute.helpers.fixedDelayNone');
 
   return {
     ruleState: createRuleState(draft.enabled),
@@ -166,33 +191,35 @@ function presentDraft(draft: MockRuleInput, sourceLabel: string) {
     querySummary,
     headerSummary,
     bodySummary,
-    matcherSummary: [methodSummary, pathSummary, querySummary, headerSummary, bodySummary].join(' with '),
-    responseSummary: `Static ${draft.responseStatusCode} response${draft.fixedDelayMs > 0 ? ` with ${draft.fixedDelayMs} ms fixed delay` : ''}.`,
-    responseHeadersSummary: summarizeResponseHeaders(draft.responseHeaders),
+    matcherSummary: [methodSummary, pathSummary, querySummary, headerSummary, bodySummary].join(' · '),
+    responseSummary: draft.fixedDelayMs > 0
+      ? t('mocksRoute.helpers.responseSummaryWithDelay', { statusCode: draft.responseStatusCode, delayMs: draft.fixedDelayMs })
+      : t('mocksRoute.helpers.responseSummary', { statusCode: draft.responseStatusCode }),
+    responseHeadersSummary: summarizeResponseHeaders(draft.responseHeaders, t),
     responseBodyPreview: draft.responseBody.trim().length > 0 ? draft.responseBody : '{\n  "mocked": true\n}',
     fixedDelayLabel,
     sourceLabel,
   };
 }
 
-function getSaveDisabledReason(draft: MockRuleInput, isSaving: boolean) {
+function getSaveDisabledReason(draft: MockRuleInput, isSaving: boolean, t: Translate) {
   if (isSaving) {
-    return 'Persisting the current rule changes.';
+    return t('mocksRoute.helpers.saveDisabled.saving');
   }
   if (draft.name.trim().length === 0) {
-    return 'Rule name is required before saving.';
+    return t('mocksRoute.helpers.saveDisabled.nameRequired');
   }
   if (draft.pathValue.trim().length === 0) {
-    return 'Path value is required before saving.';
+    return t('mocksRoute.helpers.saveDisabled.pathRequired');
   }
   if (draft.bodyMatcherMode !== 'none' && draft.bodyMatcherValue.trim().length === 0) {
-    return 'Body matcher value is required when a body matcher is enabled.';
+    return t('mocksRoute.helpers.saveDisabled.bodyRequired');
   }
   if (!Number.isFinite(draft.responseStatusCode) || draft.responseStatusCode < 100 || draft.responseStatusCode > 599) {
-    return 'Response status code must stay between 100 and 599.';
+    return t('mocksRoute.helpers.saveDisabled.statusCodeRange');
   }
   if (!Number.isFinite(draft.fixedDelayMs) || draft.fixedDelayMs < 0 || draft.fixedDelayMs > 2000) {
-    return 'Fixed delay must stay between 0 and 2000 ms.';
+    return t('mocksRoute.helpers.saveDisabled.fixedDelayRange');
   }
   return null;
 }
@@ -220,12 +247,33 @@ interface MatcherEditorProps {
   title: string;
   description: string;
   addLabel: string;
-  rowPrefix: string;
+  rowType: 'query' | 'header';
+  keyLabel: string;
+  operatorLabel: string;
+  valueLabel: string;
+  removeLabel: string;
+  emptyTitle: string;
+  emptyDescription: string;
+  operatorOptions: ReadonlyArray<{ value: MockRuleMatcherRow['operator']; label: string }>;
   rows: MockRuleMatcherRow[];
   onChange: (rows: MockRuleMatcherRow[]) => void;
 }
 
-function MatcherEditor({ title, description, addLabel, rowPrefix, rows, onChange }: MatcherEditorProps) {
+function MatcherEditor({
+  title,
+  description,
+  addLabel,
+  rowType,
+  keyLabel,
+  operatorLabel,
+  valueLabel,
+  removeLabel,
+  emptyTitle,
+  emptyDescription,
+  operatorOptions,
+  rows,
+  onChange,
+}: MatcherEditorProps) {
   return (
     <DetailViewerSection
       title={title}
@@ -234,7 +282,7 @@ function MatcherEditor({ title, description, addLabel, rowPrefix, rows, onChange
         <button
           type="button"
           className="workspace-button workspace-button--secondary"
-          onClick={() => onChange([...rows, createMatcherRow(rowPrefix === 'Query matcher' ? 'query' : 'header')])}
+          onClick={() => onChange([...rows, createMatcherRow(rowType)])}
         >
           {addLabel}
         </button>
@@ -242,17 +290,17 @@ function MatcherEditor({ title, description, addLabel, rowPrefix, rows, onChange
     >
       {rows.length === 0 ? (
         <EmptyStateCallout
-          title={`No ${title.toLowerCase()}`}
-          description="Add lightweight exists, exact, or contains rows only. Script-assisted matching remains deferred."
+          title={emptyTitle}
+          description={emptyDescription}
         />
       ) : (
         <div className="request-row-editor-list">
           {rows.map((row, index) => (
             <div key={row.id} className="request-row-editor">
               <label className="request-field">
-                <span>{rowPrefix} key</span>
+                <span>{keyLabel}</span>
                 <input
-                  aria-label={`${rowPrefix} key ${index + 1}`}
+                  aria-label={`${keyLabel} ${index + 1}`}
                   type="text"
                   value={row.key}
                   onChange={(event) =>
@@ -263,9 +311,9 @@ function MatcherEditor({ title, description, addLabel, rowPrefix, rows, onChange
                 />
               </label>
               <label className="request-field">
-                <span>Operator</span>
+                <span>{operatorLabel}</span>
                 <select
-                  aria-label={`${rowPrefix} operator ${index + 1}`}
+                  aria-label={`${operatorLabel} ${index + 1}`}
                   value={row.operator}
                   onChange={(event) =>
                     onChange(rows.map((currentRow) => (
@@ -279,15 +327,15 @@ function MatcherEditor({ title, description, addLabel, rowPrefix, rows, onChange
                     )))
                   }
                 >
-                  {matcherOperatorOptions.map((option) => (
+                  {operatorOptions.map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                   ))}
                 </select>
               </label>
               <label className="request-field">
-                <span>Value</span>
+                <span>{valueLabel}</span>
                 <input
-                  aria-label={`${rowPrefix} value ${index + 1}`}
+                  aria-label={`${valueLabel} ${index + 1}`}
                   type="text"
                   value={row.value}
                   disabled={row.operator === 'exists'}
@@ -303,7 +351,7 @@ function MatcherEditor({ title, description, addLabel, rowPrefix, rows, onChange
                 className="workspace-button workspace-button--ghost"
                 onClick={() => onChange(rows.filter((currentRow) => currentRow.id !== row.id))}
               >
-                Remove
+                {removeLabel}
               </button>
             </div>
           ))}
@@ -316,6 +364,12 @@ function MatcherEditor({ title, description, addLabel, rowPrefix, rows, onChange
 export function MocksPlaceholder() {
   const queryClient = useQueryClient();
   const { t } = useI18n();
+  const mockDetailTabs = createMockDetailTabs(t);
+  const methodModeOptions = createMethodModeOptions(t);
+  const pathModeOptions = createPathModeOptions(t);
+  const bodyMatcherModeOptions = createBodyMatcherModeOptions(t);
+  const matcherOperatorOptions = createMatcherOperatorOptions(t);
+  const stateFilterOptions = createStateFilterOptions(t);
   const [activeDetailTab, setActiveDetailTab] = useState<MockRuleDetailTabId>('overview');
   const [resourceTransferStatus, setResourceTransferStatus] = useState<MockResourceTransferStatus | null>(null);
   const [draft, draftDispatch] = useReducer(mockRuleDraftReducer, defaultNewMockRuleInput, createDraft);
@@ -418,16 +472,16 @@ export function MocksPlaceholder() {
       return bundle;
     },
     onSuccess: (bundle) => {
-      const exportedRuleName = bundle.mockRules[0]?.name || 'mock rule';
+      const exportedRuleName = bundle.mockRules[0]?.name || t('mocksRoute.helpers.untitledRule');
       setResourceTransferStatus({
         tone: 'success',
-        message: `Exported ${exportedRuleName} from the authored resource lane. Runtime mock outcomes remain excluded.`,
+        message: t('mocksRoute.helpers.exportSuccess', { name: exportedRuleName }),
       });
     },
     onError: (error) => {
       setResourceTransferStatus({
         tone: 'error',
-        message: error instanceof Error ? error.message : 'Mock rule export failed before a bundle could be downloaded.',
+        message: error instanceof Error ? error.message : t('mocksRoute.helpers.exportFailure'),
       });
     },
   });
@@ -440,20 +494,24 @@ export function MocksPlaceholder() {
     ? listQuery.error.message
     : detailQuery.error instanceof Error
       ? detailQuery.error.message
-      : 'Persisted mock rules could not be loaded cleanly.';
+      : t('mocksRoute.helpers.degradedReasonFallback');
   const isSaving = createRuleMutation.isPending || updateRuleMutation.isPending;
-  const saveDisabledReason = getSaveDisabledReason(draft, isSaving);
+  const saveDisabledReason = getSaveDisabledReason(draft, isSaving, t);
   const quickToggleDisabledReason = isCreatingRule
-    ? 'Create the rule first before using the quick enable or disable action.'
+    ? t('mocksRoute.helpers.quickToggleDisabled.createFirst')
     : toggleRuleMutation.isPending
-      ? 'Updating persisted rule state.'
+      ? t('mocksRoute.helpers.quickToggleDisabled.updating')
       : null;
   const deleteDisabledReason = isCreatingRule
-    ? 'Discard the draft instead of deleting it. Only persisted rules can be deleted.'
+    ? t('mocksRoute.helpers.deleteDisabled.discardDraft')
     : deleteRuleMutation.isPending
-      ? 'Deleting the persisted rule.'
+      ? t('mocksRoute.helpers.deleteDisabled.deleting')
       : null;
-  const currentPresentation = presentDraft(draft, isCreatingRule ? 'Unsaved workspace rule' : selectedRule?.sourceLabel ?? 'Persisted workspace rule');
+  const currentPresentation = presentDraft(
+    draft,
+    isCreatingRule ? t('mocksRoute.helpers.sourceLabels.unsaved') : t('mocksRoute.helpers.sourceLabels.persisted'),
+    t,
+  );
   const currentError = mutationMessage([
     createRuleMutation.error as Error | null,
     updateRuleMutation.error as Error | null,
@@ -509,66 +567,67 @@ export function MocksPlaceholder() {
         <div className="mocks-explorer">
           <header className="mocks-explorer__header">
             <div>
-              <p className="section-placeholder__eyebrow">Rule management</p>
-              <h2>Mock rules</h2>
-              <p>Persisted authored rules live here. Captures still owns runtime mock outcomes after evaluation.</p>
+              <p className="section-placeholder__eyebrow">{t('mocksRoute.sidebar.eyebrow')}</p>
+              <h2>{t('mocksRoute.sidebar.title')}</h2>
+              <p>{t('mocksRoute.sidebar.description')}</p>
               <div className="workspace-explorer__role-strip" aria-label="Mocks surface role">
-                <span className="workspace-chip">Management</span>
-                <span className="workspace-chip workspace-chip--secondary">Resource lane</span>
+                <span className="workspace-chip">{t('roles.management')}</span>
+                <span className="workspace-chip workspace-chip--secondary">{t('mocksRoute.sidebar.resourceLaneChip')}</span>
               </div>
             </div>
             <button type="button" className="workspace-button" onClick={() => startCreatingRule()}>
-              <IconLabel icon="new">New Rule</IconLabel>
+              <IconLabel icon="new">{t('mocksRoute.sidebar.newRule')}</IconLabel>
             </button>
           </header>
 
           <div className="mocks-filter-grid">
             <label className="request-field">
-              <span>Search rules</span>
-              <input aria-label="Search rules" type="text" value={searchText} onChange={(event) => setSearchText(event.currentTarget.value)} />
+              <span>{t('mocksRoute.filters.searchLabel')}</span>
+              <input aria-label={t('mocksRoute.filters.searchLabel')} type="text" value={searchText} onChange={(event) => setSearchText(event.currentTarget.value)} />
             </label>
             <label className="request-field request-field--compact">
-              <span>Rule state filter</span>
+              <span>{t('mocksRoute.filters.stateFilterLabel')}</span>
               <select
-                aria-label="Rule state filter"
+                aria-label={t('mocksRoute.filters.stateFilterLabel')}
                 value={stateFilter}
                 onChange={(event) => setStateFilter(event.currentTarget.value as MockRuleStateFilter)}
               >
-                {mockRuleStateFilterOptions.map((option) => (
+                {stateFilterOptions.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
             </label>
           </div>
 
-          {isListLoading ? <EmptyStateCallout title="Loading persisted rules" description="Waiting for the resource lane to return saved mock rules for this workspace." className="mocks-empty-state" /> : null}
-          {listQuery.isError ? <EmptyStateCallout title="Mock rules are degraded" description={`Persisted rule data could not be refreshed cleanly. ${degradedReason}`} /> : null}
-          {isEmpty ? <EmptyStateCallout title="No mock rules yet" description="Create a rule to persist matcher and static response scaffolding for inbound capture evaluation." className="mocks-empty-state" /> : null}
-          {hasNoFilteredResults ? <EmptyStateCallout title="No rules match these filters" description="Adjust the search text or state filter to bring persisted rules back into view." className="mocks-empty-state" /> : null}
+          {isListLoading ? <EmptyStateCallout title={t('mocksRoute.empty.loadingList.title')} description={t('mocksRoute.empty.loadingList.description')} className="mocks-empty-state" /> : null}
+          {listQuery.isError ? <EmptyStateCallout title={t('mocksRoute.empty.degraded.title')} description={t('mocksRoute.empty.degraded.description', { reason: degradedReason })} /> : null}
+          {isEmpty ? <EmptyStateCallout title={t('mocksRoute.empty.noItems.title')} description={t('mocksRoute.empty.noItems.description')} className="mocks-empty-state" /> : null}
+          {hasNoFilteredResults ? <EmptyStateCallout title={t('mocksRoute.empty.noFilteredItems.title')} description={t('mocksRoute.empty.noFilteredItems.description')} className="mocks-empty-state" /> : null}
 
           {filteredRules.length > 0 ? (
-            <ul className="mocks-list" aria-label="Mock rules list">
+            <ul className="mocks-list" aria-label={t('mocksRoute.filters.listAriaLabel')}>
               {filteredRules.map((rule) => {
                 const isSelected = !isCreatingRule && rule.id === effectiveSelectedRuleId;
+                const listPresentation = presentDraft(createDraft(rule), t('mocksRoute.helpers.sourceLabels.persisted'), t);
 
                 return (
                   <li key={rule.id}>
                     <button
                       type="button"
                       className={isSelected ? 'mocks-row mocks-row--selected' : 'mocks-row'}
-                      aria-label={`Open mock rule ${rule.name}`}
+                      aria-label={t('mocksRoute.helpers.openRuleAction', { name: rule.name })}
                       aria-pressed={isSelected}
                       data-rule-state={rule.ruleState === 'Enabled' ? 'enabled' : 'disabled'}
                       onClick={() => selectRule(rule.id)}
                     >
                       <span className="mocks-row__top">
                         <StatusBadge kind="neutral" value={rule.ruleState} />
-                        <span className="workspace-chip">Priority {rule.priority}</span>
-                        <span className="workspace-chip workspace-chip--secondary">{rule.fixedDelayLabel}</span>
+                        <span className="workspace-chip">{t('mocksRoute.helpers.priorityChip', { priority: rule.priority })}</span>
+                        <span className="workspace-chip workspace-chip--secondary">{listPresentation.fixedDelayLabel}</span>
                       </span>
                       <span className="mocks-row__title">{rule.name}</span>
-                      <span className="mocks-row__summary">{rule.matcherSummary}</span>
-                      <span className="mocks-row__meta">{rule.responseSummary}</span>
+                      <span className="mocks-row__summary">{listPresentation.matcherSummary}</span>
+                      <span className="mocks-row__meta">{listPresentation.responseSummary}</span>
                     </button>
                   </li>
                 );
@@ -593,50 +652,50 @@ export function MocksPlaceholder() {
 
         {isListLoading && !isCreatingRule ? (
           <div className="request-work-surface request-work-surface--empty">
-            <EmptyStateCallout title="Loading mock rule detail" description="The persisted rule list is loading before a detail row can be selected." />
+            <EmptyStateCallout title={t('mocksRoute.empty.loadingDetail.title')} description={t('mocksRoute.empty.loadingDetail.description')} />
           </div>
         ) : !isCreatingRule && !selectedRule ? (
           <div className="request-work-surface request-work-surface--empty">
-            <EmptyStateCallout title="No mock rule selected" description="Choose a persisted rule or start a new rule draft to edit matcher and static response fields." />
+            <EmptyStateCallout title={t('mocksRoute.empty.noSelection.title')} description={t('mocksRoute.empty.noSelection.description')} />
           </div>
         ) : isDetailLoading ? (
           <div className="request-work-surface request-work-surface--empty">
-            <EmptyStateCallout title="Loading persisted rule detail" description="Fetching the selected rule from the resource lane before editable details are shown." />
+            <EmptyStateCallout title={t('mocksRoute.empty.loadingPersistedDetail.title')} description={t('mocksRoute.empty.loadingPersistedDetail.description')} />
           </div>
         ) : detailQuery.isError && !isCreatingRule ? (
           <div className="request-work-surface request-work-surface--empty">
-            <EmptyStateCallout title="Mock rule detail is degraded" description={`The selected rule could not be loaded cleanly. ${degradedReason}`} />
+            <EmptyStateCallout title={t('mocksRoute.empty.detailDegraded.title')} description={t('mocksRoute.empty.detailDegraded.description', { reason: degradedReason })} />
           </div>
         ) : (
           <div className="mocks-detail">
             <header className="mocks-detail__header">
               <div>
-                <p className="section-placeholder__eyebrow">{isCreatingRule ? 'New rule draft' : 'Persisted rule detail'}</p>
-                <h2>{isCreatingRule ? 'Create mock rule' : 'Edit mock rule'}</h2>
+                <p className="section-placeholder__eyebrow">{isCreatingRule ? t('mocksRoute.detail.header.draftEyebrow') : t('mocksRoute.detail.header.persistedEyebrow')}</p>
+                <h2>{isCreatingRule ? t('mocksRoute.detail.header.createTitle') : t('mocksRoute.detail.header.editTitle')}</h2>
                 <p>{currentPresentation.matcherSummary}</p>
                 <div className="workspace-explorer__role-strip" aria-label="Mock rule detail role">
-                  <span className="workspace-chip">Management</span>
-                  <span className="workspace-chip workspace-chip--secondary">Authored rule</span>
+                  <span className="workspace-chip">{t('roles.management')}</span>
+                  <span className="workspace-chip workspace-chip--secondary">{t('mocksRoute.detail.header.authoredRuleChip')}</span>
                 </div>
               </div>
               <div className="request-work-surface__badges">
                 <StatusBadge kind="neutral" value={currentPresentation.ruleState} />
-                <span className="workspace-chip">Priority {draft.priority}</span>
+                <span className="workspace-chip">{t('mocksRoute.helpers.priorityChip', { priority: draft.priority })}</span>
                 <span className="workspace-chip">{currentPresentation.fixedDelayLabel}</span>
               </div>
             </header>
 
             <DetailViewerSection
-              title="Persistence boundary"
-              description="Create and Save update authored rule definitions only. Runtime mock outcomes remain in Captures."
+              title={t('mocksRoute.detail.boundary.title')}
+              description={t('mocksRoute.detail.boundary.description')}
               className="mocks-summary-card mocks-summary-card--boundary"
               actions={(
                 <div className="request-work-surface__future-actions">
                   <button type="button" className="workspace-button workspace-button--secondary" onClick={handleSaveRule} disabled={saveDisabledReason !== null}>
-                    <IconLabel icon="save">{isCreatingRule ? 'Create rule' : 'Save rule'}</IconLabel>
+                    <IconLabel icon="save">{isCreatingRule ? t('mocksRoute.detail.boundary.actions.createRule') : t('mocksRoute.detail.boundary.actions.saveRule')}</IconLabel>
                   </button>
                   <button type="button" className="workspace-button workspace-button--secondary" onClick={handleToggleRuleEnabled} disabled={quickToggleDisabledReason !== null}>
-                    <IconLabel icon={selectedRule?.enabled ? 'disable' : 'enable'}>{selectedRule?.enabled ? 'Disable rule' : 'Enable rule'}</IconLabel>
+                    <IconLabel icon={selectedRule?.enabled ? 'disable' : 'enable'}>{selectedRule?.enabled ? t('mocksRoute.detail.boundary.actions.disableRule') : t('mocksRoute.detail.boundary.actions.enableRule')}</IconLabel>
                   </button>
                   {!isCreatingRule && selectedRule ? (
                     <button
@@ -645,93 +704,93 @@ export function MocksPlaceholder() {
                       onClick={() => exportRuleMutation.mutate(selectedRule.id)}
                       disabled={exportRuleMutation.isPending}
                     >
-                      <IconLabel icon="export">{exportRuleMutation.isPending ? 'Exporting rule' : 'Export rule'}</IconLabel>
+                      <IconLabel icon="export">{exportRuleMutation.isPending ? t('mocksRoute.detail.boundary.actions.exportingRule') : t('mocksRoute.detail.boundary.actions.exportRule')}</IconLabel>
                     </button>
                   ) : null}
                   {isCreatingRule ? (
                     <button type="button" className="workspace-button workspace-button--ghost" onClick={handleCancelDraft}>
-                      <IconLabel icon="pending">Cancel draft</IconLabel>
+                      <IconLabel icon="pending">{t('mocksRoute.detail.boundary.actions.cancelDraft')}</IconLabel>
                     </button>
                   ) : (
                     <button type="button" className="workspace-button workspace-button--ghost" onClick={handleDeleteRule} disabled={deleteDisabledReason !== null}>
-                      <IconLabel icon="delete">Delete rule</IconLabel>
+                      <IconLabel icon="delete">{t('mocksRoute.detail.boundary.actions.deleteRule')}</IconLabel>
                     </button>
                   )}
                 </div>
               )}
             >
               <p className="shared-readiness-note">
-                {saveDisabledReason ?? quickToggleDisabledReason ?? deleteDisabledReason ?? 'Quick enable or disable updates persisted rule state only. Other field edits still require Create or Save.'}
+                {saveDisabledReason ?? quickToggleDisabledReason ?? deleteDisabledReason ?? t('mocksRoute.detail.boundary.fallbackReadiness')}
               </p>
               {resourceTransferStatus ? (
                 <p className={`workspace-explorer__status workspace-explorer__status--${resourceTransferStatus.tone}`}>
                   {resourceTransferStatus.message}
                 </p>
               ) : null}
-              {currentError ? <EmptyStateCallout title="Rule mutation failed" description={currentError} /> : null}
+              {currentError ? <EmptyStateCallout title={t('mocksRoute.detail.boundary.mutationFailedTitle')} description={currentError} /> : null}
             </DetailViewerSection>
 
             <div className="mocks-summary-grid">
-              <DetailViewerSection title="Rule summary" description="Enabled or Disabled here describes authored rule state, not runtime mock outcome." className="mocks-summary-card mocks-summary-card--rule">
+              <DetailViewerSection title={t('mocksRoute.detail.summaryCards.rule.title')} description={t('mocksRoute.detail.summaryCards.rule.description')} className="mocks-summary-card mocks-summary-card--rule">
                 <KeyValueMetaList
                   items={[
-                    { label: 'Rule name', value: draft.name || 'Untitled Mock Rule' },
-                    { label: 'Rule state', value: currentPresentation.ruleState },
-                    { label: 'Priority', value: draft.priority },
-                    { label: 'Source', value: currentPresentation.sourceLabel },
+                    { label: t('mocksRoute.detail.summaryCards.rule.labels.name'), value: draft.name || t('mocksRoute.helpers.untitledRule') },
+                    { label: t('mocksRoute.detail.summaryCards.rule.labels.state'), value: currentPresentation.ruleState },
+                    { label: t('mocksRoute.detail.summaryCards.rule.labels.priority'), value: draft.priority },
+                    { label: t('mocksRoute.detail.summaryCards.rule.labels.source'), value: currentPresentation.sourceLabel },
                   ]}
                 />
               </DetailViewerSection>
 
-              <DetailViewerSection title="Evaluation summary" description="Enabled rules are evaluated by priority, matcher specificity, and a stable tie-breaker." className="mocks-summary-card mocks-summary-card--evaluation">
+              <DetailViewerSection title={t('mocksRoute.detail.summaryCards.evaluation.title')} description={t('mocksRoute.detail.summaryCards.evaluation.description')} className="mocks-summary-card mocks-summary-card--evaluation">
                 <KeyValueMetaList
                   items={[
-                    { label: 'Matcher summary', value: currentPresentation.matcherSummary },
-                    { label: 'Response summary', value: currentPresentation.responseSummary },
-                    { label: 'Delay hint', value: currentPresentation.fixedDelayLabel },
+                    { label: t('mocksRoute.detail.summaryCards.evaluation.labels.matcherSummary'), value: currentPresentation.matcherSummary },
+                    { label: t('mocksRoute.detail.summaryCards.evaluation.labels.responseSummary'), value: currentPresentation.responseSummary },
+                    { label: t('mocksRoute.detail.summaryCards.evaluation.labels.delayHint'), value: currentPresentation.fixedDelayLabel },
                   ]}
                 />
               </DetailViewerSection>
             </div>
 
-            <PanelTabs ariaLabel="Mock rule detail tabs" tabs={mockDetailTabs} activeTab={activeDetailTab} onChange={setActiveDetailTab} />
+            <PanelTabs ariaLabel={t('mocksRoute.detail.tabs.ariaLabel')} tabs={mockDetailTabs} activeTab={activeDetailTab} onChange={setActiveDetailTab} />
 
             {activeDetailTab === 'overview' ? (
-              <DetailViewerSection title="Overview" description="This editor stays inside the T013 MVP matcher and static response surface." className="mocks-summary-card mocks-summary-card--overview">
+              <DetailViewerSection title={t('mocksRoute.detail.overview.title')} description={t('mocksRoute.detail.overview.description')} className="mocks-summary-card mocks-summary-card--overview">
                 <div className="request-editor-card__grid">
                   <label className="request-field">
-                    <span>Rule name</span>
-                    <input aria-label="Rule name" type="text" value={draft.name} onChange={(event) => setDraft((current) => ({ ...current, name: event.currentTarget.value }))} />
+                    <span>{t('mocksRoute.detail.overview.labels.ruleName')}</span>
+                    <input aria-label={t('mocksRoute.detail.overview.labels.ruleName')} type="text" value={draft.name} onChange={(event) => setDraft((current) => ({ ...current, name: event.currentTarget.value }))} />
                   </label>
                   <label className="request-field request-field--toggle">
-                    <span>Rule enabled</span>
-                    <input aria-label="Rule enabled" type="checkbox" checked={draft.enabled} onChange={(event) => setDraft((current) => ({ ...current, enabled: event.currentTarget.checked }))} />
+                    <span>{t('mocksRoute.detail.overview.labels.ruleEnabled')}</span>
+                    <input aria-label={t('mocksRoute.detail.overview.labels.ruleEnabled')} type="checkbox" checked={draft.enabled} onChange={(event) => setDraft((current) => ({ ...current, enabled: event.currentTarget.checked }))} />
                   </label>
                   <label className="request-field">
-                    <span>Priority</span>
-                    <input aria-label="Rule priority" type="number" value={draft.priority} onChange={(event) => setDraft((current) => ({ ...current, priority: Number(event.currentTarget.value) || 0 }))} />
+                    <span>{t('mocksRoute.detail.overview.labels.priority')}</span>
+                    <input aria-label={t('mocksRoute.detail.overview.labels.rulePriority')} type="number" value={draft.priority} onChange={(event) => setDraft((current) => ({ ...current, priority: Number(event.currentTarget.value) || 0 }))} />
                   </label>
                   <label className="request-field">
-                    <span>Method match</span>
-                    <select aria-label="Method match" value={draft.methodMode} onChange={(event) => setDraft((current) => ({ ...current, methodMode: event.currentTarget.value as MockRuleInput['methodMode'] }))}>
+                    <span>{t('mocksRoute.detail.overview.labels.methodMatch')}</span>
+                    <select aria-label={t('mocksRoute.detail.overview.labels.methodMatch')} value={draft.methodMode} onChange={(event) => setDraft((current) => ({ ...current, methodMode: event.currentTarget.value as MockRuleInput['methodMode'] }))}>
                       {methodModeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                     </select>
                   </label>
                   <label className="request-field">
-                    <span>HTTP method</span>
-                    <select aria-label="HTTP method" value={draft.method} disabled={draft.methodMode === 'any'} onChange={(event) => setDraft((current) => ({ ...current, method: event.currentTarget.value as MockRuleInput['method'] }))}>
+                    <span>{t('mocksRoute.detail.overview.labels.httpMethod')}</span>
+                    <select aria-label={t('mocksRoute.detail.overview.labels.httpMethod')} value={draft.method} disabled={draft.methodMode === 'any'} onChange={(event) => setDraft((current) => ({ ...current, method: event.currentTarget.value as MockRuleInput['method'] }))}>
                       {httpMethods.map((method) => <option key={method} value={method}>{method}</option>)}
                     </select>
                   </label>
                   <label className="request-field">
-                    <span>Path match</span>
-                    <select aria-label="Path match" value={draft.pathMode} onChange={(event) => setDraft((current) => ({ ...current, pathMode: event.currentTarget.value as MockRuleInput['pathMode'] }))}>
+                    <span>{t('mocksRoute.detail.overview.labels.pathMatch')}</span>
+                    <select aria-label={t('mocksRoute.detail.overview.labels.pathMatch')} value={draft.pathMode} onChange={(event) => setDraft((current) => ({ ...current, pathMode: event.currentTarget.value as MockRuleInput['pathMode'] }))}>
                       {pathModeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                     </select>
                   </label>
                   <label className="request-field request-field--wide">
-                    <span>Path value</span>
-                    <input aria-label="Path value" type="text" placeholder="/webhooks/stripe" value={draft.pathValue} onChange={(event) => setDraft((current) => ({ ...current, pathValue: event.currentTarget.value }))} />
+                    <span>{t('mocksRoute.detail.overview.labels.pathValue')}</span>
+                    <input aria-label={t('mocksRoute.detail.overview.labels.pathValue')} type="text" placeholder={t('mocksRoute.detail.overview.placeholders.pathValue')} value={draft.pathValue} onChange={(event) => setDraft((current) => ({ ...current, pathValue: event.currentTarget.value }))} />
                   </label>
                 </div>
               </DetailViewerSection>
@@ -740,27 +799,41 @@ export function MocksPlaceholder() {
             {activeDetailTab === 'matchers' ? (
               <div className="mocks-summary-grid">
                 <MatcherEditor
-                  title="Query matchers"
-                  description="Use lightweight exists, exact, and contains operators only."
-                  addLabel="Add query matcher"
-                  rowPrefix="Query matcher"
+                  title={t('mocksRoute.detail.matchers.query.title')}
+                  description={t('mocksRoute.detail.matchers.query.description')}
+                  addLabel={t('mocksRoute.detail.matchers.query.addLabel')}
+                  rowType="query"
+                  keyLabel={t('mocksRoute.detail.matchers.query.labels.key')}
+                  operatorLabel={t('mocksRoute.detail.matchers.labels.operator')}
+                  valueLabel={t('mocksRoute.detail.matchers.labels.value')}
+                  removeLabel={t('mocksRoute.detail.matchers.labels.remove')}
+                  emptyTitle={t('mocksRoute.detail.matchers.query.emptyTitle')}
+                  emptyDescription={t('mocksRoute.detail.matchers.query.emptyDescription')}
+                  operatorOptions={matcherOperatorOptions}
                   rows={draft.queryMatchers}
                   onChange={(queryMatchers) => setDraft((current) => ({ ...current, queryMatchers }))}
                 />
                 <MatcherEditor
-                  title="Header matchers"
-                  description="Header matching remains bounded to exists, exact, and contains operators."
-                  addLabel="Add header matcher"
-                  rowPrefix="Header matcher"
+                  title={t('mocksRoute.detail.matchers.header.title')}
+                  description={t('mocksRoute.detail.matchers.header.description')}
+                  addLabel={t('mocksRoute.detail.matchers.header.addLabel')}
+                  rowType="header"
+                  keyLabel={t('mocksRoute.detail.matchers.header.labels.key')}
+                  operatorLabel={t('mocksRoute.detail.matchers.labels.operator')}
+                  valueLabel={t('mocksRoute.detail.matchers.labels.value')}
+                  removeLabel={t('mocksRoute.detail.matchers.labels.remove')}
+                  emptyTitle={t('mocksRoute.detail.matchers.header.emptyTitle')}
+                  emptyDescription={t('mocksRoute.detail.matchers.header.emptyDescription')}
+                  operatorOptions={matcherOperatorOptions}
                   rows={draft.headerMatchers}
                   onChange={(headerMatchers) => setDraft((current) => ({ ...current, headerMatchers }))}
                 />
-                <DetailViewerSection title="Body matcher" description="Regex, JSONPath, and script matchers remain deferred." className="mocks-summary-card mocks-summary-card--matchers">
+                <DetailViewerSection title={t('mocksRoute.detail.matchers.body.title')} description={t('mocksRoute.detail.matchers.body.description')} className="mocks-summary-card mocks-summary-card--matchers">
                   <div className="request-editor-card__grid">
                     <label className="request-field">
-                      <span>Body matcher</span>
+                      <span>{t('mocksRoute.detail.matchers.body.labels.mode')}</span>
                       <select
-                        aria-label="Body matcher"
+                        aria-label={t('mocksRoute.detail.matchers.body.labels.mode')}
                         value={draft.bodyMatcherMode}
                         onChange={(event) =>
                           setDraft((current) => ({
@@ -773,8 +846,8 @@ export function MocksPlaceholder() {
                       </select>
                     </label>
                     <label className="request-field request-field--wide">
-                      <span>Body match value</span>
-                      <input aria-label="Body match value" type="text" value={draft.bodyMatcherValue} disabled={draft.bodyMatcherMode === 'none'} onChange={(event) => setDraft((current) => ({ ...current, bodyMatcherValue: event.currentTarget.value }))} />
+                      <span>{t('mocksRoute.detail.matchers.body.labels.value')}</span>
+                      <input aria-label={t('mocksRoute.detail.matchers.body.labels.value')} type="text" value={draft.bodyMatcherValue} disabled={draft.bodyMatcherMode === 'none'} onChange={(event) => setDraft((current) => ({ ...current, bodyMatcherValue: event.currentTarget.value }))} />
                     </label>
                   </div>
                 </DetailViewerSection>
@@ -783,50 +856,50 @@ export function MocksPlaceholder() {
 
             {activeDetailTab === 'response' ? (
               <div className="mocks-summary-grid">
-                <DetailViewerSection title="Static response" description="Static status, headers, body, and fixed delay form the bounded MVP response surface." className="mocks-summary-card mocks-summary-card--response">
+                <DetailViewerSection title={t('mocksRoute.detail.response.responseCard.title')} description={t('mocksRoute.detail.response.responseCard.description')} className="mocks-summary-card mocks-summary-card--response">
                   <div className="request-editor-card__grid">
                     <label className="request-field">
-                      <span>Response status</span>
-                      <input aria-label="Response status" type="number" value={draft.responseStatusCode} onChange={(event) => setDraft((current) => ({ ...current, responseStatusCode: Number(event.currentTarget.value) || 0 }))} />
+                      <span>{t('mocksRoute.detail.response.responseCard.labels.status')}</span>
+                      <input aria-label={t('mocksRoute.detail.response.responseCard.labels.status')} type="number" value={draft.responseStatusCode} onChange={(event) => setDraft((current) => ({ ...current, responseStatusCode: Number(event.currentTarget.value) || 0 }))} />
                     </label>
                     <label className="request-field">
-                      <span>Fixed delay (ms)</span>
-                      <input aria-label="Fixed delay" type="number" min="0" max="2000" value={draft.fixedDelayMs} onChange={(event) => setDraft((current) => ({ ...current, fixedDelayMs: Number(event.currentTarget.value) || 0 }))} />
+                      <span>{t('mocksRoute.detail.response.responseCard.labels.fixedDelay')}</span>
+                      <input aria-label={t('mocksRoute.detail.response.responseCard.labels.fixedDelayAria')} type="number" min="0" max="2000" value={draft.fixedDelayMs} onChange={(event) => setDraft((current) => ({ ...current, fixedDelayMs: Number(event.currentTarget.value) || 0 }))} />
                     </label>
                     <label className="request-field request-field--wide">
-                      <span>Response body</span>
-                      <textarea aria-label="Response body" value={draft.responseBody} onChange={(event) => setDraft((current) => ({ ...current, responseBody: event.currentTarget.value }))} />
+                      <span>{t('mocksRoute.detail.response.responseCard.labels.body')}</span>
+                      <textarea aria-label={t('mocksRoute.detail.response.responseCard.labels.body')} value={draft.responseBody} onChange={(event) => setDraft((current) => ({ ...current, responseBody: event.currentTarget.value }))} />
                     </label>
                   </div>
                   <pre className="mocks-preview-block">{currentPresentation.responseBodyPreview}</pre>
                 </DetailViewerSection>
 
                 <DetailViewerSection
-                  title="Response headers"
-                  description="Static response headers stay bounded and predictable in this MVP surface."
+                  title={t('mocksRoute.detail.response.headersCard.title')}
+                  description={t('mocksRoute.detail.response.headersCard.description')}
                   className="mocks-summary-card mocks-summary-card--headers"
                   actions={(
                     <button type="button" className="workspace-button workspace-button--secondary" onClick={() => setDraft((current) => ({ ...current, responseHeaders: [...current.responseHeaders, createResponseHeaderRow()] }))}>
-                      <IconLabel icon="add">Add response header</IconLabel>
+                      <IconLabel icon="add">{t('mocksRoute.detail.response.headersCard.addLabel')}</IconLabel>
                     </button>
                   )}
                 >
                   {draft.responseHeaders.length === 0 ? (
-                    <EmptyStateCallout title="No static response headers" description="Add static response headers only when the mock response needs them." />
+                    <EmptyStateCallout title={t('mocksRoute.detail.response.headersCard.emptyTitle')} description={t('mocksRoute.detail.response.headersCard.emptyDescription')} />
                   ) : (
                     <div className="request-row-editor-list">
                       {draft.responseHeaders.map((row, index) => (
                         <div key={row.id} className="request-row-editor">
                           <label className="request-field">
-                            <span>Header name</span>
-                            <input aria-label={`Response header name ${index + 1}`} type="text" value={row.key} onChange={(event) => setDraft((current) => ({ ...current, responseHeaders: current.responseHeaders.map((currentRow) => currentRow.id === row.id ? { ...currentRow, key: event.currentTarget.value } : currentRow) }))} />
+                            <span>{t('mocksRoute.detail.response.headersCard.labels.name')}</span>
+                            <input aria-label={`${t('mocksRoute.detail.response.headersCard.labels.name')} ${index + 1}`} type="text" value={row.key} onChange={(event) => setDraft((current) => ({ ...current, responseHeaders: current.responseHeaders.map((currentRow) => currentRow.id === row.id ? { ...currentRow, key: event.currentTarget.value } : currentRow) }))} />
                           </label>
                           <label className="request-field request-field--wide">
-                            <span>Header value</span>
-                            <input aria-label={`Response header value ${index + 1}`} type="text" value={row.value} onChange={(event) => setDraft((current) => ({ ...current, responseHeaders: current.responseHeaders.map((currentRow) => currentRow.id === row.id ? { ...currentRow, value: event.currentTarget.value } : currentRow) }))} />
+                            <span>{t('mocksRoute.detail.response.headersCard.labels.value')}</span>
+                            <input aria-label={`${t('mocksRoute.detail.response.headersCard.labels.value')} ${index + 1}`} type="text" value={row.value} onChange={(event) => setDraft((current) => ({ ...current, responseHeaders: current.responseHeaders.map((currentRow) => currentRow.id === row.id ? { ...currentRow, value: event.currentTarget.value } : currentRow) }))} />
                           </label>
                           <button type="button" className="workspace-button workspace-button--ghost" onClick={() => setDraft((current) => ({ ...current, responseHeaders: current.responseHeaders.filter((currentRow) => currentRow.id !== row.id) }))}>
-                            Remove
+                            {t('mocksRoute.detail.response.headersCard.labels.remove')}
                           </button>
                         </div>
                       ))}
@@ -837,15 +910,15 @@ export function MocksPlaceholder() {
             ) : null}
 
             {activeDetailTab === 'diagnostics' ? (
-              <DetailViewerSection title="Diagnostics and deferred work" description={selectedRule?.diagnosticsSummary ?? 'Rules are evaluated by enabled state, explicit priority, matcher specificity, and a stable tie-breaker.'} className="mocks-summary-card mocks-summary-card--diagnostics">
+              <DetailViewerSection title={t('mocksRoute.detail.diagnostics.title')} description={t('mocksRoute.detail.diagnostics.description')} className="mocks-summary-card mocks-summary-card--diagnostics">
                 <KeyValueMetaList
                   items={[
-                    { label: 'Deferred note', value: selectedRule?.deferredSummary ?? 'Script-assisted matcher/response and advanced scenario state remain deferred.' },
-                    { label: 'Source', value: currentPresentation.sourceLabel },
-                    { label: 'Current state', value: currentPresentation.ruleState },
+                    { label: t('mocksRoute.detail.diagnostics.labels.deferredNote'), value: t('mocksRoute.detail.diagnostics.values.deferredNote') },
+                    { label: t('mocksRoute.detail.diagnostics.labels.source'), value: currentPresentation.sourceLabel },
+                    { label: t('mocksRoute.detail.diagnostics.labels.currentState'), value: currentPresentation.ruleState },
                   ]}
                 />
-                <EmptyStateCallout title="Runtime outcomes stay in Captures" description="This route persists authored rule definitions only. Captures shows Mocked, Bypassed, No rule matched, and Blocked outcomes after evaluation." />
+                <EmptyStateCallout title={t('mocksRoute.detail.diagnostics.runtimeOutcomes.title')} description={t('mocksRoute.detail.diagnostics.runtimeOutcomes.description')} />
               </DetailViewerSection>
             ) : null}
           </div>
@@ -856,38 +929,38 @@ export function MocksPlaceholder() {
         <aside className="shell-panel shell-panel--detail" aria-label="Contextual detail panel">
         {!isCreatingRule && !selectedRule ? (
           <div className="workspace-detail-panel workspace-detail-panel--empty">
-            <EmptyStateCallout title="Management notes placeholder" description="Persisted rule diagnostics, authored rule reminders, and evaluation guardrails appear after a rule is selected or a new draft is opened." />
+            <EmptyStateCallout title={t('mocksRoute.contextual.empty.title')} description={t('mocksRoute.contextual.empty.description')} />
           </div>
         ) : (
           <div className="workspace-detail-panel">
             <header className="workspace-detail-panel__header">
               <div>
-                <p className="section-placeholder__eyebrow">Contextual panel</p>
-                <h2>Management notes</h2>
-                <p>Authored mock rules stay separate from runtime capture outcomes. This panel stays focused on rule constraints and evaluation order.</p>
+                <p className="section-placeholder__eyebrow">{t('mocksRoute.contextual.header.eyebrow')}</p>
+                <h2>{t('mocksRoute.contextual.header.title')}</h2>
+                <p>{t('mocksRoute.contextual.header.description')}</p>
                 <div className="workspace-explorer__role-strip" aria-label="Mock notes role">
-                  <span className="workspace-chip">Management</span>
-                  <span className="workspace-chip workspace-chip--secondary">Guardrails</span>
+                  <span className="workspace-chip">{t('roles.management')}</span>
+                  <span className="workspace-chip workspace-chip--secondary">{t('mocksRoute.contextual.header.guardrailsChip')}</span>
                 </div>
               </div>
             </header>
 
-            <DetailViewerSection title="Evaluation guardrails" description="Only enabled rules are evaluated. Priority wins first, then matcher specificity, then a stable created-at tie-breaker." className="mocks-summary-card mocks-summary-card--guardrails">
+            <DetailViewerSection title={t('mocksRoute.contextual.guardrails.title')} description={t('mocksRoute.contextual.guardrails.description')} className="mocks-summary-card mocks-summary-card--guardrails">
               <KeyValueMetaList
                 items={[
-                  { label: 'Method summary', value: currentPresentation.methodSummary },
-                  { label: 'Path summary', value: currentPresentation.pathSummary },
-                  { label: 'Response summary', value: currentPresentation.responseSummary },
+                  { label: t('mocksRoute.contextual.guardrails.labels.methodSummary'), value: currentPresentation.methodSummary },
+                  { label: t('mocksRoute.contextual.guardrails.labels.pathSummary'), value: currentPresentation.pathSummary },
+                  { label: t('mocksRoute.contextual.guardrails.labels.responseSummary'), value: currentPresentation.responseSummary },
                 ]}
               />
             </DetailViewerSection>
 
-            <DetailViewerSection title="Deferred capabilities" description="Script-assisted matcher/response authoring, scenario state, diff, and deeper runtime traces remain later-slice work." className="mocks-summary-card mocks-summary-card--deferred" tone="muted">
+            <DetailViewerSection title={t('mocksRoute.contextual.deferred.title')} description={t('mocksRoute.contextual.deferred.description')} className="mocks-summary-card mocks-summary-card--deferred" tone="muted">
               <KeyValueMetaList
                 items={[
-                  { label: 'Persistence', value: 'Persisted JSON resource lane' },
-                  { label: 'Runtime evaluation', value: 'Enabled for MVP static matching and response only' },
-                  { label: 'Capture diagnostics', value: 'Outcome and matched rule summary only' },
+                  { label: t('mocksRoute.contextual.deferred.labels.persistence'), value: t('mocksRoute.contextual.deferred.values.persistence') },
+                  { label: t('mocksRoute.contextual.deferred.labels.runtimeEvaluation'), value: t('mocksRoute.contextual.deferred.values.runtimeEvaluation') },
+                  { label: t('mocksRoute.contextual.deferred.labels.captureDiagnostics'), value: t('mocksRoute.contextual.deferred.values.captureDiagnostics') },
                 ]}
               />
             </DetailViewerSection>

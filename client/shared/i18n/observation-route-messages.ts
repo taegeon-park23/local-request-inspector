@@ -363,6 +363,305 @@
       stageStatusSkipped: 'Skipped',
     },
   },
+  mocksRoute: {
+    filters: {
+      searchLabel: 'Search rules',
+      stateFilterLabel: 'Rule state filter',
+      listAriaLabel: 'Mock rules list',
+      stateOptions: {
+        all: 'All rules',
+        enabled: 'Enabled',
+        disabled: 'Disabled',
+      },
+    },
+    sidebar: {
+      eyebrow: 'Rule management',
+      title: 'Mock rules',
+      description: 'Persisted authored rules live here. Captures still owns runtime mock outcomes after evaluation.',
+      resourceLaneChip: 'Resource lane',
+      newRule: 'New Rule',
+    },
+    empty: {
+      loadingList: {
+        title: 'Loading persisted rules',
+        description: 'Waiting for the resource lane to return saved mock rules for this workspace.',
+      },
+      degraded: {
+        title: 'Mock rules are degraded',
+        description: 'Persisted rule data could not be refreshed cleanly. {reason}',
+      },
+      noItems: {
+        title: 'No mock rules yet',
+        description: 'Create a rule to persist matcher and static response scaffolding for inbound capture evaluation.',
+      },
+      noFilteredItems: {
+        title: 'No rules match these filters',
+        description: 'Adjust the search text or state filter to bring persisted rules back into view.',
+      },
+      loadingDetail: {
+        title: 'Loading mock rule detail',
+        description: 'The persisted rule list is loading before a detail row can be selected.',
+      },
+      noSelection: {
+        title: 'No mock rule selected',
+        description: 'Choose a persisted rule or start a new rule draft to edit matcher and static response fields.',
+      },
+      loadingPersistedDetail: {
+        title: 'Loading persisted rule detail',
+        description: 'Fetching the selected rule from the resource lane before editable details are shown.',
+      },
+      detailDegraded: {
+        title: 'Mock rule detail is degraded',
+        description: 'The selected rule could not be loaded cleanly. {reason}',
+      },
+    },
+    detail: {
+      header: {
+        draftEyebrow: 'New rule draft',
+        persistedEyebrow: 'Persisted rule detail',
+        createTitle: 'Create mock rule',
+        editTitle: 'Edit mock rule',
+        authoredRuleChip: 'Authored rule',
+      },
+      boundary: {
+        title: 'Persistence boundary',
+        description: 'Create and Save update authored rule definitions only. Runtime mock outcomes remain in Captures.',
+        actions: {
+          createRule: 'Create rule',
+          saveRule: 'Save rule',
+          disableRule: 'Disable rule',
+          enableRule: 'Enable rule',
+          exportingRule: 'Exporting rule',
+          exportRule: 'Export rule',
+          cancelDraft: 'Cancel draft',
+          deleteRule: 'Delete rule',
+        },
+        fallbackReadiness: 'Quick enable or disable updates persisted rule state only. Other field edits still require Create or Save.',
+        mutationFailedTitle: 'Rule mutation failed',
+      },
+      summaryCards: {
+        rule: {
+          title: 'Rule summary',
+          description: 'Enabled or Disabled here describes authored rule state, not runtime mock outcome.',
+          labels: {
+            name: 'Rule name',
+            state: 'Rule state',
+            priority: 'Priority',
+            source: 'Source',
+          },
+        },
+        evaluation: {
+          title: 'Evaluation summary',
+          description: 'Enabled rules are evaluated by priority, matcher specificity, and a stable tie-breaker.',
+          labels: {
+            matcherSummary: 'Matcher summary',
+            responseSummary: 'Response summary',
+            delayHint: 'Delay hint',
+          },
+        },
+      },
+      tabs: {
+        ariaLabel: 'Mock rule detail tabs',
+        overview: 'Overview',
+        matchers: 'Matchers',
+        response: 'Response',
+        diagnostics: 'Diagnostics',
+      },
+      overview: {
+        title: 'Overview',
+        description: 'This editor stays inside the T013 MVP matcher and static response surface.',
+        labels: {
+          ruleName: 'Rule name',
+          ruleEnabled: 'Rule enabled',
+          priority: 'Priority',
+          rulePriority: 'Rule priority',
+          methodMatch: 'Method match',
+          httpMethod: 'HTTP method',
+          pathMatch: 'Path match',
+          pathValue: 'Path value',
+        },
+        placeholders: {
+          pathValue: '/webhooks/stripe',
+        },
+        methodModeOptions: {
+          any: 'Any method',
+          exact: 'Exact method',
+        },
+        pathModeOptions: {
+          exact: 'Exact path',
+          prefix: 'Path prefix',
+        },
+      },
+      matchers: {
+        labels: {
+          operator: 'Operator',
+          value: 'Value',
+          remove: 'Remove',
+        },
+        operatorOptions: {
+          exists: 'Exists',
+          equals: 'Exact match',
+          contains: 'Contains',
+        },
+        query: {
+          title: 'Query matchers',
+          description: 'Use lightweight exists, exact, and contains operators only.',
+          addLabel: 'Add query matcher',
+          labels: {
+            key: 'Query matcher key',
+          },
+          emptyTitle: 'No query matchers',
+          emptyDescription: 'Add lightweight exists, exact, or contains rows only. Script-assisted matching remains deferred.',
+        },
+        header: {
+          title: 'Header matchers',
+          description: 'Header matching remains bounded to exists, exact, and contains operators.',
+          addLabel: 'Add header matcher',
+          labels: {
+            key: 'Header matcher key',
+          },
+          emptyTitle: 'No header matchers',
+          emptyDescription: 'Add lightweight exists, exact, or contains rows only. Script-assisted matching remains deferred.',
+        },
+        body: {
+          title: 'Body matcher',
+          description: 'Regex, JSONPath, and script matchers remain deferred.',
+          labels: {
+            mode: 'Body matcher',
+            value: 'Body match value',
+          },
+          modeOptions: {
+            none: 'No body matcher',
+            exact: 'Exact body text',
+            contains: 'Contains text',
+          },
+        },
+      },
+      response: {
+        responseCard: {
+          title: 'Static response',
+          description: 'Static status, headers, body, and fixed delay form the bounded MVP response surface.',
+          labels: {
+            status: 'Response status',
+            fixedDelay: 'Fixed delay (ms)',
+            fixedDelayAria: 'Fixed delay',
+            body: 'Response body',
+          },
+        },
+        headersCard: {
+          title: 'Response headers',
+          description: 'Static response headers stay bounded and predictable in this MVP surface.',
+          addLabel: 'Add response header',
+          emptyTitle: 'No static response headers',
+          emptyDescription: 'Add static response headers only when the mock response needs them.',
+          labels: {
+            name: 'Response header name',
+            value: 'Response header value',
+            remove: 'Remove',
+          },
+        },
+      },
+      diagnostics: {
+        title: 'Diagnostics and deferred work',
+        description: 'Rules are evaluated by enabled state, explicit priority, matcher specificity, and a stable tie-breaker.',
+        labels: {
+          deferredNote: 'Deferred note',
+          source: 'Source',
+          currentState: 'Current state',
+        },
+        values: {
+          deferredNote: 'Script-assisted matcher/response and advanced scenario state remain deferred.',
+        },
+        runtimeOutcomes: {
+          title: 'Runtime outcomes stay in Captures',
+          description: 'This route persists authored rule definitions only. Captures shows Mocked, Bypassed, No rule matched, and Blocked outcomes after evaluation.',
+        },
+      },
+    },
+    contextual: {
+      empty: {
+        title: 'Management notes placeholder',
+        description: 'Persisted rule diagnostics, authored rule reminders, and evaluation guardrails appear after a rule is selected or a new draft is opened.',
+      },
+      header: {
+        eyebrow: 'Contextual panel',
+        title: 'Management notes',
+        description: 'Authored mock rules stay separate from runtime capture outcomes. This panel stays focused on rule constraints and evaluation order.',
+        guardrailsChip: 'Guardrails',
+      },
+      guardrails: {
+        title: 'Evaluation guardrails',
+        description: 'Only enabled rules are evaluated. Priority wins first, then matcher specificity, then a stable created-at tie-breaker.',
+        labels: {
+          methodSummary: 'Method summary',
+          pathSummary: 'Path summary',
+          responseSummary: 'Response summary',
+        },
+      },
+      deferred: {
+        title: 'Deferred capabilities',
+        description: 'Script-assisted matcher/response authoring, scenario state, diff, and deeper runtime traces remain later-slice work.',
+        labels: {
+          persistence: 'Persistence',
+          runtimeEvaluation: 'Runtime evaluation',
+          captureDiagnostics: 'Capture diagnostics',
+        },
+        values: {
+          persistence: 'Persisted JSON resource lane',
+          runtimeEvaluation: 'Enabled for MVP static matching and response only',
+          captureDiagnostics: 'Outcome and matched rule summary only',
+        },
+      },
+    },
+    helpers: {
+      matcherRowExists: '{key} exists',
+      matcherRowContains: '{key} contains {value}',
+      matcherRowEquals: '{key} equals {value}',
+      responseHeadersNone: 'No static response headers',
+      responseHeadersCount: '{count} static response headers',
+      methodAny: 'Method: any',
+      methodExact: 'Method exact: {method}',
+      pathPrefix: 'Path prefix: {path}',
+      pathExact: 'Path exact: {path}',
+      noQueryMatcher: 'No query matcher',
+      noHeaderMatcher: 'No header matcher',
+      noBodyMatcher: 'No body matcher',
+      bodyContains: 'Body contains: {value}',
+      bodyExact: 'Body exact: {value}',
+      fixedDelayValue: 'Fixed delay: {delayMs} ms',
+      fixedDelayNone: 'No fixed delay',
+      responseSummary: 'Static {statusCode} response.',
+      responseSummaryWithDelay: 'Static {statusCode} response with {delayMs} ms fixed delay.',
+      saveDisabled: {
+        saving: 'Persisting the current rule changes.',
+        nameRequired: 'Rule name is required before saving.',
+        pathRequired: 'Path value is required before saving.',
+        bodyRequired: 'Body matcher value is required when a body matcher is enabled.',
+        statusCodeRange: 'Response status code must stay between 100 and 599.',
+        fixedDelayRange: 'Fixed delay must stay between 0 and 2000 ms.',
+      },
+      quickToggleDisabled: {
+        createFirst: 'Create the rule first before using the quick enable or disable action.',
+        updating: 'Updating persisted rule state.',
+      },
+      deleteDisabled: {
+        discardDraft: 'Discard the draft instead of deleting it. Only persisted rules can be deleted.',
+        deleting: 'Deleting the persisted rule.',
+      },
+      sourceLabels: {
+        unsaved: 'Unsaved workspace rule',
+        persisted: 'Persisted workspace rule',
+      },
+      exportSuccess: 'Exported {name} from the authored resource lane. Runtime mock outcomes remain excluded.',
+      exportFailure: 'Mock rule export failed before a bundle could be downloaded.',
+      degradedReasonFallback: 'Persisted mock rules could not be loaded cleanly.',
+      openRuleAction: 'Open mock rule {name}',
+      priorityChip: 'Priority {priority}',
+      untitledRule: 'Untitled Mock Rule',
+      missingPath: '(missing path)',
+      missingText: '(missing text)',
+    },
+  },
 } as const;
 
 type ObservationCatalogShape<T> = {
@@ -732,6 +1031,305 @@ export const observationRouteMessagesKo: ObservationCatalogShape<typeof observat
       responsePreviewPolicyNone: '이 실행에는 응답 미리보기가 저장되지 않았습니다.',
       responsePreviewPolicyBounded: '저장된 응답 미리보기는 더 깊은 진단 전에 제한되고 redacted된 상태를 유지합니다.',
       stageStatusSkipped: '건너뜀',
+    },
+  },
+  mocksRoute: {
+    filters: {
+      searchLabel: '규칙 검색',
+      stateFilterLabel: '규칙 상태 필터',
+      listAriaLabel: '모크 규칙 목록',
+      stateOptions: {
+        all: '모든 규칙',
+        enabled: 'Enabled',
+        disabled: 'Disabled',
+      },
+    },
+    sidebar: {
+      eyebrow: '규칙 관리',
+      title: '모크 규칙',
+      description: '저장된 authored rule은 이곳에서 관리합니다. 평가 이후의 런타임 mock outcome은 계속 Captures가 담당합니다.',
+      resourceLaneChip: '리소스 레인',
+      newRule: '새 규칙',
+    },
+    empty: {
+      loadingList: {
+        title: '저장된 규칙을 불러오는 중',
+        description: '이 workspace의 저장된 mock rule을 resource lane에서 돌려주길 기다리고 있습니다.',
+      },
+      degraded: {
+        title: '모크 규칙 상태가 저하되었습니다',
+        description: '저장된 규칙 데이터를 정상적으로 새로고치지 못했습니다. {reason}',
+      },
+      noItems: {
+        title: '모크 규칙이 아직 없습니다',
+        description: '인바운드 캡처 평가를 위한 matcher와 정적 응답 골격을 저장하려면 규칙을 새로 만드세요.',
+      },
+      noFilteredItems: {
+        title: '필터와 일치하는 규칙이 없습니다',
+        description: '검색어 또는 상태 필터를 조정해 저장된 규칙을 다시 표시하세요.',
+      },
+      loadingDetail: {
+        title: '모크 규칙 상세를 불러오는 중',
+        description: '상세 행을 선택하기 전에 저장된 규칙 목록을 불러오고 있습니다.',
+      },
+      noSelection: {
+        title: '선택된 모크 규칙이 없습니다',
+        description: '저장된 규칙을 선택하거나 새 draft를 시작해 matcher와 정적 응답 필드를 편집하세요.',
+      },
+      loadingPersistedDetail: {
+        title: '저장된 규칙 상세를 불러오는 중',
+        description: '편집 가능한 상세를 보여주기 전에 선택한 규칙을 resource lane에서 가져오고 있습니다.',
+      },
+      detailDegraded: {
+        title: '모크 규칙 상세 상태가 저하되었습니다',
+        description: '선택한 규칙을 정상적으로 불러오지 못했습니다. {reason}',
+      },
+    },
+    detail: {
+      header: {
+        draftEyebrow: '새 규칙 draft',
+        persistedEyebrow: '저장된 규칙 상세',
+        createTitle: '모크 규칙 만들기',
+        editTitle: '모크 규칙 편집',
+        authoredRuleChip: '작성된 규칙',
+      },
+      boundary: {
+        title: '영속화 경계',
+        description: 'Create와 Save는 authored rule 정의만 갱신합니다. 런타임 mock outcome은 계속 Captures에 남습니다.',
+        actions: {
+          createRule: '규칙 만들기',
+          saveRule: '규칙 저장',
+          disableRule: '규칙 비활성화',
+          enableRule: '규칙 활성화',
+          exportingRule: '규칙 내보내는 중',
+          exportRule: '규칙 내보내기',
+          cancelDraft: 'draft 취소',
+          deleteRule: '규칙 삭제',
+        },
+        fallbackReadiness: '빠른 활성화/비활성화는 저장된 규칙 상태만 갱신합니다. 다른 필드 편집은 여전히 Create 또는 Save가 필요합니다.',
+        mutationFailedTitle: '규칙 변경에 실패했습니다',
+      },
+      summaryCards: {
+        rule: {
+          title: '규칙 요약',
+          description: '여기의 Enabled/Disabled는 authored rule 상태를 뜻하며 런타임 mock outcome이 아닙니다.',
+          labels: {
+            name: '규칙 이름',
+            state: '규칙 상태',
+            priority: '우선순위',
+            source: '출처',
+          },
+        },
+        evaluation: {
+          title: '평가 요약',
+          description: '활성 규칙은 우선순위, matcher specificity, 안정적인 tie-breaker 순으로 평가됩니다.',
+          labels: {
+            matcherSummary: 'Matcher 요약',
+            responseSummary: '응답 요약',
+            delayHint: '지연 힌트',
+          },
+        },
+      },
+      tabs: {
+        ariaLabel: '모크 규칙 상세 탭',
+        overview: '개요',
+        matchers: '매처',
+        response: '응답',
+        diagnostics: '진단',
+      },
+      overview: {
+        title: '개요',
+        description: '이 편집기는 T013 MVP matcher와 정적 응답 surface 안에 머뭅니다.',
+        labels: {
+          ruleName: '규칙 이름',
+          ruleEnabled: '규칙 활성화',
+          priority: '우선순위',
+          rulePriority: '규칙 우선순위',
+          methodMatch: '메서드 매칭',
+          httpMethod: 'HTTP 메서드',
+          pathMatch: '경로 매칭',
+          pathValue: '경로 값',
+        },
+        placeholders: {
+          pathValue: '/webhooks/stripe',
+        },
+        methodModeOptions: {
+          any: '모든 메서드',
+          exact: '정확한 메서드',
+        },
+        pathModeOptions: {
+          exact: '정확한 경로',
+          prefix: '경로 접두사',
+        },
+      },
+      matchers: {
+        labels: {
+          operator: '연산자',
+          value: '값',
+          remove: '삭제',
+        },
+        operatorOptions: {
+          exists: '존재',
+          equals: '정확히 일치',
+          contains: '포함',
+        },
+        query: {
+          title: '쿼리 매처',
+          description: '가벼운 exists, exact, contains 연산자만 사용합니다.',
+          addLabel: '쿼리 매처 추가',
+          labels: {
+            key: '쿼리 매처 키',
+          },
+          emptyTitle: '쿼리 매처가 없습니다',
+          emptyDescription: '가벼운 exists, exact, contains 행만 추가할 수 있습니다. 스크립트 기반 매칭은 아직 유예되어 있습니다.',
+        },
+        header: {
+          title: '헤더 매처',
+          description: '헤더 매칭은 exists, exact, contains 연산자로만 제한됩니다.',
+          addLabel: '헤더 매처 추가',
+          labels: {
+            key: '헤더 매처 키',
+          },
+          emptyTitle: '헤더 매처가 없습니다',
+          emptyDescription: '가벼운 exists, exact, contains 행만 추가할 수 있습니다. 스크립트 기반 매칭은 아직 유예되어 있습니다.',
+        },
+        body: {
+          title: '본문 매처',
+          description: 'Regex, JSONPath, 스크립트 매처는 아직 유예되어 있습니다.',
+          labels: {
+            mode: '본문 매처',
+            value: '본문 매치 값',
+          },
+          modeOptions: {
+            none: '본문 매처 없음',
+            exact: '정확한 본문 텍스트',
+            contains: '텍스트 포함',
+          },
+        },
+      },
+      response: {
+        responseCard: {
+          title: '정적 응답',
+          description: '정적 상태, 헤더, 본문, 고정 지연이 이 bounded MVP 응답 surface를 구성합니다.',
+          labels: {
+            status: '응답 상태',
+            fixedDelay: '고정 지연 (ms)',
+            fixedDelayAria: '고정 지연',
+            body: '응답 본문',
+          },
+        },
+        headersCard: {
+          title: '응답 헤더',
+          description: '이 MVP surface에서는 정적 응답 헤더를 제한되고 예측 가능한 형태로 유지합니다.',
+          addLabel: '응답 헤더 추가',
+          emptyTitle: '정적 응답 헤더가 없습니다',
+          emptyDescription: '모크 응답에 정말 필요할 때만 정적 응답 헤더를 추가하세요.',
+          labels: {
+            name: '응답 헤더 이름',
+            value: '응답 헤더 값',
+            remove: '삭제',
+          },
+        },
+      },
+      diagnostics: {
+        title: '진단 및 유예된 작업',
+        description: '규칙은 enabled state, 명시적 우선순위, matcher specificity, 안정적인 tie-breaker 순으로 평가됩니다.',
+        labels: {
+          deferredNote: '유예 메모',
+          source: '출처',
+          currentState: '현재 상태',
+        },
+        values: {
+          deferredNote: '스크립트 기반 matcher/response와 고급 scenario state는 아직 유예되어 있습니다.',
+        },
+        runtimeOutcomes: {
+          title: '런타임 outcome은 Captures에 남습니다',
+          description: '이 route는 authored rule 정의만 저장합니다. 평가 이후의 Mocked, Bypassed, No rule matched, Blocked outcome은 Captures에서 확인합니다.',
+        },
+      },
+    },
+    contextual: {
+      empty: {
+        title: '관리 메모 placeholder',
+        description: '저장된 규칙 진단, authored rule 메모, 평가 guardrail은 규칙을 선택하거나 새 draft를 열면 표시됩니다.',
+      },
+      header: {
+        eyebrow: '컨텍스트 패널',
+        title: '관리 메모',
+        description: '작성된 mock rule은 런타임 캡처 outcome과 분리된 상태를 유지합니다. 이 패널은 규칙 제약과 평가 순서에 집중합니다.',
+        guardrailsChip: '가드레일',
+      },
+      guardrails: {
+        title: '평가 가드레일',
+        description: '활성 규칙만 평가됩니다. 우선순위가 먼저 적용되고, 그 다음 matcher specificity, 마지막으로 안정적인 created-at tie-breaker가 적용됩니다.',
+        labels: {
+          methodSummary: '메서드 요약',
+          pathSummary: '경로 요약',
+          responseSummary: '응답 요약',
+        },
+      },
+      deferred: {
+        title: '유예된 기능',
+        description: '스크립트 기반 matcher/response 작성, scenario state, diff, 더 깊은 런타임 trace는 이후 slice 작업으로 남아 있습니다.',
+        labels: {
+          persistence: '영속화',
+          runtimeEvaluation: '런타임 평가',
+          captureDiagnostics: '캡처 진단',
+        },
+        values: {
+          persistence: '저장된 JSON 리소스 레인',
+          runtimeEvaluation: 'MVP 정적 매칭 및 응답에만 활성화',
+          captureDiagnostics: 'outcome 및 매칭된 규칙 요약만 제공',
+        },
+      },
+    },
+    helpers: {
+      matcherRowExists: '{key} 존재',
+      matcherRowContains: '{key}에 {value} 포함',
+      matcherRowEquals: '{key}가 {value}와 정확히 일치',
+      responseHeadersNone: '정적 응답 헤더 없음',
+      responseHeadersCount: '정적 응답 헤더 {count}개',
+      methodAny: '메서드: 전체 허용',
+      methodExact: '정확한 메서드: {method}',
+      pathPrefix: '경로 접두사: {path}',
+      pathExact: '정확한 경로: {path}',
+      noQueryMatcher: '쿼리 매처 없음',
+      noHeaderMatcher: '헤더 매처 없음',
+      noBodyMatcher: '본문 매처 없음',
+      bodyContains: '본문 포함: {value}',
+      bodyExact: '본문 정확히 일치: {value}',
+      fixedDelayValue: '고정 지연: {delayMs} ms',
+      fixedDelayNone: '고정 지연 없음',
+      responseSummary: '정적 {statusCode} 응답.',
+      responseSummaryWithDelay: '고정 지연 {delayMs} ms가 포함된 정적 {statusCode} 응답.',
+      saveDisabled: {
+        saving: '현재 규칙 변경 내용을 저장하는 중입니다.',
+        nameRequired: '저장하려면 규칙 이름이 필요합니다.',
+        pathRequired: '저장하려면 경로 값이 필요합니다.',
+        bodyRequired: '본문 매처를 켠 경우 본문 매치 값이 필요합니다.',
+        statusCodeRange: '응답 상태 코드는 100에서 599 사이여야 합니다.',
+        fixedDelayRange: '고정 지연은 0에서 2000 ms 사이여야 합니다.',
+      },
+      quickToggleDisabled: {
+        createFirst: '빠른 활성화/비활성화 작업을 쓰기 전에 먼저 규칙을 만들어야 합니다.',
+        updating: '저장된 규칙 상태를 갱신하는 중입니다.',
+      },
+      deleteDisabled: {
+        discardDraft: 'draft는 삭제 대신 취소하세요. 저장된 규칙만 삭제할 수 있습니다.',
+        deleting: '저장된 규칙을 삭제하는 중입니다.',
+      },
+      sourceLabels: {
+        unsaved: '저장되지 않은 workspace 규칙',
+        persisted: '저장된 workspace 규칙',
+      },
+      exportSuccess: '{name} 규칙을 authored resource lane에서 내보냈습니다. 런타임 mock outcome은 포함되지 않습니다.',
+      exportFailure: '번들을 다운로드하기 전에 모크 규칙 내보내기에 실패했습니다.',
+      degradedReasonFallback: '저장된 모크 규칙을 정상적으로 불러오지 못했습니다.',
+      openRuleAction: '모크 규칙 열기 {name}',
+      priorityChip: '우선순위 {priority}',
+      untitledRule: '이름 없는 모크 규칙',
+      missingPath: '(경로 누락)',
+      missingText: '(텍스트 누락)',
     },
   },
 } as const;

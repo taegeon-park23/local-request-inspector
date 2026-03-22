@@ -266,6 +266,17 @@ describe('Mocks S16 persisted CRUD surface', () => {
     expect(screen.queryByText('Mocked', { selector: '[data-kind="mockOutcome"]' })).not.toBeInTheDocument();
   });
 
+  it('renders localized mock-management copy when the initial locale is Korean', async () => {
+    vi.stubGlobal('fetch', createMockRulesFetch());
+    renderApp(<AppRouter />, { initialEntries: ['/mocks'], initialLocale: 'ko' });
+
+    expect(screen.getByRole('heading', { name: '모크' })).toBeInTheDocument();
+    expect(screen.getByText('규칙 관리')).toBeInTheDocument();
+    expect(screen.getByText('모크 규칙')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '새 규칙' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: '모크 규칙 열기 Stripe webhook accepted' })).toBeInTheDocument();
+  });
+
   it('creates and updates a persisted mock rule from the New Rule entrypoint', async () => {
     const user = userEvent.setup();
     const fetchMock = createMockRulesFetch();

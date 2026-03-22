@@ -377,7 +377,7 @@ const koCatalog: CatalogShape<typeof enCatalog> = {
       title: '모크',
       contextChip: '작성된 규칙',
       summary:
-        '목은 작성된 rule 관리 route입니다. matcher와 response 정의를 저장하고, 캡처는 평가 이후의 runtime outcome을 표시합니다.',
+        '모크는 작성된 rule 관리 route입니다. matcher와 response 정의를 저장하고, 캡처는 평가 이후의 runtime outcome을 표시합니다.',
     },
     environments: {
       title: '환경',
