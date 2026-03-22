@@ -14,7 +14,9 @@ import { DetailViewerSection } from '@client/shared/ui/DetailViewerSection';
 import { EmptyStateCallout } from '@client/shared/ui/EmptyStateCallout';
 import { KeyValueMetaList } from '@client/shared/ui/KeyValueMetaList';
 import { PanelTabs } from '@client/shared/ui/PanelTabs';
+import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
+import { IconLabel } from '@client/shared/ui/IconLabel';
 
 const outcomeFilterOptions: Array<{ value: CaptureOutcomeFilter; label: string }> = [
   { value: 'all', label: 'All outcomes' },
@@ -25,8 +27,8 @@ const outcomeFilterOptions: Array<{ value: CaptureOutcomeFilter; label: string }
 ];
 
 const captureDetailTabs = [
-  { id: 'timeline', label: 'Timeline' },
-  { id: 'deferred-detail', label: 'Deferred detail' },
+  { id: 'timeline', label: 'Timeline', icon: 'timeline' },
+  { id: 'deferred-detail', label: 'Deferred detail', icon: 'pending' },
 ] as const;
 
 type CaptureDetailTabId = (typeof captureDetailTabs)[number]['id'];
@@ -252,17 +254,16 @@ export function CapturesPlaceholder() {
       </section>
 
       <section className="shell-panel shell-panel--main" aria-label="Main work surface">
-        <header className="section-placeholder__header">
-          <p className="section-placeholder__eyebrow">Top-level section</p>
-          <h1>Captures</h1>
-          <p>
-            Captures is an observation route for inbound traffic. It reads persisted capture summaries from the runtime lane and keeps replay as an explicit edit-first bridge into Workspace.
-          </p>
+        <SectionHeading
+          icon="captures"
+          title="Captures"
+          summary="Captures is an observation route for inbound traffic. It reads persisted capture summaries from the runtime lane and keeps replay as an explicit edit-first bridge into Workspace."
+        >
           <div className="workspace-explorer__role-strip" aria-label="Captures route role">
             <span className="workspace-chip">Observation</span>
             <span className="workspace-chip workspace-chip--secondary">Replay bridge</span>
           </div>
-        </header>
+        </SectionHeading>
 
         {isLoading ? (
           <div className="request-work-surface request-work-surface--empty">
@@ -318,10 +319,10 @@ export function CapturesPlaceholder() {
               actions={(
                 <div className="request-work-surface__future-actions">
                   <button type="button" className="workspace-button workspace-button--secondary" onClick={handleOpenReplayDraft}>
-                    Open Replay Draft
+                    <IconLabel icon="replay">Open Replay Draft</IconLabel>
                   </button>
                   <button type="button" className="workspace-button workspace-button--secondary" disabled>
-                    Run Replay Now
+                    <IconLabel icon="run">Run Replay Now</IconLabel>
                   </button>
                 </div>
               )}

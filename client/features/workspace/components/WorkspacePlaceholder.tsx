@@ -17,6 +17,7 @@ import type { RequestDraftSeed } from '@client/features/request-builder/request-
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
 import { workspaceMockRulesQueryKey } from '@client/features/mocks/mock-rules.api';
 import { WorkspaceExplorer } from '@client/features/workspace/components/WorkspaceExplorer';
+import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { buildWorkspaceExplorerTree } from '@client/features/workspace/data/workspace-explorer-data';
 import {
   downloadAuthoredResourceBundle,
@@ -420,17 +421,16 @@ export function WorkspacePlaceholder() {
       </section>
 
       <section className="shell-panel shell-panel--main" aria-label="Main work surface">
-        <header className="section-placeholder__header">
-          <p className="section-placeholder__eyebrow">Top-level section</p>
-          <h1>Workspace</h1>
-          <p>
-            Workspace remains the authoring surface for saved requests, starter request drafts, replay drafts, and the lazy-loaded Scripts path. Save updates request definitions, while Run writes observation only into the right-hand result surface.
-          </p>
+        <SectionHeading
+          icon="workspace"
+          title="Workspace"
+          summary="Workspace remains the authoring surface for saved requests, starter request drafts, replay drafts, and the lazy-loaded Scripts path. Save updates request definitions, while Run writes observation only into the right-hand result surface."
+        >
           <div className="workspace-explorer__role-strip" aria-label="Workspace surface role">
             <span className="workspace-chip">Authoring</span>
             <span className="workspace-chip workspace-chip--secondary">Resource lane</span>
           </div>
-        </header>
+        </SectionHeading>
 
         <RequestTabShell
           tabs={resolvedTabs}

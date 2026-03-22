@@ -1,9 +1,9 @@
-# Progress Status
+﻿# Progress Status
 
 - **Purpose:** Provide a concise snapshot of what is done, what is next, and what is blocked.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `post-m3-reactivation-guide.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `environment-follow-up-lane-comparison.md`, `resolved-preview-sub-lane-comparison.md`, `../architecture/request-environment-resolution-summary-contract.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md`, `../tasks/task-032-post-t030-environment-follow-up-lane-comparison.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../tasks/task-034-post-t033-resolution-summary-contract.md`, `../tasks/task-001-foundation-architecture.md`
+- **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `post-m3-reactivation-guide.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `environment-follow-up-lane-comparison.md`, `resolved-preview-sub-lane-comparison.md`, `../architecture/request-environment-resolution-summary-contract.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md`, `../tasks/task-032-post-t030-environment-follow-up-lane-comparison.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../tasks/task-034-post-t033-resolution-summary-contract.md`, `../tasks/task-035-compact-shell-header-and-material-icon-usability-refresh.md`, `../tasks/task-001-foundation-architecture.md`
 - **Update Rule:** Update at the end of each meaningful planning or implementation step.
 
 ## Current State
@@ -62,10 +62,11 @@
 - T032 post-T030 environment follow-up lane comparison: **done**
 - T033 post-T032 resolved-preview sub-lane comparison: **done**
 - T034 post-T033 resolution summary contract: **done**
+- T035 compact shell header and Material icon usability refresh: **done**
 - Material 3 adoption plan plus initial token/theme, shell chrome, top-bar role legend, route-role cues, first-pass shared-surface materialization, role-specific panel accents, role-specific tab/header treatments, feature-level list/detail/contextual role strips, and `M3-F2` accessibility/contrast/focus/density polish: **done**
 
 ## Current Next Action
-No active `M3-F3`, placeholder-route, or request-level environment-resolution blocker remains in tracking. `T030` is the latest landed implementation task, `T031` remains the latest no-promotion review, `T032` remains the top-level environment lane comparison, `T033` fixed the stronger sub-lane inside resolved-preview UX, and `T034` now fixes the actual future contract: if a future environment follow-up is needed, start from the shared post-run `EnvironmentResolutionSummary` contract in request-result/history `Execution Info`. Pre-run unresolved-feedback tiering, top-bar global selector work, environment transfer, and explorer/readability copy remain parked. If a future confirmation step is blocked by the sandbox rather than by repo behavior, ask for a local rerun with exact commands and expected results per `AGENTS.md`.
+No new implementation task is currently promoted automatically after T035. The latest landed usability slice compacted the shell header to a route-only breadcrumb bar, kept runtime connection status visible, replaced navigation monograms with local SVG icons, and added icon-plus-label treatment to shared tabs, route headers, and major actions without changing backend contracts or feature ownership. If a later verification step is blocked by the sandbox rather than by repo behavior, ask for a local rerun with exact commands and expected results per `AGENTS.md`.
 
 ## Open Blockers
 - No active delivery blocker remains inside T010 or `M3-F3`.
@@ -85,7 +86,7 @@ No active `M3-F3`, placeholder-route, or request-level environment-resolution bl
 - `../tasks/task-032-post-t030-environment-follow-up-lane-comparison.md` is landed: richer resolved-preview UX is now the strongest future environment lane, while top-bar selector and environment transfer remain parked.
 - `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md` is landed: inside richer resolved-preview UX, post-run bounded resolution summary is now the strongest future narrow lane, while pre-run unresolved-feedback tiering and explorer/readability copy remain parked.
 - `../tasks/task-034-post-t033-resolution-summary-contract.md` is landed: the future narrow lane is now pinned to one shared execution/history summary object rendered in `Execution Info`, not to a new tab or a full resolved-request inspector.
-- Direct sandbox `npm.cmd run test:ui` reruns are still expected to fail before Vitest transform work with `sandbox_esbuild_transform_blocked` / `spawn EPERM`; the current local verification handoff for the repo state is `npm.cmd run test:ui` with expected result `Test Files  8 passed (8)` and `Tests  49 passed (49)`.
+- Direct sandbox `npm.cmd run test:ui` reruns are still expected to fail before Vitest transform work with `sandbox_esbuild_transform_blocked` / `spawn EPERM`; the current local verification handoff for the repo state is `npm.cmd run test:ui` with expected result that all tests pass, with the current suite inventory at 11 test files and 54 tests.
 - **확실하지 않음:** whether live refresh on those specific TSX surfaces is fully healthy remains unverified, but that uncertainty no longer keeps the completed `M3-F3` slice open in tracking.
 - `../tasks/task-019-server-backed-pre-import-preview.md` is landed as the current bounded Candidate A delivery: the workspace import surface now requests a server-backed no-write preview before confirm, then preserves the existing request/mock bundle import semantics after commit.
 - `../tasks/task-025-post-m3-f3-closure-priority-review.md` now records that closing `M3-F3` does not automatically justify another implementation task. Candidate A remains the strongest parked area, but its remaining `/mocks`-local import lane is still too ambiguous, and Candidate B/C remain parked.
@@ -138,19 +139,4 @@ No active `M3-F3`, placeholder-route, or request-level environment-resolution bl
 27. Open `environment-follow-up-lane-comparison.md` before proposing future environment follow-up so richer resolved-preview UX is evaluated first against the parked top-bar selector and transfer lanes
 28. Open `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md` and `resolved-preview-sub-lane-comparison.md` before proposing resolved-preview work so post-run bounded resolution summary is evaluated before pre-run tiering or explorer-copy polish
 29. Open `../tasks/task-034-post-t033-resolution-summary-contract.md` and `../architecture/request-environment-resolution-summary-contract.md` before proposing resolved-preview implementation so the next slice stays inside one shared execution/history summary contract
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

@@ -3,10 +3,13 @@ import type {
   RequestDraftState,
   RequestScriptStageId,
 } from '@client/features/request-builder/request-draft.types';
+import type { AppIconName } from '@client/shared/ui/AppIcon';
+import { IconLabel } from '@client/shared/ui/IconLabel';
 
 interface ScriptStageDefinition {
   id: RequestScriptStageId;
   label: string;
+  icon: AppIconName;
   eyebrow: string;
   title: string;
   description: string;
@@ -19,6 +22,7 @@ const scriptStageDefinitions: ScriptStageDefinition[] = [
   {
     id: 'pre-request',
     label: 'Pre-request',
+    icon: 'code',
     eyebrow: 'Before transport',
     title: 'Prepare request inputs',
     description: 'Use this stage for request-bound setup such as deriving headers, shaping body text, or preparing ad hoc values before send.',
@@ -33,6 +37,7 @@ const scriptStageDefinitions: ScriptStageDefinition[] = [
   {
     id: 'post-response',
     label: 'Post-response',
+    icon: 'response',
     eyebrow: 'After transport',
     title: 'Summarize response handling intent',
     description: 'Use this stage for lightweight post-response diagnostics. Bounded console summaries and derived execution notes run after transport, while richer diagnostics stay deferred.',
@@ -47,6 +52,7 @@ const scriptStageDefinitions: ScriptStageDefinition[] = [
   {
     id: 'tests',
     label: 'Tests',
+    icon: 'tests',
     eyebrow: 'Assertions later',
     title: 'Plan request-bound assertions',
     description: 'Use this stage for assertion authoring. Bounded pass/fail summaries flow into the result panel and persisted history, while richer diagnostics remain deferred.',
@@ -117,7 +123,7 @@ export default function RequestScriptsEditorSurface({
               className={isActive ? 'workspace-subtab workspace-subtab--active' : 'workspace-subtab'}
               onClick={() => onStageChange(stage.id)}
             >
-              {stage.label}
+              <span className="workspace-subtab__content"><IconLabel icon={stage.icon}>{stage.label}</IconLabel></span>
             </button>
           );
         })}

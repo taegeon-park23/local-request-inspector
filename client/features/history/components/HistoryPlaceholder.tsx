@@ -19,13 +19,15 @@ import { DetailViewerSection } from '@client/shared/ui/DetailViewerSection';
 import { EmptyStateCallout } from '@client/shared/ui/EmptyStateCallout';
 import { KeyValueMetaList } from '@client/shared/ui/KeyValueMetaList';
 import { PanelTabs } from '@client/shared/ui/PanelTabs';
+import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
+import { IconLabel } from '@client/shared/ui/IconLabel';
 
 const historyResultTabs = [
-  { id: 'response', label: 'Response' },
-  { id: 'console', label: 'Console' },
-  { id: 'tests', label: 'Tests' },
-  { id: 'execution-info', label: 'Execution Info' },
+  { id: 'response', label: 'Response', icon: 'response' },
+  { id: 'console', label: 'Console', icon: 'console' },
+  { id: 'tests', label: 'Tests', icon: 'tests' },
+  { id: 'execution-info', label: 'Execution Info', icon: 'info' },
 ] as const;
 
 const observationHealthCopy = {
@@ -272,17 +274,16 @@ export function HistoryPlaceholder() {
       </section>
 
       <section className="shell-panel shell-panel--main" aria-label="Main work surface">
-        <header className="section-placeholder__header">
-          <p className="section-placeholder__eyebrow">Top-level section</p>
-          <h1>History</h1>
-          <p>
-            History is an observation route for persisted outbound executions. It reads redacted runtime summaries from SQLite without reusing active request-tab result state.
-          </p>
+        <SectionHeading
+          icon="history"
+          title="History"
+          summary="History is an observation route for persisted outbound executions. It reads redacted runtime summaries from SQLite without reusing active request-tab result state."
+        >
           <div className="workspace-explorer__role-strip" aria-label="History route role">
             <span className="workspace-chip">Observation</span>
             <span className="workspace-chip workspace-chip--secondary">Persisted execution</span>
           </div>
-        </header>
+        </SectionHeading>
 
         {isListLoading ? (
           <div className="request-work-surface request-work-surface--empty">
@@ -339,10 +340,10 @@ export function HistoryPlaceholder() {
               actions={(
                 <div className="request-work-surface__future-actions">
                   <button type="button" className="workspace-button workspace-button--secondary" onClick={handleOpenReplayDraft}>
-                    Open Replay Draft
+                    <IconLabel icon="replay">Open Replay Draft</IconLabel>
                   </button>
                   <button type="button" className="workspace-button workspace-button--secondary" disabled>
-                    Run Replay Now
+                    <IconLabel icon="run">Run Replay Now</IconLabel>
                   </button>
                 </div>
               )}

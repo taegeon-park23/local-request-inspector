@@ -1,5 +1,6 @@
 import type { WorkspaceSavedRequestSeed, WorkspaceExplorerNode } from '@client/features/workspace/data/workspace-explorer-fixtures';
 import type { AuthoredResourceBundleImportPreviewResult } from '@client/features/workspace/resource-bundle.api';
+import { IconLabel } from '@client/shared/ui/IconLabel';
 
 type ResourceTransferTone = 'success' | 'error' | 'info';
 
@@ -67,7 +68,7 @@ export function WorkspaceExplorer({
         </div>
         <div className="workspace-explorer__header-actions">
           <button type="button" className="workspace-button" onClick={onCreateRequest}>
-            New Request
+            <IconLabel icon="new">New Request</IconLabel>
           </button>
           <button
             type="button"
@@ -75,10 +76,10 @@ export function WorkspaceExplorer({
             onClick={onExportResources}
             disabled={isExporting || isPreviewingImport || isImporting}
           >
-            {isExporting ? 'Exporting resources' : 'Export Resources'}
+            <IconLabel icon="export">{isExporting ? 'Exporting resources' : 'Export Resources'}</IconLabel>
           </button>
           <label className="workspace-button workspace-button--secondary workspace-explorer__import-label">
-            <span>{isPreviewingImport ? 'Previewing import' : isImporting ? 'Importing resources' : 'Import Resources'}</span>
+            <IconLabel icon="import">{isPreviewingImport ? 'Previewing import' : isImporting ? 'Importing resources' : 'Import Resources'}</IconLabel>
             <input
               aria-label="Import authored resources"
               className="workspace-explorer__file-input"
@@ -125,7 +126,7 @@ export function WorkspaceExplorer({
                     onClick={onConfirmImportPreview}
                     disabled={isImporting || importPreview.result.summary.acceptedCount === 0}
                   >
-                    {isImporting ? 'Importing resources' : 'Confirm Import'}
+                    <IconLabel icon="import">{isImporting ? 'Importing resources' : 'Confirm Import'}</IconLabel>
                   </button>
                   <button
                     type="button"
@@ -133,7 +134,7 @@ export function WorkspaceExplorer({
                     onClick={onCancelImportPreview}
                     disabled={isImporting}
                   >
-                    Cancel Preview
+                    <IconLabel icon="delete">Cancel Preview</IconLabel>
                   </button>
                 </div>
               </>
@@ -203,7 +204,7 @@ function WorkspaceExplorerNodeList({
                     aria-label={`Export ${node.request.name}`}
                     onClick={() => onExportRequest(node.request)}
                   >
-                    Export
+                    <IconLabel icon="export">Export</IconLabel>
                   </button>
                 ) : null}
               </div>

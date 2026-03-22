@@ -2,7 +2,7 @@
 
 - **Purpose:** Define the safe, incremental adoption path for Material 3 foundations in the current shell-first React workbench without changing feature semantics or state ownership.
 - **Created:** 2026-03-22
-- **Last Updated:** 2026-03-22
+- **Last Updated:** 2026-03-23
 - **Related Documents:** `overview.md`, `frontend-stack-and-shell.md`, `request-builder-mvp.md`, `script-editor-and-automation-ux.md`, `mock-engine-rules-spec.md`, `history-and-inspector-behavior.md`, `frontend-workspace-shell-implementation-plan.md`, `../tasks/task-010-frontend-workspace-shell-implementation-plan.md`, `../tracking/post-m3-reactivation-guide.md`
 - **Status:** done
 - **Update Rule:** Update when the Material 3 foundation strategy, token model, component mapping, or rollout slices materially change.
@@ -162,6 +162,8 @@ Use a **token-first custom implementation**:
 - **Implementation follow-up (2026-03-22):** the initial rollout now includes a Material 3 token layer, dark-default light-ready theme attributes, shell chrome materialization, a top-bar role legend, route-role cues in the navigation rail, and a first-pass reskin across shared primitives, request-builder controls, and observation/management cards without changing feature semantics.
 - **Implementation follow-up (2026-03-22):** a later visual-only pass extends role cues from shell chrome into feature-level list, detail, and contextual-panel headers for Workspace, Captures, History, and Mocks, reinforcing authoring vs observation vs management boundaries without touching state ownership.
 - **Implementation follow-up (2026-03-22):** `M3-F2` is now landed as a CSS-first accessibility/density polish pass that strengthens focus-visible clarity, interaction-state contrast, supporting-container separation, and dense metadata/readiness/list scanability across shared tabs, action/filter groups, detail/meta primitives, and list-row surfaces without changing behavior or ownership.
+- **Implementation follow-up (2026-03-23):** `T035` is now landed as the current visual plus light-UX continuation slice. It compacts the shell header, moves the shell breadcrumb to a route-only `Workbench / section` model, introduces a local curated SVG icon primitive inspired by Material Symbols Rounded, and limits icon adoption to navigation, top-level section headers, shared tabs, empty/detail callouts, and icon-plus-label primary actions.
+- **Guardrail refresh (2026-03-23):** `T035` remains client-only. It does not change backend APIs, persisted state ownership, request/capture/history/mock semantics, or the server-owned environment-resolution contract.
 
 ## 12. Post-S26 Follow-Up Slices
 ### M3-F1 — Secondary surfaces and remaining shell affordances
@@ -182,6 +184,11 @@ Use a **token-first custom implementation**:
 - Re-check note (2026-03-22): the gated TSX surfaces remain `client/features/request-builder/components/RequestWorkSurfacePlaceholder.tsx` and `client/features/request-builder/components/RequestResultPanelPlaceholder.tsx`.
 - Validation note (2026-03-22): `npm.cmd run typecheck` passes after the wrapper/CSS patch, a user-verified non-sandbox local `npm.cmd run test:ui` passed the then-current full UI suite, and sandbox-only reruns of the gate remain environment-blocked because Vite/esbuild worker startup hits `spawn EPERM` on `/app/bootstrap/main.tsx`, `RequestWorkSurfacePlaceholder.tsx`, and `RequestResultPanelPlaceholder.tsx`.
 - Status: done in tracking on 2026-03-22. `M3-F3` has the intended request-builder/result-panel wrapper cleanup in code, and future sandbox-blocked confirmation should be handled through local command handoff rather than as an active milestone blocker.
+
+### T035 — Compact shell header and icon-supported usability refresh
+- Scope: shell header compaction, route-only breadcrumb, navigation/icon refresh, shared-primitives icon support, and icon-plus-label primary-action polish only.
+- Guardrails: keep the slice visual plus light UX only, keep text labels canonical for accessibility and tests, and do not change backend or state ownership.
+- Status: done on 2026-03-23 as a client-only continuation of the current Material 3 baseline.
 
 ### Explicitly Deferred Beyond This Sequence
 - light theme activation

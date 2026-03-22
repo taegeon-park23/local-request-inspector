@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+﻿import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AppRouter } from '@client/app/router/AppRouter';
 import { renderApp } from '@client/shared/test/render-app';
@@ -8,6 +8,9 @@ describe('AppRouter shell bootstrap', () => {
     renderApp(<AppRouter />);
 
     expect(screen.getByLabelText('Top bar')).toBeInTheDocument();
+    expect(screen.getByLabelText('Current section breadcrumb')).toHaveTextContent('Workbench');
+    expect(screen.getByLabelText('Current section breadcrumb')).toHaveTextContent('Workspace');
+    expect(screen.getByText('Runtime Connection')).toBeInTheDocument();
     const navigationRail = screen.getByLabelText('Navigation rail');
     expect(navigationRail).toBeInTheDocument();
     expect(screen.getByLabelText('Section explorer')).toBeInTheDocument();
@@ -24,15 +27,19 @@ describe('AppRouter shell bootstrap', () => {
     renderApp(<AppRouter />);
 
     expect(screen.getByRole('heading', { name: 'Workspace' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Current section breadcrumb')).toHaveTextContent('Workspace');
 
     await user.click(screen.getByRole('link', { name: /captures/i }));
     expect(screen.getByRole('heading', { name: 'Captures' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Current section breadcrumb')).toHaveTextContent('Captures');
 
     await user.click(screen.getByRole('link', { name: /history/i }));
     expect(screen.getByRole('heading', { name: 'History' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Current section breadcrumb')).toHaveTextContent('History');
 
     await user.click(screen.getByRole('link', { name: /settings/i }));
     expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Current section breadcrumb')).toHaveTextContent('Settings');
   });
 
   it('supports the smoke path across workspace, scripts, history replay, and mocks shell readiness', async () => {

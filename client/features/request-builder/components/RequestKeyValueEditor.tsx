@@ -1,4 +1,5 @@
 ﻿import type { RequestKeyValueRow } from '@client/features/request-builder/request-draft.types';
+import { IconLabel } from '@client/shared/ui/IconLabel';
 
 interface RequestKeyValueEditorProps {
   addButtonLabel: string;
@@ -31,7 +32,7 @@ export function RequestKeyValueEditor({
           <p>{description}</p>
         </div>
         <button type="button" className="workspace-button workspace-button--secondary" onClick={onAddRow}>
-          {addButtonLabel}
+          <IconLabel icon="add">{addButtonLabel}</IconLabel>
         </button>
       </header>
 
@@ -70,7 +71,7 @@ export function RequestKeyValueEditor({
               aria-label={`Remove ${rowLabel.toLowerCase()} row ${index + 1}`}
               onClick={() => onRemoveRow(row.id)}
             >
-              Remove
+              <IconLabel icon="delete">Remove</IconLabel>
             </button>
           </div>
         ))}

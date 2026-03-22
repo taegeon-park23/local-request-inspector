@@ -1,34 +1,38 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { appSections } from '@client/app/router/sections';
 import { useShellStore } from '@client/app/providers/shell-store';
+import { AppIcon } from '@client/shared/ui/AppIcon';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
 
+function resolveCurrentSection(pathname: string) {
+  return appSections.find((section) => pathname === section.path || pathname.startsWith(`${section.path}/`)) ?? appSections[0]!;
+}
+
 export function AppShell() {
+  const location = useLocation();
   const runtimeConnectionHealth = useShellStore((state) => state.runtimeConnectionHealth);
   const brandIconUrl = `${import.meta.env.BASE_URL}favicon.svg`;
+  const currentSection = resolveCurrentSection(location.pathname);
 
   return (
     <div className="shell-layout" data-testid="app-shell">
       <header className="shell-topbar" aria-label="Top bar">
-        <div className="shell-topbar__brand">
-          <div className="shell-topbar__brand-row">
-            <img className="shell-topbar__brand-icon" src={brandIconUrl} alt="" />
-            <div className="shell-topbar__brand-copy">
-              <p className="shell-topbar__eyebrow">Local Request Inspector</p>
-              <h1>Local API Workbench shell</h1>
-              <p className="shell-topbar__supporting">
-                Shell-first authoring and observation surfaces stay split while Material 3 tokens provide a shared visual foundation.
-              </p>
-            </div>
-          </div>
-          <div className="shell-topbar__legend" aria-label="Surface roles">
-            <span className="shell-topbar__legend-chip shell-topbar__legend-chip--authoring">Authoring</span>
-            <span className="shell-topbar__legend-chip shell-topbar__legend-chip--observation">Observation</span>
-            <span className="shell-topbar__legend-chip shell-topbar__legend-chip--management">Management</span>
-          </div>
+        <div className="shell-topbar__brand-mark">
+          <img className="shell-topbar__brand-icon" src={brandIconUrl} alt="" />
+        </div>
+        <div className="shell-topbar__breadcrumb" aria-label="Current section breadcrumb">
+          <span className="shell-topbar__breadcrumb-root">Workbench</span>
+          <span className="shell-topbar__breadcrumb-separator" aria-hidden="true">/</span>
+          <span className="shell-topbar__breadcrumb-current">
+            <AppIcon name={currentSection.icon} size={18} />
+            <span>{currentSection.breadcrumbLabel}</span>
+          </span>
         </div>
         <div className="shell-topbar__status">
-          <span className="shell-topbar__status-label">Runtime connection</span>
+          <div className="shell-topbar__status-copy">
+            <AppIcon name="connection" size={18} />
+            <span className="shell-topbar__status-label">Runtime Connection</span>
+          </div>
           <StatusBadge kind="connection" value={runtimeConnectionHealth} />
         </div>
       </header>
@@ -44,8 +48,8 @@ export function AppShell() {
                     isActive ? 'shell-nav__link shell-nav__link--active' : 'shell-nav__link'
                   }
                 >
-                  <span className="shell-nav__monogram" aria-hidden="true">
-                    {section.label.slice(0, 2).toUpperCase()}
+                  <span className="shell-nav__icon" aria-hidden="true">
+                    <AppIcon name={section.icon} size={18} />
                   </span>
                   <span className="shell-nav__copy">
                     <span className="shell-nav__title-row">
@@ -68,4 +72,3 @@ export function AppShell() {
     </div>
   );
 }
-

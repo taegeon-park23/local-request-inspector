@@ -9,18 +9,20 @@ import type { RequestDraftState } from '@client/features/request-builder/request
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
 import { RequestKeyValueEditor } from '@client/features/request-builder/components/RequestKeyValueEditor';
 import { useRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
+import type { AppIconName } from '@client/shared/ui/AppIcon';
+import { IconLabel } from '@client/shared/ui/IconLabel';
 
 const LazyRequestScriptsEditorSurface = lazy(async () => {
   await new Promise((resolve) => setTimeout(resolve, 10));
   return import('@client/features/request-builder/components/RequestScriptsEditorSurface');
 });
 
-const requestEditorTabs: Array<{ id: RequestDraftState['activeEditorTab']; label: string }> = [
-  { id: 'params', label: 'Params' },
-  { id: 'headers', label: 'Headers' },
-  { id: 'body', label: 'Body' },
-  { id: 'auth', label: 'Auth' },
-  { id: 'scripts', label: 'Scripts' },
+const requestEditorTabs: Array<{ id: RequestDraftState['activeEditorTab']; label: string; icon: AppIconName }> = [
+  { id: 'params', label: 'Params', icon: 'params' },
+  { id: 'headers', label: 'Headers', icon: 'headers' },
+  { id: 'body', label: 'Body', icon: 'body' },
+  { id: 'auth', label: 'Auth', icon: 'auth' },
+  { id: 'scripts', label: 'Scripts', icon: 'scripts' },
 ];
 
 const httpMethodOptions: RequestDraftState['method'][] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
@@ -89,7 +91,7 @@ export function RequestWorkSurfacePlaceholder({
           Open a saved request or create a draft to begin authoring. Response stays in the right-hand observation panel, while history, captures, and mocks remain separate observation or rule-management routes.
         </p>
         <button type="button" className="workspace-button" onClick={onCreateRequest}>
-          Create Draft Request
+          <IconLabel icon="new">Create Draft Request</IconLabel>
         </button>
       </div>
     );
@@ -194,10 +196,10 @@ export function RequestWorkSurfacePlaceholder({
               onClick={handleSave}
               disabled={Boolean(saveDisabledReason)}
             >
-              {saveStatus.status === 'pending' ? 'Saving...' : 'Save'}
+              <IconLabel icon="save">{saveStatus.status === 'pending' ? 'Saving...' : 'Save'}</IconLabel>
             </button>
             <button type="button" className="workspace-button workspace-button--secondary" disabled>
-              Duplicate
+              <IconLabel icon="duplicate">Duplicate</IconLabel>
             </button>
             <button
               type="button"
@@ -205,7 +207,7 @@ export function RequestWorkSurfacePlaceholder({
               onClick={handleRun}
               disabled={Boolean(runDisabledReason)}
             >
-              {runStatus.status === 'pending' ? 'Running...' : 'Run'}
+              <IconLabel icon="run">{runStatus.status === 'pending' ? 'Running...' : 'Run'}</IconLabel>
             </button>
           </div>
           <div className="request-builder-core__command-copy-group">
@@ -265,7 +267,7 @@ export function RequestWorkSurfacePlaceholder({
             aria-pressed={draft.activeEditorTab === tab.id}
             onClick={() => setActiveEditorTab(draft.tabId, tab.id)}
           >
-            {tab.label}
+            <span className="workspace-subtab__content"><IconLabel icon={tab.icon}>{tab.label}</IconLabel></span>
           </button>
         ))}
       </div>

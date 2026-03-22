@@ -33,14 +33,16 @@ import { DetailViewerSection } from '@client/shared/ui/DetailViewerSection';
 import { EmptyStateCallout } from '@client/shared/ui/EmptyStateCallout';
 import { KeyValueMetaList } from '@client/shared/ui/KeyValueMetaList';
 import { PanelTabs } from '@client/shared/ui/PanelTabs';
+import { SectionHeading } from '@client/shared/ui/SectionHeading';
+import { IconLabel } from '@client/shared/ui/IconLabel';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
 import { downloadAuthoredResourceBundle } from '@client/features/workspace/resource-bundle.api';
 
 const mockDetailTabs = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'matchers', label: 'Matchers' },
-  { id: 'response', label: 'Response' },
-  { id: 'diagnostics', label: 'Diagnostics' },
+  { id: 'overview', label: 'Overview', icon: 'overview' },
+  { id: 'matchers', label: 'Matchers', icon: 'matchers' },
+  { id: 'response', label: 'Response', icon: 'response' },
+  { id: 'diagnostics', label: 'Diagnostics', icon: 'diagnostics' },
 ] as const;
 
 const methodModeOptions = [
@@ -511,7 +513,7 @@ export function MocksPlaceholder() {
               </div>
             </div>
             <button type="button" className="workspace-button" onClick={() => startCreatingRule()}>
-              New Rule
+              <IconLabel icon="new">New Rule</IconLabel>
             </button>
           </header>
 
@@ -572,15 +574,16 @@ export function MocksPlaceholder() {
       </section>
 
       <section className="shell-panel shell-panel--main" aria-label="Main work surface">
-        <header className="section-placeholder__header">
-          <p className="section-placeholder__eyebrow">Top-level section</p>
-          <h1>Mocks</h1>
-          <p>Mocks is the authored rule management route. It persists matcher and response definitions while captures shows runtime outcomes after evaluation.</p>
+        <SectionHeading
+          icon="mocks"
+          title="Mocks"
+          summary="Mocks is the authored rule management route. It persists matcher and response definitions while captures shows runtime outcomes after evaluation."
+        >
           <div className="workspace-explorer__role-strip" aria-label="Mocks route role">
             <span className="workspace-chip">Management</span>
             <span className="workspace-chip workspace-chip--secondary">Authored rules</span>
           </div>
-        </header>
+        </SectionHeading>
 
         {isListLoading && !isCreatingRule ? (
           <div className="request-work-surface request-work-surface--empty">
@@ -624,10 +627,10 @@ export function MocksPlaceholder() {
               actions={(
                 <div className="request-work-surface__future-actions">
                   <button type="button" className="workspace-button workspace-button--secondary" onClick={handleSaveRule} disabled={saveDisabledReason !== null}>
-                    {isCreatingRule ? 'Create rule' : 'Save rule'}
+                    <IconLabel icon="save">{isCreatingRule ? 'Create rule' : 'Save rule'}</IconLabel>
                   </button>
                   <button type="button" className="workspace-button workspace-button--secondary" onClick={handleToggleRuleEnabled} disabled={quickToggleDisabledReason !== null}>
-                    {selectedRule?.enabled ? 'Disable rule' : 'Enable rule'}
+                    <IconLabel icon={selectedRule?.enabled ? 'disable' : 'enable'}>{selectedRule?.enabled ? 'Disable rule' : 'Enable rule'}</IconLabel>
                   </button>
                   {!isCreatingRule && selectedRule ? (
                     <button
@@ -636,16 +639,16 @@ export function MocksPlaceholder() {
                       onClick={() => exportRuleMutation.mutate(selectedRule.id)}
                       disabled={exportRuleMutation.isPending}
                     >
-                      {exportRuleMutation.isPending ? 'Exporting rule' : 'Export rule'}
+                      <IconLabel icon="export">{exportRuleMutation.isPending ? 'Exporting rule' : 'Export rule'}</IconLabel>
                     </button>
                   ) : null}
                   {isCreatingRule ? (
                     <button type="button" className="workspace-button workspace-button--ghost" onClick={handleCancelDraft}>
-                      Cancel draft
+                      <IconLabel icon="pending">Cancel draft</IconLabel>
                     </button>
                   ) : (
                     <button type="button" className="workspace-button workspace-button--ghost" onClick={handleDeleteRule} disabled={deleteDisabledReason !== null}>
-                      Delete rule
+                      <IconLabel icon="delete">Delete rule</IconLabel>
                     </button>
                   )}
                 </div>
@@ -798,7 +801,7 @@ export function MocksPlaceholder() {
                   className="mocks-summary-card mocks-summary-card--headers"
                   actions={(
                     <button type="button" className="workspace-button workspace-button--secondary" onClick={() => setDraft((current) => ({ ...current, responseHeaders: [...current.responseHeaders, createResponseHeaderRow()] }))}>
-                      Add response header
+                      <IconLabel icon="add">Add response header</IconLabel>
                     </button>
                   )}
                 >

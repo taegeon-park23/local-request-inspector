@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { AppIcon, type AppIconName } from '@client/shared/ui/AppIcon';
 
 interface EmptyStateCalloutProps {
   title: string;
@@ -6,6 +7,7 @@ interface EmptyStateCalloutProps {
   children?: ReactNode;
   tone?: 'default' | 'muted';
   className?: string;
+  icon?: AppIconName;
 }
 
 export function EmptyStateCallout({
@@ -14,6 +16,7 @@ export function EmptyStateCallout({
   children,
   tone = 'muted',
   className,
+  icon = 'pending',
 }: EmptyStateCalloutProps) {
   const classNames = [
     'shared-empty-callout',
@@ -25,7 +28,12 @@ export function EmptyStateCallout({
 
   return (
     <section className={classNames}>
-      <h3>{title}</h3>
+      <div className="shared-empty-callout__title-row">
+        <span className="shared-empty-callout__icon" aria-hidden="true">
+          <AppIcon name={icon} size={18} />
+        </span>
+        <h3>{title}</h3>
+      </div>
       <p>{description}</p>
       {children}
     </section>

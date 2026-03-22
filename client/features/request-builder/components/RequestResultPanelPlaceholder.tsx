@@ -8,10 +8,10 @@ import { PanelTabs } from '@client/shared/ui/PanelTabs';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
 
 const resultPanelTabs = [
-  { id: 'response', label: 'Response' },
-  { id: 'console', label: 'Console' },
-  { id: 'tests', label: 'Tests' },
-  { id: 'execution-info', label: 'Execution Info' },
+  { id: 'response', label: 'Response', icon: 'response' },
+  { id: 'console', label: 'Console', icon: 'console' },
+  { id: 'tests', label: 'Tests', icon: 'tests' },
+  { id: 'execution-info', label: 'Execution Info', icon: 'info' },
 ] as const;
 
 type ResultPanelTabId = (typeof resultPanelTabs)[number]['id'];
@@ -153,6 +153,7 @@ export function RequestResultPanelPlaceholder({
       />
 
       <DetailViewerSection
+        icon={activeResultTab === 'response' ? 'response' : activeResultTab === 'console' ? 'console' : activeResultTab === 'tests' ? 'tests' : 'info'}
         title={`${activeResultTabLabel} summary`}
         description="Observation stays separate from the editable request draft. Run creates execution output here without clearing unsaved changes in the center authoring panel."
         actions={
@@ -172,6 +173,7 @@ export function RequestResultPanelPlaceholder({
 
       {activeResultTab === 'response' ? (
         <DetailViewerSection
+          icon="response"
           title="Response detail"
           description="Response detail belongs to the latest run for this active tab only. Preview stays bounded here, and truncation or redaction notes stay explicit instead of expanding the payload surface."
           tone="muted"
@@ -215,6 +217,7 @@ export function RequestResultPanelPlaceholder({
 
       {activeResultTab === 'console' ? (
         <DetailViewerSection
+          icon="console"
           title="Console detail"
           description="Console stays observation-only and shows bounded stage-aware output when scripts run. Missing entries are explained explicitly instead of being fabricated."
           tone="muted"
@@ -254,6 +257,7 @@ export function RequestResultPanelPlaceholder({
 
       {activeResultTab === 'tests' ? (
         <DetailViewerSection
+          icon="tests"
           title="Tests detail"
           description="Tests stays observation-only and shows bounded assertion summaries from the tests stage when present. Missing assertions stay explicit instead of being invented."
           tone="muted"
@@ -291,6 +295,7 @@ export function RequestResultPanelPlaceholder({
 
       {activeResultTab === 'execution-info' ? (
         <DetailViewerSection
+          icon="info"
           title="Execution info"
           description="Execution metadata belongs to the latest run and stays separate from saved request definitions, inbound captures, and persisted history."
           tone="muted"

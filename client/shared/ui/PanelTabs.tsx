@@ -1,6 +1,10 @@
+import type { AppIconName } from '@client/shared/ui/AppIcon';
+import { IconLabel } from '@client/shared/ui/IconLabel';
+
 export interface PanelTabOption<TTabId extends string> {
   id: TTabId;
   label: string;
+  icon?: AppIconName;
 }
 
 interface PanelTabsProps<TTabId extends string> {
@@ -30,7 +34,7 @@ export function PanelTabs<TTabId extends string>({
             aria-selected={isActive}
             onClick={() => onChange(tab.id)}
           >
-            {tab.label}
+            {tab.icon ? <IconLabel icon={tab.icon}>{tab.label}</IconLabel> : tab.label}
           </button>
         );
       })}

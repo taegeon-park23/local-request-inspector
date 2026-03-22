@@ -3,7 +3,7 @@
 - **Purpose:** Explain sequencing logic and show which work should happen first, next, and later.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `master-task-board.md`, `post-m3-reactivation-guide.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `environment-follow-up-lane-comparison.md`, `resolved-preview-sub-lane-comparison.md`, `../architecture/request-environment-resolution-summary-contract.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md`, `../tasks/task-032-post-t030-environment-follow-up-lane-comparison.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../tasks/task-034-post-t033-resolution-summary-contract.md`, `../prd/overview.md`, `../tasks/task-001-foundation-architecture.md`
+- **Related Documents:** `master-task-board.md`, `post-m3-reactivation-guide.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `environment-follow-up-lane-comparison.md`, `resolved-preview-sub-lane-comparison.md`, `../architecture/request-environment-resolution-summary-contract.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md`, `../tasks/task-032-post-t030-environment-follow-up-lane-comparison.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../tasks/task-034-post-t033-resolution-summary-contract.md`, `../tasks/task-035-compact-shell-header-and-material-icon-usability-refresh.md`, `../prd/overview.md`, `../tasks/task-001-foundation-architecture.md`
 - **Update Rule:** Update when priorities, dependencies, or milestone assumptions change.
 
 ## Priority Principles
@@ -78,10 +78,13 @@ Tasks are prioritized using these criteria:
 ### Phase M — Resolved-Preview Contract Definition
 37. **T034** Post-T033 resolution summary contract — complete
 
-### Phase N — Parked Optional Future Work
-38. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule bundle scope
-39. Later write-time migration-engine work if compatibility pressure justifies it
-40. Bounded packaging polish only if a delivery milestone identifies a concrete readiness gap
+### Phase N — Shell Usability Refresh
+38. **T035** Compact shell header and Material icon usability refresh — complete
+
+### Phase O — Parked Optional Future Work
+39. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule bundle scope
+40. Later write-time migration-engine work if compatibility pressure justifies it
+41. Bounded packaging polish only if a delivery milestone identifies a concrete readiness gap
 
 ## Why T001 Is First
 `T001` is the first execution task because it has the highest leverage:
@@ -118,6 +121,7 @@ Recently completed foundation work:
 - `T018` Delivery milestone plan
 
 Ready to start now:
+- `T035` is landed: the shell header is now compact and route-only, nav monograms are replaced with local SVG icons, and shared primitives plus major route headers/actions now use bounded icon support without changing semantics or ownership
 - M3-F1 and M3-F2 are landed; keep them closed as visual-only slices
 - `M3-F3` is landed in tracking: its bounded wrapper/CSS patch is applied in code, a user-verified non-sandbox `npm.cmd run test:ui` passed the then-current full UI suite on 2026-03-22, and same-day `npm.cmd run check` passed in this sandbox
 - `T027` is landed: `/environments` and `/scripts` now expose persisted resource-management surfaces, and `/settings` now exposes a diagnostics-first read-only runtime-status surface

@@ -1,3 +1,4 @@
+﻿import { IconLabel } from '@client/shared/ui/IconLabel';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
 
 interface RequestTabShellProps {
@@ -61,12 +62,9 @@ export function RequestTabShell({
         })}
 
         <button type="button" className="request-tab-shell__new-tab" onClick={onCreateRequest}>
-          + New Request
+          <IconLabel icon="new">New Request</IconLabel>
         </button>
       </div>
     </div>
   );
 }
-
-
-
