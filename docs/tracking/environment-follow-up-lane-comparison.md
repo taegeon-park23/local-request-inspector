@@ -3,7 +3,7 @@
 - **Purpose:** Compare the currently deferred environment-related follow-up lanes directly so future contributors can narrow the next environment task without reopening broad global-state or transfer scope by default.
 - **Created:** 2026-03-23
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `post-m3-reactivation-guide.md`, `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `../architecture/request-environment-selection-and-resolution.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md`, `../tasks/task-032-post-t030-environment-follow-up-lane-comparison.md`
+- **Related Documents:** `post-m3-reactivation-guide.md`, `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `resolved-preview-sub-lane-comparison.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `../architecture/request-environment-selection-and-resolution.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md`, `../tasks/task-032-post-t030-environment-follow-up-lane-comparison.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`
 - **Status:** active reference
 - **Update Rule:** Update when one deferred environment lane is promoted, when the implemented baseline materially changes, or when a new narrower environment follow-up candidate replaces one of the current lanes.
 
@@ -45,6 +45,7 @@
 ## 4. Lane-Specific Notes
 ### Lane 1 - Richer resolved-preview UX
 - This is the strongest future environment lane because it builds directly on `T030` without changing the current request-level ownership model.
+- `T033` later narrows the strongest future sub-lane inside this bucket to post-run bounded resolution summary in request-result and history observation surfaces.
 - A narrow version would likely stay inside one bounded question such as:
   - clearer unresolved-placeholder feedback tiers, or
   - bounded resolved-summary copy in request/result/history surfaces
