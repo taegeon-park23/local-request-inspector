@@ -3,7 +3,7 @@
 - **Purpose:** Provide a grounded inventory of current Candidate C packaging/startup gaps so future contributors can start from concrete missing verification seams rather than from broad packaging-polish language.
 - **Created:** 2026-03-22
 - **Last Updated:** 2026-03-22
-- **Related Documents:** `candidate-c-promotion-readiness.md`, `post-m3-reactivation-guide.md`, `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `../tasks/task-018-delivery-milestone-plan.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`
+- **Related Documents:** `candidate-c-promotion-readiness.md`, `post-m3-reactivation-guide.md`, `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `../tasks/task-018-delivery-milestone-plan.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`
 - **Status:** active reference
 - **Update Rule:** Update when the shipped packaging/startup baseline changes or when a Candidate C gap is promoted, closed, or reclassified.
 
@@ -31,7 +31,7 @@
 - **Affected seam:** `build:client` and `test:ui` startup
 - **Why it might matter:** contributors need the failure mode to be visible and bounded instead of opaque.
 - **What is already shipped that overlaps:** `scripts/esbuild-sandbox-compat.mjs`, `scripts/run-vite.mjs`, `scripts/run-vitest.mjs`, and `check:app` all surface the `sandbox_esbuild_transform_blocked` / `spawn EPERM` signature clearly.
-- **Evidence from repo/docs:** `scripts/esbuild-sandbox-compat.mjs`, `scripts/run-vite.mjs`, `scripts/run-vitest.mjs`, `scripts/check-app-shell.mjs`, `check-m3f3-gate.mjs`
+- **Evidence from repo/docs:** `scripts/esbuild-sandbox-compat.mjs`, `scripts/run-vite.mjs`, `scripts/run-vitest.mjs`, `scripts/check-app-shell.mjs`, `check-m3f3-gate.mjs`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`
 - **Classification:** `already covered`
 
 ### Gap 3 - Storage bootstrap visibility during startup/readiness checks
@@ -64,6 +64,7 @@
 
 ## 5. Recommendation
 - No Candidate C gap is narrow enough yet to justify a new implementation task.
+- `T026` further confirms that the remaining sandbox signal occurs at bare esbuild worker startup after the repo-side wrapper/config mitigations already shipped.
 - The shipped repo already covers the concrete missing-built-shell and sandbox-blocked verification seams that are visible today.
 - Revisit Candidate C only when one startup or packaging status gap is demonstrably missing from the current `check:app` and `/api/app-shell-status` baseline.
 

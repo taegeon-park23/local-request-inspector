@@ -3,7 +3,7 @@
 - **Purpose:** Provide the canonical hold-state and reactivation rules for work after `M3-F1` / `M3-F2`, so contributors know when to wait, when to retry `M3-F3`, and when an optional backlog item is narrow enough to promote.
 - **Created:** 2026-03-22
 - **Last Updated:** 2026-03-22
-- **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `../architecture/material-3-adoption-plan.md`, `../tasks/task-010-frontend-workspace-shell-implementation-plan.md`, `../tasks/task-015-import-export-strategy.md`, `../tasks/task-018-delivery-milestone-plan.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`
+- **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `../architecture/material-3-adoption-plan.md`, `../tasks/task-010-frontend-workspace-shell-implementation-plan.md`, `../tasks/task-015-import-export-strategy.md`, `../tasks/task-018-delivery-milestone-plan.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`
 - **Status:** active reference
 - **Update Rule:** Update when the official `M3-F3` gate result changes, when an optional backlog item becomes narrowly promotable, or when the current post-M3 hold state changes.
 
@@ -18,6 +18,7 @@
 - ../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md is landed as the bounded Candidate C documentation follow-up for packaging/startup gap inventory.
 - ../tasks/task-022-post-t021-priority-review.md is landed as the latest explicit no-promotion review after the Candidate B/C narrowing passes.
 - ../tasks/task-023-candidate-b-import-migration-approach-decision.md is landed as the latest Candidate B approach-decision pass for the stronger authored-resource import lane.
+- ../tasks/task-026-m3-f3-validation-environment-blocker-triage.md is landed as the blocker-triage follow-up confirming that the remaining official-closeout failure is environment-level rather than one more repo-side wrapper/config gap.
 - M3-F3 should now be treated as validation-blocked follow-up in the current sandbox before any additional parked backlog is reconsidered.
 - Use `m3-f3-implementation-handoff.md` when resuming `M3-F3` so the applied wrapper/result-panel patch and latest validation notes are both available without a fresh scope audit.
 - Candidate B and Candidate C remain parked.
@@ -28,6 +29,7 @@
 ### M3-F3
 - M3-F3 is no longer blocked by implementation scope; the intended request-builder/result-panel wrapper patch is now applied in code.
 - The latest direct run confirms that `npm.cmd run typecheck` passes, a user-verified non-sandbox `npm.cmd run test:ui` pass exists, and same-day `npm.cmd run check` passes in this sandbox, but `npm.cmd run check:m3f3-gate` now returns `env_blocked_transform` here before Vite/esbuild can transform `/app/bootstrap/main.tsx`, `RequestWorkSurfacePlaceholder.tsx`, and `RequestResultPanelPlaceholder.tsx`, while direct `npm.cmd run test:ui` here still fails preflight for the same worker-startup reason.
+- `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md` now confirms that the repo already applies direct esbuild preflight classification, config-loader runner enforcement, Windows `net use` patching, fail-fast wrapper messaging, and transformed-module gate probes, so the remaining blocker should not be treated as one more hidden repo-side fix opportunity.
 ### Candidate A - Additional Authored-Resource Tooling
 - The shipped authored-resource baseline already covers workspace-level import plus workspace-level and single-resource export for saved requests and mock rules.
 - Import uses a create-new-identity policy and keeps runtime artifacts out of scope.
@@ -59,6 +61,7 @@
 - Continue using the same gate procedure before any future TSX presentation follow-up beyond the current `M3-F3` slice, and rerun it in an environment where Vite/esbuild worker startup is allowed.
 - A standalone unsandboxed `npm.cmd run test:ui` success is useful evidence but does not satisfy official closeout by itself; keep the canonical closeout requirement as `npm.cmd run check:m3f3-gate`, `npm.cmd run check`, and `npm.cmd run test:ui` all passing in one non-blocked environment.
 - Do not treat Vite port binding, root HTML 200, or manual expectation as enough to bypass the official gate in later retries.
+- Use `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md` before proposing any extra repo-side blocker work so later contributors start from the confirmed preflight boundary.
 ### Additional Candidate A Work Beyond T019
 - Promote further Candidate A work only when a concrete authored-resource UX or transfer gap is documented tightly enough to become one bounded task beyond `T019`.
 - The promoted scope must be narrower than "improve import/export" and must not duplicate either the current saved-request/mock-rule bundle baseline or the new `T019` dry-run preview direction.
@@ -112,6 +115,7 @@ Before promoting any post-M3 work:
 - Keep `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md` closed as the Candidate C documentation narrowing step, not as packaging implementation.
 - Keep `../tasks/task-022-post-t021-priority-review.md` closed as the latest no-promotion decision record rather than as a new implementation track.
 - Keep `../tasks/task-023-candidate-b-import-migration-approach-decision.md` closed as the Candidate B approach-decision step, not as migration implementation.
+- Keep `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md` closed as the blocker-boundary confirmation step, not as a new packaging or toolchain workstream.
 - Keep Candidate B, Candidate C, and any additional Candidate A work parked until one of the reactivation triggers above is satisfied.
 - Do not create a post-M3-F3 closure review task yet; defer any T025-style reprioritization until the official closeout trio clears in one environment.
 - Keep the current state as "one narrow next step plus clear parking rules," not "search for anything left to implement."

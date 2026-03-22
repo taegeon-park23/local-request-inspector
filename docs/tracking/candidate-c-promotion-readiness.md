@@ -3,7 +3,7 @@
 - **Purpose:** Capture the current shipped packaging/startup verification baseline and define when Candidate C becomes narrow enough to promote, so packaging work does not reopen from environment noise or broad distribution ideas.
 - **Created:** 2026-03-22
 - **Last Updated:** 2026-03-22
-- **Related Documents:** `candidate-c-gap-inventory.md`, `post-m3-reactivation-guide.md`, `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `../tasks/task-018-delivery-milestone-plan.md`, `../tasks/task-017-developer-environment-and-tooling-baseline.md`, `../tasks/task-016-testing-and-qa-strategy.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`
+- **Related Documents:** `candidate-c-gap-inventory.md`, `post-m3-reactivation-guide.md`, `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `../tasks/task-018-delivery-milestone-plan.md`, `../tasks/task-017-developer-environment-and-tooling-baseline.md`, `../tasks/task-016-testing-and-qa-strategy.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`
 - **Status:** active reference
 - **Update Rule:** Update when packaging/startup verification seams, release-readiness criteria, or Candidate C promotion criteria materially change.
 
@@ -13,6 +13,7 @@
 - Build and UI-test lanes already fail fast through the S26 esbuild sandbox-compatibility wrappers rather than failing opaquely later.
 - Script taxonomy already distinguishes `dev:app`, `dev:server`, `dev:client`, `build:client`, `serve:app`, `check:app`, `test:node`, and `test:ui`.
 - The current known limitation is environment-bound esbuild worker startup failure, not an undocumented packaging seam.
+- `T026` now confirms that the remaining failure occurs after the current repo-side wrapper/config mitigations already shipped.
 
 ## 2. Current Boundaries
 - Candidate C is not a toolchain-migration bucket.
