@@ -74,6 +74,7 @@ This task is done when all of the following are true:
 - **Implementation follow-up (2026-03-21):** S23 is now delivered in code with single-resource authored bundle export for saved requests and mock rules, clearer import accept/reject summaries, bounded imported-name previews, and continued exclusion of runtime history/captures/execution artifacts from transfer scope.
 - **Implementation follow-up (2026-03-21):** S24 is now delivered in code with explicit compatibility classification helpers for resource manifests, authored-resource bundles, and runtime metadata, plus migration-needed vs unsupported-version seam handling and additional low-level storage tests without adding a destructive migration engine.
 - **Implementation follow-up (2026-03-22):** S25 is now delivered in code with clearer dev/build/serve script taxonomy, a built-shell-aware `/app` fallback and `/api/app-shell-status` seam, `/app` build-base alignment for the React shell, and a lightweight README/check flow that makes local startup and packaging verification easier without changing feature semantics.
+- **Implementation follow-up (2026-03-22):** S26 is now delivered in code with a shared esbuild sandbox-compatibility preflight helper, fail-fast bounded wrapper messaging for `build:client` and `test:ui`, `check:app` compatibility reporting, and script-level Node seam coverage that narrows the remaining Windows/sandbox transform blocker without changing feature semantics.
 
 ## 7. Key Decisions
 1. The frontend rewrite should proceed **shell-first with incremental feature slices**, not route-first and not all-at-once.
@@ -103,7 +104,7 @@ This task is done when all of the following are true:
 - Secondary reviewers: Backend Lead + QA / Senior Engineer
 
 ## 11. Closure Decision
-T010 can stay closed as **done** at the planning/documentation level, and the linked implementation slices S1-S25 are now landed. The next work should move to optional future resource tools, bounded packaging polish only if needed, and later migration-engine work rather than widening the shell itself.
+T010 can stay closed as **done** at the planning/documentation level, and the linked implementation slices S1-S26 are now landed. The next work should move to optional future resource tools, bounded packaging polish only if needed, and later migration-engine work rather than widening the shell itself.
 
 
 

@@ -43,12 +43,13 @@
 - T010 slice S23 optional import/export extensions: **done**
 - T010 slice S24 future migration engine considerations: **done**
 - T010 slice S25 packaging / dev-experience improvements: **done**
+- T010 slice S26 repo/tooling sandbox compatibility fix (bounded): **done**
 
 ## Current Next Action
-Use the landed MVP shell plus S11-S25 save-run/history/captures/diagnostics/scripts/mocks/persistence/fidelity/polish/import-export/migration-ready cleanup/tooling/packaging improvements as the baseline for follow-up implementation axes: optional future resource tools, small packaging polish only if still justified, and later migration-engine work only if later justified.
+Use the landed MVP shell plus S11-S26 save-run/history/captures/diagnostics/scripts/mocks/persistence/fidelity/polish/import-export/migration-ready cleanup/tooling/packaging/sandbox-compatibility improvements as the baseline for follow-up implementation axes: optional future resource tools, bounded packaging polish only if still justified, and later migration-engine work only if later justified.
 
 ## Open Blockers
-- No blocker remains inside T010. The remaining work is post-S25 follow-up around optional future resource tools, bounded packaging polish if needed, and later migration-engine work only if later justified.
+- No blocker remains inside T010. The remaining work is post-S26 follow-up around optional future resource tools, bounded packaging polish if needed, and later migration-engine work only if later justified.
 - Major planning dependencies for request behavior, script UX, mock behavior, runtime observation, QA strategy, tooling baseline, and shell slicing are now documented.
 
 ## Notes for Next Contributor

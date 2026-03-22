@@ -138,7 +138,7 @@ app.use('/app', (req, res, next) => {
   return appShellStatic(req, res, next);
 });
 
-app.get(['/app', '/app/*'], (req, res) => {
+app.get(/^\/app(?:\/.*)?$/, (req, res) => {
   const status = getClientShellStatus();
 
   if (!status.builtClientAvailable) {

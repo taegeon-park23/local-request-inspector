@@ -17,7 +17,7 @@ function collectSeamTestFiles(directoryPath) {
       return collectSeamTestFiles(fullPath);
     }
 
-    if (entry.isFile() && entry.name.endsWith('.test.js')) {
+    if (entry.isFile() && (entry.name.endsWith('.test.js') || entry.name.endsWith('.test.mjs'))) {
       return [fullPath];
     }
 
@@ -25,11 +25,17 @@ function collectSeamTestFiles(directoryPath) {
   });
 }
 
-const seamTestFiles = collectSeamTestFiles(path.join(projectRoot, 'storage'))
+const seamTestRoots = [
+  path.join(projectRoot, 'storage'),
+  path.join(projectRoot, 'scripts'),
+];
+
+const seamTestFiles = seamTestRoots
+  .flatMap((rootPath) => collectSeamTestFiles(rootPath))
   .sort((left, right) => left.localeCompare(right));
 
 if (seamTestFiles.length === 0) {
-  console.log('No low-level seam tests were found under storage/.');
+  console.log('No low-level seam tests were found under storage/ or scripts/.');
   process.exit(0);
 }
 

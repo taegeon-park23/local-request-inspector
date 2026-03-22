@@ -35,7 +35,7 @@
 | T018 | Delivery milestone plan | Convert backlog into phased milestones with readiness gates and review checkpoints. | P1 | todo | Needed once P0 architecture decisions stabilize. | T001-T007 | Milestone plan | Delivery Agent | Shifts if P0 scope changes | Revisit after architecture |
 
 ## Current Focus
-- **Active highest-priority next step:** Post-S25 follow-up: optional future resource tools, later migration-engine work only if justified, and small packaging polish only if it remains bounded.
+- **Active highest-priority next step:** Post-S26 follow-up: optional future resource tools, bounded packaging polish only if still needed, and later migration-engine work only if justified.
 - S1 is implemented with the new client bootstrap, route/provider scaffold, persistent shell regions, component coverage, and a conservative legacy coexistence seam.
 - S2 is implemented with the `/workspace` explorer scaffold, in-memory request tree, request tab registry shell, tab focus/close behavior, active work-surface placeholder, and contextual result-panel placeholder.
 - S3 is implemented with per-tab request draft state, method/url authoring, params/headers/body/auth core editors, scripts placeholder, dirty tab indicators, and a still-separated observation panel seam.
@@ -61,9 +61,10 @@
 - S23 is implemented with single-resource authored bundle export for saved requests and mock rules, richer import accept/reject summaries, bounded imported-name previews, and continued exclusion of runtime history/captures/execution artifacts from transfer scope.
 - S24 is implemented with explicit compatibility classification helpers, resource-manifest/runtime-metadata migration-needed vs unsupported-version handling, read-compatible legacy bundle/resource paths, and additional low-level seam tests without introducing a write-time migration engine.
 - S25 is implemented with clearer dev/build/serve script taxonomy, a built-shell-aware `/app` fallback page, `/api/app-shell-status`, `/app` build-base alignment for the React shell, and a lightweight README/check script that make app packaging and local startup expectations easier to verify without changing feature semantics.
+- S26 is implemented with a shared esbuild sandbox-compatibility preflight helper, fail-fast bounded wrapper messaging for `build:client` and `test:ui`, `check:app` compatibility reporting, and script-level Node seam coverage that narrows the remaining Windows/sandbox blocker without changing feature behavior.
 
 ## Blockers Snapshot
-- T010 shell slices S1-S25 are now landed. Remaining work moves to optional future resource tools, later migration-engine work if justified, and only bounded packaging polish rather than more shell scaffolding.
+- T010 shell slices S1-S26 are now landed. Remaining work moves to optional future resource tools, later migration-engine work if justified, and only bounded packaging polish rather than more shell scaffolding.
 - Architecture, schema, safety, persistence, request-builder, script-UX, mock-rule, history/inspector, QA, tooling, and shell-slicing inputs are now documented.
 
 

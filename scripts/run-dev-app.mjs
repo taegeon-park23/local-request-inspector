@@ -1,9 +1,22 @@
 import process from 'node:process';
 import { spawn } from 'node:child_process';
 
-const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const children = [];
 let shuttingDown = false;
+
+function createLaneSpawnSpec(scriptName) {
+  if (process.platform === 'win32') {
+    return {
+      command: process.env.ComSpec || 'cmd.exe',
+      args: ['/d', '/s', '/c', `npm.cmd run ${scriptName}`],
+    };
+  }
+
+  return {
+    command: 'npm',
+    args: ['run', scriptName],
+  };
+}
 
 function stopChildren(exitCode = 0) {
   if (shuttingDown) {
@@ -14,7 +27,7 @@ function stopChildren(exitCode = 0) {
 
   for (const child of children) {
     if (!child.killed) {
-      child.kill('SIGINT');
+      child.kill(process.platform === 'win32' ? undefined : 'SIGINT');
     }
   }
 
@@ -24,9 +37,11 @@ function stopChildren(exitCode = 0) {
 }
 
 function startLane(name, scriptName) {
-  const child = spawn(npmCommand, ['run', scriptName], {
+  const spawnSpec = createLaneSpawnSpec(scriptName);
+  const child = spawn(spawnSpec.command, spawnSpec.args, {
     stdio: 'inherit',
     shell: false,
+    windowsHide: false,
   });
 
   child.on('exit', (code, signal) => {
