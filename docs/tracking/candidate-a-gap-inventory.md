@@ -3,7 +3,7 @@
 - **Purpose:** Provide a grounded inventory of current Candidate A gap candidates so future contributors can start from actual authored-resource seams in the shipped repo instead of broad "resource tooling" ideas.
 - **Created:** 2026-03-22
 - **Last Updated:** 2026-03-22
-- **Related Documents:** `candidate-a-promotion-readiness.md`, `candidate-a-narrow-candidate-comparison.md`, `post-m3-reactivation-guide.md`, `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `../tasks/task-015-import-export-strategy.md`, `../tasks/task-019-server-backed-pre-import-preview.md`
+- **Related Documents:** `candidate-a-promotion-readiness.md`, `candidate-a-narrow-candidate-comparison.md`, `post-m3-reactivation-guide.md`, `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `../tasks/task-015-import-export-strategy.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`
 - **Status:** active reference
 - **Update Rule:** Update when the shipped authored-resource workflow changes or when a currently inventoried gap is promoted, closed, or reclassified.
 
@@ -13,7 +13,7 @@
 - Import already performs bundle validation, resource-kind/schema validation, compatibility classification, and create-new-identity import naming.
 - Current import feedback already includes accepted and rejected counts, imported-name previews, rejected-reason summaries, and immediate refresh of workspace explorer and mocks data.
 - Runtime history, captures, execution results, and runtime mock outcomes remain intentionally outside authored-resource transfer scope.
-- Environments and route-level Scripts remain placeholder surfaces, not first-class authored-resource transfer lanes.
+- Environments and standalone saved scripts are now first-class persisted workflow surfaces, but neither resource kind is part of the shipped authored-resource transfer lane yet.
 
 ## 2. Classification Model
 - `already covered`: the current shipped workflow already addresses the need closely enough that it should not drive Candidate A promotion now.
@@ -62,16 +62,16 @@
 ### Gap 6 - Environments as transferable authored resources
 - **Affected surface / resource kind:** Environment resources.
 - **Why it might matter:** environments are a natural authored-resource concept for a local API workbench, but they are not currently part of the shipped transfer lane.
-- **What is already shipped that overlaps:** nothing first-class beyond the broader resource vocabulary in shared constants and planning docs.
-- **Evidence from repo/docs:** `client/features/environments/components/EnvironmentsPlaceholder.tsx`, `storage/shared/constants.js`, `docs/tracking/candidate-a-promotion-readiness.md`
-- **Classification:** `real but blocked by missing first-class resource type`
+- **What is already shipped that overlaps:** persisted environment CRUD, default-environment enforcement, masked secret handling, and a dedicated route-level management surface now exist.
+- **Evidence from repo/docs:** `client/features/environments/components/EnvironmentsRoute.tsx`, `storage/resource/environment-record.js`, `../tasks/task-027-placeholder-route-mvp.md`
+- **Classification:** `real but broad`
 
 ### Gap 7 - Standalone reusable script resources
 - **Affected surface / resource kind:** Route-level Scripts and reusable authored scripts.
 - **Why it might matter:** reusable script resources could become a future authored-resource type distinct from request-bound scripts.
-- **What is already shipped that overlaps:** request-bound scripts are already stored inside saved request definitions, but route-level Scripts remains a placeholder and there is no standalone reusable script resource.
-- **Evidence from repo/docs:** `client/features/scripts/components/ScriptsPlaceholder.tsx`, `client/features/request-builder/request-builder.api.ts`, `docs/tracking/candidate-a-promotion-readiness.md`
-- **Classification:** `real but blocked by missing first-class resource type`
+- **What is already shipped that overlaps:** request-bound scripts are already stored inside saved request definitions, and standalone saved-script CRUD plus read-only system templates now exist at the top-level Scripts route.
+- **Evidence from repo/docs:** `client/features/scripts/components/ScriptsRoute.tsx`, `client/features/scripts/scripts.api.ts`, `../tasks/task-027-placeholder-route-mvp.md`
+- **Classification:** `real but broad`
 
 ### Gap 8 - Broader external interoperability
 - **Affected surface / resource kind:** cURL, OpenAPI, Postman, or other non-native interchange flows.
@@ -97,18 +97,20 @@
 - Broad interoperability such as cURL, OpenAPI, or Postman import.
 - "Improve import/export generally" without one missing step or affected resource kind.
 - Expanding transfer to all authored-resource types at once.
-- Environments or standalone scripts before those resource kinds become first-class workflow objects.
+- Environments or standalone scripts without first narrowing bundle boundaries, secret/template policy, and non-goals.
 - Umbrella resource-management initiatives that combine transfer, browsing, organization, and interoperability into one promotion request.
 
 ## 6. Recommendation
-One Candidate A gap is now promoted, and one remains parked.
+One Candidate A gap is now promoted, one remains parked as the strongest narrow candidate, and two newer resource-type gaps remain broad even after `T027`.
 
 - Gap 3, pre-import validation preview before writes occur, is now landed as `../tasks/task-019-server-backed-pre-import-preview.md`.
 - Gap 4, mock-rule-local import entrypoint for the existing bundle scope, remains parked because the underlying import capability already exists in the workspace flow and the route-local ownership seam is still too ambiguous.
+- Gaps 6 and 7 are no longer blocked by missing workflow-object promotion after `T027`, but they still remain too broad because the repo has not yet chosen one narrow authored-resource transfer contract for environments or standalone saved scripts.
 
-Everything else in the current inventory is either already covered, blocked by a missing first-class resource type, or still too broad.
+Everything else in the current inventory is either already covered or still too broad.
 
 ## 7. Explicit Uncertainties / 확실하지 않음
 - Dedicated preview endpoint chosen for `T019`; broader authored-resource preview/staging work remains out of scope.
-- **확실하지 않음:** whether environments or standalone scripts will become first-class authored-resource types soon enough to affect the next Candidate A decision.
+- **확실하지 않음:** whether environments can be narrowed to one authored-resource transfer contract without reopening secret/default-environment semantics too broadly.
+- **확실하지 않음:** whether standalone saved scripts can be narrowed to one transfer contract without reopening request-bound linkage, template ownership, or reference semantics.
 - **확실하지 않음:** whether any future authored-resource management/discovery gap can be kept narrow enough to avoid collapsing into a broad resource-tooling initiative.
