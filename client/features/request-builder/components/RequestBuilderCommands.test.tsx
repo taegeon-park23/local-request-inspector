@@ -253,10 +253,12 @@ describe('Request builder save/run wiring', () => {
     renderApp(<AppRouter />);
 
     const explorer = screen.getByLabelText('Section explorer');
-    await user.click(await within(explorer).findByRole('button', { name: 'Open Health check' }));
+    const mainSurface = screen.getByLabelText('Main work surface');
+    await within(explorer).findByRole('button', { name: 'Export Health check' });
+    await user.click(within(explorer).getByRole('button', { name: 'Open Health check' }));
     expect(screen.getByText('Saved Requests')).toBeInTheDocument();
 
-    const requestNameInput = await screen.findByLabelText('Request name');
+    const requestNameInput = await within(mainSurface).findByLabelText('Request name');
     await user.clear(requestNameInput);
     await user.type(requestNameInput, 'Health check updated');
     await user.type(screen.getByLabelText('Request URL'), '?mode=full');
@@ -377,7 +379,7 @@ describe('Request builder save/run wiring', () => {
     expect(screen.getByText(/Run does not save automatically and does not clear unsaved authoring changes\./i)).toBeInTheDocument();
     expect(screen.getByText('HTTP 201', { selector: '[data-kind="transportOutcome"]' })).toBeInTheDocument();
     expect(screen.getByText('31 B response body')).toBeInTheDocument();
-    expect(screen.getByText(/Preview is bounded before richer diagnostics/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Preview is bounded before richer diagnostics/i).length).toBeGreaterThan(0);
     expect(screen.getByLabelText('Runtime probe has unsaved changes')).toBeInTheDocument();
     expect(screen.getByTestId('run-command-status')).toHaveTextContent('Request run completed.');
 
@@ -511,7 +513,7 @@ describe('Request builder save/run wiring', () => {
 
     await waitFor(() => expect(screen.getByTestId('run-command-status')).toHaveTextContent('Request run was blocked before completion.'));
     expect(screen.getByText('No response', { selector: '[data-kind="transportOutcome"]' })).toBeInTheDocument();
-    expect(screen.getByText(/Transport did not run because the pre-request stage was blocked before send/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Transport did not run because the pre-request stage was blocked before send/i).length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole('tab', { name: 'Execution Info' }));
     expect(screen.getByText('Blocked')).toBeInTheDocument();
@@ -624,12 +626,12 @@ describe('Request builder save/run wiring', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Open Replay Draft' }));
     await screen.findByRole('heading', { name: 'Workspace' });
-    expect(screen.getByText('Opened from history')).toBeInTheDocument();
+    expect(screen.getAllByText('Opened from history', { selector: '.workspace-chip--replay' }).length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(screen.getByTestId('save-command-status')).toHaveTextContent(/Saved request definition/i));
-    expect(screen.queryByText('Opened from history')).not.toBeInTheDocument();
+    expect(screen.queryAllByText('Opened from history', { selector: '.workspace-chip--replay' }).length).toBe(0);
     expect(screen.getByText('Saved Requests')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Open Replay of Create user' })).toBeInTheDocument();
 

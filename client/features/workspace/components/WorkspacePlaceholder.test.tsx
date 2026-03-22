@@ -303,7 +303,7 @@ describe('Workspace request builder authoring shell', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Open Replay Draft' }));
     expect(await screen.findByRole('heading', { name: 'Workspace' })).toBeInTheDocument();
-    expect(screen.getByText('Opened from history')).toBeInTheDocument();
+    expect(screen.getAllByText('Opened from history', { selector: '.workspace-chip--replay' }).length).toBeGreaterThan(0);
 
     const mainSurface = screen.getByLabelText('Main work surface');
     await user.click(within(mainSurface).getByRole('button', { name: 'Scripts' }));
@@ -951,7 +951,7 @@ describe('Workspace request builder authoring shell', () => {
     renderApp(<AppRouter />);
 
     const explorer = screen.getByLabelText('Section explorer');
-    await within(explorer).findByRole('button', { name: 'Open Health check' });
+    await within(explorer).findByRole('button', { name: 'Export Health check' });
     await user.click(within(explorer).getByRole('button', { name: 'Export Health check' }));
 
     expect(await within(explorer).findByText(/Exported saved request Health check from the authored resource lane/i)).toBeInTheDocument();

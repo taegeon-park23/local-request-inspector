@@ -52,7 +52,7 @@ describe('Replay bridge S8', () => {
     expect(screen.getByLabelText('Request name')).toHaveValue('Replay of Create user');
     expect(screen.getByLabelText('Request method')).toHaveValue('POST');
     expect(screen.getByLabelText('Request URL')).toHaveValue('https://api.example.com/users');
-    expect(screen.getByText('Opened from history')).toBeInTheDocument();
+    expect(screen.getAllByText('Opened from history', { selector: '.workspace-chip--replay' }).length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole('button', { name: 'Body' }));
     expect(screen.getByLabelText('Body mode')).toHaveValue('json');

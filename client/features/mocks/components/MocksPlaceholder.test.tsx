@@ -272,6 +272,11 @@ describe('Mocks S16 persisted CRUD surface', () => {
     vi.stubGlobal('fetch', fetchMock);
     renderApp(<AppRouter />, { initialEntries: ['/mocks'] });
 
+    const getRuleOrder = () =>
+      within(screen.getByLabelText('Mock rules list'))
+        .getAllByRole('button', { name: /^Open mock rule / })
+        .map((button) => button.getAttribute('aria-label'));
+
     await screen.findByRole('button', { name: 'Open mock rule Stripe webhook accepted' });
     await user.click(screen.getByRole('button', { name: 'New Rule' }));
 
@@ -284,14 +289,16 @@ describe('Mocks S16 persisted CRUD surface', () => {
     expect(screen.getByRole('button', { name: 'Create rule' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: 'Create rule' }));
 
-    expect(await screen.findByRole('button', { name: 'Open mock rule Health fallback' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Edit mock rule' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Edit mock rule' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Rule name')).toHaveValue('Health fallback');
+    await waitFor(() => expect(getRuleOrder()).toContain('Open mock rule Health fallback'));
 
     await user.clear(screen.getByLabelText('Rule name'));
     await user.type(screen.getByLabelText('Rule name'), 'Health fallback updated');
     await user.click(screen.getByRole('button', { name: 'Save rule' }));
 
-    expect(await screen.findByRole('button', { name: 'Open mock rule Health fallback updated' })).toBeInTheDocument();
+    await waitFor(() => expect(getRuleOrder()).toContain('Open mock rule Health fallback updated'));
+    expect(screen.getByLabelText('Rule name')).toHaveValue('Health fallback updated');
     expect(fetchMock.mock.calls.some(([input, init]) => getUrl(input as RequestInfo | URL) === '/api/workspaces/local-workspace/mock-rules' && (init?.method ?? 'GET') === 'POST')).toBe(true);
     expect(fetchMock.mock.calls.some(([input, init]) => getUrl(input as RequestInfo | URL).includes('/api/mock-rules/') && init?.method === 'PATCH')).toBe(true);
   });
@@ -333,7 +340,7 @@ describe('Mocks S16 persisted CRUD surface', () => {
 
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Open mock rule Maintenance banner fallback' })).not.toBeInTheDocument());
     expect(getRuleOrder()).toEqual(['Open mock rule Stripe webhook accepted']);
-    expect(screen.getByText('Stripe webhook accepted')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open mock rule Stripe webhook accepted' })).toBeInTheDocument();
   });
 
   it('shows the empty state from the real query seam', async () => {

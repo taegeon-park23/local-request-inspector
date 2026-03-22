@@ -15,8 +15,40 @@ import { resetWorkspaceShellStore } from '@client/features/workspace/state/works
 let objectUrlSequence = 0;
 
 async function readBlobText(blob: Blob) {
-  const buffer = await blob.arrayBuffer();
-  return new TextDecoder().decode(buffer);
+  const blobWithArrayBuffer = blob as Blob & {
+    arrayBuffer?: () => Promise<ArrayBuffer>;
+  };
+
+  if (typeof blobWithArrayBuffer.arrayBuffer === 'function') {
+    const buffer = await blobWithArrayBuffer.arrayBuffer();
+    return new TextDecoder().decode(buffer);
+  }
+
+  if (typeof FileReader === 'function') {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onerror = () => {
+        reject(reader.error ?? new Error('Failed to read blob text in the test environment.'));
+      };
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          resolve(reader.result);
+          return;
+        }
+
+        if (reader.result instanceof ArrayBuffer) {
+          resolve(new TextDecoder().decode(reader.result));
+          return;
+        }
+
+        resolve('');
+      };
+      reader.readAsText(blob);
+    });
+  }
+
+  throw new Error('Blob text reading is not available in the test environment.');
 }
 
 function ensureBrowserApiPolyfills() {

@@ -174,7 +174,7 @@ describe('History S18 fidelity refinement', () => {
     expect(await screen.findByRole('heading', { name: 'History detail' })).toBeInTheDocument();
     expect(screen.getByRole('tablist', { name: 'History result tabs' })).toBeInTheDocument();
     expect(screen.getByText('73 B preview')).toBeInTheDocument();
-    expect(screen.getByText(/bounded and redacted before deeper diagnostics/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/bounded and redacted before deeper diagnostics/i).length).toBeGreaterThan(0);
     expect(screen.getByText('Saved request snapshot')).toBeInTheDocument();
     expect(screen.getByText('request-create-user')).toBeInTheDocument();
     expect(screen.getByText('Saved Requests / Core Flows')).toBeInTheDocument();

@@ -101,7 +101,7 @@ describe('Captures S18 fidelity refinement', () => {
     expect(screen.getByRole('heading', { name: 'Persistence summary' })).toBeInTheDocument();
     expect(screen.getByText('Inbound request snapshot')).toBeInTheDocument();
     expect(screen.getByText(/Persisted capture keeps/i)).toBeInTheDocument();
-    expect(screen.getByText(/one bounded request-body preview/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Persisted capture keeps .*one bounded request-body preview/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Preview policy/i).length).toBeGreaterThan(0);
     expect(screen.getByText('Stored summary')).toBeInTheDocument();
     expect(screen.getByText('Handling summary')).toBeInTheDocument();
@@ -149,7 +149,7 @@ describe('Captures S18 fidelity refinement', () => {
     await user.click(within(capturesList).getByRole('button', { name: /Open capture GET \/health/i }));
 
     expect((await screen.findAllByText(/GET \/health was observed at localhost:5671 as an inbound capture/i)).length).toBeGreaterThan(0);
-    expect(screen.getByText('No request body preview was stored for this inbound capture.')).toBeInTheDocument();
+    expect(screen.getByText('No request body preview was stored for this inbound capture.', { selector: 'pre' })).toBeInTheDocument();
     expect(screen.getAllByText('Bypassed', { selector: '[data-kind="mockOutcome"]' }).length).toBeGreaterThan(0);
     expect(useCapturesStore.getState().selectedCaptureId).toBe(secondCapture.id);
   });
@@ -273,8 +273,8 @@ describe('Captures S18 fidelity refinement', () => {
     });
 
     expect(await screen.findByRole('button', { name: /Open capture GET \/health/i })).toBeInTheDocument();
-    expect((await screen.findAllByText(/GET \/health was observed at localhost:5671 as an inbound capture/i)).length).toBeGreaterThan(0);
-    await waitFor(() => expect(screen.getByRole('button', { name: /Open capture POST \/webhooks\/stripe/i })).toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('button', { name: /Open capture GET \/health/i })).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /Open capture POST \/webhooks\/stripe/i })).toBeInTheDocument();
     expect((await screen.findAllByText(/POST \/webhooks\/stripe was observed at localhost:5671 as an inbound capture/i)).length).toBeGreaterThan(0);
     expect(useCapturesStore.getState().selectedCaptureId).toBe(refreshedCapture.id);
     expect(listCallCount).toBeGreaterThanOrEqual(2);

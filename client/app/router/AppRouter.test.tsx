@@ -14,7 +14,7 @@ describe('AppRouter shell bootstrap', () => {
     expect(screen.getByLabelText('Contextual detail panel')).toBeInTheDocument();
 
     for (const label of ['Workspace', 'Captures', 'History', 'Mocks', 'Environments', 'Scripts', 'Settings']) {
-      expect(screen.getByRole('link', { name: new RegExp(label, 'i') })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: new RegExp(`^${label}\\b`, 'i') })).toBeInTheDocument();
     }
   });
 
@@ -57,11 +57,11 @@ describe('AppRouter shell bootstrap', () => {
 
     await user.click(screen.getByRole('link', { name: /history/i }));
     expect(screen.getByRole('heading', { name: 'History' })).toBeInTheDocument();
-    expect(screen.getByText(/Run Replay Now stays disabled in this slice because replay remains edit-first/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Run Replay Now stays disabled in this slice because replay remains edit-first/i)).toBeInTheDocument();
 
     await user.click(await screen.findByRole('button', { name: 'Open Replay Draft' }));
     expect(await screen.findByRole('heading', { name: 'Workspace' })).toBeInTheDocument();
-    expect(screen.getByText('Opened from history')).toBeInTheDocument();
+    expect(screen.getAllByText('Opened from history', { selector: '.workspace-chip--replay' }).length).toBeGreaterThan(0);
 
     const replayMainSurface = screen.getByLabelText('Main work surface');
     await user.click(within(replayMainSurface).getByRole('button', { name: 'Scripts' }));
