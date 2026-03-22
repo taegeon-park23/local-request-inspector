@@ -10,6 +10,7 @@ import { StatusBadge } from '@client/shared/ui/StatusBadge';
 import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 import { localeStorageKey, type LocaleCode } from '@client/shared/i18n/messages';
+import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
 
 async function writeClipboardText(value: string) {
   if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
@@ -33,8 +34,10 @@ export function SettingsRoute() {
   );
 
   return (
-    <>
-      <section className="shell-panel shell-panel--sidebar" aria-label="Section explorer">
+    <RoutePanelTabsLayout
+      defaultActiveTab="main"
+      explorer={(
+        <section className="shell-panel shell-panel--sidebar" aria-label="Section explorer">
         <div className="settings-surface">
           <header className="settings-surface__header">
             <div>
@@ -76,8 +79,10 @@ export function SettingsRoute() {
             </DetailViewerSection>
           ) : null}
         </div>
-      </section>
-      <section className="shell-panel shell-panel--main" aria-label="Main work surface">
+        </section>
+      )}
+      main={(
+        <section className="shell-panel shell-panel--main" aria-label="Main work surface">
         <SectionHeading
           icon="settings"
           title={t('routes.settings.title')}
@@ -241,8 +246,10 @@ export function SettingsRoute() {
             </DetailViewerSection>
           </div>
         )}
-      </section>
-      <aside className="shell-panel shell-panel--detail" aria-label="Contextual detail panel">
+        </section>
+      )}
+      detail={(
+        <aside className="shell-panel shell-panel--detail" aria-label="Contextual detail panel">
         <div className="workspace-detail-panel">
           {runtimeStatus ? (
             <>
@@ -284,7 +291,8 @@ export function SettingsRoute() {
             />
           )}
         </div>
-      </aside>
-    </>
+        </aside>
+      )}
+    />
   );
 }

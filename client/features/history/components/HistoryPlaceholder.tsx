@@ -23,6 +23,7 @@ import { PanelTabs } from '@client/shared/ui/PanelTabs';
 import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
 import { IconLabel } from '@client/shared/ui/IconLabel';
+import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
 
 type Translate = ReturnType<typeof useI18n>['t'];
 
@@ -175,8 +176,10 @@ export function HistoryPlaceholder() {
   };
 
   return (
-    <>
-      <section className="shell-panel shell-panel--sidebar" aria-label="Section explorer">
+    <RoutePanelTabsLayout
+      defaultActiveTab="explorer"
+      explorer={(
+        <section className="shell-panel shell-panel--sidebar" aria-label="Section explorer">
         <div className="history-explorer">
           <header className="history-explorer__header">
             <div>
@@ -280,9 +283,10 @@ export function HistoryPlaceholder() {
             </ul>
           ) : null}
         </div>
-      </section>
-
-      <section className="shell-panel shell-panel--main" aria-label="Main work surface">
+        </section>
+      )}
+      main={(
+        <section className="shell-panel shell-panel--main" aria-label="Main work surface">
         <SectionHeading
           icon="history"
           title={t('routes.history.title')}
@@ -538,9 +542,10 @@ export function HistoryPlaceholder() {
             ) : null}
           </div>
         )}
-      </section>
-
-      <aside className="shell-panel shell-panel--detail" aria-label="Contextual detail panel">
+        </section>
+      )}
+      detail={(
+        <aside className="shell-panel shell-panel--detail" aria-label="Contextual detail panel">
         {!selectedHistory ? (
           <div className="workspace-detail-panel workspace-detail-panel--empty">
             <EmptyStateCallout
@@ -589,8 +594,9 @@ export function HistoryPlaceholder() {
             </DetailViewerSection>
           </div>
         )}
-      </aside>
-    </>
+        </aside>
+      )}
+    />
   );
 }
 

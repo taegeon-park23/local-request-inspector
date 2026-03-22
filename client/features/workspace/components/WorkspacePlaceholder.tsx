@@ -32,6 +32,7 @@ import {
 } from '@client/features/workspace/resource-bundle.api';
 import type { WorkspaceSavedRequestSeed } from '@client/features/workspace/data/workspace-explorer-fixtures';
 import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
+import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
 
 interface ResourceTransferStatus {
   tone: 'success' | 'error' | 'info';
@@ -437,8 +438,10 @@ export function WorkspacePlaceholder() {
   };
 
   return (
-    <>
-      <section className="shell-panel shell-panel--sidebar" aria-label="Section explorer">
+    <RoutePanelTabsLayout
+      defaultActiveTab="main"
+      explorer={(
+        <section className="shell-panel shell-panel--sidebar" aria-label="Section explorer">
         <WorkspaceExplorer
           tree={explorerTree}
           selectedRequestId={selectedExplorerItemId}
@@ -457,9 +460,10 @@ export function WorkspacePlaceholder() {
           isPreviewingImport={previewResourcesMutation.isPending}
           isImporting={importResourcesMutation.isPending}
         />
-      </section>
-
-      <section className="shell-panel shell-panel--main" aria-label="Main work surface">
+        </section>
+      )}
+      main={(
+        <section className="shell-panel shell-panel--main" aria-label="Main work surface">
         <SectionHeading
             icon="workspace"
             title={t('routes.workspace.title')}
@@ -484,11 +488,13 @@ export function WorkspacePlaceholder() {
           activeTab={activeTab}
           onCreateRequest={handleCreateRequest}
         />
-      </section>
-
-      <aside className="shell-panel shell-panel--detail" aria-label="Contextual detail panel">
+        </section>
+      )}
+      detail={(
+        <aside className="shell-panel shell-panel--detail" aria-label="Contextual detail panel">
         <RequestResultPanelPlaceholder key={`detail-${activeTabKey}`} activeTab={activeTab} />
-      </aside>
-    </>
+        </aside>
+      )}
+    />
   );
 }

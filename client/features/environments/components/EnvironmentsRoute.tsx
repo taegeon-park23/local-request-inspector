@@ -21,6 +21,7 @@ import { EmptyStateCallout } from '@client/shared/ui/EmptyStateCallout';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 import { KeyValueMetaList } from '@client/shared/ui/KeyValueMetaList';
 import { SectionHeading } from '@client/shared/ui/SectionHeading';
+import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
 
 type EnvironmentSortOrder = 'default' | 'name' | 'updated';
 
@@ -171,8 +172,10 @@ export function EnvironmentsRoute() {
       : null;
 
   return (
-    <>
-      <section className="shell-panel shell-panel--sidebar" aria-label="Section explorer">
+    <RoutePanelTabsLayout
+      defaultActiveTab="explorer"
+      explorer={(
+        <section className="shell-panel shell-panel--sidebar" aria-label="Section explorer">
         <div className="environments-explorer">
           <header className="environments-explorer__header">
             <div>
@@ -202,8 +205,10 @@ export function EnvironmentsRoute() {
           {!listQuery.isPending && (listQuery.data ?? []).length > 0 && sortedItems.length === 0 ? <EmptyStateCallout title={t('environmentsRoute.empty.noFilteredItems.title')} description={t('environmentsRoute.empty.noFilteredItems.description')} /> : null}
           {sortedItems.length > 0 ? <ul className="environments-list" aria-label="Environments list">{sortedItems.map((environment) => <li key={environment.id}><button type="button" className={environment.id === effectiveSelectedId && !isCreatingDraft ? 'workspace-request workspace-request--selected' : 'workspace-request'} aria-label={`Open environment ${environment.name}`} onClick={() => { setIsCreatingDraft(false); setSelectedEnvironmentId(environment.id); }}><span className="workspace-request__header"><span className="workspace-request__title">{environment.name}</span><span className="workspace-request__badges">{environment.isDefault ? <span className="workspace-chip">{t('environmentsRoute.list.defaultChip')}</span> : null}<span className="workspace-chip workspace-chip--secondary">{t('environmentsRoute.list.varsChip', { count: environment.variableCount })}</span></span></span><span className="workspace-request__meta">{environment.description || t('environmentsRoute.list.noDescription')}</span><span className="workspace-request__meta">{environment.resolutionSummary}</span></button></li>)}</ul> : null}
         </div>
-      </section>
-      <section className="shell-panel shell-panel--main" aria-label="Main work surface">
+        </section>
+      )}
+      main={(
+        <section className="shell-panel shell-panel--main" aria-label="Main work surface">
         <SectionHeading icon="environments" title={t('routes.environments.title')} summary={t('routes.environments.summary')} />
         {listQuery.isPending && !listQuery.data ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('environmentsRoute.empty.loadingDetail.title')} description={t('environmentsRoute.empty.loadingDetail.description')} /></div> : !isCreatingDraft && !detailQuery.data ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('environmentsRoute.empty.noSelection.title')} description={t('environmentsRoute.empty.noSelection.description')} /></div> : detailQuery.isPending && !detailQuery.data && !isCreatingDraft ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('environmentsRoute.empty.loadingPersistedDetail.title')} description={t('environmentsRoute.empty.loadingPersistedDetail.description')} /></div> : (
           <div className="environments-detail">
@@ -230,13 +235,16 @@ export function EnvironmentsRoute() {
             </DetailViewerSection>
           </div>
         )}
-      </section>
-      <aside className="shell-panel shell-panel--detail" aria-label="Contextual detail panel">
+        </section>
+      )}
+      detail={(
+        <aside className="shell-panel shell-panel--detail" aria-label="Contextual detail panel">
         <div className="workspace-detail-panel">
           <DetailViewerSection icon="info" title={t('environmentsRoute.detail.defaultGuidanceCard.title')} description={t('environmentsRoute.detail.defaultGuidanceCard.description')} className="workspace-surface-card"><KeyValueMetaList items={[{ label: t('environmentsRoute.detail.defaultGuidanceCard.labels.currentDefaultIntent'), value: activeDraft.isDefault ? t('environmentsRoute.detail.defaultGuidanceCard.values.currentDefaultIsThisDraft') : t('environmentsRoute.detail.defaultGuidanceCard.values.currentDefaultIsAnother') }, { label: t('environmentsRoute.detail.defaultGuidanceCard.labels.workspaceDefaultCount'), value: detailQuery.data?.isDefault ? t('environmentsRoute.detail.defaultGuidanceCard.values.workspaceDefaultCountActive') : t('environmentsRoute.detail.defaultGuidanceCard.values.workspaceDefaultCountServer') }, { label: t('environmentsRoute.detail.defaultGuidanceCard.labels.firstCreateBehavior'), value: t('environmentsRoute.detail.defaultGuidanceCard.values.firstCreateBehavior') }]} /></DetailViewerSection>
           <DetailViewerSection icon="shield" title={t('environmentsRoute.detail.secretHandlingCard.title')} description={t('environmentsRoute.detail.secretHandlingCard.description')} className="workspace-surface-card workspace-surface-card--muted"><EmptyStateCallout title={t('environmentsRoute.detail.secretHandlingCard.empty.title')} description={t('environmentsRoute.detail.secretHandlingCard.empty.description')} /></DetailViewerSection>
         </div>
-      </aside>
-    </>
+        </aside>
+      )}
+    />
   );
 }

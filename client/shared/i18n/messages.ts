@@ -40,6 +40,12 @@ const enCatalog = {
       collapse: 'Collapse navigation',
       expand: 'Expand navigation',
     },
+    routePanels: {
+      tabList: 'Route layout panels',
+      explorer: 'Explorer',
+      main: 'Surface',
+      detail: 'Details',
+    },
   },
   roles: {
     authoring: 'Authoring',
@@ -292,6 +298,12 @@ const koCatalog: CatalogShape<typeof enCatalog> = {
     navigation: {
       collapse: '사이드바 접기',
       expand: '사이드바 펼치기',
+    },
+    routePanels: {
+      tabList: '라우트 패널 탭',
+      explorer: '탐색',
+      main: '작업면',
+      detail: '세부 정보',
     },
   },
   roles: {

@@ -3431,3 +3431,58 @@ body {
     padding: 0.7rem;
   }
 }
+
+/* T044 - single-panel route tabs layout */
+.shell-content {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.shell-route-panels {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.shell-route-panels > .shared-panel-tabs {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.shell-route-panels__body {
+  position: relative;
+  min-width: 0;
+}
+
+.shell-route-panels__panel {
+  min-width: 0;
+}
+
+.shell-route-panels__panel--inactive {
+  position: absolute;
+  top: 0;
+  left: -200vw;
+  width: 100%;
+}
+
+.shell-route-panels__panel--active {
+  position: relative;
+  display: block;
+}
+
+.shell-route-panels__panel > .shell-panel {
+  min-height: calc(100vh - 8.5rem);
+}
+
+@media (max-width: 1024px) {
+  .shell-route-panels {
+    gap: 0.6rem;
+  }
+
+  .shell-route-panels > .shared-panel-tabs {
+    width: 100%;
+  }
+
+  .shell-route-panels__panel > .shell-panel {
+    min-height: auto;
+  }
+}

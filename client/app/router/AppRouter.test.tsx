@@ -13,6 +13,7 @@ describe('AppRouter shell bootstrap', () => {
     expect(screen.getByText('Runtime Connection')).toBeInTheDocument();
     const navigationRail = screen.getByLabelText('Navigation rail');
     expect(navigationRail).toBeInTheDocument();
+    expect(screen.getByRole('tablist', { name: 'Route layout panels' })).toBeInTheDocument();
     expect(screen.getByLabelText('Section explorer')).toBeInTheDocument();
     expect(screen.getByLabelText('Main work surface')).toBeInTheDocument();
     expect(screen.getByLabelText('Contextual detail panel')).toBeInTheDocument();

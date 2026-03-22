@@ -166,6 +166,7 @@ Use a **token-first custom implementation**:
 - **Guardrail refresh (2026-03-23):** `T035` remains client-only. It does not change backend APIs, persisted state ownership, request/capture/history/mock semantics, or the server-owned environment-resolution contract.
 - **Implementation follow-up (2026-03-23):** `T036` is now landed as the next visual correction slice after `T035`. It tightens shape usage, reduces over-rounded grouped surfaces, caps button corners near 12px, and increases the visual separation between actionable buttons and passive badges/tabs without changing semantics or contracts.
 - **Implementation follow-up (2026-03-23):** `T043` is the next shell-only refinement slice after `T035`/`T036`. It narrows the shell chrome to a true 42px top bar, removes the remaining card-like runtime-status wrapper, adds a collapsible icon-first navigation rail, and shifts top-level region separation from hard dividers toward softer shadow-box depth without changing feature ownership or backend/state contracts.
+- **Implementation follow-up (2026-03-23):** `T044` is the next shell/layout refinement slice after `T043`. It replaces the simultaneous explorer/main/detail route columns with one route-local tab strip so each panel can occupy the full main region in turn, while preserving feature semantics and mounted state continuity.
 
 ## 12. Post-S26 Follow-Up Slices
 ### M3-F1 — Secondary surfaces and remaining shell affordances
@@ -201,6 +202,11 @@ Use a **token-first custom implementation**:
 - Scope: enforce a true 42px shell top bar, add user-controlled navigation collapse/expand affordance, remove remaining status-wrapper chrome, and rely more on shadow-box separation across shell regions.
 - Guardrails: keep the slice client-only, preserve route accessible names and keyboard navigation, and avoid broader layout/docking redesign.
 - Status: done on 2026-03-23 as a bounded shell-only continuation of the current Material 3 baseline.
+
+### T044 — Single-panel route tabs layout
+- Scope: replace the simultaneous explorer/main/detail route columns with route-local tabs so one panel fills the full main region at a time.
+- Guardrails: keep the slice client-only, preserve mounted feature state and panel semantics across tab switches, and avoid changing backend contracts or feature ownership.
+- Status: done on 2026-03-23 as a bounded route-layout continuation of the current Material 3 shell baseline.
 
 ### Explicitly Deferred Beyond This Sequence
 - light theme activation

@@ -23,6 +23,7 @@ import { EmptyStateCallout } from '@client/shared/ui/EmptyStateCallout';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 import { KeyValueMetaList } from '@client/shared/ui/KeyValueMetaList';
 import { SectionHeading } from '@client/shared/ui/SectionHeading';
+import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
 
 type ScriptStageFilter = 'all' | ScriptType;
 
@@ -148,8 +149,10 @@ export function ScriptsRoute() {
       : null;
 
   return (
-    <>
-      <section className="shell-panel shell-panel--sidebar" aria-label="Section explorer">
+    <RoutePanelTabsLayout
+      defaultActiveTab="explorer"
+      explorer={(
+        <section className="shell-panel shell-panel--sidebar" aria-label="Section explorer">
         <div className="scripts-explorer">
           <header className="scripts-explorer__header">
             <div>
@@ -179,8 +182,10 @@ export function ScriptsRoute() {
           {!listQuery.isPending && (listQuery.data ?? []).length > 0 && sortedItems.length === 0 ? <EmptyStateCallout title={t('scriptsRoute.empty.noFilteredItems.title')} description={t('scriptsRoute.empty.noFilteredItems.description')} /> : null}
           {sortedItems.length > 0 ? <ul className="scripts-list" aria-label="Scripts list">{sortedItems.map((script) => <li key={script.id}><button type="button" className={script.id === effectiveSelectedId && !isCreatingDraft ? 'workspace-request workspace-request--selected' : 'workspace-request'} aria-label={`Open script ${script.name}`} onClick={() => { setIsCreatingDraft(false); setSelectedScriptId(script.id); }}><span className="workspace-request__header"><span className="workspace-request__title">{script.name}</span><span className="workspace-request__badges"><span className="workspace-chip">{getScriptTypeLabel(script.scriptType, t)}</span></span></span><span className="workspace-request__meta">{script.description || t('scriptsRoute.list.noDescription')}</span><span className="workspace-request__meta">{script.sourcePreview || t('scriptsRoute.list.emptySource')}</span></button></li>)}</ul> : null}
         </div>
-      </section>
-      <section className="shell-panel shell-panel--main" aria-label="Main work surface">
+        </section>
+      )}
+      main={(
+        <section className="shell-panel shell-panel--main" aria-label="Main work surface">
         <SectionHeading icon="scripts" title={t('routes.scripts.title')} summary={t('routes.scripts.summary')} />
         {listQuery.isPending && !listQuery.data ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('scriptsRoute.empty.loadingDetail.title')} description={t('scriptsRoute.empty.loadingDetail.description')} /></div> : !isCreatingDraft && !detailQuery.data ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('scriptsRoute.empty.noSelection.title')} description={t('scriptsRoute.empty.noSelection.description')} /></div> : detailQuery.isPending && !detailQuery.data && !isCreatingDraft ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('scriptsRoute.empty.loadingPersistedDetail.title')} description={t('scriptsRoute.empty.loadingPersistedDetail.description')} /></div> : (
           <div className="scripts-detail">
@@ -203,12 +208,15 @@ export function ScriptsRoute() {
             <DetailViewerSection icon="code" title={t('scriptsRoute.detail.editorCard.title')} description={t('scriptsRoute.detail.editorCard.description')} className="workspace-surface-card"><div className="request-editor-card__grid"><label className="request-field"><span>{t('scriptsRoute.detail.editorCard.labels.name')}</span><input aria-label="Script name" type="text" value={activeDraft.name} onChange={(event) => setDraft((current) => ({ ...(current.id === activeDraft.id ? current : activeDraft), name: event.currentTarget.value }))} /></label><label className="request-field"><span>{t('scriptsRoute.detail.editorCard.labels.stage')}</span><select aria-label="Script stage" value={activeDraft.scriptType} onChange={(event) => setDraft((current) => ({ ...(current.id === activeDraft.id ? current : activeDraft), scriptType: event.currentTarget.value as ScriptType }))}>{stageFilterOptions.filter((option) => option.value !== 'all').map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label><label className="request-field request-field--wide"><span>{t('scriptsRoute.detail.editorCard.labels.description')}</span><textarea aria-label="Script description" value={activeDraft.description} onChange={(event) => setDraft((current) => ({ ...(current.id === activeDraft.id ? current : activeDraft), description: event.currentTarget.value }))} /></label><label className="request-field request-field--wide"><span>{t('scriptsRoute.detail.editorCard.labels.source')}</span><textarea aria-label="Script source" value={activeDraft.sourceCode} onChange={(event) => setDraft((current) => ({ ...(current.id === activeDraft.id ? current : activeDraft), sourceCode: event.currentTarget.value }))} /></label></div></DetailViewerSection>
           </div>
         )}
-      </section>
-      <aside className="shell-panel shell-panel--detail" aria-label="Contextual detail panel">
+        </section>
+      )}
+      detail={(
+        <aside className="shell-panel shell-panel--detail" aria-label="Contextual detail panel">
         <div className="workspace-detail-panel">
           {templatesQuery.isPending ? <EmptyStateCallout title={t('scriptsRoute.empty.loadingTemplates.title')} description={t('scriptsRoute.empty.loadingTemplates.description')} /> : templatesQuery.isError ? <EmptyStateCallout title={t('scriptsRoute.empty.templatesDegraded.title')} description={templatesQuery.error instanceof Error ? templatesQuery.error.message : t('scriptsRoute.empty.templatesDegraded.fallbackDescription')} /> : <ul className="scripts-template-list" aria-label="Script templates list">{(templatesQuery.data ?? []).map((template) => <li key={template.id} className="scripts-template-card"><div><h3>{template.name}</h3><p>{template.description}</p><div className="workspace-explorer__role-strip"><span className="workspace-chip">{getScriptTypeLabel(template.templateType, t)}</span><span className="workspace-chip workspace-chip--secondary">{template.tags.join(', ')}</span></div></div><pre className="scripts-template-card__preview">{template.sourceCode}</pre><button type="button" className="workspace-button workspace-button--secondary" onClick={() => { setDraft(createDraftFromTemplate(template, t('scriptsRoute.list.templateCopySuffix'))); setIsCreatingDraft(true); setSelectedScriptId(null); }}><IconLabel icon="template">{t('scriptsRoute.list.useTemplateAction', { name: template.name })}</IconLabel></button></li>)}</ul>}
         </div>
-      </aside>
-    </>
+        </aside>
+      )}
+    />
   );
 }

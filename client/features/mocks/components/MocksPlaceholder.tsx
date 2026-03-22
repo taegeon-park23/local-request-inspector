@@ -38,6 +38,7 @@ import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
 import { downloadAuthoredResourceBundle } from '@client/features/workspace/resource-bundle.api';
+import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
 
 const mockDetailTabs = [
   { id: 'overview', label: 'Overview', icon: 'overview' },
@@ -501,8 +502,10 @@ export function MocksPlaceholder() {
   };
 
   return (
-    <>
-      <section className="shell-panel shell-panel--sidebar" aria-label="Section explorer">
+    <RoutePanelTabsLayout
+      defaultActiveTab="explorer"
+      explorer={(
+        <section className="shell-panel shell-panel--sidebar" aria-label="Section explorer">
         <div className="mocks-explorer">
           <header className="mocks-explorer__header">
             <div>
@@ -573,9 +576,10 @@ export function MocksPlaceholder() {
             </ul>
           ) : null}
         </div>
-      </section>
-
-      <section className="shell-panel shell-panel--main" aria-label="Main work surface">
+        </section>
+      )}
+      main={(
+        <section className="shell-panel shell-panel--main" aria-label="Main work surface">
         <SectionHeading
             icon="mocks"
             title={t('routes.mocks.title')}
@@ -846,9 +850,10 @@ export function MocksPlaceholder() {
             ) : null}
           </div>
         )}
-      </section>
-
-      <aside className="shell-panel shell-panel--detail" aria-label="Contextual detail panel">
+        </section>
+      )}
+      detail={(
+        <aside className="shell-panel shell-panel--detail" aria-label="Contextual detail panel">
         {!isCreatingRule && !selectedRule ? (
           <div className="workspace-detail-panel workspace-detail-panel--empty">
             <EmptyStateCallout title="Management notes placeholder" description="Persisted rule diagnostics, authored rule reminders, and evaluation guardrails appear after a rule is selected or a new draft is opened." />
@@ -888,8 +893,9 @@ export function MocksPlaceholder() {
             </DetailViewerSection>
           </div>
         )}
-      </aside>
-    </>
+        </aside>
+      )}
+    />
   );
 }
 

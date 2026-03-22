@@ -18,6 +18,7 @@ import { PanelTabs } from '@client/shared/ui/PanelTabs';
 import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
 import { IconLabel } from '@client/shared/ui/IconLabel';
+import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
 
 type TranslateFn = ReturnType<typeof useI18n>['t'];
 type CaptureDetailTabId = 'timeline' | 'deferred-detail';
@@ -179,8 +180,10 @@ export function CapturesPlaceholder() {
   };
 
   return (
-    <>
-      <section className="shell-panel shell-panel--sidebar" aria-label="Section explorer">
+    <RoutePanelTabsLayout
+      defaultActiveTab="explorer"
+      explorer={(
+        <section className="shell-panel shell-panel--sidebar" aria-label="Section explorer">
         <div className="captures-explorer">
           <header className="captures-explorer__header">
             <div>
@@ -285,9 +288,10 @@ export function CapturesPlaceholder() {
             </ul>
           ) : null}
         </div>
-      </section>
-
-      <section className="shell-panel shell-panel--main" aria-label="Main work surface">
+        </section>
+      )}
+      main={(
+        <section className="shell-panel shell-panel--main" aria-label="Main work surface">
         <SectionHeading
           icon="captures"
           title={t('routes.captures.title')}
@@ -430,9 +434,10 @@ export function CapturesPlaceholder() {
             </div>
           </div>
         )}
-      </section>
-
-      <aside className="shell-panel shell-panel--detail" aria-label="Contextual detail panel">
+        </section>
+      )}
+      detail={(
+        <aside className="shell-panel shell-panel--detail" aria-label="Contextual detail panel">
         {!selectedCapture ? (
           <div className="workspace-detail-panel workspace-detail-panel--empty">
             <EmptyStateCallout
@@ -498,7 +503,8 @@ export function CapturesPlaceholder() {
             )}
           </div>
         )}
-      </aside>
-    </>
+        </aside>
+      )}
+    />
   );
 }
