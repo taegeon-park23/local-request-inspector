@@ -6,9 +6,10 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-height: 100vh; background: #020617; }
-#root { min-height: 100vh; }
-.shell-layout { min-height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+html, body, #root { height: 100%; }
+body { margin: 0; background: #020617; overflow: hidden; }
+#root { height: 100%; }
+.shell-layout { height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
 .shell-topbar {
   display: flex; justify-content: space-between; align-items: center; gap: 1rem;
   padding: 1rem 1.5rem; border-bottom: 1px solid #1e293b; background: #0f172a;
@@ -16,7 +17,7 @@ body { margin: 0; min-height: 100vh; background: #020617; }
 .shell-topbar__eyebrow,.section-placeholder__eyebrow { margin: 0; text-transform: uppercase; font-size: .75rem; letter-spacing: .08em; color: #38bdf8; }
 .shell-topbar h1,.section-placeholder__header h1,.shell-panel h2,.shell-panel h3,.shell-panel h4 { margin: .25rem 0 0; }
 .shell-health { margin: 0; color: #94a3b8; }
-.shell-body { display: grid; grid-template-columns: 220px 1fr; min-height: 0; }
+.shell-body { display: grid; grid-template-columns: 220px 1fr; min-height: 0; overflow: hidden; }
 .shell-nav { border-right: 1px solid #1e293b; padding: 1rem; background: #020617; }
 .shell-nav ul { margin: 0; padding: 0; list-style: none; display: grid; gap: .75rem; }
 .shell-nav__link {
@@ -24,7 +25,7 @@ body { margin: 0; min-height: 100vh; background: #020617; }
   border: 1px solid transparent; background: #0f172a;
 }
 .shell-nav__link--active { border-color: #38bdf8; background: #082f49; color: #f8fafc; }
-.shell-content { display: grid; grid-template-columns: minmax(220px, 280px) 1fr minmax(220px, 280px); gap: 1rem; padding: 1rem; min-height: 0; }
+.shell-content { display: grid; grid-template-columns: minmax(220px, 280px) 1fr minmax(220px, 280px); gap: 1rem; padding: 1rem; min-height: 0; overflow-y: auto; overflow-x: hidden; }
 .shell-panel { border: 1px solid #1e293b; border-radius: 1rem; padding: 1rem; background: #0f172a; }
 .shell-panel--main { min-height: 320px; }
 .shell-panel p { color: #94a3b8; }

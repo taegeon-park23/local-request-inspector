@@ -170,6 +170,28 @@ describe('Environments MVP route', () => {
     expect(screen.queryByDisplayValue('secret-token')).not.toBeInTheDocument();
   }, 15000);
 
+
+
+  it('shows selected environment content without extra panel tab clicks and supports explorer collapse', async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal('fetch', createEnvironmentsFetch());
+    renderApp(<AppRouter />, { initialEntries: ['/environments'] });
+
+    const explorer = screen.getByLabelText('Section explorer');
+    const detailPanel = screen.getByLabelText('Contextual detail panel');
+
+    await user.click(await within(explorer).findByRole('button', { name: 'Open environment Local API' }));
+    expect(screen.getByRole('heading', { name: 'Edit environment' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Environment name')).toHaveValue('Local API');
+    expect(within(detailPanel).getByText(/Current default intent/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Collapse explorer' }));
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
+    expect(screen.getByLabelText('Section explorer')).toBeInTheDocument();
+  });
+
   it('creates, updates, and deletes a persisted environment', async () => {
     const user = userEvent.setup();
     vi.stubGlobal('fetch', createEnvironmentsFetch());

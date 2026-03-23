@@ -173,6 +173,8 @@ export function EnvironmentsRoute() {
 
   return (
     <RoutePanelTabsLayout
+      layoutMode="floating-explorer"
+      floatingExplorerRouteKey="environments"
       defaultActiveTab="explorer"
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>

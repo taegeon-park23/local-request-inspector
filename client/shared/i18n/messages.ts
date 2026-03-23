@@ -48,6 +48,10 @@ const enCatalog = {
       explorerRegion: 'Section explorer',
       mainRegion: 'Main work surface',
       detailRegion: 'Contextual detail panel',
+      floatingExplorer: {
+        collapseAction: 'Collapse explorer',
+        expandAction: 'Expand explorer',
+      },
     },
   },
   roles: {
@@ -310,6 +314,10 @@ const koCatalog: CatalogShape<typeof enCatalog> = {
       explorerRegion: '섹션 탐색기',
       mainRegion: '메인 작업면',
       detailRegion: '컨텍스트 상세 패널',
+      floatingExplorer: {
+        collapseAction: '탐색기 접기',
+        expandAction: '탐색기 펼치기',
+      },
     },
   },
   roles: {
