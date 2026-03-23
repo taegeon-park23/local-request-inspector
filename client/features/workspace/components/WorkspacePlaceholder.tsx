@@ -32,10 +32,12 @@ import {
 } from '@client/features/workspace/resource-bundle.api';
 import {
   buildFallbackWorkspaceRequestTree,
+  createWorkspaceRequestGroup,
   deleteWorkspaceSavedRequest,
   listWorkspaceRequestTree,
   readWorkspaceSavedRequestDetail,
   workspaceRequestTreeQueryKey,
+  type WorkspaceCollectionNode,
   type WorkspaceTreeRequestLeaf,
 } from '@client/features/workspace/workspace-request-tree.api';
 import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
@@ -217,6 +219,44 @@ function readSavedRequestGroupName(record: SavedRequestResourceRecord) {
 
   return recordWithPlacement.requestGroupName ?? recordWithPlacement.folderName;
 }
+
+function buildRequestPlacementOptions(
+  tree: WorkspaceCollectionNode[],
+  defaults: {
+    collectionId: string;
+    requestGroupId: string;
+    collectionName: string;
+    requestGroupName: string;
+  } | undefined,
+) {
+  if (tree.length > 0) {
+    return tree.map((collection) => ({
+      collectionId: collection.collectionId,
+      collectionName: collection.name,
+      requestGroups: collection.children.length > 0
+        ? collection.children.map((requestGroup) => ({
+            requestGroupId: requestGroup.requestGroupId,
+            requestGroupName: requestGroup.name,
+          }))
+        : [{
+            requestGroupName: defaults?.requestGroupName ?? 'General',
+          }],
+    }));
+  }
+
+  if (!defaults) {
+    return [];
+  }
+
+  return [{
+    collectionId: defaults.collectionId,
+    collectionName: defaults.collectionName,
+    requestGroups: [{
+      requestGroupId: defaults.requestGroupId,
+      requestGroupName: defaults.requestGroupName,
+    }],
+  }];
+}
 export function WorkspacePlaceholder() {
   const queryClient = useQueryClient();
   const { locale, t } = useI18n();
@@ -376,6 +416,27 @@ export function WorkspacePlaceholder() {
     },
   });
 
+  const createRequestGroupMutation = useMutation({
+    mutationFn: ({ collectionId, name }: { collectionId: string; name: string }) => (
+      createWorkspaceRequestGroup(collectionId, { name })
+    ),
+    onSuccess: async (requestGroup) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: workspaceRequestTreeQueryKey }),
+        queryClient.invalidateQueries({ queryKey: workspaceSavedRequestsQueryKey }),
+      ]);
+      setResourceTransferStatus({
+        tone: 'success',
+        message: t('workspaceRoute.explorer.status.requestGroupCreated', { name: requestGroup.name }),
+      });
+    },
+    onError: (error) => {
+      setResourceTransferStatus({
+        tone: 'error',
+        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.requestGroupCreateFailed'),
+      });
+    },
+  });
   const deleteSavedRequestMutation = useMutation({
     mutationFn: deleteWorkspaceSavedRequest,
     onSuccess: async (deletedRequestId) => {
@@ -429,6 +490,7 @@ export function WorkspacePlaceholder() {
   const explorerTree = requestTreeQuery.data?.tree?.length
     ? requestTreeQuery.data.tree
     : buildFallbackWorkspaceRequestTree(savedRequestsQuery.data ?? []);
+  const requestPlacementOptions = buildRequestPlacementOptions(explorerTree, requestTreeQuery.data?.defaults);
   const resolvedTabs = tabs.map((tab) => resolvePresentationTab(tab, draftsByTabId[tab.id]));
   const activeTab = resolvedTabs.find((tab) => tab.id === activeTabId) ?? null;
   const activeTabKey = activeTab?.id ?? 'empty';
@@ -470,6 +532,19 @@ export function WorkspacePlaceholder() {
 
   const handleCreateRequest = () => {
     void openDraftFromSeed();
+  };
+
+  const handleCreateRequestGroup = async (collection: WorkspaceCollectionNode, name: string) => {
+    const nextName = name.trim();
+
+    if (nextName.length === 0) {
+      return;
+    }
+
+    await createRequestGroupMutation.mutateAsync({
+      collectionId: collection.collectionId,
+      name: nextName,
+    });
   };
 
   const handleOpenSavedRequest = async (request: WorkspaceTreeRequestLeaf) => {
@@ -597,6 +672,7 @@ export function WorkspacePlaceholder() {
           onOpenSavedRequest={handleOpenSavedRequest}
           onDeleteRequest={(request) => deleteSavedRequestMutation.mutate(request.id)}
           onExportRequest={(request) => exportRequestMutation.mutate(request)}
+          onCreateRequestGroup={handleCreateRequestGroup}
           onExportResources={() => exportResourcesMutation.mutate()}
           onImportResources={handleImportResources}
           importPreview={pendingImportPreview}
@@ -609,6 +685,7 @@ export function WorkspacePlaceholder() {
           isPreviewingImport={previewResourcesMutation.isPending}
           isImporting={importResourcesMutation.isPending}
           isDeletingRequest={deleteSavedRequestMutation.isPending}
+          isCreatingRequestGroup={createRequestGroupMutation.isPending}
         />
         </section>
       )}
@@ -637,6 +714,7 @@ export function WorkspacePlaceholder() {
           key={`work-${activeTabKey}`}
           activeTab={activeTab}
           onCreateRequest={handleCreateRequest}
+          placementOptions={requestPlacementOptions}
         />
         </section>
       )}

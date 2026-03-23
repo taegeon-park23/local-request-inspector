@@ -3653,6 +3653,17 @@ app.patch('/api/request-groups/:requestGroupId', (req, res) => {
       existingRecord,
       existingRecord.workspaceId || DEFAULT_WORKSPACE_ID,
     ));
+    const relatedRequests = listWorkspaceSavedRequestRecords(existingRecord.workspaceId || DEFAULT_WORKSPACE_ID)
+      .filter((record) => record.requestGroupId === req.params.requestGroupId);
+
+    for (const requestRecord of relatedRequests) {
+      resourceStorage.save('request', {
+        ...requestRecord,
+        requestGroupName: requestGroup.name,
+        folderName: requestGroup.name,
+      });
+    }
+
     return sendData(res, { requestGroup: presentRequestGroupRecord(requestGroup) });
   } catch (error) {
     return sendError(res, 500, 'request_group_update_failed', error.message, {

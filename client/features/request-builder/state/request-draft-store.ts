@@ -27,6 +27,16 @@ interface RequestDraftStoreState {
   ensureDraftForTab: (tab: RequestTabRecord, draftSeed?: RequestDraftSeed) => void;
   removeDraft: (tabId: string) => void;
   commitSavedDraft: (tabId: string, placement: { collectionId?: string; collectionName: string; requestGroupId?: string; requestGroupName?: string; folderName?: string }) => void;
+  updateDraftPlacement: (
+    tabId: string,
+    placement: {
+      collectionId?: string;
+      collectionName?: string;
+      requestGroupId?: string;
+      requestGroupName?: string;
+      folderName?: string;
+    },
+  ) => void;
   updateDraftName: (tabId: string, name: string) => void;
   updateDraftMethod: (tabId: string, method: RequestDraftState['method']) => void;
   updateDraftUrl: (tabId: string, url: string) => void;
@@ -235,6 +245,43 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
           baseline: createDraftSnapshotString(nextDraft),
           draft: nextDraft,
         };
+      }),
+    ),
+  updateDraftPlacement: (tabId, placement) =>
+    set((state) =>
+      updateDraftEntry(state, tabId, (entry) => {
+        const nextDraft: RequestDraftState = {
+          ...entry.draft,
+        };
+        const collectionName = placement.collectionName ?? entry.draft.collectionName;
+        const collectionId = placement.collectionId ?? entry.draft.collectionId;
+        const requestGroupId = placement.requestGroupId ?? entry.draft.requestGroupId;
+        const requestGroupName = placement.requestGroupName ?? placement.folderName;
+
+        delete nextDraft.collectionName;
+        delete nextDraft.collectionId;
+        delete nextDraft.requestGroupId;
+        delete nextDraft.requestGroupName;
+        delete nextDraft.folderName;
+
+        if (collectionName) {
+          nextDraft.collectionName = collectionName;
+        }
+
+        if (collectionId) {
+          nextDraft.collectionId = collectionId;
+        }
+
+        if (requestGroupId) {
+          nextDraft.requestGroupId = requestGroupId;
+        }
+
+        if (requestGroupName) {
+          nextDraft.requestGroupName = requestGroupName;
+          nextDraft.folderName = requestGroupName;
+        }
+
+        return withDirtyState(entry, nextDraft);
       }),
     ),
   updateDraftName: (tabId, name) =>

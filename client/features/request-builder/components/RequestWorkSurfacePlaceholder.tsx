@@ -61,9 +61,21 @@ const authTypeOptions: Array<{ value: RequestDraftState['auth']['type']; label: 
   { value: 'api-key', label: 'API key' },
 ];
 
+interface RequestPlacementGroupOption {
+  requestGroupId?: string;
+  requestGroupName: string;
+}
+
+interface RequestPlacementCollectionOption {
+  collectionId?: string;
+  collectionName: string;
+  requestGroups: RequestPlacementGroupOption[];
+}
+
 interface RequestWorkSurfacePlaceholderProps {
   activeTab: RequestTabRecord | null;
   onCreateRequest: () => void;
+  placementOptions: RequestPlacementCollectionOption[];
 }
 
 function formatSavedAt(
@@ -79,9 +91,34 @@ function formatSavedAt(
   return savedAtMessage(formatDateTime(savedAt, { timeStyle: 'short' }));
 }
 
+function findSelectedCollection(
+  placementOptions: RequestPlacementCollectionOption[],
+  draft: RequestDraftState,
+) {
+  return placementOptions.find((collection) => (
+    (draft.collectionId && collection.collectionId === draft.collectionId)
+    || (!draft.collectionId && collection.collectionName === draft.collectionName)
+  )) ?? placementOptions[0] ?? null;
+}
+
+function findSelectedRequestGroup(
+  collection: RequestPlacementCollectionOption | null,
+  draft: RequestDraftState,
+) {
+  if (!collection) {
+    return null;
+  }
+
+  return collection.requestGroups.find((requestGroup) => (
+    (draft.requestGroupId && requestGroup.requestGroupId === draft.requestGroupId)
+    || requestGroup.requestGroupName === (draft.requestGroupName ?? draft.folderName)
+  )) ?? collection.requestGroups[0] ?? null;
+}
+
 export function RequestWorkSurfacePlaceholder({
   activeTab,
   onCreateRequest,
+  placementOptions,
 }: RequestWorkSurfacePlaceholderProps) {
   const { t, formatDateTime } = useI18n();
   const draft = useRequestDraftStore((state) =>
@@ -101,6 +138,7 @@ export function RequestWorkSurfacePlaceholder({
   const setActiveScriptStage = useRequestDraftStore((state) => state.setActiveScriptStage);
   const updateScriptContent = useRequestDraftStore((state) => state.updateScriptContent);
   const updateSelectedEnvironmentId = useRequestDraftStore((state) => state.updateSelectedEnvironmentId);
+  const updateDraftPlacement = useRequestDraftStore((state) => state.updateDraftPlacement);
   const environmentsQuery = useQuery({
     queryKey: workspaceEnvironmentsQueryKey,
     queryFn: listWorkspaceEnvironments,
@@ -166,6 +204,15 @@ export function RequestWorkSurfacePlaceholder({
         : selectedEnvironment
           ? t('workspaceRoute.requestBuilder.environment.selected', { name: selectedEnvironment.name, count: selectedEnvironment.enabledVariableCount })
           : t('workspaceRoute.requestBuilder.environment.noneSelected');
+  const selectedCollection = findSelectedCollection(placementOptions, draft);
+  const selectedRequestGroup = findSelectedRequestGroup(selectedCollection, draft);
+  const collectionSelectValue = selectedCollection?.collectionId ?? selectedCollection?.collectionName ?? '';
+  const requestGroupSelectValue = selectedRequestGroup?.requestGroupId ?? selectedRequestGroup?.requestGroupName ?? '';
+  const placementSupportCopy = selectedCollection && selectedRequestGroup
+    ? t('workspaceRoute.requestBuilder.placement.selected', {
+        path: `${selectedCollection.collectionName} / ${selectedRequestGroup.requestGroupName}`,
+      })
+    : t('workspaceRoute.requestBuilder.placement.unavailable');
 
   return (
     <div className="request-work-surface request-builder-core" data-testid="request-work-surface">
@@ -199,6 +246,73 @@ export function RequestWorkSurfacePlaceholder({
           </label>
           <div className="request-builder-core__identity-support">
             <p className="request-builder-core__source-copy">{locationSummary}</p>
+            <div className="request-builder-core__placement-grid">
+              <label className="request-field request-field--compact">
+                <span>{t('workspaceRoute.requestBuilder.fields.saveCollection')}</span>
+                <select
+                  aria-label="Save collection"
+                  value={collectionSelectValue}
+                  onChange={(event) => {
+                    const nextCollection = placementOptions.find((collection) => (
+                      (collection.collectionId ?? collection.collectionName) === event.currentTarget.value
+                    ));
+
+                    if (!nextCollection) {
+                      return;
+                    }
+
+                    const nextRequestGroup = nextCollection.requestGroups[0] ?? { requestGroupName: 'General' };
+                    updateDraftPlacement(draft.tabId, {
+                      ...(nextCollection.collectionId ? { collectionId: nextCollection.collectionId } : {}),
+                      collectionName: nextCollection.collectionName,
+                      ...(nextRequestGroup.requestGroupId ? { requestGroupId: nextRequestGroup.requestGroupId } : {}),
+                      requestGroupName: nextRequestGroup.requestGroupName,
+                      folderName: nextRequestGroup.requestGroupName,
+                    });
+                  }}
+                >
+                  {placementOptions.map((collection) => (
+                    <option key={collection.collectionId ?? collection.collectionName} value={collection.collectionId ?? collection.collectionName}>
+                      {collection.collectionName}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="request-field request-field--compact">
+                <span>{t('workspaceRoute.requestBuilder.fields.saveRequestGroup')}</span>
+                <select
+                  aria-label="Save request group"
+                  value={requestGroupSelectValue}
+                  onChange={(event) => {
+                    const nextRequestGroup = selectedCollection?.requestGroups.find((requestGroup) => (
+                      (requestGroup.requestGroupId ?? requestGroup.requestGroupName) === event.currentTarget.value
+                    ));
+
+                    if (!selectedCollection || !nextRequestGroup) {
+                      return;
+                    }
+
+                    updateDraftPlacement(draft.tabId, {
+                      ...(selectedCollection.collectionId ? { collectionId: selectedCollection.collectionId } : {}),
+                      collectionName: selectedCollection.collectionName,
+                      ...(nextRequestGroup.requestGroupId ? { requestGroupId: nextRequestGroup.requestGroupId } : {}),
+                      requestGroupName: nextRequestGroup.requestGroupName,
+                      folderName: nextRequestGroup.requestGroupName,
+                    });
+                  }}
+                  disabled={!selectedCollection || selectedCollection.requestGroups.length === 0}
+                >
+                  {(selectedCollection?.requestGroups.length ?? 0) > 0
+                    ? selectedCollection?.requestGroups.map((requestGroup) => (
+                        <option key={requestGroup.requestGroupId ?? requestGroup.requestGroupName} value={requestGroup.requestGroupId ?? requestGroup.requestGroupName}>
+                          {requestGroup.requestGroupName}
+                        </option>
+                      ))
+                    : <option value="">{t('workspaceRoute.requestBuilder.placement.noRequestGroups')}</option>}
+                </select>
+              </label>
+            </div>
+            <p className="shared-readiness-note">{placementSupportCopy}</p>
             <label className="request-field request-field--compact">
               <span>{t('workspaceRoute.requestBuilder.fields.requestEnvironment')}</span>
               <select

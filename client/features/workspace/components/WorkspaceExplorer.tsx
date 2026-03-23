@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import type {
   WorkspaceCollectionNode,
+  WorkspaceRequestGroupNode,
   WorkspaceTreeRequestLeaf,
 } from '@client/features/workspace/workspace-request-tree.api';
 import type { AuthoredResourceBundleImportPreviewResult } from '@client/features/workspace/resource-bundle.api';
@@ -20,6 +22,7 @@ interface WorkspaceExplorerProps {
   onOpenSavedRequest: (request: WorkspaceTreeRequestLeaf) => void | Promise<void>;
   onDeleteRequest: (request: WorkspaceTreeRequestLeaf) => void;
   onExportRequest: (request: WorkspaceTreeRequestLeaf) => void;
+  onCreateRequestGroup: (collection: WorkspaceCollectionNode, name: string) => void | Promise<void>;
   onExportResources: () => void;
   onImportResources: (file: File) => void;
   importPreview: WorkspaceImportPreview | null;
@@ -32,6 +35,7 @@ interface WorkspaceExplorerProps {
   isPreviewingImport: boolean;
   isImporting: boolean;
   isDeletingRequest: boolean;
+  isCreatingRequestGroup: boolean;
 }
 
 interface WorkspaceExplorerNodeListProps {
@@ -40,6 +44,8 @@ interface WorkspaceExplorerNodeListProps {
   onOpenSavedRequest: (request: WorkspaceTreeRequestLeaf) => void | Promise<void>;
   onDeleteRequest: (request: WorkspaceTreeRequestLeaf) => void;
   onExportRequest: (request: WorkspaceTreeRequestLeaf) => void;
+  onCreateRequestGroup: (collection: WorkspaceCollectionNode, name: string) => void | Promise<void>;
+  isCreatingRequestGroup: boolean;
 }
 
 function findSelectedRequestPath(nodes: WorkspaceCollectionNode[], selectedRequestId: string | null) {
@@ -77,6 +83,68 @@ function getSelectionPathLabel(
   return `${selectedPath.collectionName} / ${selectedPath.requestGroupName} / ${selectedPath.request.name}`;
 }
 
+function WorkspaceRequestGroupComposer({
+  label,
+  value,
+  disabled,
+  onChange,
+  onConfirm,
+  onCancel,
+}: {
+  label: string;
+  value: string;
+  disabled: boolean;
+  onChange: (value: string) => void;
+  onConfirm: () => void | Promise<void>;
+  onCancel: () => void;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <div className="workspace-tree-composer">
+      <label className="request-field request-field--compact workspace-tree-composer__field">
+        <span>{label}</span>
+        <input
+          aria-label={label}
+          type="text"
+          value={value}
+          onChange={(event) => onChange(event.currentTarget.value)}
+        />
+      </label>
+      <div className="workspace-tree-composer__actions">
+        <button type="button" className="workspace-button workspace-button--secondary" onClick={() => void onConfirm()} disabled={disabled || value.trim().length === 0}>
+          <IconLabel icon="save">{t('workspaceRoute.explorer.actions.saveRequestGroup')}</IconLabel>
+        </button>
+        <button type="button" className="workspace-button workspace-button--ghost" onClick={onCancel} disabled={disabled}>
+          <IconLabel icon="delete">{t('workspaceRoute.explorer.actions.cancelRequestGroup')}</IconLabel>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function WorkspaceRequestGroupNodeSummary({
+  requestGroup,
+}: {
+  requestGroup: WorkspaceRequestGroupNode;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <div className="workspace-tree-node workspace-tree-node--managed" data-kind="request-group">
+      <div className="workspace-tree-node__copy">
+        <div className="workspace-tree-node__title-row">
+          <span className="workspace-tree-node__kind">{t('workspaceRoute.explorer.tree.kindRequestGroup')}</span>
+          <span className="workspace-tree-node__label">{requestGroup.name}</span>
+        </div>
+        <p className="workspace-tree-node__meta">
+          {t('workspaceRoute.explorer.tree.requestCount', { count: requestGroup.children.length })}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function WorkspaceExplorer({
   tree,
   selectedRequestId,
@@ -84,6 +152,7 @@ export function WorkspaceExplorer({
   onOpenSavedRequest,
   onDeleteRequest,
   onExportRequest,
+  onCreateRequestGroup,
   onExportResources,
   onImportResources,
   importPreview,
@@ -96,6 +165,7 @@ export function WorkspaceExplorer({
   isPreviewingImport,
   isImporting,
   isDeletingRequest,
+  isCreatingRequestGroup,
 }: WorkspaceExplorerProps) {
   const { t } = useI18n();
   const selectionPathLabel = getSelectionPathLabel(tree, selectedRequestId);
@@ -116,7 +186,7 @@ export function WorkspaceExplorer({
             type="button"
             className="workspace-button workspace-button--secondary"
             onClick={onExportResources}
-            disabled={isExporting || isPreviewingImport || isImporting || isDeletingRequest}
+            disabled={isExporting || isPreviewingImport || isImporting || isDeletingRequest || isCreatingRequestGroup}
           >
             <IconLabel icon="export">
               {isExporting ? t('workspaceRoute.explorer.actions.exportingResources') : t('workspaceRoute.explorer.actions.exportResources')}
@@ -135,7 +205,7 @@ export function WorkspaceExplorer({
               className="workspace-explorer__file-input"
               type="file"
               accept="application/json,.json"
-              disabled={isPreviewingImport || isImporting || isDeletingRequest}
+              disabled={isPreviewingImport || isImporting || isDeletingRequest || isCreatingRequestGroup}
               onChange={(event) => {
                 const file = event.currentTarget.files?.[0];
                 if (!file) {
@@ -205,6 +275,8 @@ export function WorkspaceExplorer({
         onOpenSavedRequest={onOpenSavedRequest}
         onDeleteRequest={onDeleteRequest}
         onExportRequest={onExportRequest}
+        onCreateRequestGroup={onCreateRequestGroup}
+        isCreatingRequestGroup={isCreatingRequestGroup}
       />
     </div>
   );
@@ -216,24 +288,68 @@ function WorkspaceExplorerNodeList({
   onOpenSavedRequest,
   onDeleteRequest,
   onExportRequest,
+  onCreateRequestGroup,
+  isCreatingRequestGroup,
 }: WorkspaceExplorerNodeListProps) {
   const { t } = useI18n();
+  const [creatingCollectionId, setCreatingCollectionId] = useState<string | null>(null);
+  const [draftRequestGroupName, setDraftRequestGroupName] = useState('');
 
   return (
     <ul className="workspace-explorer__tree" data-depth={0}>
       {nodes.map((collection) => (
         <li key={collection.id}>
-          <div className="workspace-tree-node" data-kind="collection">
-            <span className="workspace-tree-node__kind">{t('workspaceRoute.explorer.tree.kindCollection')}</span>
-            <span className="workspace-tree-node__label">{collection.name}</span>
+          <div className="workspace-tree-node workspace-tree-node--managed" data-kind="collection">
+            <div className="workspace-tree-node__copy">
+              <div className="workspace-tree-node__title-row">
+                <span className="workspace-tree-node__kind">{t('workspaceRoute.explorer.tree.kindCollection')}</span>
+                <span className="workspace-tree-node__label">{collection.name}</span>
+              </div>
+              <p className="workspace-tree-node__meta">
+                {t('workspaceRoute.explorer.tree.requestGroupCount', { count: collection.children.length })}
+              </p>
+            </div>
+            <div className="workspace-tree-node__actions">
+              <button
+                type="button"
+                className="workspace-button workspace-button--ghost"
+                aria-label={t('workspaceRoute.explorer.actions.createRequestGroup', { name: collection.name })}
+                onClick={() => {
+                  setCreatingCollectionId(collection.collectionId);
+                  setDraftRequestGroupName('');
+                }}
+                disabled={isCreatingRequestGroup}
+              >
+                <IconLabel icon="add">{t('workspaceRoute.explorer.actions.createRequestGroupShort')}</IconLabel>
+              </button>
+            </div>
           </div>
+          {creatingCollectionId === collection.collectionId ? (
+            <WorkspaceRequestGroupComposer
+              label={t('workspaceRoute.explorer.fields.requestGroupName')}
+              value={draftRequestGroupName}
+              disabled={isCreatingRequestGroup}
+              onChange={setDraftRequestGroupName}
+              onConfirm={async () => {
+                await onCreateRequestGroup(collection, draftRequestGroupName.trim());
+                setCreatingCollectionId(null);
+                setDraftRequestGroupName('');
+              }}
+              onCancel={() => {
+                setCreatingCollectionId(null);
+                setDraftRequestGroupName('');
+              }}
+            />
+          ) : null}
           <ul className="workspace-explorer__tree" data-depth={1}>
+            {collection.children.length === 0 ? (
+              <li>
+                <p className="workspace-tree-empty-note">{t('workspaceRoute.explorer.tree.noRequestGroups')}</p>
+              </li>
+            ) : null}
             {collection.children.map((requestGroup) => (
               <li key={requestGroup.id}>
-                <div className="workspace-tree-node" data-kind="request-group">
-                  <span className="workspace-tree-node__kind">{t('workspaceRoute.explorer.tree.kindRequestGroup')}</span>
-                  <span className="workspace-tree-node__label">{requestGroup.name}</span>
-                </div>
+                <WorkspaceRequestGroupNodeSummary requestGroup={requestGroup} />
                 <ul className="workspace-explorer__tree" data-depth={2}>
                   {requestGroup.children.map((requestNode) => {
                     const isSelected = selectedRequestId === requestNode.request.id;

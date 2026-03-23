@@ -109,6 +109,272 @@ describe('Workspace request builder authoring shell', () => {
     expect(screen.getByText(/Local API contributes 3 enabled variable\(s\) to this request at run time/i)).toBeInTheDocument();
   });
 
+  it('creates a request group inside the canonical collection tree', async () => {
+    const user = userEvent.setup();
+    const requestTreeResponse = {
+      defaults: {
+        collectionId: 'collection-saved-requests',
+        requestGroupId: 'request-group-general',
+        collectionName: 'Saved Requests',
+        requestGroupName: 'General',
+      },
+      collections: [
+        {
+          id: 'collection-saved-requests',
+          workspaceId: 'local-workspace',
+          name: 'Saved Requests',
+          description: '',
+        },
+      ],
+      requestGroups: [
+        {
+          id: 'request-group-general',
+          workspaceId: 'local-workspace',
+          collectionId: 'collection-saved-requests',
+          name: 'General',
+          description: '',
+        },
+      ],
+      tree: [
+        {
+          id: 'collection-node-collection-saved-requests',
+          kind: 'collection',
+          collectionId: 'collection-saved-requests',
+          name: 'Saved Requests',
+          description: '',
+          children: [
+            {
+              id: 'request-group-node-request-group-general',
+              kind: 'request-group',
+              collectionId: 'collection-saved-requests',
+              requestGroupId: 'request-group-general',
+              name: 'General',
+              description: '',
+              children: [],
+            },
+          ],
+        },
+      ],
+    };
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+      const method = init?.method ?? 'GET';
+
+      if (url === '/api/workspaces/local-workspace/requests' && method === 'GET') {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/request-tree' && method === 'GET') {
+        return createApiResponse(requestTreeResponse);
+      }
+
+      if (url === '/api/collections/collection-saved-requests/request-groups' && method === 'POST') {
+        const payload = JSON.parse(String(init?.body ?? '{}')) as { requestGroup?: { name?: string } };
+        const requestGroupName = payload.requestGroup?.name ?? 'Untitled group';
+        const requestGroupId = `request-group-${requestGroupName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+
+        requestTreeResponse.requestGroups.push({
+          id: requestGroupId,
+          workspaceId: 'local-workspace',
+          collectionId: 'collection-saved-requests',
+          name: requestGroupName,
+          description: '',
+        });
+        requestTreeResponse.tree[0]?.children.push({
+          id: `request-group-node-${requestGroupId}`,
+          kind: 'request-group',
+          collectionId: 'collection-saved-requests',
+          requestGroupId,
+          name: requestGroupName,
+          description: '',
+          children: [],
+        });
+
+        return createApiResponse({
+          requestGroup: {
+            id: requestGroupId,
+            workspaceId: 'local-workspace',
+            collectionId: 'collection-saved-requests',
+            name: requestGroupName,
+            description: '',
+          },
+        }, 201);
+      }
+
+      if (url === '/api/workspaces/local-workspace/environments' && method === 'GET') {
+        return createApiResponse({ items: [] });
+      }
+
+      throw new Error(`Unexpected fetch call: ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    const explorer = screen.getByLabelText('Section explorer');
+    await within(explorer).findByText('Saved Requests');
+
+    await user.click(within(explorer).getByRole('button', { name: 'Create request group in Saved Requests' }));
+    await user.type(screen.getByLabelText('Request group name'), 'Auth flows');
+    await user.click(screen.getByRole('button', { name: 'Create group' }));
+
+    expect(await within(explorer).findByText('Auth flows')).toBeInTheDocument();
+    expect(await within(explorer).findByText('Created request group Auth flows in the canonical explorer tree.')).toBeInTheDocument();
+  });
+
+  it('persists the selected collection and request group when saving a draft', async () => {
+    const user = userEvent.setup();
+    let savedPayload: Record<string, unknown> | null = null;
+
+    const requestTreeResponse = {
+      defaults: {
+        collectionId: 'collection-saved-requests',
+        requestGroupId: 'request-group-general',
+        collectionName: 'Saved Requests',
+        requestGroupName: 'General',
+      },
+      collections: [
+        {
+          id: 'collection-saved-requests',
+          workspaceId: 'local-workspace',
+          name: 'Saved Requests',
+          description: '',
+        },
+      ],
+      requestGroups: [
+        {
+          id: 'request-group-general',
+          workspaceId: 'local-workspace',
+          collectionId: 'collection-saved-requests',
+          name: 'General',
+          description: '',
+        },
+        {
+          id: 'request-group-auth-flows',
+          workspaceId: 'local-workspace',
+          collectionId: 'collection-saved-requests',
+          name: 'Auth flows',
+          description: '',
+        },
+      ],
+      tree: [
+        {
+          id: 'collection-node-collection-saved-requests',
+          kind: 'collection',
+          collectionId: 'collection-saved-requests',
+          name: 'Saved Requests',
+          description: '',
+          children: [
+            {
+              id: 'request-group-node-request-group-general',
+              kind: 'request-group',
+              collectionId: 'collection-saved-requests',
+              requestGroupId: 'request-group-general',
+              name: 'General',
+              description: '',
+              children: [],
+            },
+            {
+              id: 'request-group-node-request-group-auth-flows',
+              kind: 'request-group',
+              collectionId: 'collection-saved-requests',
+              requestGroupId: 'request-group-auth-flows',
+              name: 'Auth flows',
+              description: '',
+              children: [],
+            },
+          ],
+        },
+      ],
+    };
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+      const method = init?.method ?? 'GET';
+
+      if (url === '/api/workspaces/local-workspace/requests' && method === 'GET') {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/request-tree' && method === 'GET') {
+        return createApiResponse(requestTreeResponse);
+      }
+
+      if (url === '/api/workspaces/local-workspace/environments' && method === 'GET') {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/requests' && method === 'POST') {
+        const payload = JSON.parse(String(init?.body ?? '{}')) as { request?: Record<string, unknown> };
+        savedPayload = payload.request ?? null;
+
+        return createApiResponse({
+          request: {
+            id: 'request-auth-flows',
+            workspaceId: 'local-workspace',
+            name: String(payload.request?.name ?? 'Untitled Request'),
+            method: String(payload.request?.method ?? 'GET'),
+            url: String(payload.request?.url ?? ''),
+            selectedEnvironmentId: null,
+            params: [],
+            headers: [],
+            bodyMode: 'none',
+            bodyText: '',
+            formBody: [],
+            multipartBody: [],
+            auth: {
+              type: 'none',
+              bearerToken: '',
+              basicUsername: '',
+              basicPassword: '',
+              apiKeyName: '',
+              apiKeyValue: '',
+              apiKeyPlacement: 'header',
+            },
+            scripts: {
+              activeStage: 'pre-request',
+              preRequest: '',
+              postResponse: '',
+              tests: '',
+            },
+            collectionId: 'collection-saved-requests',
+            collectionName: 'Saved Requests',
+            requestGroupId: 'request-group-auth-flows',
+            requestGroupName: 'Auth flows',
+            folderName: 'Auth flows',
+            summary: 'Saved draft in auth flows',
+            createdAt: '2026-03-23T10:00:00.000Z',
+            updatedAt: '2026-03-23T10:00:00.000Z',
+          },
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    await openNewRequest(user);
+
+    expect(screen.getByText('Request will save to Saved Requests / General.')).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText('Save request group'), 'request-group-auth-flows');
+    expect(screen.getByText('Request will save to Saved Requests / Auth flows.')).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Request URL'), 'http://localhost:5671/auth/health');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(savedPayload).not.toBeNull());
+    expect(savedPayload).toMatchObject({
+      collectionId: 'collection-saved-requests',
+      collectionName: 'Saved Requests',
+      requestGroupId: 'request-group-auth-flows',
+      requestGroupName: 'Auth flows',
+      folderName: 'Auth flows',
+    });
+  });
+
   it('updates method and url draft values and shows a dirty indicator', async () => {
     const user = userEvent.setup();
     renderApp(<AppRouter />);

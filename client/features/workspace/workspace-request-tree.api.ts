@@ -89,6 +89,11 @@ export interface WorkspaceRequestTreeResponse {
 
 export const workspaceRequestTreeQueryKey = ['workspace-request-tree', DEFAULT_WORKSPACE_ID] as const;
 
+export interface WorkspaceRequestGroupInput {
+  name: string;
+  description?: string;
+}
+
 async function parseJsonResponse<TData>(response: Response): Promise<TData> {
   const responseText = await response.text();
   const payload = responseText.length > 0
@@ -127,6 +132,44 @@ export async function deleteWorkspaceSavedRequest(requestId: string) {
     method: 'DELETE',
   });
   return parseJsonResponse<{ deletedRequestId: string }>(response).then((payload) => payload.deletedRequestId);
+}
+
+export async function createWorkspaceRequestGroup(
+  collectionId: string,
+  requestGroup: WorkspaceRequestGroupInput,
+) {
+  const response = await fetch(`/api/collections/${collectionId}/request-groups`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ requestGroup }),
+  });
+
+  return parseJsonResponse<{ requestGroup: WorkspaceRequestGroupRecord }>(response).then((payload) => payload.requestGroup);
+}
+
+export async function updateWorkspaceRequestGroup(
+  requestGroupId: string,
+  requestGroup: WorkspaceRequestGroupInput,
+) {
+  const response = await fetch(`/api/request-groups/${requestGroupId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ requestGroup }),
+  });
+
+  return parseJsonResponse<{ requestGroup: WorkspaceRequestGroupRecord }>(response).then((payload) => payload.requestGroup);
+}
+
+export async function deleteWorkspaceRequestGroup(requestGroupId: string) {
+  const response = await fetch(`/api/request-groups/${requestGroupId}`, {
+    method: 'DELETE',
+  });
+
+  return parseJsonResponse<{ deletedRequestGroupId: string }>(response).then((payload) => payload.deletedRequestGroupId);
 }
 
 function compareSavedRequests(left: SavedRequestResourceRecord, right: SavedRequestResourceRecord) {

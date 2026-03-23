@@ -24,6 +24,10 @@ export const workspaceRouteMessagesEn = {
         exportRequest: 'Export {name}',
         deleteRequest: 'Delete {name}',
         deleteRequestShort: 'Delete',
+        createRequestGroup: 'Create request group in {name}',
+        createRequestGroupShort: 'New group',
+        saveRequestGroup: 'Create group',
+        cancelRequestGroup: 'Cancel',
       },
       notes: {
         boundary:
@@ -60,6 +64,8 @@ export const workspaceRouteMessagesEn = {
         exportSingleFailed: 'Saved request export failed before a bundle could be downloaded.',
         requestDeleted: 'Saved request was deleted from the canonical explorer tree. Open tabs were kept as detached drafts.',
         requestDeleteFailed: 'Saved request deletion failed before the explorer tree could be updated.',
+        requestGroupCreated: 'Created request group {name} in the canonical explorer tree.',
+        requestGroupCreateFailed: 'Request group creation failed before the explorer tree could be updated.',
         bundleCollectionCount: 'Collections in bundle: {count}',
         bundleRequestGroupCount: 'Request groups in bundle: {count}',
         bundleRequestCount: 'Saved requests in bundle: {count}',
@@ -78,6 +84,12 @@ export const workspaceRouteMessagesEn = {
       tree: {
         kindCollection: 'collection',
         kindRequestGroup: 'request group',
+        requestGroupCount: '{count} request group(s)',
+        requestCount: '{count} request(s)',
+        noRequestGroups: 'No request groups exist in this collection yet.',
+      },
+      fields: {
+        requestGroupName: 'Request group name',
       },
       selection: {
         current: 'Current selection: {path}',
@@ -124,9 +136,16 @@ export const workspaceRouteMessagesEn = {
       },
       fields: {
         requestName: 'Request name',
+        saveCollection: 'Save collection',
+        saveRequestGroup: 'Save request group',
         requestEnvironment: 'Request environment',
         requestMethod: 'Request method',
         requestUrl: 'Request URL',
+      },
+      placement: {
+        selected: 'Request will save to {path}.',
+        unavailable: 'No canonical save placement is available yet.',
+        noRequestGroups: 'Create a request group to enable saved placement.',
       },
       environment: {
         noEnvironment: 'No environment',
@@ -515,6 +534,10 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         exportRequest: '{name} 내보내기',
         deleteRequest: '{name} 삭제',
         deleteRequestShort: '삭제',
+        createRequestGroup: '{name}에 요청 그룹 생성',
+        createRequestGroupShort: '새 그룹',
+        saveRequestGroup: '그룹 생성',
+        cancelRequestGroup: '취소',
       },
       notes: {
         boundary:
@@ -551,6 +574,8 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         exportSingleFailed: '번들을 다운로드하기 전에 저장 요청 내보내기에 실패했습니다.',
         requestDeleted: '저장 요청을 기준 탐색기 트리에서 삭제했습니다. 열려 있던 탭은 분리된 draft로 유지했습니다.',
         requestDeleteFailed: '탐색기 트리를 갱신하기 전에 저장 요청 삭제에 실패했습니다.',
+        requestGroupCreated: '기준 탐색기 트리에 요청 그룹 {name}을 만들었습니다.',
+        requestGroupCreateFailed: '탐색기 트리를 갱신하기 전에 요청 그룹 생성에 실패했습니다.',
         bundleCollectionCount: '번들 안의 컬렉션: {count}',
         bundleRequestGroupCount: '번들 안의 요청 그룹: {count}',
         bundleRequestCount: '번들 안의 저장 요청: {count}',
@@ -569,6 +594,12 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
       tree: {
         kindCollection: '컬렉션',
         kindRequestGroup: '요청 그룹',
+        requestGroupCount: '요청 그룹 {count}개',
+        requestCount: '요청 {count}개',
+        noRequestGroups: '이 컬렉션에는 아직 요청 그룹이 없습니다.',
+      },
+      fields: {
+        requestGroupName: '요청 그룹 이름',
       },
       selection: {
         current: '현재 선택: {path}',
@@ -615,9 +646,16 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
       },
       fields: {
         requestName: '요청 이름',
+        saveCollection: '저장 컬렉션',
+        saveRequestGroup: '저장 요청 그룹',
         requestEnvironment: '요청 환경',
         requestMethod: '요청 메서드',
         requestUrl: '요청 URL',
+      },
+      placement: {
+        selected: '{path} 위치에 저장됩니다.',
+        unavailable: '아직 정규 저장 위치를 선택할 수 없습니다.',
+        noRequestGroups: '저장 위치를 사용하려면 요청 그룹을 먼저 만드세요.',
       },
       environment: {
         noEnvironment: '환경 없음',
