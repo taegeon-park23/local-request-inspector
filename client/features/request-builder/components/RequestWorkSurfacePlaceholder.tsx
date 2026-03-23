@@ -133,14 +133,17 @@ export function RequestWorkSurfacePlaceholder({
     );
   }
 
-    const displayTitle = draft.name.trim() || 'Untitled Request';
+  const displayTitle = draft.name.trim() || 'Untitled Request';
   const replaySource = activeTab.source === 'replay' ? activeTab.replaySource ?? null : null;
+  const requestPlacementPath = draft.collectionName
+    ? `${draft.collectionName}${draft.requestGroupName || draft.folderName ? ` / ${draft.requestGroupName ?? draft.folderName}` : ''}`
+    : null;
   const locationSummary = replaySource
     ? replaySource.description
     : activeTab.source === 'saved'
-      ? `${draft.collectionName}${draft.folderName ? ` / ${draft.folderName}` : ''}`
-      : draft.collectionName
-        ? t('workspaceRoute.requestBuilder.location.defaultSavePlacement', { path: `${draft.collectionName}${draft.folderName ? ` / ${draft.folderName}` : ''}` })
+      ? requestPlacementPath ?? t('workspaceRoute.requestBuilder.location.unsavedDraft')
+      : requestPlacementPath
+        ? t('workspaceRoute.requestBuilder.location.defaultSavePlacement', { path: requestPlacementPath })
         : t('workspaceRoute.requestBuilder.location.unsavedDraft');
   const saveStatusCopy = saveStatus.status === 'success'
     ? formatSavedAt(
@@ -540,3 +543,5 @@ export function RequestWorkSurfacePlaceholder({
     </div>
   );
 }
+
+

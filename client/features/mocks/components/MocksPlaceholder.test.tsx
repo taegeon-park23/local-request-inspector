@@ -252,16 +252,35 @@ function createMockRulesFetch(initialRules = defaultMockRuleFixtureRecords) {
 
 describe('Mocks S16 persisted CRUD surface', () => {
   it('renders persisted mock rules without collapsing rule state into mock outcome family', async () => {
-    vi.stubGlobal('fetch', createMockRulesFetch());
+    const firstRule = {
+      ...cloneRule(defaultMockRuleFixtureRecords[0]!),
+      priority: 90,
+      pathMode: 'prefix' as const,
+      pathValue: '/webhooks/stripe/events/with/an/extended/match/path/that/should-stay-visible-in-rule-cards',
+      fixedDelayMs: 250,
+    };
+    const secondRule = cloneRule(defaultMockRuleFixtureRecords[1]!);
+
+    vi.stubGlobal('fetch', createMockRulesFetch([firstRule, secondRule]));
     renderApp(<AppRouter />, { initialEntries: ['/mocks'] });
 
     expect(screen.getByRole('heading', { name: 'Mocks' })).toBeInTheDocument();
     expect(screen.getByLabelText('Search rules')).toBeInTheDocument();
     expect(screen.getByLabelText('Rule state filter')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Selected rule' })).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: 'Open mock rule Stripe webhook accepted' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save rule' })).toBeEnabled();
     expect(screen.getByText(/Persisted authored rules live here/i)).toBeInTheDocument();
     expect(screen.getByText(/Runtime mock outcomes remain in Captures/i)).toBeInTheDocument();
+    expect(screen.getAllByText('Path prefix: /webhooks/stripe/events/with/an/extended/match/path/that/should-stay-visible-in-rule-cards').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Static 202 response with 250 ms fixed delay.').length).toBeGreaterThan(0);
+    expect(screen.getByText('Fixed delay: 250 ms · Persisted workspace rule')).toBeInTheDocument();
+
+    const mocksHeaderBadges = document.querySelector('.mocks-detail__header .observation-detail__badge-rail');
+    expect(mocksHeaderBadges).not.toBeNull();
+    expect(within(mocksHeaderBadges as HTMLElement).getByText('Enabled', { selector: '[data-kind="neutral"]' })).toBeInTheDocument();
+    expect(within(mocksHeaderBadges as HTMLElement).getByText('Priority 90')).toBeInTheDocument();
+    expect(within(mocksHeaderBadges as HTMLElement).queryByText('Fixed delay: 250 ms')).not.toBeInTheDocument();
     expect(screen.getAllByText('Enabled', { selector: '[data-kind="neutral"]' }).length).toBeGreaterThan(0);
     expect(screen.queryByText('Mocked', { selector: '[data-kind="mockOutcome"]' })).not.toBeInTheDocument();
   });
@@ -291,6 +310,7 @@ describe('Mocks S16 persisted CRUD surface', () => {
     await screen.findByRole('button', { name: 'Open mock rule Stripe webhook accepted' });
     await user.click(screen.getByRole('button', { name: 'New Rule' }));
 
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
     expect(screen.getByRole('heading', { name: 'Create mock rule' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create rule' })).toBeDisabled();
 
@@ -348,6 +368,7 @@ describe('Mocks S16 persisted CRUD surface', () => {
     ]);
 
     await user.click(within(rulesList).getByRole('button', { name: 'Open mock rule Maintenance banner fallback' }));
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
     await user.click(screen.getByRole('button', { name: 'Delete rule' }));
 
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Open mock rule Maintenance banner fallback' })).not.toBeInTheDocument());

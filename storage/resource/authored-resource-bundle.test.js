@@ -12,13 +12,17 @@ const {
   const bundle = buildAuthoredResourceBundle({
     workspaceId: 'local-workspace',
     exportedAt: '2026-03-21T00:00:00.000Z',
+    collections: [{ id: 'collection-1', name: 'Saved Requests' }],
+    requestGroups: [{ id: 'request-group-1', collectionId: 'collection-1', name: 'General' }],
     requests: [{ id: 'request-1', name: 'Health check' }],
     mockRules: [{ id: 'mock-rule-1', name: 'Health mock' }],
   });
 
   assert.deepEqual(Object.keys(bundle).sort(), [
+    'collections',
     'exportedAt',
     'mockRules',
+    'requestGroups',
     'requests',
     'resourceKind',
     'schemaVersion',
@@ -26,6 +30,8 @@ const {
   ]);
   assert.equal(bundle.resourceKind, AUTHORED_RESOURCE_BUNDLE_KIND);
   assert.equal(bundle.schemaVersion, AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION);
+  assert.equal(bundle.collections.length, 1);
+  assert.equal(bundle.requestGroups.length, 1);
   assert.equal(bundle.requests.length, 1);
   assert.equal(bundle.mockRules.length, 1);
   assert.equal(bundle.executionHistories, undefined);
@@ -34,9 +40,13 @@ const {
   const singleRequestBundle = buildAuthoredResourceBundle({
     workspaceId: 'local-workspace',
     exportedAt: '2026-03-21T00:00:00.000Z',
+    collections: [],
+    requestGroups: [],
     requests: [{ id: 'request-only-1', name: 'Single request export' }],
     mockRules: [],
   });
+  assert.equal(singleRequestBundle.collections.length, 0);
+  assert.equal(singleRequestBundle.requestGroups.length, 0);
   assert.equal(singleRequestBundle.requests.length, 1);
   assert.equal(singleRequestBundle.mockRules.length, 0);
   assert.equal(singleRequestBundle.executionHistories, undefined);
@@ -45,9 +55,13 @@ const {
   const singleMockRuleBundle = buildAuthoredResourceBundle({
     workspaceId: 'local-workspace',
     exportedAt: '2026-03-21T00:00:00.000Z',
+    collections: [],
+    requestGroups: [],
     requests: [],
     mockRules: [{ id: 'mock-rule-only-1', name: 'Single mock export' }],
   });
+  assert.equal(singleMockRuleBundle.collections.length, 0);
+  assert.equal(singleMockRuleBundle.requestGroups.length, 0);
   assert.equal(singleMockRuleBundle.requests.length, 0);
   assert.equal(singleMockRuleBundle.mockRules.length, 1);
   assert.equal(singleMockRuleBundle.executionHistories, undefined);
@@ -63,6 +77,8 @@ const {
       schemaVersion: 9,
       resourceKind: AUTHORED_RESOURCE_BUNDLE_KIND,
       workspaceId: 'local-workspace',
+      collections: [],
+      requestGroups: [],
       requests: [],
       mockRules: [],
     })),
@@ -75,6 +91,8 @@ const {
       resourceKind: AUTHORED_RESOURCE_BUNDLE_KIND,
       workspaceId: 'local-workspace',
       exportedAt: '2026-03-21T00:00:00.000Z',
+      collections: [],
+      requestGroups: [],
       requests: [],
       mockRules: [],
     })),
@@ -87,6 +105,8 @@ const {
       resourceKind: AUTHORED_RESOURCE_BUNDLE_KIND,
       workspaceId: '',
       exportedAt: '',
+      collections: [],
+      requestGroups: [],
       requests: [],
       mockRules: [],
     })),
@@ -99,6 +119,8 @@ const {
       resourceKind: AUTHORED_RESOURCE_BUNDLE_KIND,
       workspaceId: 'local-workspace',
       exportedAt: '2026-03-21T00:00:00.000Z',
+      collections: [],
+      requestGroups: [],
       requests: [
         {
           id: 'request-1',
@@ -117,6 +139,8 @@ const {
       resourceKind: AUTHORED_RESOURCE_BUNDLE_KIND,
       workspaceId: 'local-workspace',
       exportedAt: '2026-03-21T00:00:00.000Z',
+      collections: [],
+      requestGroups: [],
       requests: [],
       mockRules: [
         {
@@ -135,6 +159,8 @@ const {
     resourceKind: AUTHORED_RESOURCE_BUNDLE_KIND,
     workspaceId: 'local-workspace',
     exportedAt: '2026-03-21T00:00:00.000Z',
+    collections: [],
+    requestGroups: [],
     requests: [],
     mockRules: [],
   });

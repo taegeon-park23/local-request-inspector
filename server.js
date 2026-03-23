@@ -19,6 +19,19 @@ const {
   prepareAuthoredResourceImport,
 } = require('./storage/resource/authored-resource-import-plan');
 const {
+  createCollectionRecord,
+  normalizePersistedCollectionRecord,
+  createRequestGroupRecord,
+  normalizePersistedRequestGroupRecord,
+  compareRequestPlacementRecords,
+  validateCollectionInput,
+  validateRequestGroupInput,
+  createStableCollectionId,
+  createStableRequestGroupId,
+  DEFAULT_REQUEST_COLLECTION_NAME,
+  DEFAULT_REQUEST_GROUP_NAME,
+} = require('./storage/resource/request-placement-record');
+const {
   createEnvironmentRecord,
   enforceEnvironmentDefaults,
   normalizePersistedEnvironmentRecord,
@@ -40,8 +53,10 @@ const {
   readSystemScriptTemplate,
 } = require('./storage/resource/script-record');
 const {
+  COLLECTION_RESOURCE_SCHEMA_VERSION,
   MOCK_RULE_RESOURCE_SCHEMA_VERSION,
   REQUEST_RESOURCE_SCHEMA_VERSION,
+  REQUEST_GROUP_RESOURCE_SCHEMA_VERSION,
   RESOURCE_RECORD_KINDS,
   RUNTIME_REQUEST_SNAPSHOT_SCHEMA_VERSION,
 } = require('./storage/shared/constants');
@@ -258,13 +273,332 @@ function validateRequestDefinition(input) {
   return null;
 }
 
+function normalizeText(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function createRequestPlacementError(code, message, details = {}) {
+  const error = new Error(message);
+  error.code = code;
+  error.details = details;
+  return error;
+}
+
+function readWorkspaceCollectionReference(workspaceId, collectionId) {
+  const normalizedCollectionId = normalizeText(collectionId);
+
+  if (!normalizedCollectionId) {
+    return null;
+  }
+
+  const collection = normalizePersistedCollectionRecord(
+    resourceStorage.read('collection', normalizedCollectionId),
+  );
+
+  if (!collection || collection.workspaceId !== workspaceId) {
+    return null;
+  }
+
+  return collection;
+}
+
+function persistCollectionRecord(record) {
+  const normalizedRecord = normalizePersistedCollectionRecord(record);
+  resourceStorage.save('collection', normalizedRecord);
+  return normalizedRecord;
+}
+
+function persistRequestGroupRecord(record) {
+  const normalizedRecord = normalizePersistedRequestGroupRecord(record);
+  resourceStorage.save('request-group', normalizedRecord);
+  return normalizedRecord;
+}
+
+function findCollectionByName(records, collectionName) {
+  const normalizedCollectionName = normalizeText(collectionName).toLowerCase();
+
+  if (!normalizedCollectionName) {
+    return null;
+  }
+
+  return records.find((record) => String(record.name || '').trim().toLowerCase() === normalizedCollectionName) ?? null;
+}
+
+function findRequestGroupByName(records, collectionId, requestGroupName) {
+  const normalizedCollectionId = normalizeText(collectionId);
+  const normalizedRequestGroupName = normalizeText(requestGroupName).toLowerCase();
+
+  if (!normalizedCollectionId || !normalizedRequestGroupName) {
+    return null;
+  }
+
+  return records.find((record) => (
+    record.collectionId === normalizedCollectionId
+    && String(record.name || '').trim().toLowerCase() === normalizedRequestGroupName
+  )) ?? null;
+}
+
+function sortRequestGroups(records) {
+  return [...records].sort((left, right) => {
+    const collectionDiff = String(left.collectionId || '').localeCompare(String(right.collectionId || ''));
+    if (collectionDiff !== 0) {
+      return collectionDiff;
+    }
+
+    return compareRequestPlacementRecords(left, right);
+  });
+}
+
+function ensureWorkspaceDefaultRequestPlacement(workspaceId, collections, requestGroups) {
+  const normalizedWorkspaceId = normalizeText(workspaceId) || DEFAULT_WORKSPACE_ID;
+  let nextCollections = [...collections];
+  let nextRequestGroups = [...requestGroups];
+
+  let defaultCollection = findCollectionByName(nextCollections, DEFAULT_REQUEST_COLLECTION_NAME);
+  if (!defaultCollection) {
+    defaultCollection = persistCollectionRecord(
+      createCollectionRecord({
+        id: createStableCollectionId(normalizedWorkspaceId, DEFAULT_REQUEST_COLLECTION_NAME),
+        name: DEFAULT_REQUEST_COLLECTION_NAME,
+      }, null, normalizedWorkspaceId),
+    );
+    nextCollections = [...nextCollections, defaultCollection].sort(compareRequestPlacementRecords);
+  }
+
+  let defaultRequestGroup = findRequestGroupByName(nextRequestGroups, defaultCollection.id, DEFAULT_REQUEST_GROUP_NAME);
+  if (!defaultRequestGroup) {
+    defaultRequestGroup = persistRequestGroupRecord(
+      createRequestGroupRecord({
+        id: createStableRequestGroupId(normalizedWorkspaceId, defaultCollection.id, DEFAULT_REQUEST_GROUP_NAME),
+        collectionId: defaultCollection.id,
+        name: DEFAULT_REQUEST_GROUP_NAME,
+      }, null, normalizedWorkspaceId),
+    );
+    nextRequestGroups = sortRequestGroups([...nextRequestGroups, defaultRequestGroup]);
+  }
+
+  return {
+    collections: nextCollections,
+    requestGroups: nextRequestGroups,
+    defaultCollection,
+    defaultRequestGroup,
+  };
+}
+
+function ensureCollectionRecord({
+  workspaceId,
+  collections,
+  collectionId,
+  collectionName,
+}) {
+  const normalizedCollectionId = normalizeText(collectionId);
+  const normalizedCollectionName = normalizeText(collectionName) || DEFAULT_REQUEST_COLLECTION_NAME;
+  let nextCollections = [...collections];
+
+  if (normalizedCollectionId) {
+    const collectionById = nextCollections.find((record) => record.id === normalizedCollectionId) ?? null;
+    if (!collectionById) {
+      throw createRequestPlacementError(
+        'request_collection_not_found',
+        'Selected collection was not found in this workspace.',
+        {
+          workspaceId,
+          collectionId: normalizedCollectionId,
+        },
+      );
+    }
+
+    return {
+      collections: nextCollections,
+      collectionRecord: collectionById,
+    };
+  }
+
+  const collectionByName = findCollectionByName(nextCollections, normalizedCollectionName);
+  if (collectionByName) {
+    return {
+      collections: nextCollections,
+      collectionRecord: collectionByName,
+    };
+  }
+
+  const createdCollection = persistCollectionRecord(
+    createCollectionRecord({
+      id: createStableCollectionId(workspaceId, normalizedCollectionName),
+      name: normalizedCollectionName,
+    }, null, workspaceId),
+  );
+  nextCollections = [...nextCollections, createdCollection].sort(compareRequestPlacementRecords);
+
+  return {
+    collections: nextCollections,
+    collectionRecord: createdCollection,
+  };
+}
+
+function ensureRequestGroupRecord({
+  workspaceId,
+  requestGroups,
+  collectionRecord,
+  requestGroupId,
+  requestGroupName,
+}) {
+  const normalizedRequestGroupId = normalizeText(requestGroupId);
+  const normalizedRequestGroupName = normalizeText(requestGroupName) || DEFAULT_REQUEST_GROUP_NAME;
+  let nextRequestGroups = [...requestGroups];
+
+  if (normalizedRequestGroupId) {
+    const requestGroupById = nextRequestGroups.find((record) => record.id === normalizedRequestGroupId) ?? null;
+    if (!requestGroupById) {
+      throw createRequestPlacementError(
+        'request_group_not_found',
+        'Selected request group was not found in this workspace.',
+        {
+          workspaceId,
+          requestGroupId: normalizedRequestGroupId,
+        },
+      );
+    }
+
+    if (requestGroupById.collectionId !== collectionRecord.id) {
+      throw createRequestPlacementError(
+        'request_group_collection_mismatch',
+        'Selected request group does not belong to the selected collection.',
+        {
+          workspaceId,
+          requestGroupId: normalizedRequestGroupId,
+          collectionId: collectionRecord.id,
+        },
+      );
+    }
+
+    return {
+      requestGroups: nextRequestGroups,
+      requestGroupRecord: requestGroupById,
+    };
+  }
+
+  const requestGroupByName = findRequestGroupByName(nextRequestGroups, collectionRecord.id, normalizedRequestGroupName);
+  if (requestGroupByName) {
+    return {
+      requestGroups: nextRequestGroups,
+      requestGroupRecord: requestGroupByName,
+    };
+  }
+
+  const createdRequestGroup = persistRequestGroupRecord(
+    createRequestGroupRecord({
+      id: createStableRequestGroupId(workspaceId, collectionRecord.id, normalizedRequestGroupName),
+      collectionId: collectionRecord.id,
+      name: normalizedRequestGroupName,
+    }, null, workspaceId),
+  );
+  nextRequestGroups = sortRequestGroups([...nextRequestGroups, createdRequestGroup]);
+
+  return {
+    requestGroups: nextRequestGroups,
+    requestGroupRecord: createdRequestGroup,
+  };
+}
+
+function resolveRequestPlacementReferences(workspaceId, input, existingRecord, state = {}) {
+  let collections = state.collections ?? listWorkspaceCollectionRecords(workspaceId);
+  let requestGroups = state.requestGroups ?? listWorkspaceRequestGroupRecords(workspaceId);
+  const defaults = ensureWorkspaceDefaultRequestPlacement(workspaceId, collections, requestGroups);
+  collections = defaults.collections;
+  requestGroups = defaults.requestGroups;
+
+  const explicitCollectionId = normalizeText(input?.collectionId || existingRecord?.collectionId);
+  const explicitRequestGroupId = normalizeText(input?.requestGroupId || existingRecord?.requestGroupId);
+
+  if (explicitRequestGroupId) {
+    const requestGroupRecord = requestGroups.find((record) => record.id === explicitRequestGroupId) ?? null;
+
+    if (!requestGroupRecord) {
+      throw createRequestPlacementError(
+        'request_group_not_found',
+        'Selected request group was not found in this workspace.',
+        {
+          workspaceId,
+          requestGroupId: explicitRequestGroupId,
+        },
+      );
+    }
+
+    if (explicitCollectionId && requestGroupRecord.collectionId !== explicitCollectionId) {
+      throw createRequestPlacementError(
+        'request_group_collection_mismatch',
+        'Selected request group does not belong to the selected collection.',
+        {
+          workspaceId,
+          requestGroupId: explicitRequestGroupId,
+          collectionId: explicitCollectionId,
+        },
+      );
+    }
+
+    const collectionRecord = collections.find((record) => record.id === requestGroupRecord.collectionId) ?? null;
+
+    if (!collectionRecord) {
+      throw createRequestPlacementError(
+        'request_collection_not_found',
+        'Selected collection was not found in this workspace.',
+        {
+          workspaceId,
+          collectionId: requestGroupRecord.collectionId,
+        },
+      );
+    }
+
+    return {
+      collections,
+      requestGroups,
+      defaultCollection: defaults.defaultCollection,
+      defaultRequestGroup: defaults.defaultRequestGroup,
+      collectionRecord,
+      requestGroupRecord,
+    };
+  }
+
+  const collectionResolution = ensureCollectionRecord({
+    workspaceId,
+    collections,
+    collectionId: explicitCollectionId,
+    collectionName: normalizeText(input?.collectionName || existingRecord?.collectionName) || defaults.defaultCollection.name,
+  });
+  collections = collectionResolution.collections;
+
+  const requestGroupResolution = ensureRequestGroupRecord({
+    workspaceId,
+    requestGroups,
+    collectionRecord: collectionResolution.collectionRecord,
+    requestGroupId: null,
+    requestGroupName:
+      normalizeText(input?.requestGroupName || input?.folderName || existingRecord?.requestGroupName || existingRecord?.folderName)
+      || defaults.defaultRequestGroup.name,
+  });
+  requestGroups = requestGroupResolution.requestGroups;
+
+  return {
+    collections,
+    requestGroups,
+    defaultCollection: defaults.defaultCollection,
+    defaultRequestGroup: defaults.defaultRequestGroup,
+    collectionRecord: collectionResolution.collectionRecord,
+    requestGroupRecord: requestGroupResolution.requestGroupRecord,
+  };
+}
+
 function normalizeSavedRequest(input, existingRecord, workspaceId) {
   const now = new Date().toISOString();
   const recordId = input.id || existingRecord?.id || randomUUID();
-  const collectionName = input.collectionName || existingRecord?.collectionName || 'Saved Requests';
   const selectedEnvironmentId = typeof input.selectedEnvironmentId === 'string' && input.selectedEnvironmentId.trim().length > 0
     ? input.selectedEnvironmentId.trim()
     : null;
+  const {
+    collectionRecord,
+    requestGroupRecord,
+  } = resolveRequestPlacementReferences(workspaceId, input, existingRecord);
 
   return {
     resourceKind: RESOURCE_RECORD_KINDS.REQUEST,
@@ -283,8 +617,10 @@ function normalizeSavedRequest(input, existingRecord, workspaceId) {
     multipartBody: cloneRows(input.multipartBody),
     auth: cloneAuth(input.auth),
     scripts: cloneScripts(input.scripts),
-    collectionName,
-    ...(input.folderName ? { folderName: input.folderName } : {}),
+    collectionId: collectionRecord.id,
+    requestGroupId: requestGroupRecord.id,
+    collectionName: collectionRecord.name,
+    requestGroupName: requestGroupRecord.name,
     summary: createRequestSummary(input.method, input.url),
     createdAt: existingRecord?.createdAt || now,
     updatedAt: now,
@@ -303,7 +639,11 @@ function normalizePersistedRequestRecord(record) {
     selectedEnvironmentId: typeof record.selectedEnvironmentId === 'string' && record.selectedEnvironmentId.trim().length > 0
       ? record.selectedEnvironmentId.trim()
       : null,
-    collectionName: record.collectionName || 'Saved Requests',
+    collectionId: normalizeText(record.collectionId),
+    requestGroupId: normalizeText(record.requestGroupId),
+    collectionName: normalizeText(record.collectionName) || DEFAULT_REQUEST_COLLECTION_NAME,
+    requestGroupName: normalizeText(record.requestGroupName || record.folderName) || DEFAULT_REQUEST_GROUP_NAME,
+    folderName: normalizeText(record.requestGroupName || record.folderName) || DEFAULT_REQUEST_GROUP_NAME,
     summary: record.summary || createRequestSummary(record.method, record.url),
   };
 }
@@ -329,7 +669,14 @@ function validateImportedResourceCompatibility(input, expectedKind, supportedSch
     return `Imported resource kind ${input.resourceKind} is not supported for ${expectedKind}.`;
   }
 
-  if (input.resourceSchemaVersion != null && input.resourceSchemaVersion !== supportedSchemaVersion) {
+  const allowsLegacyRequestImport = (
+    expectedKind === RESOURCE_RECORD_KINDS.REQUEST
+    && Number(input.resourceSchemaVersion) === 1
+    && supportedSchemaVersion === REQUEST_RESOURCE_SCHEMA_VERSION
+    && REQUEST_RESOURCE_SCHEMA_VERSION === 2
+  );
+
+  if (input.resourceSchemaVersion != null && input.resourceSchemaVersion !== supportedSchemaVersion && !allowsLegacyRequestImport) {
     return `Imported ${expectedKind} resource schema version ${input.resourceSchemaVersion} is not supported.`;
   }
 
@@ -351,14 +698,18 @@ function compareSavedRequestRecords(left, right) {
     return createdAtDiff;
   }
 
-  const collectionDiff = String(left.collectionName || 'Saved Requests').localeCompare(String(right.collectionName || 'Saved Requests'));
+  const collectionDiff = String(left.collectionName || DEFAULT_REQUEST_COLLECTION_NAME).localeCompare(
+    String(right.collectionName || DEFAULT_REQUEST_COLLECTION_NAME),
+  );
   if (collectionDiff !== 0) {
     return collectionDiff;
   }
 
-  const folderDiff = String(left.folderName || '').localeCompare(String(right.folderName || ''));
-  if (folderDiff !== 0) {
-    return folderDiff;
+  const requestGroupDiff = String(left.requestGroupName || DEFAULT_REQUEST_GROUP_NAME).localeCompare(
+    String(right.requestGroupName || DEFAULT_REQUEST_GROUP_NAME),
+  );
+  if (requestGroupDiff !== 0) {
+    return requestGroupDiff;
   }
 
   const nameDiff = String(left.name || '').localeCompare(String(right.name || ''));
@@ -476,7 +827,8 @@ function createExecutionObservation({
       ? requestSnapshot.environmentLabel
       : 'No environment selected',
     requestCollectionName: requestSnapshot?.collectionName || undefined,
-    requestFolderName: requestSnapshot?.folderName || undefined,
+    requestGroupName: requestSnapshot?.requestGroupName || requestSnapshot?.folderName || undefined,
+    requestFolderName: requestSnapshot?.requestGroupName || requestSnapshot?.folderName || undefined,
     requestSourceLabel: requestSnapshot?.sourceLabel || 'Runtime request snapshot',
     stageSummaries: stageSummaries || [],
     ...(errorCode ? { errorCode } : {}),
@@ -654,8 +1006,15 @@ function createPersistedRequestSnapshot(request, targetUrl) {
     environmentLabel: typeof request.selectedEnvironmentLabel === 'string' && request.selectedEnvironmentLabel.length > 0
       ? request.selectedEnvironmentLabel
       : 'No environment selected',
+    collectionId: typeof request.collectionId === 'string' ? request.collectionId : '',
     collectionName: typeof request.collectionName === 'string' ? request.collectionName : '',
-    folderName: typeof request.folderName === 'string' ? request.folderName : '',
+    requestGroupId: typeof request.requestGroupId === 'string' ? request.requestGroupId : '',
+    requestGroupName: typeof request.requestGroupName === 'string'
+      ? request.requestGroupName
+      : (typeof request.folderName === 'string' ? request.folderName : ''),
+    folderName: typeof request.requestGroupName === 'string'
+      ? request.requestGroupName
+      : (typeof request.folderName === 'string' ? request.folderName : ''),
     sourceLabel: request.id ? 'Saved request snapshot' : 'Ad hoc request snapshot',
   };
 }
@@ -789,8 +1148,15 @@ function createPersistedRequestSnapshotSafely(request, targetUrl) {
       environmentLabel: typeof request?.selectedEnvironmentLabel === 'string' && request.selectedEnvironmentLabel.length > 0
         ? request.selectedEnvironmentLabel
         : 'No environment selected',
+      collectionId: typeof request?.collectionId === 'string' ? request.collectionId : '',
       collectionName: typeof request?.collectionName === 'string' ? request.collectionName : '',
-      folderName: typeof request?.folderName === 'string' ? request.folderName : '',
+      requestGroupId: typeof request?.requestGroupId === 'string' ? request.requestGroupId : '',
+      requestGroupName: typeof request?.requestGroupName === 'string'
+        ? request.requestGroupName
+        : (typeof request?.folderName === 'string' ? request.folderName : ''),
+      folderName: typeof request?.requestGroupName === 'string'
+        ? request.requestGroupName
+        : (typeof request?.folderName === 'string' ? request.folderName : ''),
       sourceLabel: request?.id ? 'Saved request snapshot' : 'Ad hoc request snapshot',
     };
   }
@@ -814,8 +1180,11 @@ function createExecutionRequestSeed(input) {
     multipartBody: cloneRows(input.multipartBody),
     auth: cloneAuth(input.auth),
     scripts: cloneScripts(input.scripts),
+    collectionId: input.collectionId || null,
     collectionName: input.collectionName || null,
-    folderName: input.folderName || null,
+    requestGroupId: input.requestGroupId || null,
+    requestGroupName: input.requestGroupName || input.folderName || null,
+    folderName: input.requestGroupName || input.folderName || null,
   };
 }
 
@@ -1912,7 +2281,8 @@ function createHistoryRecord(runtimeRecord) {
     requestResourceId: runtimeRecord.requestId || requestSnapshot.requestId || null,
     environmentId,
     requestCollectionName: requestSnapshot.collectionName || undefined,
-    requestFolderName: requestSnapshot.folderName || undefined,
+    requestGroupName: requestSnapshot.requestGroupName || requestSnapshot.folderName || undefined,
+    requestFolderName: requestSnapshot.requestGroupName || requestSnapshot.folderName || undefined,
     responseSummary:
       runtimeRecord.responseStatus === null
         ? 'Persisted history does not include a transport response body for this execution.'
@@ -2353,11 +2723,202 @@ app.use(express.urlencoded({ extended: true, verify: captureRawBody }));
 app.use(express.text({ type: '*/*' }));
 
 function listWorkspaceSavedRequestRecords(workspaceId) {
-  return resourceStorage
+  return reconcileWorkspaceRequestPlacementState(workspaceId).requests;
+}
+
+function listWorkspaceCollectionRecords(workspaceId) {
+  const collections = resourceStorage
+    .list('collection')
+    .map((record) => normalizePersistedCollectionRecord(record))
+    .filter((record) => record.workspaceId === workspaceId)
+    .sort(compareRequestPlacementRecords);
+  const requestGroups = resourceStorage
+    .list('request-group')
+    .map((record) => normalizePersistedRequestGroupRecord(record))
+    .filter((record) => record.workspaceId === workspaceId)
+    .sort((left, right) => {
+      const collectionDiff = String(left.collectionId || '').localeCompare(String(right.collectionId || ''));
+      if (collectionDiff !== 0) {
+        return collectionDiff;
+      }
+
+      return compareRequestPlacementRecords(left, right);
+    });
+
+  return ensureWorkspaceDefaultRequestPlacement(workspaceId, collections, requestGroups).collections;
+}
+
+function listWorkspaceRequestGroupRecords(workspaceId) {
+  const collections = resourceStorage
+    .list('collection')
+    .map((record) => normalizePersistedCollectionRecord(record))
+    .filter((record) => record.workspaceId === workspaceId)
+    .sort(compareRequestPlacementRecords);
+  const requestGroups = resourceStorage
+    .list('request-group')
+    .map((record) => normalizePersistedRequestGroupRecord(record))
+    .filter((record) => record.workspaceId === workspaceId)
+    .sort((left, right) => {
+      const collectionDiff = String(left.collectionId || '').localeCompare(String(right.collectionId || ''));
+      if (collectionDiff !== 0) {
+        return collectionDiff;
+      }
+
+      return compareRequestPlacementRecords(left, right);
+    });
+
+  return ensureWorkspaceDefaultRequestPlacement(workspaceId, collections, requestGroups).requestGroups;
+}
+
+function stripLegacyRequestPlacementFields(record) {
+  if (!record || typeof record !== 'object') {
+    return record;
+  }
+
+  const nextRecord = { ...record };
+  delete nextRecord.folderName;
+  return nextRecord;
+}
+
+function reconcileWorkspaceRequestPlacementState(workspaceId) {
+  let collections = resourceStorage
+    .list('collection')
+    .map((record) => normalizePersistedCollectionRecord(record))
+    .filter((record) => record.workspaceId === workspaceId)
+    .sort(compareRequestPlacementRecords);
+  let requestGroups = resourceStorage
+    .list('request-group')
+    .map((record) => normalizePersistedRequestGroupRecord(record))
+    .filter((record) => record.workspaceId === workspaceId)
+    .sort((left, right) => {
+      const collectionDiff = String(left.collectionId || '').localeCompare(String(right.collectionId || ''));
+      if (collectionDiff !== 0) {
+        return collectionDiff;
+      }
+
+      return compareRequestPlacementRecords(left, right);
+    });
+  const requestRecords = resourceStorage
     .list('request')
     .map((record) => normalizePersistedRequestRecord(record))
-    .filter((record) => record.workspaceId === workspaceId)
+    .filter((record) => record.workspaceId === workspaceId);
+
+  const defaults = ensureWorkspaceDefaultRequestPlacement(workspaceId, collections, requestGroups);
+  collections = defaults.collections;
+  requestGroups = defaults.requestGroups;
+
+  const requests = requestRecords
+    .map((record) => {
+      const resolution = resolveRequestPlacementReferences(workspaceId, record, record, {
+        collections,
+        requestGroups,
+      });
+      collections = resolution.collections;
+      requestGroups = resolution.requestGroups;
+
+      const reconciledRecord = stripLegacyRequestPlacementFields(normalizePersistedRequestRecord({
+        ...record,
+        collectionId: resolution.collectionRecord.id,
+        requestGroupId: resolution.requestGroupRecord.id,
+        collectionName: resolution.collectionRecord.name,
+        requestGroupName: resolution.requestGroupRecord.name,
+        summary: record.summary || createRequestSummary(record.method, record.url),
+      }));
+
+      if (JSON.stringify(reconciledRecord) !== JSON.stringify(stripLegacyRequestPlacementFields(record))) {
+        resourceStorage.save('request', reconciledRecord);
+      }
+
+      return reconciledRecord;
+    })
     .sort(compareSavedRequestRecords);
+
+  return {
+    collections: [...collections].sort(compareRequestPlacementRecords),
+    requestGroups: sortRequestGroups(requestGroups),
+    requests,
+    defaultCollection: defaults.defaultCollection,
+    defaultRequestGroup: defaults.defaultRequestGroup,
+  };
+}
+
+function presentCollectionRecord(record) {
+  return {
+    ...record,
+  };
+}
+
+function presentRequestGroupRecord(record) {
+  return {
+    ...record,
+  };
+}
+
+function buildWorkspaceRequestTree(workspaceId) {
+  const {
+    collections,
+    requestGroups,
+    requests,
+    defaultCollection,
+    defaultRequestGroup,
+  } = reconcileWorkspaceRequestPlacementState(workspaceId);
+  const requestsByGroupId = new Map();
+
+  for (const request of requests) {
+    const groupRequests = requestsByGroupId.get(request.requestGroupId) ?? [];
+    groupRequests.push(request);
+    requestsByGroupId.set(request.requestGroupId, groupRequests);
+  }
+
+  const groupsByCollectionId = new Map();
+  for (const requestGroup of requestGroups) {
+    const collectionGroups = groupsByCollectionId.get(requestGroup.collectionId) ?? [];
+    collectionGroups.push(requestGroup);
+    groupsByCollectionId.set(requestGroup.collectionId, collectionGroups);
+  }
+
+  return {
+    defaults: {
+      collectionId: defaultCollection.id,
+      requestGroupId: defaultRequestGroup.id,
+      collectionName: defaultCollection.name,
+      requestGroupName: defaultRequestGroup.name,
+    },
+    collections: collections.map((record) => presentCollectionRecord(record)),
+    requestGroups: requestGroups.map((record) => presentRequestGroupRecord(record)),
+    tree: collections.map((collection) => ({
+      id: `collection-node-${collection.id}`,
+      kind: 'collection',
+      collectionId: collection.id,
+      name: collection.name,
+      description: collection.description,
+      children: (groupsByCollectionId.get(collection.id) ?? []).map((requestGroup) => ({
+        id: `request-group-node-${requestGroup.id}`,
+        kind: 'request-group',
+        collectionId: collection.id,
+        requestGroupId: requestGroup.id,
+        name: requestGroup.name,
+        description: requestGroup.description,
+        children: (requestsByGroupId.get(requestGroup.id) ?? []).map((request) => ({
+          id: `request-node-${request.id}`,
+          kind: 'request',
+          name: request.name,
+          request: {
+            id: request.id,
+            name: request.name,
+            methodLabel: request.method,
+            summary: request.summary,
+            collectionId: request.collectionId,
+            collectionName: request.collectionName,
+            requestGroupId: request.requestGroupId,
+            requestGroupName: request.requestGroupName,
+            folderName: request.requestGroupName,
+            updatedAt: request.updatedAt,
+          },
+        })),
+      })),
+    })),
+  };
 }
 
 function listWorkspaceMockRuleRecords(workspaceId) {
@@ -2426,6 +2987,194 @@ function createImportedResourceRejection(kind, reason, name) {
     kind,
     reason,
     ...(typeof name === 'string' && name.trim().length > 0 ? { name: name.trim() } : {}),
+  };
+}
+
+function createImportedScopedRequestGroupName(name, collectionId, usedScopedNames) {
+  const baseName = normalizeText(name) || DEFAULT_REQUEST_GROUP_NAME;
+  const scopedNames = usedScopedNames || new Set();
+  const normalizedBaseKey = `${collectionId}::${baseName.toLowerCase()}`;
+
+  if (!scopedNames.has(normalizedBaseKey)) {
+    scopedNames.add(normalizedBaseKey);
+    return baseName;
+  }
+
+  let suffixIndex = 1;
+  while (true) {
+    const nextName = suffixIndex === 1 ? `${baseName} (Imported)` : `${baseName} (Imported ${suffixIndex})`;
+    const nextKey = `${collectionId}::${nextName.toLowerCase()}`;
+
+    if (!scopedNames.has(nextKey)) {
+      scopedNames.add(nextKey);
+      return nextName;
+    }
+
+    suffixIndex += 1;
+  }
+}
+
+function normalizeWorkspaceResourceBundle(bundle, workspaceId) {
+  const collections = Array.isArray(bundle.collections) ? bundle.collections.map((record) => ({ ...record })) : [];
+  const requestGroups = Array.isArray(bundle.requestGroups) ? bundle.requestGroups.map((record) => ({ ...record })) : [];
+  const collectionByName = new Map(
+    collections
+      .filter((record) => normalizeText(record?.name).length > 0)
+      .map((record) => [normalizeText(record.name).toLowerCase(), record]),
+  );
+  const requestGroupKeys = new Set(
+    requestGroups.map((record) => `${normalizeText(record.collectionId)}::${normalizeText(record.name).toLowerCase()}`),
+  );
+
+  for (const request of Array.isArray(bundle.requests) ? bundle.requests : []) {
+    const collectionName = normalizeText(request?.collectionName) || DEFAULT_REQUEST_COLLECTION_NAME;
+    let collectionRecord = collectionByName.get(collectionName.toLowerCase()) ?? null;
+
+    if (!collectionRecord) {
+      collectionRecord = {
+        resourceKind: RESOURCE_RECORD_KINDS.COLLECTION,
+        resourceSchemaVersion: COLLECTION_RESOURCE_SCHEMA_VERSION,
+        id: normalizeText(request?.collectionId) || createStableCollectionId(workspaceId, collectionName),
+        workspaceId,
+        name: collectionName,
+        description: '',
+      };
+      collections.push(collectionRecord);
+      collectionByName.set(collectionName.toLowerCase(), collectionRecord);
+    }
+
+    const requestGroupName = normalizeText(request?.requestGroupName || request?.folderName) || DEFAULT_REQUEST_GROUP_NAME;
+    const requestGroupKey = `${collectionRecord.id}::${requestGroupName.toLowerCase()}`;
+
+    if (!requestGroupKeys.has(requestGroupKey)) {
+      requestGroups.push({
+        resourceKind: RESOURCE_RECORD_KINDS.REQUEST_GROUP,
+        resourceSchemaVersion: REQUEST_GROUP_RESOURCE_SCHEMA_VERSION,
+        id: normalizeText(request?.requestGroupId) || createStableRequestGroupId(workspaceId, collectionRecord.id, requestGroupName),
+        workspaceId,
+        collectionId: collectionRecord.id,
+        name: requestGroupName,
+        description: '',
+      });
+      requestGroupKeys.add(requestGroupKey);
+    }
+  }
+
+  return {
+    ...bundle,
+    collections,
+    requestGroups,
+  };
+}
+
+function createImportedCollectionResource(input, workspaceId, usedNames, state) {
+  const compatibilityError = validateImportedResourceCompatibility(
+    input,
+    RESOURCE_RECORD_KINDS.COLLECTION,
+    COLLECTION_RESOURCE_SCHEMA_VERSION,
+  );
+
+  if (compatibilityError) {
+    return {
+      rejection: createImportedResourceRejection('collection', compatibilityError, input?.name),
+    };
+  }
+
+  const validationError = validateCollectionInput(input);
+
+  if (validationError) {
+    return {
+      rejection: createImportedResourceRejection('collection', validationError, input?.name),
+    };
+  }
+
+  const importedName = createImportedResourceName(input.name, usedNames);
+  const record = createCollectionRecord(
+    {
+      ...input,
+      id: randomUUID(),
+      name: importedName,
+    },
+    null,
+    workspaceId,
+  );
+
+  if (normalizeText(input?.id)) {
+    state.collectionIdMap.set(normalizeText(input.id), record.id);
+  }
+  state.collectionRecordBySourceName.set(normalizeText(input?.name).toLowerCase(), record);
+
+  return {
+    record,
+    renamed: importedName !== normalizeText(input?.name),
+  };
+}
+
+function createImportedRequestGroupResource(input, workspaceId, state) {
+  const compatibilityError = validateImportedResourceCompatibility(
+    input,
+    RESOURCE_RECORD_KINDS.REQUEST_GROUP,
+    REQUEST_GROUP_RESOURCE_SCHEMA_VERSION,
+  );
+
+  if (compatibilityError) {
+    return {
+      rejection: createImportedResourceRejection('request-group', compatibilityError, input?.name),
+    };
+  }
+
+  const sourceCollectionId = normalizeText(input?.collectionId);
+  const mappedCollectionId = state.collectionIdMap.get(sourceCollectionId) || sourceCollectionId;
+  const collectionRecord = readWorkspaceCollectionReference(workspaceId, mappedCollectionId)
+    || state.importedCollectionById.get(mappedCollectionId)
+    || state.collectionRecordBySourceName.get(normalizeText(input?.collectionName).toLowerCase())
+    || null;
+
+  if (!collectionRecord) {
+    return {
+      rejection: createImportedResourceRejection(
+        'request-group',
+        'Request group references a collection that is not available in this workspace import.',
+        input?.name,
+      ),
+    };
+  }
+
+  const validationError = validateRequestGroupInput({
+    ...input,
+    collectionId: collectionRecord.id,
+  });
+
+  if (validationError) {
+    return {
+      rejection: createImportedResourceRejection('request-group', validationError, input?.name),
+    };
+  }
+
+  const importedName = createImportedScopedRequestGroupName(input.name, collectionRecord.id, state.usedRequestGroupKeys);
+  const record = createRequestGroupRecord(
+    {
+      ...input,
+      id: randomUUID(),
+      collectionId: collectionRecord.id,
+      name: importedName,
+    },
+    null,
+    workspaceId,
+  );
+
+  if (normalizeText(input?.id)) {
+    state.requestGroupIdMap.set(normalizeText(input.id), record.id);
+  }
+  state.importedRequestGroupById.set(record.id, record);
+  state.requestGroupRecordBySourceKey.set(
+    `${sourceCollectionId || normalizeText(input?.collectionName).toLowerCase()}::${normalizeText(input?.name).toLowerCase()}`,
+    record,
+  );
+
+  return {
+    record,
+    renamed: importedName !== normalizeText(input?.name),
   };
 }
 
@@ -2532,16 +3281,79 @@ function parseWorkspaceResourceBundleImportRequest(req, res) {
 }
 
 function prepareWorkspaceResourceBundleImport(bundle, workspaceId) {
-  const existingRequests = listWorkspaceSavedRequestRecords(workspaceId);
+  const normalizedBundle = normalizeWorkspaceResourceBundle(bundle, workspaceId);
+  const {
+    collections: existingCollections,
+    requestGroups: existingRequestGroups,
+    requests: existingRequests,
+  } = reconcileWorkspaceRequestPlacementState(workspaceId);
   const existingMockRules = listWorkspaceMockRuleRecords(workspaceId);
+  const importState = {
+    collectionIdMap: new Map(),
+    collectionRecordBySourceName: new Map(),
+    importedCollectionById: new Map(existingCollections.map((record) => [record.id, record])),
+    requestGroupIdMap: new Map(),
+    requestGroupRecordBySourceKey: new Map(),
+    importedRequestGroupById: new Map(existingRequestGroups.map((record) => [record.id, record])),
+    usedRequestGroupKeys: new Set(
+      existingRequestGroups.map((record) => `${record.collectionId}::${normalizeText(record.name).toLowerCase()}`),
+    ),
+  };
 
   return prepareAuthoredResourceImport({
-    bundle,
+    bundle: normalizedBundle,
     workspaceId,
+    existingCollectionNames: existingCollections.map((record) => record.name),
+    existingRequestGroupNames: [],
     existingRequestNames: existingRequests.map((record) => record.name),
     existingMockRuleNames: existingMockRules.map((record) => record.name),
-    createImportedRequest: createImportedRequestRecord,
+    createImportedCollection: (input, nextWorkspaceId, usedNames) => {
+      const result = createImportedCollectionResource(input, nextWorkspaceId, usedNames, importState);
+
+      if (result.record) {
+        importState.importedCollectionById.set(result.record.id, result.record);
+      }
+
+      return result;
+    },
+    createImportedRequestGroup: (input, nextWorkspaceId) =>
+      createImportedRequestGroupResource(input, nextWorkspaceId, importState),
+    createImportedRequest: (input, nextWorkspaceId, usedNames) => {
+      const sourceCollectionId = normalizeText(input?.collectionId);
+      const sourceRequestGroupId = normalizeText(input?.requestGroupId);
+      const mappedCollectionId = importState.collectionIdMap.get(sourceCollectionId) || sourceCollectionId;
+      const mappedRequestGroupId = importState.requestGroupIdMap.get(sourceRequestGroupId) || sourceRequestGroupId;
+      const sourceCollectionRecord = importState.importedCollectionById.get(mappedCollectionId)
+        || importState.collectionRecordBySourceName.get(normalizeText(input?.collectionName).toLowerCase())
+        || null;
+      const requestGroupSourceKey = `${sourceCollectionId || normalizeText(input?.collectionName).toLowerCase()}::${normalizeText(input?.requestGroupName || input?.folderName).toLowerCase()}`;
+      const sourceRequestGroupRecord = importState.importedRequestGroupById.get(mappedRequestGroupId)
+        || importState.requestGroupRecordBySourceKey.get(requestGroupSourceKey)
+        || null;
+
+      return createImportedRequestRecord(
+        {
+          ...input,
+          ...(sourceCollectionRecord
+            ? {
+                collectionId: sourceCollectionRecord.id,
+                collectionName: sourceCollectionRecord.name,
+              }
+            : {}),
+          ...(sourceRequestGroupRecord
+            ? {
+                requestGroupId: sourceRequestGroupRecord.id,
+                requestGroupName: sourceRequestGroupRecord.name,
+              }
+            : {}),
+        },
+        nextWorkspaceId,
+        usedNames,
+      );
+    },
     createImportedMockRule: createImportedMockRuleResource,
+    sortAcceptedCollections: (records) => [...records].sort(compareRequestPlacementRecords),
+    sortAcceptedRequestGroups: (records) => sortRequestGroups(records),
     sortAcceptedRequests: (records) => [...records].sort(compareSavedRequestRecords),
     sortAcceptedMockRules: (records) => [...records].sort(compareMockRuleRecords),
   });
@@ -2552,6 +3364,329 @@ app.get('/api/workspaces/:workspaceId/requests', (req, res) => {
     return sendData(res, { items });
   } catch (error) {
     return sendError(res, 500, 'request_list_failed', error.message);
+  }
+});
+
+app.get('/api/workspaces/:workspaceId/request-tree', (req, res) => {
+  try {
+    const requestTree = buildWorkspaceRequestTree(req.params.workspaceId);
+    return sendData(res, requestTree);
+  } catch (error) {
+    return sendError(res, 500, 'request_tree_failed', error.message, {
+      workspaceId: req.params.workspaceId,
+    });
+  }
+});
+
+app.get('/api/workspaces/:workspaceId/collections', (req, res) => {
+  try {
+    const items = listWorkspaceCollectionRecords(req.params.workspaceId).map((record) => presentCollectionRecord(record));
+    return sendData(res, { items });
+  } catch (error) {
+    return sendError(res, 500, 'collection_list_failed', error.message, {
+      workspaceId: req.params.workspaceId,
+    });
+  }
+});
+
+app.post('/api/workspaces/:workspaceId/collections', (req, res) => {
+  const input = req.body?.collection;
+  const validationError = validateCollectionInput(input);
+
+  if (validationError) {
+    return sendError(res, 400, 'invalid_collection', validationError, {
+      workspaceId: req.params.workspaceId,
+    });
+  }
+
+  try {
+    const existingCollection = findCollectionByName(listWorkspaceCollectionRecords(req.params.workspaceId), input.name);
+
+    if (existingCollection) {
+      return sendError(res, 409, 'collection_name_conflict', 'A collection with this name already exists in the workspace.', {
+        workspaceId: req.params.workspaceId,
+        collectionId: existingCollection.id,
+      });
+    }
+
+    const collection = persistCollectionRecord(createCollectionRecord(input, null, req.params.workspaceId));
+    return sendData(res, { collection: presentCollectionRecord(collection) }, 201);
+  } catch (error) {
+    return sendError(res, 500, 'collection_create_failed', error.message, {
+      workspaceId: req.params.workspaceId,
+    });
+  }
+});
+
+app.get('/api/collections/:collectionId', (req, res) => {
+  try {
+    const collection = normalizePersistedCollectionRecord(resourceStorage.read('collection', req.params.collectionId));
+
+    if (!collection) {
+      return sendError(res, 404, 'collection_not_found', 'Collection was not found.', {
+        collectionId: req.params.collectionId,
+      });
+    }
+
+    return sendData(res, { collection: presentCollectionRecord(collection) });
+  } catch (error) {
+    return sendError(res, 500, 'collection_detail_failed', error.message, {
+      collectionId: req.params.collectionId,
+    });
+  }
+});
+
+app.patch('/api/collections/:collectionId', (req, res) => {
+  const input = req.body?.collection;
+  const validationError = validateCollectionInput(input);
+
+  if (validationError) {
+    return sendError(res, 400, 'invalid_collection', validationError, {
+      collectionId: req.params.collectionId,
+    });
+  }
+
+  try {
+    const existingRecord = normalizePersistedCollectionRecord(resourceStorage.read('collection', req.params.collectionId));
+
+    if (!existingRecord) {
+      return sendError(res, 404, 'collection_not_found', 'Collection was not found.', {
+        collectionId: req.params.collectionId,
+      });
+    }
+
+    const conflictingCollection = listWorkspaceCollectionRecords(existingRecord.workspaceId || DEFAULT_WORKSPACE_ID)
+      .find((record) => record.id !== req.params.collectionId && String(record.name || '').trim().toLowerCase() === String(input.name || '').trim().toLowerCase());
+
+    if (conflictingCollection) {
+      return sendError(res, 409, 'collection_name_conflict', 'A collection with this name already exists in the workspace.', {
+        collectionId: req.params.collectionId,
+        conflictingCollectionId: conflictingCollection.id,
+      });
+    }
+
+    const collection = persistCollectionRecord(createCollectionRecord(
+      {
+        ...input,
+        id: req.params.collectionId,
+      },
+      existingRecord,
+      existingRecord.workspaceId || DEFAULT_WORKSPACE_ID,
+    ));
+    return sendData(res, { collection: presentCollectionRecord(collection) });
+  } catch (error) {
+    return sendError(res, 500, 'collection_update_failed', error.message, {
+      collectionId: req.params.collectionId,
+    });
+  }
+});
+
+app.delete('/api/collections/:collectionId', (req, res) => {
+  try {
+    const existingRecord = normalizePersistedCollectionRecord(resourceStorage.read('collection', req.params.collectionId));
+
+    if (!existingRecord) {
+      return sendError(res, 404, 'collection_not_found', 'Collection was not found.', {
+        collectionId: req.params.collectionId,
+      });
+    }
+
+    const requestGroups = listWorkspaceRequestGroupRecords(existingRecord.workspaceId || DEFAULT_WORKSPACE_ID)
+      .filter((record) => record.collectionId === req.params.collectionId);
+
+    if (requestGroups.length > 0) {
+      return sendError(res, 409, 'collection_not_empty', 'Collection still contains request groups and cannot be deleted.', {
+        collectionId: req.params.collectionId,
+        requestGroupCount: requestGroups.length,
+      });
+    }
+
+    resourceStorage.delete('collection', req.params.collectionId);
+    return sendData(res, { deletedCollectionId: req.params.collectionId });
+  } catch (error) {
+    return sendError(res, 500, 'collection_delete_failed', error.message, {
+      collectionId: req.params.collectionId,
+    });
+  }
+});
+
+app.get('/api/collections/:collectionId/request-groups', (req, res) => {
+  try {
+    const collection = normalizePersistedCollectionRecord(resourceStorage.read('collection', req.params.collectionId));
+
+    if (!collection) {
+      return sendError(res, 404, 'collection_not_found', 'Collection was not found.', {
+        collectionId: req.params.collectionId,
+      });
+    }
+
+    const items = listWorkspaceRequestGroupRecords(collection.workspaceId || DEFAULT_WORKSPACE_ID)
+      .filter((record) => record.collectionId === req.params.collectionId)
+      .map((record) => presentRequestGroupRecord(record));
+    return sendData(res, { items });
+  } catch (error) {
+    return sendError(res, 500, 'request_group_list_failed', error.message, {
+      collectionId: req.params.collectionId,
+    });
+  }
+});
+
+app.post('/api/collections/:collectionId/request-groups', (req, res) => {
+  const input = req.body?.requestGroup;
+  const collection = normalizePersistedCollectionRecord(resourceStorage.read('collection', req.params.collectionId));
+
+  if (!collection) {
+    return sendError(res, 404, 'collection_not_found', 'Collection was not found.', {
+      collectionId: req.params.collectionId,
+    });
+  }
+
+  const validationError = validateRequestGroupInput({
+    ...input,
+    collectionId: req.params.collectionId,
+  });
+
+  if (validationError) {
+    return sendError(res, 400, 'invalid_request_group', validationError, {
+      collectionId: req.params.collectionId,
+    });
+  }
+
+  try {
+    const existingRequestGroup = findRequestGroupByName(
+      listWorkspaceRequestGroupRecords(collection.workspaceId || DEFAULT_WORKSPACE_ID),
+      req.params.collectionId,
+      input.name,
+    );
+
+    if (existingRequestGroup) {
+      return sendError(res, 409, 'request_group_name_conflict', 'A request group with this name already exists in the collection.', {
+        collectionId: req.params.collectionId,
+        requestGroupId: existingRequestGroup.id,
+      });
+    }
+
+    const requestGroup = persistRequestGroupRecord(createRequestGroupRecord(
+      {
+        ...input,
+        collectionId: req.params.collectionId,
+      },
+      null,
+      collection.workspaceId || DEFAULT_WORKSPACE_ID,
+    ));
+    return sendData(res, { requestGroup: presentRequestGroupRecord(requestGroup) }, 201);
+  } catch (error) {
+    return sendError(res, 500, 'request_group_create_failed', error.message, {
+      collectionId: req.params.collectionId,
+    });
+  }
+});
+
+app.get('/api/request-groups/:requestGroupId', (req, res) => {
+  try {
+    const requestGroup = normalizePersistedRequestGroupRecord(resourceStorage.read('request-group', req.params.requestGroupId));
+
+    if (!requestGroup) {
+      return sendError(res, 404, 'request_group_not_found', 'Request group was not found.', {
+        requestGroupId: req.params.requestGroupId,
+      });
+    }
+
+    return sendData(res, { requestGroup: presentRequestGroupRecord(requestGroup) });
+  } catch (error) {
+    return sendError(res, 500, 'request_group_detail_failed', error.message, {
+      requestGroupId: req.params.requestGroupId,
+    });
+  }
+});
+
+app.patch('/api/request-groups/:requestGroupId', (req, res) => {
+  const input = req.body?.requestGroup;
+  let existingRecord;
+
+  try {
+    existingRecord = normalizePersistedRequestGroupRecord(resourceStorage.read('request-group', req.params.requestGroupId));
+
+    if (!existingRecord) {
+      return sendError(res, 404, 'request_group_not_found', 'Request group was not found.', {
+        requestGroupId: req.params.requestGroupId,
+      });
+    }
+  } catch (error) {
+    return sendError(res, 500, 'request_group_detail_failed', error.message, {
+      requestGroupId: req.params.requestGroupId,
+    });
+  }
+
+  const validationError = validateRequestGroupInput({
+    ...input,
+    collectionId: existingRecord.collectionId,
+  });
+
+  if (validationError) {
+    return sendError(res, 400, 'invalid_request_group', validationError, {
+      requestGroupId: req.params.requestGroupId,
+    });
+  }
+
+  try {
+    const conflictingRequestGroup = listWorkspaceRequestGroupRecords(existingRecord.workspaceId || DEFAULT_WORKSPACE_ID)
+      .find((record) => (
+        record.id !== req.params.requestGroupId
+        && record.collectionId === existingRecord.collectionId
+        && String(record.name || '').trim().toLowerCase() === String(input.name || '').trim().toLowerCase()
+      ));
+
+    if (conflictingRequestGroup) {
+      return sendError(res, 409, 'request_group_name_conflict', 'A request group with this name already exists in the collection.', {
+        requestGroupId: req.params.requestGroupId,
+        conflictingRequestGroupId: conflictingRequestGroup.id,
+      });
+    }
+
+    const requestGroup = persistRequestGroupRecord(createRequestGroupRecord(
+      {
+        ...input,
+        id: req.params.requestGroupId,
+        collectionId: existingRecord.collectionId,
+      },
+      existingRecord,
+      existingRecord.workspaceId || DEFAULT_WORKSPACE_ID,
+    ));
+    return sendData(res, { requestGroup: presentRequestGroupRecord(requestGroup) });
+  } catch (error) {
+    return sendError(res, 500, 'request_group_update_failed', error.message, {
+      requestGroupId: req.params.requestGroupId,
+    });
+  }
+});
+
+app.delete('/api/request-groups/:requestGroupId', (req, res) => {
+  try {
+    const existingRecord = normalizePersistedRequestGroupRecord(resourceStorage.read('request-group', req.params.requestGroupId));
+
+    if (!existingRecord) {
+      return sendError(res, 404, 'request_group_not_found', 'Request group was not found.', {
+        requestGroupId: req.params.requestGroupId,
+      });
+    }
+
+    const requests = listWorkspaceSavedRequestRecords(existingRecord.workspaceId || DEFAULT_WORKSPACE_ID)
+      .filter((record) => record.requestGroupId === req.params.requestGroupId);
+
+    if (requests.length > 0) {
+      return sendError(res, 409, 'request_group_not_empty', 'Request group still contains saved requests and cannot be deleted.', {
+        requestGroupId: req.params.requestGroupId,
+        requestCount: requests.length,
+      });
+    }
+
+    resourceStorage.delete('request-group', req.params.requestGroupId);
+    return sendData(res, { deletedRequestGroupId: req.params.requestGroupId });
+  } catch (error) {
+    return sendError(res, 500, 'request_group_delete_failed', error.message, {
+      requestGroupId: req.params.requestGroupId,
+    });
   }
 });
 
@@ -2591,7 +3726,33 @@ app.post('/api/workspaces/:workspaceId/requests', (req, res) => {
     resourceStorage.save('request', record);
     return sendData(res, { request: record }, 201);
   } catch (error) {
+    if (error.code) {
+      return sendError(res, 400, error.code, error.message, {
+        workspaceId: req.params.workspaceId,
+        ...(error.details || {}),
+      });
+    }
     return sendError(res, 500, 'request_save_failed', error.message);
+  }
+});
+
+app.get('/api/requests/:requestId', (req, res) => {
+  try {
+    const existingRecord = normalizePersistedRequestRecord(resourceStorage.read('request', req.params.requestId));
+
+    if (!existingRecord) {
+      return sendError(res, 404, 'request_not_found', 'Saved request was not found.', {
+        requestId: req.params.requestId,
+      });
+    }
+
+    const record = listWorkspaceSavedRequestRecords(existingRecord.workspaceId || DEFAULT_WORKSPACE_ID)
+      .find((item) => item.id === req.params.requestId) ?? existingRecord;
+    return sendData(res, { request: record });
+  } catch (error) {
+    return sendError(res, 500, 'request_detail_failed', error.message, {
+      requestId: req.params.requestId,
+    });
   }
 });
 
@@ -2644,7 +3805,32 @@ app.patch('/api/requests/:requestId', (req, res) => {
     resourceStorage.save('request', record);
     return sendData(res, { request: record });
   } catch (error) {
+    if (error.code) {
+      return sendError(res, 400, error.code, error.message, {
+        requestId: req.params.requestId,
+        ...(error.details || {}),
+      });
+    }
     return sendError(res, 500, 'request_update_failed', error.message, {
+      requestId: req.params.requestId,
+    });
+  }
+});
+
+app.delete('/api/requests/:requestId', (req, res) => {
+  try {
+    const existingRecord = normalizePersistedRequestRecord(resourceStorage.read('request', req.params.requestId));
+
+    if (!existingRecord) {
+      return sendError(res, 404, 'request_not_found', 'Saved request was not found.', {
+        requestId: req.params.requestId,
+      });
+    }
+
+    resourceStorage.delete('request', req.params.requestId);
+    return sendData(res, { deletedRequestId: req.params.requestId });
+  } catch (error) {
+    return sendError(res, 500, 'request_delete_failed', error.message, {
       requestId: req.params.requestId,
     });
   }
@@ -2910,9 +4096,16 @@ app.get('/api/script-templates/:templateId', (req, res) => {
 
 app.get('/api/workspaces/:workspaceId/resource-bundle', (req, res) => {
   try {
+    const {
+      collections,
+      requestGroups,
+      requests,
+    } = reconcileWorkspaceRequestPlacementState(req.params.workspaceId);
     const bundle = buildAuthoredResourceBundle({
       workspaceId: req.params.workspaceId,
-      requests: listWorkspaceSavedRequestRecords(req.params.workspaceId),
+      collections,
+      requestGroups,
+      requests,
       mockRules: listWorkspaceMockRuleRecords(req.params.workspaceId),
     });
 
@@ -2926,9 +4119,7 @@ app.get('/api/workspaces/:workspaceId/resource-bundle', (req, res) => {
 
 app.get('/api/requests/:requestId/resource-bundle', (req, res) => {
   try {
-    const requestRecord = normalizePersistedRequestRecord(
-      resourceStorage.read('request', req.params.requestId),
-    );
+    const requestRecord = normalizePersistedRequestRecord(resourceStorage.read('request', req.params.requestId));
 
     if (!requestRecord) {
       return sendError(res, 404, 'request_not_found', 'Saved request was not found.', {
@@ -2936,9 +4127,16 @@ app.get('/api/requests/:requestId/resource-bundle', (req, res) => {
       });
     }
 
+    const reconciledState = reconcileWorkspaceRequestPlacementState(requestRecord.workspaceId || DEFAULT_WORKSPACE_ID);
+    const reconciledRequest = reconciledState.requests.find((record) => record.id === req.params.requestId) ?? requestRecord;
+    const collectionRecord = reconciledState.collections.find((record) => record.id === reconciledRequest.collectionId) ?? null;
+    const requestGroupRecord = reconciledState.requestGroups.find((record) => record.id === reconciledRequest.requestGroupId) ?? null;
+
     const bundle = buildAuthoredResourceBundle({
       workspaceId: requestRecord.workspaceId || DEFAULT_WORKSPACE_ID,
-      requests: [requestRecord],
+      collections: collectionRecord ? [collectionRecord] : [],
+      requestGroups: requestGroupRecord ? [requestGroupRecord] : [],
+      requests: [reconciledRequest],
       mockRules: [],
     });
 
@@ -2964,6 +4162,8 @@ app.get('/api/mock-rules/:mockRuleId/resource-bundle', (req, res) => {
 
     const bundle = buildAuthoredResourceBundle({
       workspaceId: mockRule.workspaceId || DEFAULT_WORKSPACE_ID,
+      collections: [],
+      requestGroups: [],
       requests: [],
       mockRules: [mockRule],
     });
@@ -2986,6 +4186,14 @@ app.post('/api/workspaces/:workspaceId/resource-bundle/import', (req, res) => {
   try {
     const importPlan = prepareWorkspaceResourceBundleImport(bundle, req.params.workspaceId);
 
+    for (const collectionRecord of importPlan.acceptedCollections) {
+      resourceStorage.save('collection', collectionRecord);
+    }
+
+    for (const requestGroupRecord of importPlan.acceptedRequestGroups) {
+      resourceStorage.save('request-group', requestGroupRecord);
+    }
+
     for (const requestRecord of importPlan.acceptedRequests) {
       resourceStorage.save('request', requestRecord);
     }
@@ -2996,6 +4204,8 @@ app.post('/api/workspaces/:workspaceId/resource-bundle/import', (req, res) => {
 
     return sendData(res, {
       result: {
+        acceptedCollections: importPlan.acceptedCollections,
+        acceptedRequestGroups: importPlan.acceptedRequestGroups,
         acceptedRequests: importPlan.acceptedRequests,
         acceptedMockRules: importPlan.acceptedMockRules,
         rejected: importPlan.rejected,

@@ -97,6 +97,8 @@ export async function exportMockRuleResource(mockRuleId: string) {
       resourceKind: string;
       exportedAt: string;
       workspaceId: string;
+      collections: [];
+      requestGroups: [];
       requests: [];
       mockRules: MockRuleRecord[];
     };

@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   listWorkspaceEnvironments,
   workspaceEnvironmentsQueryKey,
 } from '@client/features/environments/environment.api';
 import {
   listWorkspaceSavedRequests,
+  type SavedRequestResourceRecord,
   workspaceSavedRequestsQueryKey,
 } from '@client/features/request-builder/request-builder.api';
 import { RequestResultPanelPlaceholder } from '@client/features/request-builder/components/RequestResultPanelPlaceholder';
@@ -19,7 +20,6 @@ import type { RequestTabRecord } from '@client/features/request-builder/request-
 import { workspaceMockRulesQueryKey } from '@client/features/mocks/mock-rules.api';
 import { WorkspaceExplorer } from '@client/features/workspace/components/WorkspaceExplorer';
 import { SectionHeading } from '@client/shared/ui/SectionHeading';
-import { buildWorkspaceExplorerTree } from '@client/features/workspace/data/workspace-explorer-data';
 import {
   downloadAuthoredResourceBundle,
   exportSavedRequestResource,
@@ -30,10 +30,18 @@ import {
   type AuthoredResourceBundleImportResult,
   previewWorkspaceResources,
 } from '@client/features/workspace/resource-bundle.api';
-import type { WorkspaceSavedRequestSeed } from '@client/features/workspace/data/workspace-explorer-fixtures';
+import {
+  buildFallbackWorkspaceRequestTree,
+  deleteWorkspaceSavedRequest,
+  listWorkspaceRequestTree,
+  readWorkspaceSavedRequestDetail,
+  workspaceRequestTreeQueryKey,
+  type WorkspaceTreeRequestLeaf,
+} from '@client/features/workspace/workspace-request-tree.api';
 import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
 import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
 import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
+import { useShellStore } from '@client/app/providers/shell-store';
 
 interface ResourceTransferStatus {
   tone: 'success' | 'error' | 'info';
@@ -94,6 +102,8 @@ function createImportSummaryDetails(
   t: ReturnType<typeof useI18n>['t'],
 ) {
   const {
+    createdCollectionCount,
+    createdRequestGroupCount,
     createdRequestCount,
     createdMockRuleCount,
     renamedCount,
@@ -102,6 +112,8 @@ function createImportSummaryDetails(
     rejectedCount,
   } = summary;
   const details = [
+    t('workspaceRoute.explorer.status.createdCollections', { count: createdCollectionCount ?? 0 }),
+    t('workspaceRoute.explorer.status.createdRequestGroups', { count: createdRequestGroupCount ?? 0 }),
     t('workspaceRoute.explorer.status.createdRequests', { count: createdRequestCount }),
     t('workspaceRoute.explorer.status.createdMockRules', { count: createdMockRuleCount }),
     t('workspaceRoute.explorer.status.renamedOnImport', { count: renamedCount }),
@@ -180,6 +192,8 @@ function createExportStatusMessage(
     tone: 'success' as const,
     message: t('workspaceRoute.explorer.status.exportCompleted', { label }),
     details: [
+      t('workspaceRoute.explorer.status.bundleCollectionCount', { count: bundle.collections?.length ?? 0 }),
+      t('workspaceRoute.explorer.status.bundleRequestGroupCount', { count: bundle.requestGroups?.length ?? 0 }),
       t('workspaceRoute.explorer.status.bundleRequestCount', { count: bundle.requests.length }),
       t('workspaceRoute.explorer.status.bundleMockRuleCount', { count: bundle.mockRules.length }),
       t('workspaceRoute.explorer.status.runtimeExcluded'),
@@ -193,6 +207,15 @@ function resolveSeededEnvironmentId(draftSeed: RequestDraftSeed | undefined, def
   }
 
   return defaultEnvironmentId;
+}
+
+function readSavedRequestGroupName(record: SavedRequestResourceRecord) {
+  const recordWithPlacement = record as SavedRequestResourceRecord & {
+    requestGroupName?: string;
+    folderName?: string;
+  };
+
+  return recordWithPlacement.requestGroupName ?? recordWithPlacement.folderName;
 }
 export function WorkspacePlaceholder() {
   const queryClient = useQueryClient();
@@ -209,6 +232,7 @@ export function WorkspacePlaceholder() {
   const setWorkspaceActivePanel = useWorkspaceUiStore((state) => state.setRouteActivePanel);
   const focusWorkspaceWorkSurface = useWorkspaceUiStore((state) => state.focusWorkspaceWorkSurface);
   const closeTab = useWorkspaceShellStore((state) => state.closeTab);
+  const setFloatingExplorerOpen = useShellStore((state) => state.setFloatingExplorerOpen);
   const draftsByTabId = useRequestDraftStore((state) => state.draftsByTabId);
   const ensureDraftForTab = useRequestDraftStore((state) => state.ensureDraftForTab);
   const removeDraft = useRequestDraftStore((state) => state.removeDraft);
@@ -224,6 +248,32 @@ export function WorkspacePlaceholder() {
       }
     },
   });
+  const requestTreeQuery = useQuery({
+    queryKey: workspaceRequestTreeQueryKey,
+    queryFn: async () => {
+      try {
+        return await listWorkspaceRequestTree();
+      } catch {
+        return {
+          defaults: {
+            collectionId: 'saved-requests',
+            requestGroupId: 'general',
+            collectionName: 'Saved Requests',
+            requestGroupName: 'General',
+          },
+          collections: [],
+          requestGroups: [],
+          tree: [],
+        };
+      }
+    },
+  });
+
+  useEffect(() => {
+    if (savedRequestsQuery.dataUpdatedAt > 0) {
+      void queryClient.invalidateQueries({ queryKey: workspaceRequestTreeQueryKey });
+    }
+  }, [queryClient, savedRequestsQuery.dataUpdatedAt]);
 
   const exportResourcesMutation = useMutation({
     mutationFn: async () => {
@@ -254,7 +304,7 @@ export function WorkspacePlaceholder() {
   });
 
   const exportRequestMutation = useMutation({
-    mutationFn: async (request: WorkspaceSavedRequestSeed) => {
+    mutationFn: async (request: WorkspaceTreeRequestLeaf) => {
       const bundle = await exportSavedRequestResource(request.id);
       downloadAuthoredResourceBundle(
         bundle,
@@ -310,6 +360,7 @@ export function WorkspacePlaceholder() {
     onSuccess: async (result) => {
       setPendingImportPreview(null);
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: workspaceRequestTreeQueryKey }),
         queryClient.invalidateQueries({ queryKey: workspaceSavedRequestsQueryKey }),
         queryClient.invalidateQueries({ queryKey: workspaceMockRulesQueryKey }),
       ]);
@@ -325,13 +376,66 @@ export function WorkspacePlaceholder() {
     },
   });
 
-  const explorerTree = buildWorkspaceExplorerTree(savedRequestsQuery.data ?? []);
+  const deleteSavedRequestMutation = useMutation({
+    mutationFn: deleteWorkspaceSavedRequest,
+    onSuccess: async (deletedRequestId) => {
+      useWorkspaceShellStore.setState((state) => {
+        const nextTabs = state.tabs.map((tab) => {
+          if (tab.requestId !== deletedRequestId) {
+            return tab;
+          }
+
+          const nextTab: RequestTabRecord = {
+            ...tab,
+            source: 'draft',
+            sourceKey: `detached-${deletedRequestId}-${tab.id}`,
+            hasUnsavedChanges: true,
+          };
+
+          delete nextTab.requestId;
+          delete nextTab.replaySource;
+
+          return nextTab;
+        });
+        const activeTab = nextTabs.find((tab) => tab.id === state.activeTabId) ?? null;
+
+        return {
+          tabs: nextTabs,
+          selectedExplorerItemId: activeTab?.requestId ?? null,
+        };
+      });
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: workspaceRequestTreeQueryKey }),
+        queryClient.invalidateQueries({ queryKey: workspaceSavedRequestsQueryKey }),
+      ]);
+      queryClient.setQueryData<SavedRequestResourceRecord[]>(
+        workspaceSavedRequestsQueryKey,
+        (current) => (current ?? []).filter((record) => record.id !== deletedRequestId),
+      );
+      setResourceTransferStatus({
+        tone: 'info',
+        message: t('workspaceRoute.explorer.status.requestDeleted'),
+      });
+    },
+    onError: (error) => {
+      setResourceTransferStatus({
+        tone: 'error',
+        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.requestDeleteFailed'),
+      });
+    },
+  });
+
+  const explorerTree = requestTreeQuery.data?.tree?.length
+    ? requestTreeQuery.data.tree
+    : buildFallbackWorkspaceRequestTree(savedRequestsQuery.data ?? []);
   const resolvedTabs = tabs.map((tab) => resolvePresentationTab(tab, draftsByTabId[tab.id]));
   const activeTab = resolvedTabs.find((tab) => tab.id === activeTabId) ?? null;
   const activeTabKey = activeTab?.id ?? 'empty';
 
   const openDraftFromSeed = async (draftSeed?: RequestDraftSeed) => {
     focusWorkspaceWorkSurface();
+    setFloatingExplorerOpen('workspace', false);
     const previousTabIds = new Set(useWorkspaceShellStore.getState().tabs.map((tab) => tab.id));
     openNewRequest();
     const nextTab = useWorkspaceShellStore
@@ -351,7 +455,13 @@ export function WorkspacePlaceholder() {
         defaultEnvironmentId = null;
       }
 
+      const defaultPlacement = requestTreeQuery.data?.defaults;
       ensureDraftForTab(nextTab, {
+        ...(defaultPlacement?.collectionId ? { collectionId: defaultPlacement.collectionId } : {}),
+        collectionName: draftSeed?.collectionName ?? defaultPlacement?.collectionName ?? 'Saved Requests',
+        ...(defaultPlacement?.requestGroupId ? { requestGroupId: defaultPlacement.requestGroupId } : {}),
+        requestGroupName: draftSeed?.requestGroupName ?? draftSeed?.folderName ?? defaultPlacement?.requestGroupName ?? 'General',
+        folderName: draftSeed?.requestGroupName ?? draftSeed?.folderName ?? defaultPlacement?.requestGroupName ?? 'General',
         ...(draftSeed ?? {}),
         selectedEnvironmentId: resolveSeededEnvironmentId(draftSeed, defaultEnvironmentId),
       });
@@ -362,27 +472,26 @@ export function WorkspacePlaceholder() {
     void openDraftFromSeed();
   };
 
-  const handleOpenSavedRequest = (request: WorkspaceSavedRequestSeed) => {
+  const handleOpenSavedRequest = async (request: WorkspaceTreeRequestLeaf) => {
     focusWorkspaceWorkSurface();
-    if (request.resourceKind === 'starter') {
-      void openDraftFromSeed({
-        name: request.name,
-        method: request.methodLabel,
-        ...(request.draftSeed ?? {}),
-        collectionName: request.collectionName,
-        ...(request.folderName ? { folderName: request.folderName } : {}),
-      });
-      return;
-    }
-
+    setFloatingExplorerOpen('workspace', false);
     const existingTab = useWorkspaceShellStore
       .getState()
       .tabs.find((tab) => tab.sourceKey === `saved-${request.id}`);
 
-    openSavedRequest(request);
+    openSavedRequest({
+      id: request.id,
+      name: request.name,
+      methodLabel: request.methodLabel,
+      summary: request.summary,
+      collectionId: request.collectionId,
+      collectionName: request.collectionName,
+      requestGroupId: request.requestGroupId,
+      requestGroupName: request.requestGroupName,
+      folderName: request.requestGroupName,
+    });
 
     if (existingTab) {
-      ensureDraftForTab(existingTab, request.draftSeed);
       return;
     }
 
@@ -391,7 +500,30 @@ export function WorkspacePlaceholder() {
       .tabs.find((tab) => tab.sourceKey === `saved-${request.id}`);
 
     if (nextTab) {
-      ensureDraftForTab(nextTab, request.draftSeed);
+      const savedRecord = await readWorkspaceSavedRequestDetail(request.id);
+      ensureDraftForTab(nextTab, {
+        name: savedRecord.name,
+        method: savedRecord.method,
+        url: savedRecord.url,
+        selectedEnvironmentId: savedRecord.selectedEnvironmentId ?? null,
+        params: savedRecord.params,
+        headers: savedRecord.headers,
+        bodyMode: savedRecord.bodyMode,
+        bodyText: savedRecord.bodyText,
+        formBody: savedRecord.formBody,
+        multipartBody: savedRecord.multipartBody,
+        auth: savedRecord.auth,
+        scripts: savedRecord.scripts,
+        ...(savedRecord.collectionId ? { collectionId: savedRecord.collectionId } : {}),
+        collectionName: savedRecord.collectionName,
+        ...(savedRecord.requestGroupId ? { requestGroupId: savedRecord.requestGroupId } : {}),
+        ...(readSavedRequestGroupName(savedRecord)
+          ? {
+              requestGroupName: readSavedRequestGroupName(savedRecord),
+              folderName: readSavedRequestGroupName(savedRecord),
+            }
+          : {}),
+      });
     }
   };
 
@@ -452,6 +584,7 @@ export function WorkspacePlaceholder() {
     <RoutePanelTabsLayout
       layoutMode="floating-explorer"
       floatingExplorerRouteKey="workspace"
+      floatingExplorerVariant="focused-overlay"
       defaultActiveTab="main"
       activeTab={workspaceActivePanel}
       onActiveTabChange={(panel) => setWorkspaceActivePanel('workspace', panel)}
@@ -462,6 +595,7 @@ export function WorkspacePlaceholder() {
           selectedRequestId={selectedExplorerItemId}
           onCreateRequest={handleCreateRequest}
           onOpenSavedRequest={handleOpenSavedRequest}
+          onDeleteRequest={(request) => deleteSavedRequestMutation.mutate(request.id)}
           onExportRequest={(request) => exportRequestMutation.mutate(request)}
           onExportResources={() => exportResourcesMutation.mutate()}
           onImportResources={handleImportResources}
@@ -474,6 +608,7 @@ export function WorkspacePlaceholder() {
           isExporting={exportResourcesMutation.isPending || exportRequestMutation.isPending}
           isPreviewingImport={previewResourcesMutation.isPending}
           isImporting={importResourcesMutation.isPending}
+          isDeletingRequest={deleteSavedRequestMutation.isPending}
         />
         </section>
       )}
@@ -513,3 +648,5 @@ export function WorkspacePlaceholder() {
     />
   );
 }
+
+

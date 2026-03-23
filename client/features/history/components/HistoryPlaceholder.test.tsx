@@ -57,6 +57,7 @@ describe('History S18 fidelity refinement', () => {
       requestResourceId: 'request-create-user',
       requestCollectionName: 'Saved Requests',
       requestFolderName: 'Core Flows',
+      hostPathHint: 'api.example.com/users/with/a/very/long/request/path/that/should-stay-visible-in-history-cards',
       responsePreviewSizeLabel: '73 B preview',
       responsePreviewPolicy: 'Persisted response preview is bounded and redacted before deeper diagnostics are added.',
       requestInputSummary: '0 params · 3 headers · json body · bearer',
@@ -100,6 +101,7 @@ describe('History S18 fidelity refinement', () => {
       ...baseSecondHistory,
       sourceLabel: 'Ad hoc request snapshot',
       requestCollectionName: 'Draft Scratchpad',
+      hostPathHint: 'api.example.com/dashboard/with/a/very/long/request/path/that/should-stay-visible-in-history-cards',
       responsePreviewSizeLabel: '56 B preview',
       responsePreviewPolicy: 'Persisted response preview is bounded and redacted before deeper diagnostics are added.',
       requestInputSummary: '2 params · 2 headers · No body · No auth',
@@ -170,16 +172,28 @@ describe('History S18 fidelity refinement', () => {
     expect(screen.getByText(/History reads persisted execution summaries from the runtime lane/i)).toBeInTheDocument();
     expect(screen.getByLabelText('Search history')).toBeInTheDocument();
     expect(screen.getByLabelText('Execution outcome filter')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Selected execution' })).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: 'Open history Create user' })).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: 'History detail' })).toBeInTheDocument();
     expect(screen.getByRole('tablist', { name: 'History result tabs' })).toBeInTheDocument();
     expect(screen.getByText('73 B preview')).toBeInTheDocument();
     expect(screen.getAllByText(/bounded and redacted before deeper diagnostics/i).length).toBeGreaterThan(0);
-    expect(screen.getByText('Saved request snapshot', { selector: '.workspace-chip--secondary' })).toBeInTheDocument();
+    expect(screen.getByText('Saved request snapshot')).toBeInTheDocument();
     expect(screen.getByText('request-create-user')).toBeInTheDocument();
     expect(screen.getByText('Saved Requests / Core Flows')).toBeInTheDocument();
     expect(screen.getByText('0 params · 3 headers · json body · bearer')).toBeInTheDocument();
     expect(screen.getByText('Persisted response detail stays bounded')).toBeInTheDocument();
+    expect(screen.getAllByText(firstHistory.hostPathHint).length).toBeGreaterThan(0);
+    expect(screen.getByText('Saved request snapshot · 1 / 1 tests passed')).toBeInTheDocument();
+
+    const historyHeaderBadges = document.querySelector('.history-detail__header .observation-detail__badge-rail');
+    expect(historyHeaderBadges).not.toBeNull();
+    expect(within(historyHeaderBadges as HTMLElement).getByText('POST')).toBeInTheDocument();
+    expect(within(historyHeaderBadges as HTMLElement).getByText('Succeeded', { selector: '[data-kind="executionOutcome"]' })).toBeInTheDocument();
+    expect(within(historyHeaderBadges as HTMLElement).getByText('200 OK', { selector: '[data-kind="transportOutcome"]' })).toBeInTheDocument();
+    expect(within(historyHeaderBadges as HTMLElement).queryByText('All tests passed')).not.toBeInTheDocument();
+
+    await waitFor(() => expect(document.querySelector('.history-timeline__item > .history-timeline__entry.shared-detail-viewer-section')).not.toBeNull());
 
     expect(screen.getAllByText('Succeeded', { selector: '[data-kind="executionOutcome"]' }).length).toBeGreaterThan(0);
     expect(screen.getAllByText('200 OK', { selector: '[data-kind="transportOutcome"]' }).length).toBeGreaterThan(0);
@@ -192,8 +206,10 @@ describe('History S18 fidelity refinement', () => {
     const historyList = await screen.findByLabelText('History list');
     await user.click(within(historyList).getByRole('button', { name: 'Open history Load dashboard' }));
 
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
     expect(screen.getByText(/GET https:\/\/api.example.com\/dashboard ran from an ad hoc tab/i)).toBeInTheDocument();
     expect(screen.getByText('56 B preview')).toBeInTheDocument();
+    expect(screen.getAllByText(secondHistory.hostPathHint).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Ad hoc request snapshot').length).toBeGreaterThan(0);
     expect(screen.getByText('Draft save placement: Draft Scratchpad')).toBeInTheDocument();
     expect(screen.getAllByText('503 Service Unavailable', { selector: '[data-kind="transportOutcome"]' }).length).toBeGreaterThan(0);
@@ -287,6 +303,7 @@ describe('History S18 fidelity refinement', () => {
     await waitFor(() => expect(screen.getByText(/POST https:\/\/api.example.com\/users ran with the QA environment snapshot/i)).toBeInTheDocument());
     expect(screen.queryByText(/GET https:\/\/api.example.com\/dashboard ran from an ad hoc tab/i)).not.toBeInTheDocument();
     expect(useHistoryStore.getState().selectedHistoryId).toBe(firstHistory.id);
+    expect(screen.getByRole('heading', { name: 'Selected execution' })).toBeInTheDocument();
   });
 
   it('shows empty state when the persisted history query returns no executions', async () => {

@@ -10,16 +10,16 @@
 ## 1. Current Shipped Authored-Resource Baseline
 - Saved request definitions are first-class persisted authored resources. The workspace route can export a whole authored-resource bundle or export one persisted saved request as a bundle with a single request record.
 - Mock rules are first-class persisted authored resources. The mocks route can export one persisted rule as a bundle with a single mock-rule record, and workspace-level bundle export also includes mock rules.
-- Workspace-level import already exists for authored-resource bundles. Import returns accepted requests, accepted mock rules, reject summaries, imported-name previews, and the explicit `new_identity` duplicate policy.
+- Workspace-level import already exists for authored-resource bundles. Import now returns accepted collections, accepted request groups, accepted requests, accepted mock rules, reject summaries, imported-name previews, and the explicit `new_identity` duplicate policy.
 - Current bundle transfer intentionally excludes runtime history, captures, execution results, and runtime mock outcomes.
 - Compatibility handling is already shipped for bundle kind/schema validation, per-resource kind/schema validation, migration-needed versus unsupported-version classification, and read-compatible legacy bundle/resource paths.
 - The current baseline does not require a write-time migration engine. Read-compatible and migration-needed classification are the active compatibility seams today.
 
 ## 2. Current Authored-Resource Boundaries
-- First-class authored-resource transfer today is limited to saved requests and mock rules.
+- First-class authored-resource transfer today is centered on saved-request bundles and now includes first-class `Collection` and `Request Group` records alongside saved requests and mock rules in bundle schema v2.
 - Environments are now first-class persisted workflow objects in the shipped shell, and `T030` also makes them request-linked execution inputs through `selectedEnvironmentId`, server-owned placeholder resolution, and execution/history environment metadata. They are still not authored-resource transfer types.
 - Route-level Scripts is also now a first-class persisted workflow surface with standalone saved scripts plus read-only templates, but it is not yet part of the authored-resource transfer lane.
-- Collection and folder labels exist as organization metadata on saved requests, but collections and folders are not currently standalone authored-resource transfer objects.
+- Collections and request groups are now standalone authored-resource transfer objects inside the current workspace bundle scope, but that scope still does not include environments or standalone saved scripts.
 - Broader interoperability such as cURL, OpenAPI, and Postman import remains deferred and should not be treated as implied Candidate A scope.
 - `T027` changed the workflow-object prerequisite for environments and standalone scripts, but it did not define bundle membership, secret/template policy, or import/export boundaries for those resource kinds.
 - **확실하지 않음:** whether future authored-resource bundles should add environments, standalone saved scripts, or other resource kinds beyond saved requests and mock rules.
@@ -76,7 +76,7 @@
 ## 7. Explicit Uncertainties / 확실하지 않음
 - **확실하지 않음:** whether environments should become a first-class authored-resource transfer type now that they are also request-linked execution inputs rather than only standalone route objects.
 - **확실하지 않음:** whether standalone saved scripts should become a transfer type, or whether script authoring should remain split between request-bound scripts and standalone management for longer.
-- **확실하지 않음:** whether collections or folders should ever become standalone authored-resource transfer objects instead of remaining request metadata.
+- **확실하지 않음:** whether future authored-resource transfer should expand beyond the current collection/request-group/request/mock-rule bundle boundary into environments or standalone saved scripts.
 - **확실하지 않음:** when broader interoperability should graduate from deferred strategy to a narrow promotable task.
 
 ## 8. Canonical Candidate A Decision
@@ -87,3 +87,4 @@
 - This document still exists to keep any further Candidate A proposals narrow rather than letting authored-resource work reopen as a broad umbrella.
 - Use `candidate-a-gap-inventory.md` as the current evidence list before deciding whether a proposed Candidate A gap is already covered, still broad, blocked by a missing first-class resource type, or worth promoting after `T019`.
 - Use `candidate-a-narrow-candidate-comparison.md` to understand why Candidate 2 stayed parked and why Candidate 1 won before `T019` was created.
+

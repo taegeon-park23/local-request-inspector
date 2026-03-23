@@ -3,7 +3,7 @@
 - **Purpose:** Explain sequencing logic and show which work should happen first, next, and later.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `master-task-board.md`, `post-m3-reactivation-guide.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `environment-follow-up-lane-comparison.md`, `resolved-preview-sub-lane-comparison.md`, `../architecture/request-environment-resolution-summary-contract.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md`, `../tasks/task-032-post-t030-environment-follow-up-lane-comparison.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../tasks/task-034-post-t033-resolution-summary-contract.md`, `../tasks/task-035-compact-shell-header-and-material-icon-usability-refresh.md`, `../tasks/task-036-button-badge-and-radius-visual-hierarchy-refinement.md`, `../architecture/client-i18n-foundation.md`, `../tasks/task-037-client-i18n-foundation-and-korean-locale-bootstrap.md`, `../tasks/task-038-environments-and-scripts-route-localization-pass.md`, `../tasks/task-039-workspace-authoring-localization-pass.md`, `../tasks/task-040-workspace-result-panel-localization-pass.md`, `../tasks/task-041-captures-observation-route-localization-pass.md`, `../tasks/task-042-history-observation-route-localization-pass.md`, `../tasks/task-043-shell-density-and-collapsible-navigation-refinement.md`, `../tasks/task-044-single-panel-route-tabs-layout.md`, `../tasks/task-045-mocks-route-localization-pass.md`, `../tasks/task-046-shell-and-management-generated-aria-localization-pass.md`, `../prd/overview.md`, `../tasks/task-001-foundation-architecture.md`
+- **Related Documents:** `master-task-board.md`, `post-m3-reactivation-guide.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `environment-follow-up-lane-comparison.md`, `resolved-preview-sub-lane-comparison.md`, `../architecture/request-environment-resolution-summary-contract.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md`, `../tasks/task-032-post-t030-environment-follow-up-lane-comparison.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../tasks/task-034-post-t033-resolution-summary-contract.md`, `../tasks/task-035-compact-shell-header-and-material-icon-usability-refresh.md`, `../tasks/task-036-button-badge-and-radius-visual-hierarchy-refinement.md`, `../architecture/client-i18n-foundation.md`, `../tasks/task-037-client-i18n-foundation-and-korean-locale-bootstrap.md`, `../tasks/task-038-environments-and-scripts-route-localization-pass.md`, `../tasks/task-039-workspace-authoring-localization-pass.md`, `../tasks/task-040-workspace-result-panel-localization-pass.md`, `../tasks/task-041-captures-observation-route-localization-pass.md`, `../tasks/task-042-history-observation-route-localization-pass.md`, `../tasks/task-043-shell-density-and-collapsible-navigation-refinement.md`, `../tasks/task-044-single-panel-route-tabs-layout.md`, `../tasks/task-045-mocks-route-localization-pass.md`, `../tasks/task-046-shell-and-management-generated-aria-localization-pass.md`, `../tasks/task-048-observation-route-focused-explorer-overlay-and-density-refinement.md`, `../tasks/task-049-observation-route-card-content-preservation-and-badge-rail-alignment.md`, `../tasks/task-050-workspace-management-focused-overlay-and-content-preservation.md`, `../tasks/task-051-workspace-request-flow-and-canonical-request-tree.md`, `../prd/overview.md`, `../tasks/task-001-foundation-architecture.md`
 - **Update Rule:** Update when priorities, dependencies, or milestone assumptions change.
 
 ## Priority Principles
@@ -116,10 +116,22 @@ Tasks are prioritized using these criteria:
 ### Phase Z — Workspace Result UX Follow-Up
 50. **T047** Workspace result panel auto focus and immediate feedback — complete
 
-### Phase AA — Parked Optional Future Work
-51. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule bundle scope
-52. Later write-time migration-engine work if compatibility pressure justifies it
-53. Bounded packaging polish only if a delivery milestone identifies a concrete readiness gap
+### Phase AA — Observation Route Explorer Focus Follow-Up
+51. **T048** Observation route focused explorer overlay and density refinement — complete
+
+### Phase AB — Observation Route Card Readability Follow-Up
+52. **T049** Observation route card content preservation and badge-rail alignment — complete
+
+### Phase AC — Workspace And Management Route Readability Follow-Up
+53. **T050** Workspace, environments, and scripts focused overlay reuse and content preservation — complete
+
+### Phase AD — Workspace Request Architecture Realignment
+54. **T051** Workspace request flow and canonical request-tree promotion — complete
+
+### Phase AE — Parked Optional Future Work
+55. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule bundle scope
+56. Later write-time migration-engine work if compatibility pressure justifies it
+57. Bounded packaging polish only if a delivery milestone identifies a concrete readiness gap
 
 ## Why T001 Is First
 T001 is the first execution task because it has the highest leverage:
@@ -152,6 +164,9 @@ Recently completed foundation work:
 - `T017` Developer environment and tooling baseline
 
 Ready to start now:
+- `T051` is landed: Workspace now treats the explorer as the canonical persisted `Collection > Request Group > Request` tree, keeps working tabs separate from that tree, detaches open saved tabs into drafts on explicit delete, and promotes authored-resource bundle transfer plus the core docs to the new request-group model
+- `T049` is landed: observation-route detail headers now keep only high-priority badges on one horizontal rail, lower-priority metadata moves into readable meta text and summary cards, explorer rows preserve long strings, and capture/history timeline entries no longer use the old compressed double-card framing
+- `T048` is landed: observation routes now use a focused explorer overlay with a blocking scrim, hide the desktop detail column while the explorer is open, auto-collapse after capture/history/mock selection, and keep narrow-surface metadata visible through sticky selected-summary cards plus denser list rows
 - `T047` is landed: workspace runs now auto-focus the most relevant result tab from shared per-tab command state, restore the single-panel workspace detail panel after run completion, and expose immediate console/test summary feedback without changing execution contracts
 - `T046` is landed: shell route-panel regions plus Environments, Scripts, and Workspace explorer generated ARIA/action labels now localize through the shared i18n layer while request-builder generated ARIA and runtime-owned status-token boundaries remain deferred
 - `T045` is landed: the Mocks route sidebar/detail/contextual chrome, route-local empty states, authored-rule action labels, detail-tab labels, and helper-generated authored-rule summaries now localize through the shared i18n layer while preserving backend contracts and runtime-owned status-token boundaries
@@ -178,3 +193,5 @@ Ready to start now:
 - Top-bar environment selection, pre-run unresolved-feedback tiering, explorer/readability copy propagation, top-level script attachment/reference semantics, settings mutation, and environment/script import-export expansion remain deferred beyond `T030`; do not treat them as part of placeholder-route cleanup or request-level environment baseline completion anymore.
 - Use `resolved-preview-sub-lane-comparison.md` after `environment-follow-up-lane-comparison.md` before proposing further environment-observation work so future scope starts from the current strongest sub-lane rather than from a broad “better resolved preview” theme.
 - Use `request-environment-resolution-summary-contract.md` after `resolved-preview-sub-lane-comparison.md` before proposing future environment-observation implementation so result/history scope starts from one bounded shared DTO contract.
+
+

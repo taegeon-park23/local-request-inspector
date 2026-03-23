@@ -1,8 +1,10 @@
 const {
   AUTHORED_RESOURCE_BUNDLE_KIND,
   AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION,
+  COLLECTION_RESOURCE_SCHEMA_VERSION,
   MOCK_RULE_RESOURCE_SCHEMA_VERSION,
   REQUEST_RESOURCE_SCHEMA_VERSION,
+  REQUEST_GROUP_RESOURCE_SCHEMA_VERSION,
   RESOURCE_RECORD_KINDS,
 } = require('../shared/constants');
 const {
@@ -66,7 +68,14 @@ function validateBundledResourceRecord(record, options) {
       }),
     ]);
 
-  if (resourceSchemaCompatibility.state !== 'read-compatible') {
+  const allowLegacyRequestMigration = (
+    expectedKind === RESOURCE_RECORD_KINDS.REQUEST
+    && resourceSchemaCompatibility.state === 'migration-needed'
+    && Number(record.resourceSchemaVersion) === 1
+    && REQUEST_RESOURCE_SCHEMA_VERSION === 2
+  );
+
+  if (resourceSchemaCompatibility.state !== 'read-compatible' && !allowLegacyRequestMigration) {
     throw createBundleError(
       'resource_bundle_unsupported_resource_schema',
       `Import file contains a ${arrayName} entry with unsupported resource schema version ${record.resourceSchemaVersion}.`,
@@ -86,12 +95,21 @@ function validateBundledResourceArray(records, options) {
   }
 }
 
-function buildAuthoredResourceBundle({ workspaceId, requests, mockRules, exportedAt = new Date().toISOString() }) {
+function buildAuthoredResourceBundle({
+  workspaceId,
+  collections,
+  requestGroups,
+  requests,
+  mockRules,
+  exportedAt = new Date().toISOString(),
+}) {
   return {
     schemaVersion: AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION,
     resourceKind: AUTHORED_RESOURCE_BUNDLE_KIND,
     exportedAt,
     workspaceId,
+    collections: cloneValue(Array.isArray(collections) ? collections : []),
+    requestGroups: cloneValue(Array.isArray(requestGroups) ? requestGroups : []),
     requests: cloneValue(Array.isArray(requests) ? requests : []),
     mockRules: cloneValue(Array.isArray(mockRules) ? mockRules : []),
   };
@@ -125,7 +143,14 @@ function inspectAuthoredResourceBundleCompatibility(payload) {
     }),
   ]);
 
-  if (bundleSchemaCompatibility.state !== 'read-compatible') {
+  if (
+    bundleSchemaCompatibility.state !== 'read-compatible'
+    && !(
+      bundleSchemaCompatibility.state === 'migration-needed'
+      && Number(payload.schemaVersion) === 1
+      && AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION === 2
+    )
+  ) {
     throw createBundleError(
       'resource_bundle_unsupported_schema',
       `Schema version ${payload.schemaVersion} is not supported for import.`,
@@ -140,7 +165,7 @@ function inspectAuthoredResourceBundleCompatibility(payload) {
 }
 
 function validateAuthoredResourceBundlePayload(payload) {
-  inspectAuthoredResourceBundleCompatibility(payload);
+  const bundleCompatibility = inspectAuthoredResourceBundleCompatibility(payload);
 
   if (typeof payload.exportedAt !== 'string' || payload.exportedAt.trim().length === 0) {
     throw createBundleError(
@@ -160,10 +185,23 @@ function validateAuthoredResourceBundlePayload(payload) {
     throw createBundleError('resource_bundle_invalid_requests', 'Import file must include a requests array.');
   }
 
+  const normalizedCollections = Array.isArray(payload.collections) ? payload.collections : [];
+  const normalizedRequestGroups = Array.isArray(payload.requestGroups) ? payload.requestGroups : [];
+
   if (!Array.isArray(payload.mockRules)) {
     throw createBundleError('resource_bundle_invalid_mock_rules', 'Import file must include a mockRules array.');
   }
 
+  validateBundledResourceArray(normalizedCollections, {
+    arrayName: 'collection',
+    expectedKind: RESOURCE_RECORD_KINDS.COLLECTION,
+    supportedSchemaVersion: COLLECTION_RESOURCE_SCHEMA_VERSION,
+  });
+  validateBundledResourceArray(normalizedRequestGroups, {
+    arrayName: 'request-group',
+    expectedKind: RESOURCE_RECORD_KINDS.REQUEST_GROUP,
+    supportedSchemaVersion: REQUEST_GROUP_RESOURCE_SCHEMA_VERSION,
+  });
   validateBundledResourceArray(payload.requests, {
     arrayName: 'request',
     expectedKind: RESOURCE_RECORD_KINDS.REQUEST,
@@ -175,7 +213,14 @@ function validateAuthoredResourceBundlePayload(payload) {
     supportedSchemaVersion: MOCK_RULE_RESOURCE_SCHEMA_VERSION,
   });
 
-  return payload;
+  return {
+    ...payload,
+    schemaCompatibilityState: bundleCompatibility.state,
+    collections: cloneValue(normalizedCollections),
+    requestGroups: cloneValue(normalizedRequestGroups),
+    requests: cloneValue(payload.requests),
+    mockRules: cloneValue(payload.mockRules),
+  };
 }
 
 function parseAuthoredResourceBundleText(bundleText) {

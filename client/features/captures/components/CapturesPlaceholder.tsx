@@ -1,6 +1,7 @@
 ﻿import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
+import { useShellStore } from '@client/app/providers/shell-store';
 import { useNavigate } from 'react-router-dom';
 import {
   capturedRequestDetailQueryKey,
@@ -111,9 +112,40 @@ function getCaptureObservationSourceLabel(t: TranslateFn) {
   return t('capturesRoute.helpers.observationSourceLabel');
 }
 
+function CapturesExplorerSummaryCard({
+  capture,
+  t,
+}: {
+  capture: CaptureRecord;
+  t: TranslateFn;
+}) {
+  return (
+    <DetailViewerSection
+      title={t('capturesRoute.sidebar.selectedSummary.title')}
+      description={`${capture.method} ${capture.path}`}
+      className="observation-explorer-summary observation-explorer-summary--captures"
+    >
+      <div className="request-work-surface__badges observation-explorer-summary__badges">
+        <span className="workspace-chip">{capture.method}</span>
+        <StatusBadge kind="mockOutcome" value={capture.mockOutcome} />
+      </div>
+      <p className="observation-explorer-summary__path">{capture.host}{capture.path}</p>
+      <KeyValueMetaList
+        items={[
+          { label: t('capturesRoute.sidebar.selectedSummary.labels.scope'), value: capture.scopeLabel },
+          { label: t('capturesRoute.sidebar.selectedSummary.labels.observedAt'), value: capture.receivedAtLabel },
+          { label: t('capturesRoute.sidebar.selectedSummary.labels.bodyHint'), value: capture.bodyHint },
+          { label: t('capturesRoute.sidebar.selectedSummary.labels.previewPolicy'), value: getCaptureBodyPreviewPolicy(capture, t) },
+        ]}
+      />
+    </DetailViewerSection>
+  );
+}
+
 export function CapturesPlaceholder() {
   const navigate = useNavigate();
   const { t } = useI18n();
+  const setFloatingExplorerOpen = useShellStore((state) => state.setFloatingExplorerOpen);
   const [activeDetailTab, setActiveDetailTab] = useState<CaptureDetailTabId>('timeline');
   const connectionHealth = useCapturesStore((state) => state.connectionHealth);
   const selectedCaptureId = useCapturesStore((state) => state.selectedCaptureId);
@@ -179,10 +211,16 @@ export function CapturesPlaceholder() {
     navigate('/workspace');
   };
 
+  const handleSelectCapture = (captureId: string) => {
+    selectCapture(captureId);
+    setFloatingExplorerOpen('captures', false);
+  };
+
   return (
     <RoutePanelTabsLayout
       layoutMode="floating-explorer"
       floatingExplorerRouteKey="captures"
+      floatingExplorerVariant="focused-overlay"
       defaultActiveTab="explorer"
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
@@ -191,11 +229,7 @@ export function CapturesPlaceholder() {
             <div>
               <p className="section-placeholder__eyebrow">{t('capturesRoute.sidebar.eyebrow')}</p>
               <h2>{t('capturesRoute.sidebar.title')}</h2>
-              <p>{connectionCopyByHealth[observationHealth]}</p>
-              <div className="workspace-explorer__role-strip" aria-label="Capture surface role">
-                <span className="workspace-chip">{t('roles.observation')}</span>
-                <span className="workspace-chip workspace-chip--secondary">{t('capturesRoute.sidebar.roleChip')}</span>
-              </div>
+              <p className="observation-explorer__status-line">{connectionCopyByHealth[observationHealth]}</p>
             </div>
             <StatusBadge kind="connection" value={connectionHealth} />
           </header>
@@ -225,6 +259,10 @@ export function CapturesPlaceholder() {
               </select>
             </label>
           </div>
+
+          {selectedCapture ? (
+            <CapturesExplorerSummaryCard capture={selectedCapture} t={t} />
+          ) : null}
 
           {isLoading ? (
             <EmptyStateCallout
@@ -273,16 +311,15 @@ export function CapturesPlaceholder() {
                       })}
                       aria-pressed={isSelected}
                       data-mock-outcome={capture.mockOutcome.toLowerCase().replace(/\s+/g, '-')}
-                      onClick={() => selectCapture(capture.id)}
+                      onClick={() => handleSelectCapture(capture.id)}
                     >
                       <span className="capture-row__top">
                         <span className="workspace-chip">{capture.method}</span>
                         <StatusBadge kind="mockOutcome" value={capture.mockOutcome} />
-                        <span className="workspace-chip workspace-chip--secondary">{capture.scopeLabel}</span>
                       </span>
                       <span className="capture-row__path">{capture.host}{capture.path}</span>
                       <span className="capture-row__summary">{capture.bodyHint}</span>
-                      <span className="capture-row__meta">{capture.receivedAtLabel} · {capture.scopeLabel}</span>
+                      <span className="capture-row__meta">{capture.scopeLabel} · {capture.receivedAtLabel}</span>
                     </button>
                   </li>
                 );
@@ -335,20 +372,20 @@ export function CapturesPlaceholder() {
           </div>
         ) : (
           <div className="captures-detail">
-            <header className="captures-detail__header">
+            <header className="captures-detail__header observation-detail__header">
               <div>
                 <p className="section-placeholder__eyebrow">{t('capturesRoute.detail.header.eyebrow')}</p>
                 <h2>{t('capturesRoute.detail.header.title')}</h2>
                 <p>{selectedCapture.requestSummary}</p>
+                <p className="observation-detail__header-meta">{selectedCapture.scopeLabel} · {selectedCapture.receivedAtLabel}</p>
                 <div className="workspace-explorer__role-strip" aria-label="Capture detail role">
                   <span className="workspace-chip">{t('roles.observation')}</span>
                   <span className="workspace-chip workspace-chip--secondary">{t('capturesRoute.detail.header.roleChip')}</span>
                 </div>
               </div>
-              <div className="request-work-surface__badges">
+              <div className="request-work-surface__badges observation-detail__badge-rail">
                 <span className="workspace-chip">{selectedCapture.method}</span>
                 <StatusBadge kind="mockOutcome" value={selectedCapture.mockOutcome} />
-                <span className="workspace-chip">{selectedCapture.receivedAtLabel}</span>
               </div>
             </header>
 
@@ -477,7 +514,7 @@ export function CapturesPlaceholder() {
                 <ol className="capture-timeline" aria-label={t('capturesRoute.timelinePanel.timelineSummary.ariaLabel')}>
                   {selectedCapture.timelineEntries.map((entry) => (
                     <li key={entry.id} className="capture-timeline__item">
-                      <DetailViewerSection title={entry.title} description={entry.summary} tone="muted" />
+                      <DetailViewerSection title={entry.title} description={entry.summary} tone="muted" className="capture-timeline__entry" />
                     </li>
                   ))}
                 </ol>

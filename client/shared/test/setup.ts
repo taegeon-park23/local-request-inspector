@@ -145,12 +145,128 @@ function getUrl(input: RequestInfo | URL) {
   return input.url;
 }
 
+const defaultWorkspaceSavedRequest = {
+  id: 'request-health-check',
+  workspaceId: 'local-workspace',
+  name: 'Health check',
+  method: 'GET',
+  url: 'http://localhost:5671/health',
+  selectedEnvironmentId: null,
+  params: [],
+  headers: [],
+  bodyMode: 'none',
+  bodyText: '',
+  formBody: [],
+  multipartBody: [],
+  auth: {
+    type: 'none',
+    bearerToken: '',
+    basicUsername: '',
+    basicPassword: '',
+    apiKeyName: '',
+    apiKeyValue: '',
+    apiKeyPlacement: 'header',
+  },
+  scripts: {
+    activeStage: 'pre-request',
+    preRequest: '',
+    postResponse: '',
+    tests: '',
+  },
+  collectionId: 'collection-saved-requests',
+  collectionName: 'Saved Requests',
+  requestGroupId: 'request-group-general',
+  requestGroupName: 'General',
+  folderName: 'General',
+  summary: 'Starter persisted health check request.',
+  createdAt: '2026-03-21T00:00:00.000Z',
+  updatedAt: '2026-03-21T00:00:00.000Z',
+} as const;
+
 beforeEach(() => {
   const defaultFetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = getUrl(input);
 
     if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
-      return createApiResponse({ items: [] });
+      return createApiResponse({ items: [defaultWorkspaceSavedRequest] });
+    }
+
+    if (url === '/api/workspaces/local-workspace/request-tree' && (!init || !init.method || init.method === 'GET')) {
+      return createApiResponse({
+        defaults: {
+          collectionId: 'collection-saved-requests',
+          requestGroupId: 'request-group-general',
+          collectionName: 'Saved Requests',
+          requestGroupName: 'General',
+        },
+        collections: [
+          {
+            id: 'collection-saved-requests',
+            workspaceId: 'local-workspace',
+            name: 'Saved Requests',
+            description: '',
+          },
+        ],
+        requestGroups: [
+          {
+            id: 'request-group-general',
+            workspaceId: 'local-workspace',
+            collectionId: 'collection-saved-requests',
+            name: 'General',
+            description: '',
+          },
+        ],
+        tree: [
+          {
+            id: 'collection-node-collection-saved-requests',
+            kind: 'collection',
+            collectionId: 'collection-saved-requests',
+            name: 'Saved Requests',
+            description: '',
+            children: [
+              {
+                id: 'request-group-node-request-group-general',
+                kind: 'request-group',
+                collectionId: 'collection-saved-requests',
+                requestGroupId: 'request-group-general',
+                name: 'General',
+                description: '',
+                children: [
+                  {
+                    id: 'request-node-request-health-check',
+                    kind: 'request',
+                    name: 'Health check',
+                    request: {
+                      id: 'request-health-check',
+                      name: 'Health check',
+                      methodLabel: 'GET',
+                      summary: 'Starter persisted health check request.',
+                      collectionId: 'collection-saved-requests',
+                      collectionName: 'Saved Requests',
+                      requestGroupId: 'request-group-general',
+                      requestGroupName: 'General',
+                      folderName: 'General',
+                      updatedAt: '2026-03-21T00:00:00.000Z',
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+    }
+
+    if (url.startsWith('/api/requests/') && (!init || !init.method || init.method === 'GET') && !url.endsWith('/resource-bundle')) {
+      const requestId = url.split('/').pop() ?? '';
+      return requestId === defaultWorkspaceSavedRequest.id
+        ? createApiResponse({ request: defaultWorkspaceSavedRequest })
+        : createApiError(`Saved request ${requestId} was not found.`);
+    }
+
+    if (url.startsWith('/api/requests/') && init?.method === 'DELETE') {
+      const requestId = url.split('/').pop() ?? '';
+      return createApiResponse({ deletedRequestId: requestId });
     }
 
     if (url === '/api/workspaces/local-workspace/environments' && (!init || !init.method || init.method === 'GET')) {
@@ -199,11 +315,24 @@ beforeEach(() => {
     if (url === '/api/workspaces/local-workspace/resource-bundle' && (!init || !init.method || init.method === 'GET')) {
       return createApiResponse({
         bundle: {
-          schemaVersion: 1,
+          schemaVersion: 2,
           resourceKind: 'local-request-inspector-authored-resource-bundle',
           exportedAt: '2026-03-21T00:00:00.000Z',
           workspaceId: 'local-workspace',
-          requests: [],
+          collections: [{
+            id: 'collection-saved-requests',
+            workspaceId: 'local-workspace',
+            name: 'Saved Requests',
+            description: '',
+          }],
+          requestGroups: [{
+            id: 'request-group-general',
+            workspaceId: 'local-workspace',
+            collectionId: 'collection-saved-requests',
+            name: 'General',
+            description: '',
+          }],
+          requests: [defaultWorkspaceSavedRequest],
           mockRules: defaultMockRuleFixtureRecords,
         },
       });
@@ -212,12 +341,16 @@ beforeEach(() => {
     if (url === '/api/workspaces/local-workspace/resource-bundle/import' && init?.method === 'POST') {
       return createApiResponse({
         result: {
+          acceptedCollections: [],
+          acceptedRequestGroups: [],
           acceptedRequests: [],
           acceptedMockRules: [],
           rejected: [],
           summary: {
             acceptedCount: 0,
             rejectedCount: 0,
+            createdCollectionCount: 0,
+            createdRequestGroupCount: 0,
             createdRequestCount: 0,
             createdMockRuleCount: 0,
             renamedCount: 0,
@@ -236,6 +369,8 @@ beforeEach(() => {
           summary: {
             acceptedCount: 0,
             rejectedCount: 0,
+            createdCollectionCount: 0,
+            createdRequestGroupCount: 0,
             createdRequestCount: 0,
             createdMockRuleCount: 0,
             renamedCount: 0,
@@ -251,10 +386,23 @@ beforeEach(() => {
       const requestId = url.split('/')[3] ?? '';
       return createApiResponse({
         bundle: {
-          schemaVersion: 1,
+          schemaVersion: 2,
           resourceKind: 'local-request-inspector-authored-resource-bundle',
           exportedAt: '2026-03-21T00:00:00.000Z',
           workspaceId: 'local-workspace',
+          collections: [{
+            id: 'collection-saved-requests',
+            workspaceId: 'local-workspace',
+            name: 'Saved Requests',
+            description: '',
+          }],
+          requestGroups: [{
+            id: 'request-group-general',
+            workspaceId: 'local-workspace',
+            collectionId: 'collection-saved-requests',
+            name: 'General',
+            description: '',
+          }],
           requests: [{
             id: requestId,
             workspaceId: 'local-workspace',
@@ -283,7 +431,11 @@ beforeEach(() => {
               tests: '',
             },
             summary: 'Exported request definition',
+            collectionId: 'collection-saved-requests',
             collectionName: 'Saved Requests',
+            requestGroupId: 'request-group-general',
+            requestGroupName: 'General',
+            folderName: 'General',
             createdAt: '2026-03-21T00:00:00.000Z',
             updatedAt: '2026-03-21T00:00:00.000Z',
           }],
@@ -297,10 +449,12 @@ beforeEach(() => {
       const rule = defaultMockRuleFixtureRecords.find((item) => item.id === mockRuleId) ?? defaultMockRuleFixtureRecords[0];
       return createApiResponse({
         bundle: {
-          schemaVersion: 1,
+          schemaVersion: 2,
           resourceKind: 'local-request-inspector-authored-resource-bundle',
           exportedAt: '2026-03-21T00:00:00.000Z',
           workspaceId: 'local-workspace',
+          collections: [],
+          requestGroups: [],
           requests: [],
           mockRules: rule ? [rule] : [],
         },

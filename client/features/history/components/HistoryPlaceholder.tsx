@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
+import { useShellStore } from '@client/app/providers/shell-store';
 import { useNavigate } from 'react-router-dom';
 import {
   executionHistoryDetailQueryKey,
@@ -91,9 +92,9 @@ function formatHistoryRequestLinkage(history: HistoryRecord, t: Translate) {
 
   if (history.requestCollectionName) {
     return history.sourceLabel === 'Saved request snapshot'
-      ? formatObservedPlacement(history.requestCollectionName, history.requestFolderName, t)
+      ? formatObservedPlacement(history.requestCollectionName, history.requestGroupName ?? history.requestFolderName, t)
       : t('historyRoute.helpers.linkedRequestDraftPlacement', {
-        placement: formatObservedPlacement(history.requestCollectionName, history.requestFolderName, t),
+        placement: formatObservedPlacement(history.requestCollectionName, history.requestGroupName ?? history.requestFolderName, t),
       });
   }
 
@@ -108,9 +109,42 @@ function createFallbackResponsePreviewPolicy(history: HistoryRecord, t: Translat
   return t('historyRoute.helpers.responsePreviewPolicyBounded');
 }
 
+function HistoryExplorerSummaryCard({
+  history,
+  t,
+}: {
+  history: HistoryRecord;
+  t: Translate;
+}) {
+  return (
+    <DetailViewerSection
+      title={t('historyRoute.sidebar.selectedSummary.title')}
+      description={history.requestLabel}
+      className="observation-explorer-summary observation-explorer-summary--history"
+    >
+      <div className="request-work-surface__badges observation-explorer-summary__badges">
+        <span className="workspace-chip">{history.method}</span>
+        <StatusBadge kind="executionOutcome" value={history.executionOutcome} />
+        <StatusBadge kind="transportOutcome" value={history.transportOutcome} />
+      </div>
+      <p className="observation-explorer-summary__path">{history.hostPathHint}</p>
+      <KeyValueMetaList
+        items={[
+          { label: t('historyRoute.summaryCards.requestSnapshot.labels.snapshotSource'), value: history.sourceLabel },
+          { label: t('historyRoute.sidebar.selectedSummary.labels.transportOutcome'), value: history.transportOutcome },
+          { label: t('historyRoute.sidebar.selectedSummary.labels.tests'), value: history.testSummaryLabel },
+          { label: t('historyRoute.sidebar.selectedSummary.labels.duration'), value: history.durationLabel },
+          { label: t('historyRoute.sidebar.selectedSummary.labels.executedAt'), value: history.executedAtLabel },
+        ]}
+      />
+    </DetailViewerSection>
+  );
+}
+
 export function HistoryPlaceholder() {
   const navigate = useNavigate();
   const { t } = useI18n();
+  const setFloatingExplorerOpen = useShellStore((state) => state.setFloatingExplorerOpen);
   const historyResultTabs = [
     { id: 'response', label: t('historyRoute.resultTabs.response'), icon: 'response' },
     { id: 'console', label: t('historyRoute.resultTabs.console'), icon: 'console' },
@@ -175,10 +209,16 @@ export function HistoryPlaceholder() {
     navigate('/workspace');
   };
 
+  const handleSelectHistory = (historyId: string) => {
+    selectHistory(historyId);
+    setFloatingExplorerOpen('history', false);
+  };
+
   return (
     <RoutePanelTabsLayout
       layoutMode="floating-explorer"
       floatingExplorerRouteKey="history"
+      floatingExplorerVariant="focused-overlay"
       defaultActiveTab="explorer"
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
@@ -187,11 +227,9 @@ export function HistoryPlaceholder() {
             <div>
               <p className="section-placeholder__eyebrow">{t('historyRoute.sidebar.eyebrow')}</p>
               <h2>{t('historyRoute.sidebar.title')}</h2>
-              <p>{observationHealth === 'ready' ? t('historyRoute.sidebar.health.ready') : t('historyRoute.sidebar.health.degraded')}</p>
-              <div className="workspace-explorer__role-strip" aria-label="History surface role">
-                <span className="workspace-chip">{t('roles.observation')}</span>
-                <span className="workspace-chip workspace-chip--secondary">{t('historyRoute.sidebar.roleChip')}</span>
-              </div>
+              <p className="observation-explorer__status-line">
+                {observationHealth === 'ready' ? t('historyRoute.sidebar.health.ready') : t('historyRoute.sidebar.health.degraded')}
+              </p>
             </div>
           </header>
 
@@ -220,6 +258,10 @@ export function HistoryPlaceholder() {
               </select>
             </label>
           </div>
+
+          {selectedHistory ? (
+            <HistoryExplorerSummaryCard history={selectedHistory} t={t} />
+          ) : null}
 
           {isListLoading ? (
             <EmptyStateCallout
@@ -264,19 +306,16 @@ export function HistoryPlaceholder() {
                       aria-label={t('historyRoute.helpers.openHistoryAction', { label: history.requestLabel })}
                       aria-pressed={isSelected}
                       data-source-kind={history.sourceLabel === 'Saved request snapshot' ? 'saved' : 'ad-hoc'}
-                      onClick={() => selectHistory(history.id)}
+                      onClick={() => handleSelectHistory(history.id)}
                     >
                       <span className="history-row__top">
                         <span className="workspace-chip">{history.method}</span>
                         <StatusBadge kind="executionOutcome" value={history.executionOutcome} />
-                        <StatusBadge kind="transportOutcome" value={history.transportOutcome} />
-                        <span className="workspace-chip workspace-chip--secondary">{history.sourceLabel}</span>
                       </span>
                       <span className="history-row__title">{history.requestLabel}</span>
                       <span className="history-row__path">{history.hostPathHint}</span>
-                      <span className="history-row__summary">{history.testSummaryLabel}</span>
                       <span className="history-row__meta">
-                        {history.durationLabel} · {history.executedAtLabel}
+                        {history.sourceLabel} · {history.durationLabel} · {history.executedAtLabel}
                       </span>
                     </button>
                   </li>
@@ -330,21 +369,21 @@ export function HistoryPlaceholder() {
           </div>
         ) : (
           <div className="history-detail">
-            <header className="history-detail__header">
+            <header className="history-detail__header observation-detail__header">
               <div>
                 <p className="section-placeholder__eyebrow">{t('historyRoute.detail.header.eyebrow')}</p>
                 <h2>{t('historyRoute.detail.header.title')}</h2>
                 <p>{selectedHistory.requestSnapshotSummary}</p>
+                <p className="observation-detail__header-meta">{selectedHistory.sourceLabel} · {selectedHistory.testSummaryLabel}</p>
                 <div className="workspace-explorer__role-strip" aria-label="History detail role">
                   <span className="workspace-chip">{t('roles.observation')}</span>
                   <span className="workspace-chip workspace-chip--secondary">{t('historyRoute.detail.header.roleChip')}</span>
                 </div>
               </div>
-              <div className="request-work-surface__badges">
+              <div className="request-work-surface__badges observation-detail__badge-rail">
                 <span className="workspace-chip">{selectedHistory.method}</span>
                 <StatusBadge kind="executionOutcome" value={selectedHistory.executionOutcome} />
                 <StatusBadge kind="transportOutcome" value={selectedHistory.transportOutcome} />
-                <StatusBadge kind="testSummary" value={selectedHistory.testOutcome} />
               </div>
             </header>
 
@@ -394,7 +433,7 @@ export function HistoryPlaceholder() {
                     { label: t('historyRoute.summaryCards.requestSnapshot.labels.requestLabel'), value: selectedHistory.requestLabel },
                     { label: t('historyRoute.summaryCards.requestSnapshot.labels.snapshotSource'), value: selectedHistory.sourceLabel },
                     { label: t('historyRoute.summaryCards.requestSnapshot.labels.linkedRequest'), value: formatHistoryRequestLinkage(selectedHistory, t) },
-                    { label: t('historyRoute.summaryCards.requestSnapshot.labels.placement'), value: formatObservedPlacement(selectedHistory.requestCollectionName, selectedHistory.requestFolderName, t) },
+                    { label: t('historyRoute.summaryCards.requestSnapshot.labels.placement'), value: formatObservedPlacement(selectedHistory.requestCollectionName, selectedHistory.requestGroupName ?? selectedHistory.requestFolderName, t) },
                     { label: t('historyRoute.summaryCards.requestSnapshot.labels.url'), value: selectedHistory.url },
                     { label: t('historyRoute.summaryCards.requestSnapshot.labels.requestInput'), value: selectedHistory.requestInputSummary ?? createFallbackRequestInputSummary(selectedHistory, t) },
                   ]}
@@ -577,7 +616,7 @@ export function HistoryPlaceholder() {
               <ol className="history-timeline" aria-label={t('historyRoute.timelinePanel.timelineSummary.ariaLabel')}>
                 {selectedHistory.timelineEntries.map((entry) => (
                   <li key={entry.id} className="history-timeline__item">
-                    <DetailViewerSection title={entry.title} description={entry.summary} tone="muted" />
+                    <DetailViewerSection title={entry.title} description={entry.summary} tone="muted" className="history-timeline__entry" />
                   </li>
                 ))}
               </ol>

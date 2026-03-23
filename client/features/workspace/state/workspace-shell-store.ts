@@ -53,8 +53,15 @@ function createSavedTab(request: SavedWorkspaceRequestSeed): RequestTabRecord {
     methodLabel: request.methodLabel,
     source: 'saved',
     summary: request.summary,
+    ...(request.collectionId ? { collectionId: request.collectionId } : {}),
     collectionName: request.collectionName,
-    ...(request.folderName ? { folderName: request.folderName } : {}),
+    ...(request.requestGroupId ? { requestGroupId: request.requestGroupId } : {}),
+    ...(request.requestGroupName || request.folderName
+      ? {
+          requestGroupName: request.requestGroupName ?? request.folderName,
+          folderName: request.requestGroupName ?? request.folderName,
+        }
+      : {}),
     hasUnsavedChanges: false,
   };
 }
@@ -164,15 +171,21 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
             methodLabel: request.methodLabel,
             source: 'saved',
             summary: request.summary,
+            ...(request.collectionId ? { collectionId: request.collectionId } : {}),
             collectionName: request.collectionName,
+            ...(request.requestGroupId ? { requestGroupId: request.requestGroupId } : {}),
             hasUnsavedChanges: false,
           };
 
           delete nextTab.replaySource;
+          delete nextTab.requestGroupName;
           delete nextTab.folderName;
 
-          if (request.folderName) {
-            nextTab.folderName = request.folderName;
+          const requestGroupName = request.requestGroupName ?? request.folderName;
+
+          if (requestGroupName) {
+            nextTab.requestGroupName = requestGroupName;
+            nextTab.folderName = requestGroupName;
           }
 
           return nextTab;
@@ -221,6 +234,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
 export function resetWorkspaceShellStore() {
   useWorkspaceShellStore.setState(initialWorkspaceShellState);
 }
+
 
 
 

@@ -49,10 +49,12 @@ function getTabSourceCopy(activeTab: RequestTabRecord, t: TranslateFn) {
     return t('workspaceRoute.resultPanel.source.draftRequestTab');
   }
 
-  if (activeTab.collectionName && activeTab.folderName) {
+  const requestGroupName = activeTab.requestGroupName ?? activeTab.folderName;
+
+  if (activeTab.collectionName && requestGroupName) {
     return t('workspaceRoute.resultPanel.source.savedInCollectionFolder', {
       collectionName: activeTab.collectionName,
-      folderName: activeTab.folderName,
+      folderName: requestGroupName,
     });
   }
 
@@ -479,13 +481,13 @@ export function RequestResultPanelPlaceholder({
                         execution.requestResourceId,
                         execution.requestSourceLabel,
                         execution.requestCollectionName,
-                        execution.requestFolderName,
+                        execution.requestGroupName ?? execution.requestFolderName,
                         t,
                       ),
                     },
                     {
                       label: t('workspaceRoute.resultPanel.executionInfo.labels.placement'),
-                      value: formatObservedPlacement(execution.requestCollectionName, execution.requestFolderName, t),
+                      value: formatObservedPlacement(execution.requestCollectionName, execution.requestGroupName ?? execution.requestFolderName, t),
                     },
                     { label: t('workspaceRoute.resultPanel.executionInfo.labels.environment'), value: execution.environmentLabel ?? t('workspaceRoute.resultPanel.executionInfo.values.noEnvironmentSelected') },
                     { label: t('workspaceRoute.resultPanel.executionInfo.labels.errorCode'), value: execution.errorCode ?? t('workspaceRoute.resultPanel.executionInfo.values.noExecutionErrorCode') },
@@ -519,3 +521,4 @@ export function RequestResultPanelPlaceholder({
     </div>
   );
 }
+

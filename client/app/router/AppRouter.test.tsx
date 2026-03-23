@@ -99,6 +99,49 @@ describe('AppRouter shell bootstrap', () => {
     expect(screen.getByLabelText('Current section breadcrumb')).toHaveTextContent('Settings');
   });
 
+  it('uses a focused explorer overlay for observation routes and restores detail visibility after row selection', async () => {
+    const user = userEvent.setup();
+    renderApp(<AppRouter />, { initialEntries: ['/history'] });
+
+    const floatingDetail = document.querySelector('.shell-route-panels__floating-detail');
+    expect(floatingDetail).not.toBeNull();
+    expect(floatingDetail).toHaveAttribute('data-detail-visibility', 'hidden');
+    expect(document.querySelector('.shell-route-panels__floating-scrim--visible')).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Collapse explorer' })).toBeInTheDocument();
+
+    const historyList = await screen.findByLabelText('History list');
+    await user.click(within(historyList).getByRole('button', { name: 'Open history Load dashboard' }));
+
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
+    expect(floatingDetail).toHaveAttribute('data-detail-visibility', 'visible');
+  });
+
+  it('uses the same focused explorer overlay chrome for workspace, environments, and scripts routes', async () => {
+    const user = userEvent.setup();
+    renderApp(<AppRouter />);
+
+    const assertFocusedOverlayChrome = () => {
+      const floatingRoot = document.querySelector('.shell-route-panels--floating');
+      const floatingDetail = document.querySelector('.shell-route-panels__floating-detail');
+      const compactToggle = document.querySelector('.shell-route-panels__floating-toggle--compact');
+
+      expect(floatingRoot).toHaveAttribute('data-floating-explorer-variant', 'focused-overlay');
+      expect(floatingDetail).toHaveAttribute('data-detail-visibility', 'hidden');
+      expect(compactToggle).not.toBeNull();
+      expect(screen.getByRole('button', { name: 'Collapse explorer' })).toBeInTheDocument();
+    };
+
+    assertFocusedOverlayChrome();
+
+    await user.click(screen.getByRole('link', { name: /environments/i }));
+    expect(await screen.findByRole('heading', { name: 'Environments' })).toBeInTheDocument();
+    assertFocusedOverlayChrome();
+
+    await user.click(screen.getByRole('link', { name: /scripts/i }));
+    expect(await screen.findByRole('heading', { name: 'Scripts' })).toBeInTheDocument();
+    assertFocusedOverlayChrome();
+  });
+
   it('collapses the navigation rail without losing accessible route names', async () => {
     renderApp(<AppRouter />);
 
@@ -120,10 +163,14 @@ describe('AppRouter shell bootstrap', () => {
 
     const explorer = screen.getByLabelText('Section explorer');
     const detailPanel = screen.getByLabelText('Contextual detail panel');
+    const floatingDetail = document.querySelector('.shell-route-panels__floating-detail');
+    expect(floatingDetail).toHaveAttribute('data-detail-visibility', 'hidden');
     await user.click(within(explorer).getByRole('button', { name: 'Open Health check' }));
 
     expect(screen.getByLabelText('Request URL')).toHaveValue('http://localhost:5671/health');
     expect(within(detailPanel).getByRole('tablist', { name: 'Result panel tabs' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
+    expect(floatingDetail).toHaveAttribute('data-detail-visibility', 'visible');
 
     await user.click(screen.getByRole('button', { name: 'Collapse explorer' }));
     expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');

@@ -20,7 +20,10 @@ export interface SavedWorkspaceRequestSeed {
   name: string;
   methodLabel: HttpMethodLabel;
   summary: string;
+  collectionId?: string;
   collectionName: string;
+  requestGroupId?: string;
+  requestGroupName?: string;
   folderName?: string;
 }
 
@@ -32,8 +35,12 @@ export interface RequestTabRecord {
   source: 'saved' | 'draft' | 'replay';
   summary: string;
   requestId?: string;
+  collectionId?: string;
   collectionName?: string;
+  requestGroupId?: string;
+  requestGroupName?: string;
   folderName?: string;
   replaySource?: RequestReplaySourceCue;
   hasUnsavedChanges: boolean;
 }
+

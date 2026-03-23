@@ -25,6 +25,7 @@ import { KeyValueMetaList } from '@client/shared/ui/KeyValueMetaList';
 import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
 import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
+import { useShellStore } from '@client/app/providers/shell-store';
 
 type ScriptStageFilter = 'all' | ScriptType;
 
@@ -66,6 +67,55 @@ function getScriptTypeLabel(scriptType: ScriptType, t: ReturnType<typeof useI18n
   }
 }
 
+function ScriptsExplorerSummaryCard({
+  draft,
+  selectedTemplate,
+  summary,
+  t,
+}: {
+  draft: SavedScriptInput;
+  selectedTemplate: ScriptTemplateRecord | null;
+  summary: {
+    updatedAt: string;
+    capabilitySummary: string;
+    sourcePreview: string;
+  } | null;
+  t: ReturnType<typeof useI18n>['t'];
+}) {
+  return (
+    <DetailViewerSection
+      title={t('scriptsRoute.selectedSummary.title')}
+      description={draft.name.trim() || t('scriptsRoute.detail.summaryCard.values.untitled')}
+      className="management-explorer-summary"
+    >
+      <div className="request-work-surface__badges management-explorer-summary__badges">
+        <span className="workspace-chip">{getScriptTypeLabel(draft.scriptType, t)}</span>
+        {selectedTemplate ? <span className="workspace-chip workspace-chip--secondary">{t('scriptsRoute.detail.templateSeededChip')}</span> : null}
+      </div>
+      <KeyValueMetaList
+        items={[
+          {
+            label: t('scriptsRoute.selectedSummary.labels.templateSource'),
+            value: selectedTemplate?.name ?? t('scriptsRoute.detail.summaryCard.values.directAuthoring'),
+          },
+          {
+            label: t('scriptsRoute.selectedSummary.labels.updatedAt'),
+            value: summary?.updatedAt ?? t('scriptsRoute.detail.fallbackSummary'),
+          },
+          {
+            label: t('scriptsRoute.selectedSummary.labels.capabilitySummary'),
+            value: summary?.capabilitySummary ?? t('scriptsRoute.detail.capabilityCard.values.capabilitySummaryFallback'),
+          },
+          {
+            label: t('scriptsRoute.selectedSummary.labels.sourcePreview'),
+            value: summary?.sourcePreview || draft.sourceCode || t('scriptsRoute.list.emptySource'),
+          },
+        ]}
+      />
+    </DetailViewerSection>
+  );
+}
+
 export function ScriptsRoute() {
   const queryClient = useQueryClient();
   const { t } = useI18n();
@@ -75,6 +125,7 @@ export function ScriptsRoute() {
   const [isCreatingDraft, setIsCreatingDraft] = useState(false);
   const activePanel = useWorkspaceUiStore((state) => state.routePanels.scripts.activePanel);
   const setRouteActivePanel = useWorkspaceUiStore((state) => state.setRouteActivePanel);
+  const setFloatingExplorerOpen = useShellStore((state) => state.setFloatingExplorerOpen);
 
   const [draft, setDraft] = useState<SavedScriptInput>(createScriptDraft);
 
@@ -112,6 +163,24 @@ export function ScriptsRoute() {
 
   const selectedTemplate = typeof activeDraft.templateId === 'string'
     ? (templatesQuery.data ?? []).find((template) => template.id === activeDraft.templateId) ?? null
+    : null;
+  const selectedListScript = !isCreatingDraft
+    ? sortedItems.find((item) => item.id === effectiveSelectedId) ?? null
+    : null;
+  const selectedScriptSummary = !isCreatingDraft
+    ? (detailQuery.data
+      ? {
+          updatedAt: detailQuery.data.updatedAt,
+          capabilitySummary: detailQuery.data.capabilitySummary,
+          sourcePreview: detailQuery.data.sourcePreview,
+        }
+      : (selectedListScript
+        ? {
+            updatedAt: selectedListScript.updatedAt,
+            capabilitySummary: selectedListScript.capabilitySummary,
+            sourcePreview: selectedListScript.sourcePreview,
+          }
+        : null))
     : null;
 
   const createMutation = useMutation({
@@ -156,6 +225,7 @@ export function ScriptsRoute() {
     <RoutePanelTabsLayout
       layoutMode="floating-explorer"
       floatingExplorerRouteKey="scripts"
+      floatingExplorerVariant="focused-overlay"
       defaultActiveTab="explorer"
       activeTab={activePanel}
       onActiveTabChange={(panel) => setRouteActivePanel('scripts', panel)}
@@ -166,9 +236,9 @@ export function ScriptsRoute() {
             <div>
               <p className="section-placeholder__eyebrow">{t('scriptsRoute.sidebar.eyebrow')}</p>
               <h2>{t('scriptsRoute.sidebar.title')}</h2>
-              <p>{t('scriptsRoute.sidebar.summary')}</p>
+              <p className="workspace-explorer__status-line">{t('scriptsRoute.sidebar.summary')}</p>
             </div>
-            <button type="button" className="workspace-button" onClick={() => { setDraft(createScriptDraft()); setIsCreatingDraft(true); setSelectedScriptId(null); }}>
+            <button type="button" className="workspace-button" onClick={() => { setDraft(createScriptDraft()); setIsCreatingDraft(true); setSelectedScriptId(null); setFloatingExplorerOpen('scripts', false); }}>
               <IconLabel icon="new">{t('scriptsRoute.sidebar.newButton')}</IconLabel>
             </button>
           </header>
@@ -184,11 +254,19 @@ export function ScriptsRoute() {
               </select>
             </label>
           </div>
+          {(isCreatingDraft || selectedScriptSummary) ? (
+            <ScriptsExplorerSummaryCard
+              draft={activeDraft}
+              selectedTemplate={selectedTemplate}
+              summary={selectedScriptSummary}
+              t={t}
+            />
+          ) : null}
           {listQuery.isPending && !listQuery.data ? <EmptyStateCallout title={t('scriptsRoute.empty.loadingList.title')} description={t('scriptsRoute.empty.loadingList.description')} /> : null}
           {listQuery.isError ? <EmptyStateCallout title={t('scriptsRoute.empty.degraded.title')} description={listQuery.error instanceof Error ? listQuery.error.message : t('scriptsRoute.empty.degraded.fallbackDescription')} /> : null}
           {!listQuery.isPending && (listQuery.data ?? []).length === 0 ? <EmptyStateCallout title={t('scriptsRoute.empty.noItems.title')} description={t('scriptsRoute.empty.noItems.description')} /> : null}
           {!listQuery.isPending && (listQuery.data ?? []).length > 0 && sortedItems.length === 0 ? <EmptyStateCallout title={t('scriptsRoute.empty.noFilteredItems.title')} description={t('scriptsRoute.empty.noFilteredItems.description')} /> : null}
-          {sortedItems.length > 0 ? <ul className="scripts-list" aria-label={t('scriptsRoute.sidebar.listAriaLabel')}>{sortedItems.map((script) => <li key={script.id}><button type="button" className={script.id === effectiveSelectedId && !isCreatingDraft ? 'workspace-request workspace-request--selected' : 'workspace-request'} aria-label={t('scriptsRoute.sidebar.openScriptAction', { name: script.name })} onClick={() => { setIsCreatingDraft(false); setSelectedScriptId(script.id); }}><span className="workspace-request__header"><span className="workspace-request__title">{script.name}</span><span className="workspace-request__badges"><span className="workspace-chip">{getScriptTypeLabel(script.scriptType, t)}</span></span></span><span className="workspace-request__meta">{script.description || t('scriptsRoute.list.noDescription')}</span><span className="workspace-request__meta">{script.sourcePreview || t('scriptsRoute.list.emptySource')}</span></button></li>)}</ul> : null}
+          {sortedItems.length > 0 ? <ul className="scripts-list" aria-label={t('scriptsRoute.sidebar.listAriaLabel')}>{sortedItems.map((script) => <li key={script.id}><button type="button" className={script.id === effectiveSelectedId && !isCreatingDraft ? 'workspace-request workspace-request--selected' : 'workspace-request'} aria-label={t('scriptsRoute.sidebar.openScriptAction', { name: script.name })} onClick={() => { setIsCreatingDraft(false); setSelectedScriptId(script.id); setFloatingExplorerOpen('scripts', false); }}><span className="workspace-request__header"><span className="workspace-request__title">{script.name}</span><span className="workspace-request__badges"><span className="workspace-chip">{getScriptTypeLabel(script.scriptType, t)}</span></span></span><span className="workspace-request__meta">{script.description || t('scriptsRoute.list.noDescription')}</span><span className="workspace-request__meta workspace-request__meta--support">{script.sourcePreview || t('scriptsRoute.list.emptySource')}</span></button></li>)}</ul> : null}
         </div>
         </section>
       )}
@@ -197,21 +275,21 @@ export function ScriptsRoute() {
         <SectionHeading icon="scripts" title={t('routes.scripts.title')} summary={t('routes.scripts.summary')} />
         {listQuery.isPending && !listQuery.data ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('scriptsRoute.empty.loadingDetail.title')} description={t('scriptsRoute.empty.loadingDetail.description')} /></div> : !isCreatingDraft && !detailQuery.data ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('scriptsRoute.empty.noSelection.title')} description={t('scriptsRoute.empty.noSelection.description')} /></div> : detailQuery.isPending && !detailQuery.data && !isCreatingDraft ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('scriptsRoute.empty.loadingPersistedDetail.title')} description={t('scriptsRoute.empty.loadingPersistedDetail.description')} /></div> : (
           <div className="scripts-detail">
-            <header className="scripts-detail__header">
+            <header className="scripts-detail__header management-detail__header">
               <div>
                 <p className="section-placeholder__eyebrow">{isCreatingDraft ? t('scriptsRoute.detail.draftEyebrow') : t('scriptsRoute.detail.persistedEyebrow')}</p>
                 <h2>{isCreatingDraft ? t('scriptsRoute.detail.createTitle') : t('scriptsRoute.detail.editTitle')}</h2>
-                <p>{detailQuery.data?.capabilitySummary ?? selectedTemplate?.capabilitySummary ?? t('scriptsRoute.detail.fallbackSummary')}</p>
+                <p className="management-detail__header-meta">{detailQuery.data?.capabilitySummary ?? selectedTemplate?.capabilitySummary ?? t('scriptsRoute.detail.fallbackSummary')}</p>
               </div>
-              <div className="request-work-surface__badges"><span className="workspace-chip">{getScriptTypeLabel(activeDraft.scriptType, t)}</span>{selectedTemplate ? <span className="workspace-chip workspace-chip--secondary">{t('scriptsRoute.detail.templateSeededChip')}</span> : null}</div>
+              <div className="request-work-surface__badges management-detail__badge-rail"><span className="workspace-chip">{getScriptTypeLabel(activeDraft.scriptType, t)}</span>{selectedTemplate ? <span className="workspace-chip workspace-chip--secondary">{t('scriptsRoute.detail.templateSeededChip')}</span> : null}</div>
             </header>
             <DetailViewerSection icon="summary" title={t('scriptsRoute.detail.management.title')} description={t('scriptsRoute.detail.management.description')} className="workspace-surface-card" actions={<div className="request-work-surface__future-actions"><button type="button" className="workspace-button workspace-button--secondary" onClick={() => { if (!saveDisabledReason) { if (isCreatingDraft || !activeDraft.id) { createMutation.mutate(activeDraft); } else { updateMutation.mutate({ scriptId: activeDraft.id, script: activeDraft }); } } }} disabled={saveDisabledReason !== null}><IconLabel icon="save">{isCreatingDraft ? t('scriptsRoute.detail.management.createAction') : t('scriptsRoute.detail.management.saveAction')}</IconLabel></button>{isCreatingDraft ? <button type="button" className="workspace-button workspace-button--ghost" onClick={() => { setIsCreatingDraft(false); setSelectedScriptId(sortedItems[0]?.id ?? null); }}>{t('scriptsRoute.detail.management.cancelDraft')}</button> : <button type="button" className="workspace-button workspace-button--ghost" onClick={() => { if (detailQuery.data && !deleteDisabledReason) { deleteMutation.mutate(detailQuery.data.id); } }} disabled={deleteDisabledReason !== null}><IconLabel icon="delete">{t('scriptsRoute.detail.management.deleteAction')}</IconLabel></button>}</div>}>
               <p className="shared-readiness-note">{saveDisabledReason ?? deleteDisabledReason ?? t('scriptsRoute.detail.management.readinessNote')}</p>
               {(createMutation.error || updateMutation.error || deleteMutation.error) ? <EmptyStateCallout title={t('scriptsRoute.detail.management.mutationFailedTitle')} description={([createMutation.error, updateMutation.error, deleteMutation.error].find(Boolean) as Error | undefined)?.message ?? t('scriptsRoute.detail.management.mutationFailedFallbackDescription')} /> : null}
             </DetailViewerSection>
             <div className="scripts-summary-grid">
-              <DetailViewerSection icon="scripts" title={t('scriptsRoute.detail.summaryCard.title')} description={t('scriptsRoute.detail.summaryCard.description')} className="workspace-surface-card"><KeyValueMetaList items={[{ label: t('scriptsRoute.detail.summaryCard.labels.name'), value: activeDraft.name || t('scriptsRoute.detail.summaryCard.values.untitled') }, { label: t('scriptsRoute.detail.summaryCard.labels.type'), value: getScriptTypeLabel(activeDraft.scriptType, t) }, { label: t('scriptsRoute.detail.summaryCard.labels.templateSource'), value: selectedTemplate?.name ?? t('scriptsRoute.detail.summaryCard.values.directAuthoring') }, { label: t('scriptsRoute.detail.summaryCard.labels.sourceLength'), value: t('scriptsRoute.detail.summaryCard.values.sourceLength', { count: activeDraft.sourceCode.length }) }]} /></DetailViewerSection>
-              <DetailViewerSection icon="info" title={t('scriptsRoute.detail.capabilityCard.title')} description={t('scriptsRoute.detail.capabilityCard.description')} className="workspace-surface-card workspace-surface-card--muted"><KeyValueMetaList items={[{ label: t('scriptsRoute.detail.capabilityCard.labels.currentStage'), value: getScriptTypeLabel(activeDraft.scriptType, t) }, { label: t('scriptsRoute.detail.capabilityCard.labels.capabilitySummary'), value: detailQuery.data?.capabilitySummary ?? selectedTemplate?.capabilitySummary ?? t('scriptsRoute.detail.capabilityCard.values.capabilitySummaryFallback') }, { label: t('scriptsRoute.detail.capabilityCard.labels.deferredNote'), value: detailQuery.data?.deferredSummary ?? t('scriptsRoute.detail.capabilityCard.values.deferredNoteFallback') }]} /></DetailViewerSection>
+              <DetailViewerSection icon="scripts" title={t('scriptsRoute.detail.summaryCard.title')} description={t('scriptsRoute.detail.summaryCard.description')} className="workspace-surface-card"><KeyValueMetaList items={[{ label: t('scriptsRoute.detail.summaryCard.labels.name'), value: activeDraft.name || t('scriptsRoute.detail.summaryCard.values.untitled') }, { label: t('scriptsRoute.detail.summaryCard.labels.type'), value: getScriptTypeLabel(activeDraft.scriptType, t) }, { label: t('scriptsRoute.detail.summaryCard.labels.templateSource'), value: selectedTemplate?.name ?? t('scriptsRoute.detail.summaryCard.values.directAuthoring') }, { label: t('scriptsRoute.detail.summaryCard.labels.sourceLength'), value: t('scriptsRoute.detail.summaryCard.values.sourceLength', { count: activeDraft.sourceCode.length }) }, { label: t('scriptsRoute.selectedSummary.labels.updatedAt'), value: detailQuery.data?.updatedAt ?? t('scriptsRoute.detail.fallbackSummary') }]} /></DetailViewerSection>
+              <DetailViewerSection icon="info" title={t('scriptsRoute.detail.capabilityCard.title')} description={t('scriptsRoute.detail.capabilityCard.description')} className="workspace-surface-card workspace-surface-card--muted"><KeyValueMetaList items={[{ label: t('scriptsRoute.detail.capabilityCard.labels.currentStage'), value: getScriptTypeLabel(activeDraft.scriptType, t) }, { label: t('scriptsRoute.detail.capabilityCard.labels.capabilitySummary'), value: detailQuery.data?.capabilitySummary ?? selectedTemplate?.capabilitySummary ?? t('scriptsRoute.detail.capabilityCard.values.capabilitySummaryFallback') }, { label: t('scriptsRoute.detail.capabilityCard.labels.deferredNote'), value: detailQuery.data?.deferredSummary ?? t('scriptsRoute.detail.capabilityCard.values.deferredNoteFallback') }, { label: t('scriptsRoute.selectedSummary.labels.templateSource'), value: detailQuery.data?.sourceLabel ?? t('scriptsRoute.detail.summaryCard.values.directAuthoring') }]} /></DetailViewerSection>
             </div>
             <DetailViewerSection icon="code" title={t('scriptsRoute.detail.editorCard.title')} description={t('scriptsRoute.detail.editorCard.description')} className="workspace-surface-card"><div className="request-editor-card__grid"><label className="request-field"><span>{t('scriptsRoute.detail.editorCard.labels.name')}</span><input aria-label={t('scriptsRoute.detail.editorCard.ariaLabels.name')} type="text" value={activeDraft.name} onChange={(event) => { const nextName = event.currentTarget.value; setDraft((current) => ({ ...(current.id === activeDraft.id ? current : activeDraft), name: nextName })); }} /></label><label className="request-field"><span>{t('scriptsRoute.detail.editorCard.labels.stage')}</span><select aria-label={t('scriptsRoute.detail.editorCard.ariaLabels.stage')} value={activeDraft.scriptType} onChange={(event) => { const nextScriptType = event.currentTarget.value as ScriptType; setDraft((current) => ({ ...(current.id === activeDraft.id ? current : activeDraft), scriptType: nextScriptType })); }}>{stageFilterOptions.filter((option) => option.value !== 'all').map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label><label className="request-field request-field--wide"><span>{t('scriptsRoute.detail.editorCard.labels.description')}</span><textarea aria-label={t('scriptsRoute.detail.editorCard.ariaLabels.description')} value={activeDraft.description} onChange={(event) => { const nextDescription = event.currentTarget.value; setDraft((current) => ({ ...(current.id === activeDraft.id ? current : activeDraft), description: nextDescription })); }} /></label><label className="request-field request-field--wide"><span>{t('scriptsRoute.detail.editorCard.labels.source')}</span><textarea aria-label={t('scriptsRoute.detail.editorCard.ariaLabels.source')} value={activeDraft.sourceCode} onChange={(event) => { const nextSourceCode = event.currentTarget.value; setDraft((current) => ({ ...(current.id === activeDraft.id ? current : activeDraft), sourceCode: nextSourceCode })); }} /></label></div></DetailViewerSection>
           </div>
@@ -221,7 +299,7 @@ export function ScriptsRoute() {
       detail={(
         <aside className="shell-panel shell-panel--detail" aria-label={t('shell.routePanels.detailRegion')}>
         <div className="workspace-detail-panel">
-          {templatesQuery.isPending ? <EmptyStateCallout title={t('scriptsRoute.empty.loadingTemplates.title')} description={t('scriptsRoute.empty.loadingTemplates.description')} /> : templatesQuery.isError ? <EmptyStateCallout title={t('scriptsRoute.empty.templatesDegraded.title')} description={templatesQuery.error instanceof Error ? templatesQuery.error.message : t('scriptsRoute.empty.templatesDegraded.fallbackDescription')} /> : <ul className="scripts-template-list" aria-label={t('scriptsRoute.list.templatesListAriaLabel')}>{(templatesQuery.data ?? []).map((template) => <li key={template.id} className="scripts-template-card"><div><h3>{template.name}</h3><p>{template.description}</p><div className="workspace-explorer__role-strip"><span className="workspace-chip">{getScriptTypeLabel(template.templateType, t)}</span><span className="workspace-chip workspace-chip--secondary">{template.tags.join(', ')}</span></div></div><pre className="scripts-template-card__preview">{template.sourceCode}</pre><button type="button" className="workspace-button workspace-button--secondary" onClick={() => { setDraft(createDraftFromTemplate(template, t('scriptsRoute.list.templateCopySuffix'))); setIsCreatingDraft(true); setSelectedScriptId(null); }}><IconLabel icon="template">{t('scriptsRoute.list.useTemplateAction', { name: template.name })}</IconLabel></button></li>)}</ul>}
+          {templatesQuery.isPending ? <EmptyStateCallout title={t('scriptsRoute.empty.loadingTemplates.title')} description={t('scriptsRoute.empty.loadingTemplates.description')} /> : templatesQuery.isError ? <EmptyStateCallout title={t('scriptsRoute.empty.templatesDegraded.title')} description={templatesQuery.error instanceof Error ? templatesQuery.error.message : t('scriptsRoute.empty.templatesDegraded.fallbackDescription')} /> : <ul className="scripts-template-list" aria-label={t('scriptsRoute.list.templatesListAriaLabel')}>{(templatesQuery.data ?? []).map((template) => <li key={template.id} className="scripts-template-card"><div><h3>{template.name}</h3><p>{template.description}</p><div className="workspace-explorer__role-strip"><span className="workspace-chip">{getScriptTypeLabel(template.templateType, t)}</span><span className="workspace-chip workspace-chip--secondary">{template.tags.join(', ')}</span></div></div><pre className="scripts-template-card__preview">{template.sourceCode}</pre><button type="button" className="workspace-button workspace-button--secondary" onClick={() => { setDraft(createDraftFromTemplate(template, t('scriptsRoute.list.templateCopySuffix'))); setIsCreatingDraft(true); setSelectedScriptId(null); setFloatingExplorerOpen('scripts', false); }}><IconLabel icon="template">{t('scriptsRoute.list.useTemplateAction', { name: template.name })}</IconLabel></button></li>)}</ul>}
         </div>
         </aside>
       )}

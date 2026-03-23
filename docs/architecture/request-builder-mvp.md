@@ -2,7 +2,7 @@
 
 - **Purpose:** Define the MVP product behavior for creating, editing, saving, running, and inspecting requests inside the local-first API workbench.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-22
+- **Last Updated:** 2026-03-23
 - **Related Documents:** `ux-information-architecture.md`, `workspace-flows.md`, `frontend-stack-and-shell.md`, `internal-api-contracts.md`, `persistence-bootstrap.md`, `../tasks/task-011-request-builder-mvp-design.md`
 - **Status:** done
 - **Update Rule:** Update when MVP scope, request field coverage, or save/run/result boundaries materially change.
@@ -12,7 +12,7 @@ The request builder is the core MVP work surface. It should let a user:
 - create a new request
 - edit an existing saved request
 - duplicate a request
-- save a request into a collection/folder
+- save a request into a collection/request group
 - run a saved or unsaved request
 - inspect response, logs, and tests after execution
 
@@ -57,7 +57,7 @@ Recommended tab contents:
 Each request tab contains:
 - **Request header strip**
   - request name
-  - collection/folder placement summary
+  - collection/request-group placement summary
   - save / duplicate / run actions
 - **Primary editor tabs**
   - Params
@@ -82,7 +82,7 @@ Each request tab contains:
 - request `name`
 - `description`
 - `collectionId`
-- `folderId`
+- `requestGroupId`
 - query params
 - headers
 - body
@@ -131,7 +131,7 @@ Each request tab contains:
 ### 7.4 Save
 1. User clicks `Save` on a new or dirty request.
 2. If the request has no name, the system requires a name before save.
-3. If collection/folder placement is missing, the system prompts for placement.
+3. New drafts preseed placement to `Saved Requests > General`; users may change that placement before save.
 4. Saved definition is written to the resource storage lane.
 5. Save success clears dirty state but does not change runtime history.
 
@@ -146,7 +146,7 @@ Each request tab contains:
 ### 8.1 Save lane
 Save persists a **request definition**:
 - name
-- collection/folder ownership
+- collection/request-group ownership
 - method / URL / params / headers / body / auth definition
 - script bindings or editable script references
 - description and metadata
@@ -239,7 +239,7 @@ MVP shows:
 ## 12. Validation Rules
 ### 12.1 Pre-save validation
 - request name required for save
-- collection placement required for first save *(folder optional if collection chosen)*
+- canonical collection/request-group placement required for save, with new drafts defaulting to `Saved Requests > General`
 - method required
 - URL required
 
@@ -271,16 +271,16 @@ A request becomes dirty when any authored field changes after the last save or l
 - unsaved requests may be duplicated
 - unsaved requests cannot be placed in search/index results as saved resources until saved
 
-## 14. Collection / Folder Placement and Naming
+## 14. Collection / Request Group Placement and Naming
 ### 14.1 Naming
 - new requests default to `Untitled Request`
 - first save requires a user-visible name
 - duplicate requests should auto-prefix with `Copy of ...`
 
 ### 14.2 Placement
-- collection is required for save in MVP
-- folder is optional but supported if already present in the collection structure
-- request header should display current collection/folder placement once saved
+- collection and request group are both required in the canonical save model
+- new drafts should default to `Saved Requests > General` unless the user changes placement before save
+- request header should display current collection/request-group placement once saved
 
 ### 14.3 Search / Filter Relationship
 - saved requests appear in workspace search and collection tree filters
@@ -315,7 +315,7 @@ MVP default remains **확실하지 않음**, but the request builder must suppor
 - full multipart asset workflow beyond basic support
 
 ## 18. Open Questions
-1. Whether collection selection should be mandatory before first save or whether a default workspace inbox collection exists is **확실하지 않음**.
+1. The default canonical save placement is now `Saved Requests > General`; future open questions should focus on how users create and manage additional request groups, not whether a default placement exists.
 2. Whether replay defaults to `edit first` or `run immediately` is **확실하지 않음**.
 3. Whether draft persistence survives app restart automatically in MVP is **확실하지 않음**.
 4. Whether multipart support includes real file attachment UX in MVP or only a placeholder/basic row model is **확실하지 않음**.
@@ -333,3 +333,4 @@ MVP default remains **확실하지 않음**, but the request builder must suppor
 - implement request editor state separately from execution result state
 - preserve separate persistence lanes for save (JSON resources) and run (SQLite runtime artifacts)
 - keep validation, save errors, and run errors distinct in code and UI
+

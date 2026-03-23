@@ -1,10 +1,12 @@
 function createImportResultSummary({
+  acceptedCollections,
+  acceptedRequestGroups,
   acceptedRequests,
   acceptedMockRules,
   rejected,
   renamedCount,
 }) {
-  const acceptedCount = acceptedRequests.length + acceptedMockRules.length;
+  const acceptedCount = acceptedCollections.length + acceptedRequestGroups.length + acceptedRequests.length + acceptedMockRules.length;
   const rejectedCount = rejected.length;
   const rejectedReasonCounts = new Map();
 
@@ -18,10 +20,12 @@ function createImportResultSummary({
   return {
     acceptedCount,
     rejectedCount,
+    createdCollectionCount: acceptedCollections.length,
+    createdRequestGroupCount: acceptedRequestGroups.length,
     createdRequestCount: acceptedRequests.length,
     createdMockRuleCount: acceptedMockRules.length,
     renamedCount,
-    importedNamesPreview: [...acceptedRequests, ...acceptedMockRules]
+    importedNamesPreview: [...acceptedCollections, ...acceptedRequestGroups, ...acceptedRequests, ...acceptedMockRules]
       .map((resource) => resource.name)
       .filter((name) => typeof name === 'string' && name.trim().length > 0)
       .slice(0, 5),
@@ -54,10 +58,16 @@ function identitySort(items) {
 function prepareAuthoredResourceImport({
   bundle,
   workspaceId,
+  existingCollectionNames = [],
+  existingRequestGroupNames = [],
   existingRequestNames = [],
   existingMockRuleNames = [],
+  createImportedCollection,
+  createImportedRequestGroup,
   createImportedRequest,
   createImportedMockRule,
+  sortAcceptedCollections = identitySort,
+  sortAcceptedRequestGroups = identitySort,
   sortAcceptedRequests = identitySort,
   sortAcceptedMockRules = identitySort,
 }) {
@@ -65,16 +75,61 @@ function prepareAuthoredResourceImport({
     throw new TypeError('Bundle payload is required to prepare authored-resource import.');
   }
 
-  if (typeof createImportedRequest !== 'function' || typeof createImportedMockRule !== 'function') {
-    throw new TypeError('Import preparation requires request and mock-rule import callbacks.');
+  if (
+    typeof createImportedCollection !== 'function'
+    || typeof createImportedRequestGroup !== 'function'
+    || typeof createImportedRequest !== 'function'
+    || typeof createImportedMockRule !== 'function'
+  ) {
+    throw new TypeError('Import preparation requires collection, request-group, request, and mock-rule import callbacks.');
   }
 
+  const usedCollectionNames = normalizeNameSet(existingCollectionNames);
+  const usedRequestGroupNames = normalizeNameSet(existingRequestGroupNames);
   const usedRequestNames = normalizeNameSet(existingRequestNames);
   const usedMockRuleNames = normalizeNameSet(existingMockRuleNames);
+  const acceptedCollections = [];
+  const acceptedRequestGroups = [];
   const acceptedRequests = [];
   const acceptedMockRules = [];
   const rejected = [];
   let renamedCount = 0;
+
+  for (const collectionResource of Array.isArray(bundle.collections) ? bundle.collections : []) {
+    const importResult = createImportedCollection(collectionResource, workspaceId, usedCollectionNames);
+
+    if (importResult?.rejection) {
+      rejected.push(importResult.rejection);
+      continue;
+    }
+
+    if (!importResult?.record) {
+      throw new TypeError('Collection import callback must return a record or a rejection.');
+    }
+
+    acceptedCollections.push(importResult.record);
+    if (importResult.renamed) {
+      renamedCount += 1;
+    }
+  }
+
+  for (const requestGroupResource of Array.isArray(bundle.requestGroups) ? bundle.requestGroups : []) {
+    const importResult = createImportedRequestGroup(requestGroupResource, workspaceId, usedRequestGroupNames);
+
+    if (importResult?.rejection) {
+      rejected.push(importResult.rejection);
+      continue;
+    }
+
+    if (!importResult?.record) {
+      throw new TypeError('Request-group import callback must return a record or a rejection.');
+    }
+
+    acceptedRequestGroups.push(importResult.record);
+    if (importResult.renamed) {
+      renamedCount += 1;
+    }
+  }
 
   for (const requestResource of Array.isArray(bundle.requests) ? bundle.requests : []) {
     const importResult = createImportedRequest(requestResource, workspaceId, usedRequestNames);
@@ -112,14 +167,20 @@ function prepareAuthoredResourceImport({
     }
   }
 
+  const sortedAcceptedCollections = sortAcceptedCollections(acceptedCollections);
+  const sortedAcceptedRequestGroups = sortAcceptedRequestGroups(acceptedRequestGroups);
   const sortedAcceptedRequests = sortAcceptedRequests(acceptedRequests);
   const sortedAcceptedMockRules = sortAcceptedMockRules(acceptedMockRules);
 
   return {
+    acceptedCollections: sortedAcceptedCollections,
+    acceptedRequestGroups: sortedAcceptedRequestGroups,
     acceptedRequests: sortedAcceptedRequests,
     acceptedMockRules: sortedAcceptedMockRules,
     rejected,
     summary: createImportResultSummary({
+      acceptedCollections: sortedAcceptedCollections,
+      acceptedRequestGroups: sortedAcceptedRequestGroups,
       acceptedRequests: sortedAcceptedRequests,
       acceptedMockRules: sortedAcceptedMockRules,
       rejected,

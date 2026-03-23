@@ -10,6 +10,7 @@ import { PanelTabs, type PanelTabOption } from '@client/shared/ui/PanelTabs';
 export type RoutePanelTabId = 'explorer' | 'main' | 'detail';
 
 type RoutePanelLayoutMode = 'tabs' | 'floating-explorer';
+type FloatingExplorerVariant = 'default' | 'focused-overlay';
 
 interface RoutePanelTabsLayoutProps {
   explorer: ReactNode;
@@ -17,6 +18,7 @@ interface RoutePanelTabsLayoutProps {
   detail: ReactNode;
   layoutMode?: RoutePanelLayoutMode;
   floatingExplorerRouteKey?: FloatingExplorerRouteKey;
+  floatingExplorerVariant?: FloatingExplorerVariant;
   defaultActiveTab?: RoutePanelTabId;
   activeTab?: RoutePanelTabId;
   onActiveTabChange?: (tab: RoutePanelTabId) => void;
@@ -42,6 +44,7 @@ export function RoutePanelTabsLayout({
   detail,
   layoutMode = 'tabs',
   floatingExplorerRouteKey,
+  floatingExplorerVariant = 'default',
   defaultActiveTab = 'main',
   activeTab: controlledActiveTab,
   onActiveTabChange,
@@ -69,33 +72,60 @@ export function RoutePanelTabsLayout({
   ];
 
   if (layoutMode === 'floating-explorer' && floatingExplorerRouteKey) {
+    const isFocusedOverlay = floatingExplorerVariant === 'focused-overlay';
+    const floatingExplorerToggleLabel = floatingExplorerOpen
+      ? t('shell.routePanels.floatingExplorer.collapseAction')
+      : t('shell.routePanels.floatingExplorer.expandAction');
+    const floatingPanelClassName = [
+      'shell-route-panels',
+      'shell-route-panels--floating',
+      !floatingExplorerOpen ? 'shell-route-panels--floating-collapsed' : null,
+      isFocusedOverlay ? 'shell-route-panels--floating-focused' : null,
+    ]
+      .filter(Boolean)
+      .join(' ');
+
     const handleFloatingExplorerToggle = () => {
       setFloatingExplorerOpen(floatingExplorerRouteKey, !floatingExplorerOpen);
     };
 
     return (
       <div
-        className={floatingExplorerOpen ? 'shell-route-panels shell-route-panels--floating' : 'shell-route-panels shell-route-panels--floating shell-route-panels--floating-collapsed'}
+        className={floatingPanelClassName}
         data-floating-explorer-open={floatingExplorerOpen}
+        data-floating-explorer-variant={floatingExplorerVariant}
       >
         <div className="shell-route-panels__floating-layout">
+          {isFocusedOverlay ? (
+            <div
+              className={floatingExplorerOpen
+                ? 'shell-route-panels__floating-scrim shell-route-panels__floating-scrim--visible'
+                : 'shell-route-panels__floating-scrim shell-route-panels__floating-scrim--hidden'}
+              aria-hidden="true"
+              onClick={floatingExplorerOpen ? handleFloatingExplorerToggle : undefined}
+            />
+          ) : null}
           <div className="shell-route-panels__floating-overlay">
             <button
               type="button"
-              className="workspace-button workspace-button--secondary shell-route-panels__floating-toggle"
+              className={isFocusedOverlay
+                ? 'workspace-button workspace-button--secondary shell-route-panels__floating-toggle shell-route-panels__floating-toggle--compact'
+                : 'workspace-button workspace-button--secondary shell-route-panels__floating-toggle'}
+              aria-label={floatingExplorerToggleLabel}
               aria-expanded={floatingExplorerOpen}
               aria-controls={`floating-explorer-${floatingExplorerRouteKey}`}
               onClick={handleFloatingExplorerToggle}
+              title={floatingExplorerToggleLabel}
             >
               <AppIcon
                 name="overview"
                 className="shell-route-panels__floating-toggle-glyph"
               />
-              <span className="shell-route-panels__floating-toggle-copy">
-                {floatingExplorerOpen
-                  ? t('shell.routePanels.floatingExplorer.collapseAction')
-                  : t('shell.routePanels.floatingExplorer.expandAction')}
-              </span>
+              {isFocusedOverlay ? null : (
+                <span className="shell-route-panels__floating-toggle-copy">
+                  {floatingExplorerToggleLabel}
+                </span>
+              )}
             </button>
             <div className="shell-route-panels__floating-explorer-slot">
               <div
@@ -109,10 +139,22 @@ export function RoutePanelTabsLayout({
             </div>
           </div>
           <div className="shell-route-panels__floating-content">
-            <div className="shell-route-panels__floating-main" data-route-panel={activeTab === 'main' ? 'main-active' : 'main'}>
+            <div
+              className={isFocusedOverlay && floatingExplorerOpen
+                ? 'shell-route-panels__floating-main shell-route-panels__floating-main--scrimmed'
+                : 'shell-route-panels__floating-main'}
+              data-route-panel={activeTab === 'main' ? 'main-active' : 'main'}
+              data-scrimmed={isFocusedOverlay && floatingExplorerOpen ? 'true' : 'false'}
+            >
               {main}
             </div>
-            <div className="shell-route-panels__floating-detail" data-route-panel={activeTab === 'detail' ? 'detail-active' : 'detail'}>
+            <div
+              className={isFocusedOverlay && floatingExplorerOpen
+                ? 'shell-route-panels__floating-detail shell-route-panels__floating-detail--hidden'
+                : 'shell-route-panels__floating-detail'}
+              data-route-panel={activeTab === 'detail' ? 'detail-active' : 'detail'}
+              data-detail-visibility={isFocusedOverlay && floatingExplorerOpen ? 'hidden' : 'visible'}
+            >
               {detail}
             </div>
           </div>

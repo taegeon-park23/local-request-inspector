@@ -5,7 +5,7 @@ export const workspaceRouteMessagesEn = {
         eyebrow: 'Workspace explorer',
         title: 'Collections',
         summary:
-          'Persisted saved requests are the canonical explorer source. Starter fixtures only appear until the first real request definitions are stored in the resource lane.',
+          'Persisted collections, request groups, and saved requests are the canonical explorer source. Working tabs stay separate from this saved tree.',
         authoringChip: 'Authoring',
         resourceLaneChip: 'Resource lane',
       },
@@ -22,6 +22,8 @@ export const workspaceRouteMessagesEn = {
         exportSingle: 'Export',
         openRequest: 'Open {name}',
         exportRequest: 'Export {name}',
+        deleteRequest: 'Delete {name}',
+        deleteRequestShort: 'Delete',
       },
       notes: {
         boundary:
@@ -56,8 +58,14 @@ export const workspaceRouteMessagesEn = {
         exportBundleLabel: '{requestCount} saved request definition(s) and {mockRuleCount} mock rule(s)',
         exportSavedRequestLabel: 'saved request {name}',
         exportSingleFailed: 'Saved request export failed before a bundle could be downloaded.',
+        requestDeleted: 'Saved request was deleted from the canonical explorer tree. Open tabs were kept as detached drafts.',
+        requestDeleteFailed: 'Saved request deletion failed before the explorer tree could be updated.',
+        bundleCollectionCount: 'Collections in bundle: {count}',
+        bundleRequestGroupCount: 'Request groups in bundle: {count}',
         bundleRequestCount: 'Saved requests in bundle: {count}',
         bundleMockRuleCount: 'Mock rules in bundle: {count}',
+        createdCollections: 'Created collections: {count}',
+        createdRequestGroups: 'Created request groups: {count}',
         createdRequests: 'Created requests: {count}',
         createdMockRules: 'Created mock rules: {count}',
         renamedOnImport: 'Renamed on import: {count}',
@@ -68,10 +76,12 @@ export const workspaceRouteMessagesEn = {
           'Runtime history, captures, and execution artifacts remain excluded.',
       },
       tree: {
-        savedChip: 'Saved',
-        starterChip: 'Starter',
         kindCollection: 'collection',
-        kindFolder: 'folder',
+        kindRequestGroup: 'request group',
+      },
+      selection: {
+        current: 'Current selection: {path}',
+        none: 'No saved request is selected in the explorer.',
       },
     },
     tabShell: {
@@ -486,7 +496,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         eyebrow: '작업공간 탐색기',
         title: '컬렉션',
         summary:
-          '저장된 요청 정의가 탐색기의 기준 소스입니다. 실제 요청 정의가 리소스 레인에 저장되기 전까지만 starter fixture가 표시됩니다.',
+          '저장된 컬렉션, 요청 그룹, 요청이 탐색기의 기준 소스입니다. 작업 탭은 이 저장 트리와 분리되어 유지됩니다.',
         authoringChip: '작성',
         resourceLaneChip: '리소스 레인',
       },
@@ -503,6 +513,8 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         exportSingle: '내보내기',
         openRequest: '{name} 열기',
         exportRequest: '{name} 내보내기',
+        deleteRequest: '{name} 삭제',
+        deleteRequestShort: '삭제',
       },
       notes: {
         boundary:
@@ -537,8 +549,14 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         exportBundleLabel: '저장 요청 {requestCount}개와 mock rule {mockRuleCount}개',
         exportSavedRequestLabel: '저장 요청 {name}',
         exportSingleFailed: '번들을 다운로드하기 전에 저장 요청 내보내기에 실패했습니다.',
+        requestDeleted: '저장 요청을 기준 탐색기 트리에서 삭제했습니다. 열려 있던 탭은 분리된 draft로 유지했습니다.',
+        requestDeleteFailed: '탐색기 트리를 갱신하기 전에 저장 요청 삭제에 실패했습니다.',
+        bundleCollectionCount: '번들 안의 컬렉션: {count}',
+        bundleRequestGroupCount: '번들 안의 요청 그룹: {count}',
         bundleRequestCount: '번들 안의 저장 요청: {count}',
         bundleMockRuleCount: '번들 안의 mock rule: {count}',
+        createdCollections: '생성된 컬렉션: {count}',
+        createdRequestGroups: '생성된 요청 그룹: {count}',
         createdRequests: '생성된 요청: {count}',
         createdMockRules: '생성된 mock rule: {count}',
         renamedOnImport: '가져오기 중 이름 변경: {count}',
@@ -549,10 +567,12 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
           '런타임 히스토리, 캡처, 실행 artifact는 계속 제외됩니다.',
       },
       tree: {
-        savedChip: '저장됨',
-        starterChip: '스타터',
         kindCollection: '컬렉션',
-        kindFolder: '폴더',
+        kindRequestGroup: '요청 그룹',
+      },
+      selection: {
+        current: '현재 선택: {path}',
+        none: '탐색기에서 선택된 저장 요청이 없습니다.',
       },
     },
     tabShell: {

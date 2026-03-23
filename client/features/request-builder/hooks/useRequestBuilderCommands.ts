@@ -115,7 +115,12 @@ function createFailedExecutionObservation(
     authSummary: createAuthSummary(draft),
     environmentId: draft.selectedEnvironmentId ?? null,
     ...(draft.collectionName ? { requestCollectionName: draft.collectionName } : {}),
-    ...(draft.folderName ? { requestFolderName: draft.folderName } : {}),
+    ...(draft.requestGroupName || draft.folderName
+      ? {
+          requestGroupName: draft.requestGroupName ?? draft.folderName,
+          requestFolderName: draft.requestGroupName ?? draft.folderName,
+        }
+      : {}),
     errorCode: error instanceof RequestBuilderApiError ? error.code : 'execution_failed',
     errorSummary: error.message,
     stageSummaries: [
@@ -137,8 +142,15 @@ function mapSavedRecordToTabSeed(record: SavedRequestResourceRecord) {
     name: record.name,
     methodLabel: record.method,
     summary: record.summary,
+    ...(record.collectionId ? { collectionId: record.collectionId } : {}),
     collectionName: record.collectionName,
-    ...(record.folderName ? { folderName: record.folderName } : {}),
+    ...(record.requestGroupId ? { requestGroupId: record.requestGroupId } : {}),
+    ...(record.requestGroupName || record.folderName
+      ? {
+          requestGroupName: record.requestGroupName ?? record.folderName,
+          folderName: record.requestGroupName ?? record.folderName,
+        }
+      : {}),
   };
 }
 
@@ -259,8 +271,15 @@ export function useRequestBuilderCommands(
 
       markTabSaved(activeTab.id, mapSavedRecordToTabSeed(savedRecord));
       commitSavedDraft(activeTab.id, {
+        ...(savedRecord.collectionId ? { collectionId: savedRecord.collectionId } : {}),
         collectionName: savedRecord.collectionName,
-        ...(savedRecord.folderName ? { folderName: savedRecord.folderName } : {}),
+        ...(savedRecord.requestGroupId ? { requestGroupId: savedRecord.requestGroupId } : {}),
+        ...(savedRecord.requestGroupName || savedRecord.folderName
+          ? {
+              requestGroupName: savedRecord.requestGroupName ?? savedRecord.folderName,
+              folderName: savedRecord.requestGroupName ?? savedRecord.folderName,
+            }
+          : {}),
       });
       finishSaveSuccess(activeTab.id, savedRecord.updatedAt);
       queryClient.setQueryData<SavedRequestResourceRecord[]>(workspaceSavedRequestsQueryKey, (current) =>

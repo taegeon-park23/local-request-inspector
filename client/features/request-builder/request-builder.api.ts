@@ -47,7 +47,10 @@ export interface RequestDefinitionInput {
   multipartBody: RequestKeyValueRow[];
   auth: RequestDraftAuthState;
   scripts: RequestDraftScriptsState;
+  collectionId?: string;
   collectionName?: string;
+  requestGroupId?: string;
+  requestGroupName?: string;
   folderName?: string;
 }
 
@@ -103,6 +106,7 @@ export interface RequestRunObservation {
   environmentId?: string | null;
   environmentLabel?: string;
   requestCollectionName?: string;
+  requestGroupName?: string;
   requestFolderName?: string;
   requestSourceLabel?: string;
   errorCode?: string;
@@ -170,9 +174,11 @@ export function compareSavedRequestResources(left: SavedRequestResourceRecord, r
     return collectionDiff;
   }
 
-  const folderDiff = String(left.folderName || '').localeCompare(String(right.folderName || ''));
-  if (folderDiff !== 0) {
-    return folderDiff;
+  const requestGroupDiff = String(left.requestGroupName || left.folderName || '').localeCompare(
+    String(right.requestGroupName || right.folderName || ''),
+  );
+  if (requestGroupDiff !== 0) {
+    return requestGroupDiff;
   }
 
   const nameDiff = left.name.localeCompare(right.name);
@@ -228,9 +234,18 @@ export function createRequestDefinitionInput(
     multipartBody: cloneRows(draft.multipartBody),
     auth: cloneAuth(draft.auth),
     scripts: cloneScripts(draft.scripts),
+    ...(draft.collectionId || activeTab.collectionId
+      ? { collectionId: draft.collectionId ?? activeTab.collectionId }
+      : {}),
     collectionName: draft.collectionName ?? activeTab.collectionName ?? DEFAULT_REQUEST_COLLECTION_NAME,
-    ...(draft.folderName || activeTab.folderName
-      ? { folderName: draft.folderName ?? activeTab.folderName }
+    ...(draft.requestGroupId || activeTab.requestGroupId
+      ? { requestGroupId: draft.requestGroupId ?? activeTab.requestGroupId }
+      : {}),
+    ...((draft.requestGroupName ?? draft.folderName ?? activeTab.requestGroupName ?? activeTab.folderName)
+      ? {
+          requestGroupName: draft.requestGroupName ?? draft.folderName ?? activeTab.requestGroupName ?? activeTab.folderName,
+          folderName: draft.requestGroupName ?? draft.folderName ?? activeTab.requestGroupName ?? activeTab.folderName,
+        }
       : {}),
   };
 }
@@ -243,9 +258,16 @@ export function mapSavedRequestResourceToWorkspaceSeed(
     name: record.name,
     methodLabel: record.method,
     summary: record.summary,
+    ...(record.collectionId ? { collectionId: record.collectionId } : {}),
     collectionName: record.collectionName,
+    ...(record.requestGroupId ? { requestGroupId: record.requestGroupId } : {}),
+    ...(record.requestGroupName || record.folderName
+      ? {
+          requestGroupName: record.requestGroupName ?? record.folderName,
+          folderName: record.requestGroupName ?? record.folderName,
+        }
+      : {}),
     resourceKind: 'persisted',
-    ...(record.folderName ? { folderName: record.folderName } : {}),
     draftSeed: {
       name: record.name,
       method: record.method,
@@ -259,8 +281,15 @@ export function mapSavedRequestResourceToWorkspaceSeed(
       multipartBody: cloneRows(record.multipartBody),
       auth: cloneAuth(record.auth),
       scripts: cloneScripts(record.scripts),
+      ...(record.collectionId ? { collectionId: record.collectionId } : {}),
       collectionName: record.collectionName,
-      ...(record.folderName ? { folderName: record.folderName } : {}),
+      ...(record.requestGroupId ? { requestGroupId: record.requestGroupId } : {}),
+      ...(record.requestGroupName || record.folderName
+        ? {
+            requestGroupName: record.requestGroupName ?? record.folderName,
+            folderName: record.requestGroupName ?? record.folderName,
+          }
+        : {}),
     },
   };
 }

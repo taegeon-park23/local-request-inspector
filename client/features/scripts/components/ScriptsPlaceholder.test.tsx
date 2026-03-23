@@ -121,7 +121,7 @@ describe('Scripts MVP route', () => {
 
 
 
-  it('shows selected script content without extra panel tab clicks and supports explorer collapse', async () => {
+  it('auto-collapses the explorer after script selection and shows the selected summary when reopened', async () => {
     const user = userEvent.setup();
     vi.stubGlobal('fetch', createScriptsFetch());
     renderApp(<AppRouter />, { initialEntries: ['/scripts'] });
@@ -133,12 +133,16 @@ describe('Scripts MVP route', () => {
     expect(screen.getByRole('heading', { name: 'Edit saved script' })).toBeInTheDocument();
     expect(screen.getByLabelText('Script name')).toHaveValue('Health status assertions');
     expect(within(detailPanel).getByRole('button', { name: 'Use Trace ID starter' })).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: 'Collapse explorer' }));
     expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
 
     await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
     expect(screen.getByLabelText('Section explorer')).toBeInTheDocument();
+    expect(within(explorer).getByRole('heading', { name: 'Current script summary' })).toBeInTheDocument();
+    expect(within(explorer).getByText(/Tests scripts focus on pass\/fail assertions/i)).toBeInTheDocument();
+    expect(within(explorer).getByText(/assert\(response\.status === 200\)/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Collapse explorer' }));
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('creates a saved script from a template, updates it, and deletes it', async () => {
@@ -146,22 +150,28 @@ describe('Scripts MVP route', () => {
     vi.stubGlobal('fetch', createScriptsFetch());
     renderApp(<AppRouter />, { initialEntries: ['/scripts'] });
 
-    await screen.findByRole('button', { name: 'Open script Health status assertions' });
+    await user.click(await screen.findByRole('button', { name: 'Open script Health status assertions' }));
     await user.click(screen.getByRole('button', { name: 'Use Response status assertion' }));
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
 
     expect(screen.getByRole('heading', { name: 'Create saved script' })).toBeInTheDocument();
     expect(screen.getByDisplayValue('Response status assertion copy')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Create script' }));
 
     expect(await screen.findByRole('heading', { name: 'Edit saved script' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Open script Response status assertion copy' })).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: 'Open script Response status assertion copy' }));
 
     await user.clear(screen.getByLabelText('Script name'));
     await user.type(screen.getByLabelText('Script name'), 'Response status assertion updated');
     await user.click(screen.getByRole('button', { name: 'Save script' }));
+    await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Open script Response status assertion updated' })).toBeInTheDocument());
 
+    await user.click(screen.getByRole('button', { name: 'Open script Response status assertion updated' }));
     await user.click(screen.getByRole('button', { name: 'Delete script' }));
+    await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Open script Response status assertion updated' })).not.toBeInTheDocument());
 
     const templatesList = screen.getByLabelText('Script templates list');

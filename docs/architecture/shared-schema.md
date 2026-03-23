@@ -2,7 +2,7 @@
 
 - **Purpose:** Define canonical schema concepts, resource categories, entity field drafts, and shared structural rules for the Local API Workbench.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-22
+- **Last Updated:** 2026-03-23
 - **Related Documents:** `overview.md`, `domain-model.md`, `migration-plan.md`, `naming-conventions.md`, `../tasks/task-007-shared-domain-schema-and-naming-conventions.md`
 - **Status:** done
 - **Update Rule:** Update when entity shapes, relation rules, or resource-category rules materially change.
@@ -21,7 +21,7 @@ Low- or medium-volume, user-managed entities that must survive restarts.
 Included by default:
 - `Workspace`
 - `Collection`
-- `Folder`
+- `RequestGroup`
 - `Request`
 - `Environment`
 - `EnvironmentVariable`
@@ -99,8 +99,8 @@ Candidate metadata fields:
 ### 3.4 Relation Rules
 - Cross-entity relations should use stable IDs, not embedded names, for canonical references.
 - Snapshot-bearing runtime artifacts may embed partial copies of related entities when historical replay/debugging requires it.
-- Trees should use `parentFolderId` rather than nested folder arrays as the canonical relation.
-- Many-to-one relations should be explicit through owner scope fields such as `workspaceId`, `collectionId`, `folderId`.
+- Trees should use `collectionId` plus `requestGroupId` as the canonical saved-request placement relation.
+- Many-to-one relations should be explicit through owner scope fields such as `workspaceId`, `collectionId`, and `requestGroupId`.
 
 ### 3.5 Scope Rules
 Each entity should declare one of these scopes:
@@ -142,7 +142,7 @@ A scope should be documented even if the final persisted representation remains 
 - `description`
 - `sortOrder`
 
-### 4.3 Folder
+### 4.3 RequestGroup
 **Category:** persisted resource  
 **Scope:** workspace  
 **Required fields**
@@ -154,7 +154,6 @@ A scope should be documented even if the final persisted representation remains 
 - `updatedAt`
 
 **Optional fields**
-- `parentFolderId`
 - `description`
 - `sortOrder`
 
@@ -164,6 +163,8 @@ A scope should be documented even if the final persisted representation remains 
 **Required fields**
 - `id`
 - `workspaceId`
+- `collectionId`
+- `requestGroupId`
 - `name`
 - `method`
 - `urlTemplate`
@@ -174,8 +175,6 @@ A scope should be documented even if the final persisted representation remains 
 - `updatedAt`
 
 **Optional fields**
-- `collectionId`
-- `folderId`
 - `description`
 - `authConfig`
 - `preRequestScriptId`
@@ -500,7 +499,7 @@ Represents transport contracts for create/update/list/detail/event flows.
 ### Low-Volume User-Managed Data
 - `Workspace`
 - `Collection`
-- `Folder`
+- `RequestGroup`
 - `Request`
 - `Environment`
 - `EnvironmentVariable`
@@ -541,3 +540,6 @@ Represents transport contracts for create/update/list/detail/event flows.
 3. `CapturedRequest` workspace ownership remains **확실하지 않음**.
 4. `MockScenarioState` persistence remains **확실하지 않음**.
 5. exact DTO split from persisted models remains **확실하지 않음**.
+
+
+

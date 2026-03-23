@@ -16,6 +16,15 @@
       eyebrow: 'Observation feed',
       title: 'Capture list',
       roleChip: 'Runtime lane',
+      selectedSummary: {
+        title: 'Selected capture',
+        labels: {
+          scope: 'Scope',
+          observedAt: 'Observed at',
+          bodyHint: 'Body hint',
+          previewPolicy: 'Preview policy',
+        },
+      },
       health: {
         idle: 'Capture observation is idle until the runtime adapter starts and the persisted capture list is queried.',
         connecting: 'Connecting to the runtime capture feed while loading the latest persisted inbound capture summaries.',
@@ -173,6 +182,15 @@
       eyebrow: 'Execution observations',
       title: 'History list',
       roleChip: 'Runtime lane',
+      selectedSummary: {
+        title: 'Selected execution',
+        labels: {
+          transportOutcome: 'Transport outcome',
+          tests: 'Tests',
+          duration: 'Duration',
+          executedAt: 'Executed at',
+        },
+      },
       health: {
         ready: 'History reads persisted execution summaries from the runtime lane. Select a row to inspect bounded result composition or open a replay draft into Workspace.',
         degraded: 'History observation is degraded. Persisted execution summaries may be unavailable until the runtime lane responds again.',
@@ -380,6 +398,15 @@
       description: 'Persisted authored rules live here. Captures still owns runtime mock outcomes after evaluation.',
       resourceLaneChip: 'Resource lane',
       newRule: 'New Rule',
+      selectedSummary: {
+        title: 'Selected rule',
+        labels: {
+          methodSummary: 'Method summary',
+          pathSummary: 'Path summary',
+          responseSummary: 'Response summary',
+          fixedDelay: 'Fixed delay',
+        },
+      },
     },
     empty: {
       loadingList: {
@@ -686,6 +713,15 @@ export const observationRouteMessagesKo: ObservationCatalogShape<typeof observat
       eyebrow: '관측 피드',
       title: '캡처 목록',
       roleChip: '런타임 레인',
+      selectedSummary: {
+        title: '선택된 캡처',
+        labels: {
+          scope: '범위',
+          observedAt: '관측 시각',
+          bodyHint: '본문 힌트',
+          previewPolicy: '미리보기 정책',
+        },
+      },
       health: {
         idle: '런타임 어댑터가 시작되고 저장된 캡처 목록이 조회되기 전까지 캡처 관측은 유휴 상태입니다.',
         connecting: '최신 저장 캡처 요약을 불러오면서 런타임 캡처 피드에 연결하고 있습니다.',
@@ -843,6 +879,15 @@ export const observationRouteMessagesKo: ObservationCatalogShape<typeof observat
       eyebrow: '실행 관측',
       title: '히스토리 목록',
       roleChip: '런타임 레인',
+      selectedSummary: {
+        title: '선택된 실행',
+        labels: {
+          transportOutcome: '전송 결과',
+          tests: '테스트',
+          duration: '소요 시간',
+          executedAt: '실행 시각',
+        },
+      },
       health: {
         ready: '히스토리는 런타임 레인에서 저장된 실행 요약을 읽습니다. 행을 선택해 제한된 결과 구성을 확인하거나 Workspace에서 replay draft를 열 수 있습니다.',
         degraded: '히스토리 관측 상태가 저하되었습니다. 런타임 레인이 다시 응답할 때까지 저장된 실행 요약을 불러오지 못할 수 있습니다.',
@@ -1050,6 +1095,15 @@ export const observationRouteMessagesKo: ObservationCatalogShape<typeof observat
       description: '저장된 authored rule은 이곳에서 관리합니다. 평가 이후의 런타임 mock outcome은 계속 Captures가 담당합니다.',
       resourceLaneChip: '리소스 레인',
       newRule: '새 규칙',
+      selectedSummary: {
+        title: '선택된 규칙',
+        labels: {
+          methodSummary: '메서드 요약',
+          pathSummary: '경로 요약',
+          responseSummary: '응답 요약',
+          fixedDelay: '고정 지연',
+        },
+      },
     },
     empty: {
       loadingList: {

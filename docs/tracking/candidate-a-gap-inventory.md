@@ -8,10 +8,10 @@
 - **Update Rule:** Update when the shipped authored-resource workflow changes or when a currently inventoried gap is promoted, closed, or reclassified.
 
 ## 1. Current Baseline Snapshot
-- The shipped authored-resource workflow already supports workspace-level authored-resource bundle export/import for saved requests and mock rules.
+- The shipped authored-resource workflow already supports workspace-level authored-resource bundle export/import for first-class collections, request groups, saved requests, and mock rules.
 - The shipped UI also supports single-resource export for one persisted saved request and one persisted mock rule.
 - Import already performs bundle validation, resource-kind/schema validation, compatibility classification, and create-new-identity import naming.
-- Current import feedback already includes accepted and rejected counts, imported-name previews, rejected-reason summaries, and immediate refresh of workspace explorer and mocks data.
+- Current import feedback already includes accepted and rejected counts, collection/request-group/request/mock-rule creation counts, imported-name previews, rejected-reason summaries, and immediate refresh of workspace explorer and mocks data.
 - Runtime history, captures, execution results, and runtime mock outcomes remain intentionally outside authored-resource transfer scope.
 - Environments and standalone saved scripts are now first-class persisted workflow surfaces, but neither resource kind is part of the shipped authored-resource transfer lane yet.
 - `T030` now also makes environments part of request draft persistence, save/run validation, server-owned placeholder resolution, and execution/history metadata, which increases the amount of workflow coupling a future environment-transfer contract would have to define.
@@ -34,8 +34,8 @@
 
 ### Gap 2 - Request-bound script and request-organization loss during transfer
 - **Affected surface / resource kind:** Saved request definition transfer.
-- **Why it might matter:** users could worry that request-bound scripts, collection names, or folder names are not preserved when a request is exported or imported.
-- **What is already shipped that overlaps:** saved request records already carry `scripts`, `collectionName`, and optional `folderName`; those fields move through request export/import as part of the request resource record.
+- **Why it might matter:** users could worry that request-bound scripts or request placement are not preserved when a request is exported or imported.
+- **What is already shipped that overlaps:** saved request records now carry canonical `collectionId`, `requestGroupId`, `collectionName`, and `requestGroupName`, while bundle v2 also transfers first-class collection/request-group resources alongside the request record.
 - **Evidence from repo/docs:** `client/features/request-builder/request-builder.api.ts`, `client/features/workspace/resource-bundle.api.ts`, `storage/resource/authored-resource-bundle.js`
 - **Classification:** `already covered`
 
@@ -116,3 +116,4 @@ Everything else in the current inventory is either already covered or still too 
 - **확실하지 않음:** whether environments can be narrowed to one authored-resource transfer contract without reopening secret/default-environment semantics, request references, and run/history coupling too broadly.
 - **확실하지 않음:** whether standalone saved scripts can be narrowed to one transfer contract without reopening request-bound linkage, template ownership, or reference semantics.
 - **확실하지 않음:** whether any future authored-resource management/discovery gap can be kept narrow enough to avoid collapsing into a broad resource-tooling initiative.
+

@@ -33,7 +33,7 @@ async function openNewRequest(user: ReturnType<typeof userEvent.setup>) {
 describe('Workspace request builder authoring shell', () => {
 
 
-  it('shows selected request content without route-panel tab clicks and supports explorer collapse', async () => {
+  it('auto-collapses the explorer after request selection and shows the inline selection breadcrumb when reopened', async () => {
     const user = userEvent.setup();
     renderApp(<AppRouter />);
 
@@ -43,12 +43,14 @@ describe('Workspace request builder authoring shell', () => {
     await user.click(within(explorer).getByRole('button', { name: 'Open Health check' }));
     expect(screen.getByLabelText('Request URL')).toHaveValue('http://localhost:5671/health');
     expect(within(detailPanel).getByRole('tablist', { name: 'Result panel tabs' })).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: 'Collapse explorer' }));
     expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
 
     await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
     expect(screen.getByLabelText('Section explorer')).toBeInTheDocument();
+    expect(within(explorer).getByText('Current selection: Saved Requests / General / Health check')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Collapse explorer' }));
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('renders method and url authoring controls for the active tab', async () => {
@@ -56,6 +58,7 @@ describe('Workspace request builder authoring shell', () => {
     renderApp(<AppRouter />);
 
     await openNewRequest(user);
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
     expect(screen.getByText(/Workspace remains the authoring surface/i)).toBeInTheDocument();
 
     expect(screen.getByLabelText('Request method')).toBeInTheDocument();
@@ -261,7 +264,7 @@ describe('Workspace request builder authoring shell', () => {
     expect(screen.getByLabelText('Pre-request script')).toHaveValue("request.headers.set('x-health-check', '1');");
   });
 
-  it('prefers persisted saved requests over starter fixtures and keeps canonical ordering stable', async () => {
+  it('prefers persisted saved requests over fallback fixture content and keeps canonical ordering stable', async () => {
     const user = userEvent.setup();
 
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {

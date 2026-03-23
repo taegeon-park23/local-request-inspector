@@ -22,13 +22,30 @@ interface ApiErrorEnvelope {
 }
 
 export const AUTHORED_RESOURCE_BUNDLE_KIND = 'local-request-inspector-authored-resource-bundle';
-export const AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION = 1;
+export const AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION = 2;
+
+export interface AuthoredResourceCollectionRecord {
+  id: string;
+  workspaceId: string;
+  name: string;
+  description?: string;
+}
+
+export interface AuthoredResourceRequestGroupRecord {
+  id: string;
+  workspaceId: string;
+  collectionId: string;
+  name: string;
+  description?: string;
+}
 
 export interface AuthoredResourceBundleExport {
   schemaVersion: number;
   resourceKind: string;
   exportedAt: string;
   workspaceId: string;
+  collections: AuthoredResourceCollectionRecord[];
+  requestGroups: AuthoredResourceRequestGroupRecord[];
   requests: SavedRequestResourceRecord[];
   mockRules: MockRuleRecord[];
 }
@@ -47,6 +64,8 @@ export interface AuthoredResourceBundleImportRejectedReasonSummary {
 export interface AuthoredResourceBundleImportSummary {
   acceptedCount: number;
   rejectedCount: number;
+  createdCollectionCount: number;
+  createdRequestGroupCount: number;
   createdRequestCount: number;
   createdMockRuleCount: number;
   renamedCount: number;
@@ -56,6 +75,8 @@ export interface AuthoredResourceBundleImportSummary {
 }
 
 export interface AuthoredResourceBundleImportResult {
+  acceptedCollections: AuthoredResourceCollectionRecord[];
+  acceptedRequestGroups: AuthoredResourceRequestGroupRecord[];
   acceptedRequests: SavedRequestResourceRecord[];
   acceptedMockRules: MockRuleRecord[];
   rejected: AuthoredResourceBundleImportRejection[];
@@ -118,6 +139,8 @@ export async function exportWorkspaceResources() {
   const response = await fetch(`/api/workspaces/${DEFAULT_WORKSPACE_ID}/resource-bundle`);
   return parseJsonResponse<{ bundle: AuthoredResourceBundleExport }>(response).then((payload) => ({
     ...payload.bundle,
+    collections: [...(payload.bundle.collections ?? [])],
+    requestGroups: [...(payload.bundle.requestGroups ?? [])],
     requests: [...payload.bundle.requests],
     mockRules: sortMockRuleRecords(payload.bundle.mockRules),
   }));
@@ -127,6 +150,8 @@ export async function exportSavedRequestResource(requestId: string) {
   const response = await fetch(`/api/requests/${requestId}/resource-bundle`);
   return parseJsonResponse<{ bundle: AuthoredResourceBundleExport }>(response).then((payload) => ({
     ...payload.bundle,
+    collections: [...(payload.bundle.collections ?? [])],
+    requestGroups: [...(payload.bundle.requestGroups ?? [])],
     requests: [...payload.bundle.requests],
     mockRules: sortMockRuleRecords(payload.bundle.mockRules),
   }));
@@ -136,6 +161,8 @@ export async function exportMockRuleResource(mockRuleId: string) {
   const response = await fetch(`/api/mock-rules/${mockRuleId}/resource-bundle`);
   return parseJsonResponse<{ bundle: AuthoredResourceBundleExport }>(response).then((payload) => ({
     ...payload.bundle,
+    collections: [...(payload.bundle.collections ?? [])],
+    requestGroups: [...(payload.bundle.requestGroups ?? [])],
     requests: [...payload.bundle.requests],
     mockRules: sortMockRuleRecords(payload.bundle.mockRules),
   }));
@@ -152,6 +179,8 @@ export async function importWorkspaceResources(bundleText: string) {
 
   return parseJsonResponse<{ result: AuthoredResourceBundleImportResult }>(response).then((payload) => ({
     ...payload.result,
+    acceptedCollections: [...(payload.result.acceptedCollections ?? [])],
+    acceptedRequestGroups: [...(payload.result.acceptedRequestGroups ?? [])],
     acceptedRequests: [...payload.result.acceptedRequests],
     acceptedMockRules: sortMockRuleRecords(payload.result.acceptedMockRules),
     rejected: [...payload.result.rejected],

@@ -2,7 +2,7 @@
 
 - **Purpose:** Define storage-agnostic internal HTTP and event contracts for workspace resources, execution flows, mock rules, and inbound capture features so implementation can proceed with stable DTO and lifecycle expectations.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-18
+- **Last Updated:** 2026-03-23
 - **Related Documents:** `overview.md`, `shared-schema.md`, `naming-conventions.md`, `persistence-strategy.md`, `script-execution-safety-model.md`, `../tasks/task-008-internal-api-contract-design.md`
 - **Status:** done
 - **Update Rule:** Update when resource boundaries, transport choices, or canonical DTO semantics materially change.
@@ -97,6 +97,7 @@
 ### Workspace-scoped resources
 - `Workspace`
 - `Collection`
+- `RequestGroup`
 - `Request`
 - `Environment`
 - `Script`
@@ -126,16 +127,22 @@
 | PATCH | `/api/workspaces/:workspaceId` | update workspace metadata | `WorkspaceDetailDto` |
 | DELETE | `/api/workspaces/:workspaceId` | archive/delete workspace | no body or minimal success envelope |
 
-### 7.2 Collections and Requests
+### 7.2 Collections, Request Groups, and Requests
 | Method | Path | Purpose | Response DTO |
 | --- | --- | --- | --- |
+| GET | `/api/workspaces/:workspaceId/request-tree` | fetch canonical saved-request tree plus default placement | `WorkspaceRequestTreeDto` |
 | GET | `/api/workspaces/:workspaceId/collections` | list collections | `CollectionSummaryDto[]` |
 | POST | `/api/workspaces/:workspaceId/collections` | create collection | `CollectionDetailDto` |
 | GET | `/api/collections/:collectionId` | get collection detail | `CollectionDetailDto` |
 | PATCH | `/api/collections/:collectionId` | update collection metadata | `CollectionDetailDto` |
-| DELETE | `/api/collections/:collectionId` | delete collection | success envelope |
+| DELETE | `/api/collections/:collectionId` | delete collection when empty | success envelope |
+| GET | `/api/collections/:collectionId/request-groups` | list request groups in one collection | `RequestGroupSummaryDto[]` |
+| POST | `/api/collections/:collectionId/request-groups` | create request group | `RequestGroupDetailDto` |
+| GET | `/api/request-groups/:requestGroupId` | fetch request-group detail | `RequestGroupDetailDto` |
+| PATCH | `/api/request-groups/:requestGroupId` | update request-group metadata | `RequestGroupDetailDto` |
+| DELETE | `/api/request-groups/:requestGroupId` | delete request group when empty | success envelope |
 | GET | `/api/workspaces/:workspaceId/requests` | list requests | `RequestSummaryDto[]` |
-| POST | `/api/workspaces/:workspaceId/requests` | create saved request | `RequestDetailDto` |
+| POST | `/api/workspaces/:workspaceId/requests` | create saved request with canonical collection/request-group placement | `RequestDetailDto` |
 | GET | `/api/requests/:requestId` | fetch request detail | `RequestDetailDto` |
 | PATCH | `/api/requests/:requestId` | update request | `RequestDetailDto` |
 | DELETE | `/api/requests/:requestId` | delete request | success envelope |
@@ -358,3 +365,8 @@ This stream is optional for MVP and may be added after core capture/execution st
 ### For T016 Testing and QA Strategy
 - validate envelope consistency, event naming, timeout/cancellation error codes, and redaction behavior
 - add contract checks covering both resource endpoints and execution lifecycle streams
+
+
+
+
+

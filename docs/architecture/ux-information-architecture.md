@@ -2,7 +2,7 @@
 
 - **Purpose:** Define the high-level workspace shell, navigation model, screen responsibilities, and visibility rules for the local-first API workbench.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-22
+- **Last Updated:** 2026-03-23
 - **Related Documents:** `overview.md`, `shared-schema.md`, `internal-api-contracts.md`, `script-execution-safety-model.md`, `workspace-flows.md`, `../tasks/task-003-ux-information-architecture-and-workspace-flows.md`
 - **Status:** done
 - **Update Rule:** Update when workspace shell, navigation, or summary/detail responsibilities materially change.
@@ -29,9 +29,9 @@ This is an IA document, not a wireframe or component spec. Exact styling, fronte
 ### 3.1 Primary Navigation Areas
 Recommended top-level navigation for MVP:
 1. **Workspace**
-   - saved requests
-   - collections / folders
-   - request editor tabs
+   - canonical saved request tree (`Collection > Request Group > Request`)
+   - request editor working tabs
+   - explicit saved-resource actions separate from tab close
 2. **Captures**
    - inbound request list
    - capture detail and replay
@@ -87,14 +87,14 @@ Recommended shell regions:
 | --- | --- | --- |
 | Global top bar | high-level context and quick actions | workspace switcher, environment switcher, search, send/run, cancel, connection health |
 | Left navigation rail | mode switch | Workspace, Captures, History, Mocks, Environments, Scripts, Settings |
-| Secondary sidebar | collection/list navigation | request tree, capture summaries, execution summaries, mock rules |
+| Secondary sidebar | persisted-tree or list navigation | saved request tree, capture summaries, execution summaries, mock rules |
 | Primary content area | focused editing or inspection | request builder, mock editor, environment editor, execution detail |
 | Contextual detail panel | detail and diagnostics | response body, headers, logs, tests, match trace, metadata |
 
 ## 5. Information Grouping by Scope
 ### 5.1 Workspace-Scoped Views
 These should clearly belong to the selected workspace:
-- collections, folders, saved requests
+- collections, request groups, saved requests, and separate request working tabs
 - environments and variable metadata
 - saved scripts and script templates selected for the workspace
 - mock rules
@@ -127,7 +127,7 @@ These may need to exist even when workspace ownership is missing or partial:
 ### 7.1 Summary Views
 Summary views should emphasize scanability, filters, and bulk orientation.
 Recommended summary content:
-- **Request summaries:** name, method, resolved host preview, tags, modified state
+- **Request summaries:** name, method, request-group placement, resolved host preview, tags, modified state
 - **Capture summaries:** method, path, receivedAt, status/match outcome, workspace badge if any
 - **History summaries:** request name, status, duration, startedAt, environment badge
 - **Mock rule summaries:** enabled state, matcher preview, priority, last matched time
@@ -173,7 +173,7 @@ Replay should create a new execution or open a prefilled request editor, dependi
 ### 9.1 Request Builder Structure
 The request builder should be the main editor inside the `Workspace` section.
 Recommended zones:
-- request identity header: name, save state, method, URL
+- request identity header: name, save state, method, URL, and canonical placement
 - execution controls: send, cancel, environment selector, resolved preview
 - primary tabs:
   - Params
@@ -193,8 +193,8 @@ Recommended zones:
 
 ### 9.2 Unsaved vs Saved State
 - Unsaved requests should still be runnable.
-- Saved requests should display their collection/folder location.
-- Dirty state should be visible in tab labels or header metadata.
+- Saved requests should display their collection/request-group location.
+- Dirty state should be visible in working-tab labels or header metadata, not in the persisted tree itself.
 - Request draft persistence is **확실하지 않음** as a separate domain artifact, but the UX should plan for autosave/session restore hooks.
 
 ## 10. Environment and Secret UX Considerations
@@ -247,3 +247,8 @@ Recommended exposure points:
 - T011 should turn the request builder section into field-level interaction and validation behavior.
 - T012 should turn script-related shell placements into editor panel requirements and capability messaging.
 - T014 should decide whether capture/history remain separate top-level screens or gain a unified timeline view.
+
+
+
+
+

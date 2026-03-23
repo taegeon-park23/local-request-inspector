@@ -61,7 +61,10 @@ export interface RequestDraftState {
   scripts: RequestDraftScriptsState;
   activeEditorTab: RequestEditorTabId;
   dirty: boolean;
+  collectionId?: string;
   collectionName?: string;
+  requestGroupId?: string;
+  requestGroupName?: string;
   folderName?: string;
 }
 
@@ -78,6 +81,10 @@ export interface RequestDraftSeed {
   multipartBody?: RequestKeyValueRow[];
   auth?: Partial<RequestDraftAuthState>;
   scripts?: RequestDraftScriptsSeed;
+  collectionId?: string;
   collectionName?: string;
+  requestGroupId?: string;
+  requestGroupName?: string;
   folderName?: string;
 }
+

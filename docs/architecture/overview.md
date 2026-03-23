@@ -2,7 +2,7 @@
 
 - **Purpose:** Define the target architecture, module boundaries, responsibilities, data flow, and security boundaries for evolving Local Request Inspector into a local-first API workbench.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-22
+- **Last Updated:** 2026-03-23
 - **Related Documents:** `../prd/overview.md`, `domain-model.md`, `migration-plan.md`, `../tasks/task-001-foundation-architecture.md`
 - **Status:** done
 - **Update Rule:** Update when architecture decisions, open questions, or module boundaries materially change.
@@ -11,7 +11,7 @@
 The target system should evolve from the current single-file Express + single-page HTML prototype into a modular local-first application that supports:
 - inbound request capture and inspection
 - outbound API request authoring and execution
-- reusable workspaces, collections, templates, and environments
+- reusable workspaces, collections, request groups, templates, and environments
 - scriptable pre-request / post-response / test execution
 - endpoint-based mock simulation
 - durable history and developer-friendly debugging
@@ -49,7 +49,7 @@ Current frontend is a single `public/index.html` page with:
 The future application should be organized into five logical layers:
 
 1. **Client Workspace UI**
-   - request editor, collections tree, history explorer, capture inspector, mock rule editor, environment manager, script editor
+   - request editor working tabs, canonical collection/request-group tree, history explorer, capture inspector, mock rule editor, environment manager, script editor
 2. **Application API Layer**
    - HTTP/SSE API consumed by the workspace UI for CRUD, execution, streaming, and diagnostics
 3. **Core Domain Services**
@@ -170,7 +170,7 @@ Likely replace / refactor:
 
 ### 4.5 Workspace / Resource Management Module
 Responsibilities:
-- CRUD for workspaces, collections, folders, requests, environments, templates, and settings
+- CRUD for workspaces, collections, request groups, requests, environments, templates, and settings
 - indexing for list/search/filter operations
 - import/export hooks
 
@@ -258,3 +258,4 @@ Current gap:
 - **T006:** use client/server layering and phased migration direction to choose frontend shell strategy.
 - **T007:** use the domain module breakdown and entity list to finalize canonical schemas.
 - **T008:** use the data flow and boundary definitions to derive stable internal APIs.
+

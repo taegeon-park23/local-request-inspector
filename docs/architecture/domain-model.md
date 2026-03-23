@@ -2,7 +2,7 @@
 
 - **Purpose:** Define the initial domain vocabulary, entity responsibilities, relationships, and field drafts for the Local API Workbench architecture.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-22
+- **Last Updated:** 2026-03-23
 - **Related Documents:** `overview.md`, `migration-plan.md`, `../prd/overview.md`, `../tasks/task-001-foundation-architecture.md`
 - **Status:** done
 - **Update Rule:** Update when entity definitions, naming rules, or certainty levels change.
@@ -25,7 +25,7 @@
 ### User-Authored Resources
 - Workspace
 - Collection
-- Folder
+- RequestGroup
 - Request
 - Environment
 - EnvironmentVariable
@@ -68,7 +68,7 @@
 **Status:** confirmed as required by PRD direction.
 
 ### 4.2 Collection
-**Role:** Named group of related requests and folders within a workspace.
+**Role:** Named top-level group of related request groups within a workspace.
 
 **Draft fields**
 - `id`
@@ -81,24 +81,23 @@
 
 **Relationships**
 - belongs to one `Workspace`
-- contains many `Folder`
-- may contain root-level `Request`
+- contains many `RequestGroup`
+- does not contain root-level `Request` records directly in the canonical model
 
-### 4.3 Folder
-**Role:** Hierarchical grouping unit inside a collection.
+### 4.3 RequestGroup
+**Role:** Single-level grouping unit inside a collection. Every saved request belongs to exactly one request group.
 
 **Draft fields**
 - `id`
 - `workspaceId`
 - `collectionId`
-- `parentFolderId` *(optional)*
 - `name`
 - `description`
 - `sortOrder`
 - `createdAt`
 - `updatedAt`
 
-**Status:** hierarchy depth limit is **확실하지 않음**.
+**Status:** hierarchy depth is fixed to one level in the canonical model; nested groups are out of scope.
 
 ### 4.4 Request
 **Role:** Canonical saved outbound request definition used by the workspace.
@@ -111,8 +110,8 @@
 **Draft fields**
 - `id`
 - `workspaceId`
-- `collectionId` *(optional)*
-- `folderId` *(optional)*
+- `collectionId`
+- `requestGroupId`
 - `name`
 - `description`
 - `method`
@@ -308,10 +307,8 @@
 - `Workspace` 1—N `ScriptTemplate`
 - `Workspace` 1—N `ExecutionHistory`
 - `Workspace` 1—N `CapturedRequest` *(tentative)*
-- `Collection` 1—N `Folder`
-- `Collection` 1—N `Request`
-- `Folder` 1—N `Folder`
-- `Folder` 1—N `Request`
+- `Collection` 1—N `RequestGroup`
+- `RequestGroup` 1—N `Request`
 - `Environment` 1—N `EnvironmentVariable`
 - `ExecutionHistory` 1—1 `ExecutionResult` *(tentative)*
 - `ExecutionHistory` 1—N `TestResult` *(tentative)*
@@ -334,3 +331,12 @@
 2. Whether `ExecutionResult` and `TestResult` remain separate persisted entities is **확실하지 않음**.
 3. Whether `CapturedRequest` belongs to a workspace or to a global local runtime scope is **확실하지 않음**.
 4. Whether scripts are referenceable shared resources, embedded request fields, or both is **확실하지 않음**.
+
+
+
+
+
+
+
+
+

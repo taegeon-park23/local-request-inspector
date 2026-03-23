@@ -2,7 +2,7 @@
 
 - **Purpose:** Reframe the upgrade PRD into an execution-ready summary for planning and task tracking.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-18
+- **Last Updated:** 2026-03-23
 - **Related Documents:** `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tasks/task-001-foundation-architecture.md`
 - **Update Rule:** Update when product scope, assumptions, or major sequencing decisions change.
 
@@ -27,7 +27,7 @@ Based on the current repository state:
 ## 3. Scope Summary
 ### In Scope
 - Workspace-style API client UX
-- Request collections, folders, and templates
+- Request collections, request groups, and templates
 - Environment variable and secret handling
 - Smarter JavaScript editing and execution workflow
 - History, search, and request replay
@@ -43,9 +43,9 @@ Based on the current repository state:
 ## 4. Core Functional Themes
 ### A. API Client Workspace
 - request editing tabs
-- saved requests and collections
+- saved request trees with collections and request groups
 - auth, params, headers, cookies, body editing
-- response viewer and execution history
+- response viewer, execution history, and a clear separation between persisted request trees and open working tabs
 
 ### B. Automation / Script Engine
 - pre-request scripts
@@ -108,3 +108,4 @@ The first implementation work should not start with UI polish or feature expansi
 
 ## 10. Readiness Outcome
 This PRD summary should be treated as the upstream planning source for all task documents and backlog prioritization.
+

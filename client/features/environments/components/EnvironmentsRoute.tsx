@@ -23,6 +23,7 @@ import { KeyValueMetaList } from '@client/shared/ui/KeyValueMetaList';
 import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
 import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
+import { useShellStore } from '@client/app/providers/shell-store';
 
 type EnvironmentSortOrder = 'default' | 'name' | 'updated';
 
@@ -90,6 +91,42 @@ function validateDraft(draft: EnvironmentInput, t: ReturnType<typeof useI18n>['t
   return messages;
 }
 
+function EnvironmentExplorerSummaryCard({
+  draft,
+  summary,
+  t,
+}: {
+  draft: EnvironmentInput;
+  summary: {
+    updatedAt: string;
+    resolutionSummary: string;
+  } | null;
+  t: ReturnType<typeof useI18n>['t'];
+}) {
+  return (
+    <DetailViewerSection
+      title={t('environmentsRoute.selectedSummary.title')}
+      description={draft.name.trim() || t('environmentsRoute.detail.summaryCard.values.untitled')}
+      className="management-explorer-summary"
+    >
+      <div className="request-work-surface__badges management-explorer-summary__badges">
+        {draft.isDefault ? <span className="workspace-chip">{t('environmentsRoute.list.defaultChip')}</span> : null}
+        <span className="workspace-chip workspace-chip--secondary">{t('environmentsRoute.list.varsChip', { count: draft.variables.length })}</span>
+      </div>
+      <KeyValueMetaList
+        items={[
+          { label: t('environmentsRoute.selectedSummary.labels.default'), value: draft.isDefault ? t('common.values.yes') : t('common.values.no') },
+          { label: t('environmentsRoute.selectedSummary.labels.variableCount'), value: draft.variables.length },
+          { label: t('environmentsRoute.selectedSummary.labels.enabledVariables'), value: draft.variables.filter((row) => row.isEnabled !== false).length },
+          { label: t('environmentsRoute.selectedSummary.labels.secretVariables'), value: draft.variables.filter((row) => row.isSecret === true).length },
+          { label: t('environmentsRoute.selectedSummary.labels.updatedAt'), value: summary?.updatedAt ?? t('environmentsRoute.detail.fallbackSummary') },
+          { label: t('environmentsRoute.selectedSummary.labels.resolutionSummary'), value: summary?.resolutionSummary ?? t('environmentsRoute.detail.fallbackSummary') },
+        ]}
+      />
+    </DetailViewerSection>
+  );
+}
+
 export function EnvironmentsRoute() {
   const queryClient = useQueryClient();
   const { t } = useI18n();
@@ -99,6 +136,7 @@ export function EnvironmentsRoute() {
   const [isCreatingDraft, setIsCreatingDraft] = useState(false);
   const activePanel = useWorkspaceUiStore((state) => state.routePanels.environments.activePanel);
   const setRouteActivePanel = useWorkspaceUiStore((state) => state.setRouteActivePanel);
+  const setFloatingExplorerOpen = useShellStore((state) => state.setFloatingExplorerOpen);
 
   const [draft, setDraft] = useState<EnvironmentInput>(createEnvironmentDraft);
 
@@ -137,6 +175,19 @@ export function EnvironmentsRoute() {
     : detailQuery.data
       ? (draft.id === detailQuery.data.id ? draft : createDraftFromEnvironment(detailQuery.data))
       : draft;
+  const selectedListEnvironment = !isCreatingDraft
+    ? sortedItems.find((item) => item.id === effectiveSelectedId) ?? null
+    : null;
+  const selectedEnvironmentSummary = !isCreatingDraft
+    ? (detailQuery.data
+      ? { updatedAt: detailQuery.data.updatedAt, resolutionSummary: detailQuery.data.resolutionSummary }
+      : (selectedListEnvironment
+        ? {
+            updatedAt: selectedListEnvironment.updatedAt,
+            resolutionSummary: selectedListEnvironment.resolutionSummary,
+          }
+        : null))
+    : null;
 
   const createMutation = useMutation({
     mutationFn: createEnvironment,
@@ -179,6 +230,7 @@ export function EnvironmentsRoute() {
     <RoutePanelTabsLayout
       layoutMode="floating-explorer"
       floatingExplorerRouteKey="environments"
+      floatingExplorerVariant="focused-overlay"
       defaultActiveTab="explorer"
       activeTab={activePanel}
       onActiveTabChange={(panel) => setRouteActivePanel('environments', panel)}
@@ -189,9 +241,9 @@ export function EnvironmentsRoute() {
             <div>
               <p className="section-placeholder__eyebrow">{t('environmentsRoute.sidebar.eyebrow')}</p>
               <h2>{t('environmentsRoute.sidebar.title')}</h2>
-              <p>{t('environmentsRoute.sidebar.summary')}</p>
+              <p className="workspace-explorer__status-line">{t('environmentsRoute.sidebar.summary')}</p>
             </div>
-            <button type="button" className="workspace-button" onClick={() => { setDraft(createEnvironmentDraft()); setIsCreatingDraft(true); setSelectedEnvironmentId(null); }}>
+            <button type="button" className="workspace-button" onClick={() => { setDraft(createEnvironmentDraft()); setIsCreatingDraft(true); setSelectedEnvironmentId(null); setFloatingExplorerOpen('environments', false); }}>
               <IconLabel icon="new">{t('environmentsRoute.sidebar.newButton')}</IconLabel>
             </button>
           </header>
@@ -207,11 +259,18 @@ export function EnvironmentsRoute() {
               </select>
             </label>
           </div>
+          {(isCreatingDraft || selectedEnvironmentSummary) ? (
+            <EnvironmentExplorerSummaryCard
+              draft={activeDraft}
+              summary={selectedEnvironmentSummary}
+              t={t}
+            />
+          ) : null}
           {listQuery.isPending && !listQuery.data ? <EmptyStateCallout title={t('environmentsRoute.empty.loadingList.title')} description={t('environmentsRoute.empty.loadingList.description')} /> : null}
           {listQuery.isError ? <EmptyStateCallout title={t('environmentsRoute.empty.degraded.title')} description={listQuery.error instanceof Error ? listQuery.error.message : t('environmentsRoute.empty.degraded.fallbackDescription')} /> : null}
           {!listQuery.isPending && (listQuery.data ?? []).length === 0 ? <EmptyStateCallout title={t('environmentsRoute.empty.noItems.title')} description={t('environmentsRoute.empty.noItems.description')} /> : null}
           {!listQuery.isPending && (listQuery.data ?? []).length > 0 && sortedItems.length === 0 ? <EmptyStateCallout title={t('environmentsRoute.empty.noFilteredItems.title')} description={t('environmentsRoute.empty.noFilteredItems.description')} /> : null}
-          {sortedItems.length > 0 ? <ul className="environments-list" aria-label={t('environmentsRoute.sidebar.listAriaLabel')}>{sortedItems.map((environment) => <li key={environment.id}><button type="button" className={environment.id === effectiveSelectedId && !isCreatingDraft ? 'workspace-request workspace-request--selected' : 'workspace-request'} aria-label={t('environmentsRoute.sidebar.openEnvironmentAction', { name: environment.name })} onClick={() => { setIsCreatingDraft(false); setSelectedEnvironmentId(environment.id); }}><span className="workspace-request__header"><span className="workspace-request__title">{environment.name}</span><span className="workspace-request__badges">{environment.isDefault ? <span className="workspace-chip">{t('environmentsRoute.list.defaultChip')}</span> : null}<span className="workspace-chip workspace-chip--secondary">{t('environmentsRoute.list.varsChip', { count: environment.variableCount })}</span></span></span><span className="workspace-request__meta">{environment.description || t('environmentsRoute.list.noDescription')}</span><span className="workspace-request__meta">{environment.resolutionSummary}</span></button></li>)}</ul> : null}
+          {sortedItems.length > 0 ? <ul className="environments-list" aria-label={t('environmentsRoute.sidebar.listAriaLabel')}>{sortedItems.map((environment) => <li key={environment.id}><button type="button" className={environment.id === effectiveSelectedId && !isCreatingDraft ? 'workspace-request workspace-request--selected' : 'workspace-request'} aria-label={t('environmentsRoute.sidebar.openEnvironmentAction', { name: environment.name })} onClick={() => { setIsCreatingDraft(false); setSelectedEnvironmentId(environment.id); setFloatingExplorerOpen('environments', false); }}><span className="workspace-request__header"><span className="workspace-request__title">{environment.name}</span><span className="workspace-request__badges">{environment.isDefault ? <span className="workspace-chip">{t('environmentsRoute.list.defaultChip')}</span> : null}<span className="workspace-chip workspace-chip--secondary">{t('environmentsRoute.list.varsChip', { count: environment.variableCount })}</span></span></span><span className="workspace-request__meta">{environment.description || t('environmentsRoute.list.noDescription')}</span><span className="workspace-request__meta workspace-request__meta--support">{environment.resolutionSummary}</span></button></li>)}</ul> : null}
         </div>
         </section>
       )}
@@ -220,13 +279,13 @@ export function EnvironmentsRoute() {
         <SectionHeading icon="environments" title={t('routes.environments.title')} summary={t('routes.environments.summary')} />
         {listQuery.isPending && !listQuery.data ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('environmentsRoute.empty.loadingDetail.title')} description={t('environmentsRoute.empty.loadingDetail.description')} /></div> : !isCreatingDraft && !detailQuery.data ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('environmentsRoute.empty.noSelection.title')} description={t('environmentsRoute.empty.noSelection.description')} /></div> : detailQuery.isPending && !detailQuery.data && !isCreatingDraft ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('environmentsRoute.empty.loadingPersistedDetail.title')} description={t('environmentsRoute.empty.loadingPersistedDetail.description')} /></div> : (
           <div className="environments-detail">
-            <header className="environments-detail__header">
+            <header className="environments-detail__header management-detail__header">
               <div>
                 <p className="section-placeholder__eyebrow">{isCreatingDraft ? t('environmentsRoute.detail.draftEyebrow') : t('environmentsRoute.detail.persistedEyebrow')}</p>
                 <h2>{isCreatingDraft ? t('environmentsRoute.detail.createTitle') : t('environmentsRoute.detail.editTitle')}</h2>
-                <p>{detailQuery.data?.resolutionSummary ?? t('environmentsRoute.detail.fallbackSummary')}</p>
+                <p className="management-detail__header-meta">{detailQuery.data?.resolutionSummary ?? t('environmentsRoute.detail.fallbackSummary')}</p>
               </div>
-              <div className="request-work-surface__badges"><span className="workspace-chip">{t('environmentsRoute.detail.enabledChip', { count: activeDraft.variables.filter((row) => row.isEnabled !== false).length })}</span><span className="workspace-chip workspace-chip--secondary">{t('environmentsRoute.detail.secretChip', { count: activeDraft.variables.filter((row) => row.isSecret === true).length })}</span>{activeDraft.isDefault ? <span className="workspace-chip">{t('environmentsRoute.detail.defaultChip')}</span> : null}</div>
+              <div className="request-work-surface__badges management-detail__badge-rail"><span className="workspace-chip">{t('environmentsRoute.detail.enabledChip', { count: activeDraft.variables.filter((row) => row.isEnabled !== false).length })}</span><span className="workspace-chip workspace-chip--secondary">{t('environmentsRoute.detail.secretChip', { count: activeDraft.variables.filter((row) => row.isSecret === true).length })}</span>{activeDraft.isDefault ? <span className="workspace-chip">{t('environmentsRoute.detail.defaultChip')}</span> : null}</div>
             </header>
             <DetailViewerSection icon="summary" title={t('environmentsRoute.detail.management.title')} description={t('environmentsRoute.detail.management.description')} className="workspace-surface-card" actions={<div className="request-work-surface__future-actions"><button type="button" className="workspace-button workspace-button--secondary" onClick={() => { if (!saveDisabledReason) { if (isCreatingDraft || !activeDraft.id) { createMutation.mutate(activeDraft); } else { updateMutation.mutate({ environmentId: activeDraft.id, environment: activeDraft }); } } }} disabled={saveDisabledReason !== null}><IconLabel icon="save">{isCreatingDraft ? t('environmentsRoute.detail.management.createAction') : t('environmentsRoute.detail.management.saveAction')}</IconLabel></button>{isCreatingDraft ? <button type="button" className="workspace-button workspace-button--ghost" onClick={() => { setIsCreatingDraft(false); setSelectedEnvironmentId(sortedItems[0]?.id ?? null); }}>{t('environmentsRoute.detail.management.cancelDraft')}</button> : <button type="button" className="workspace-button workspace-button--ghost" onClick={() => { if (detailQuery.data && !deleteDisabledReason) { deleteMutation.mutate(detailQuery.data.id); } }} disabled={deleteDisabledReason !== null}><IconLabel icon="delete">{t('environmentsRoute.detail.management.deleteAction')}</IconLabel></button>}</div>}>
               <p className="shared-readiness-note">{saveDisabledReason ?? deleteDisabledReason ?? t('environmentsRoute.detail.management.readinessNote')}</p>

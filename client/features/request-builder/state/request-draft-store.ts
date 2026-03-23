@@ -26,7 +26,7 @@ interface RequestDraftStoreState {
   nextRowSequence: number;
   ensureDraftForTab: (tab: RequestTabRecord, draftSeed?: RequestDraftSeed) => void;
   removeDraft: (tabId: string) => void;
-  commitSavedDraft: (tabId: string, placement: { collectionName: string; folderName?: string }) => void;
+  commitSavedDraft: (tabId: string, placement: { collectionId?: string; collectionName: string; requestGroupId?: string; requestGroupName?: string; folderName?: string }) => void;
   updateDraftName: (tabId: string, name: string) => void;
   updateDraftMethod: (tabId: string, method: RequestDraftState['method']) => void;
   updateDraftUrl: (tabId: string, url: string) => void;
@@ -97,6 +97,10 @@ function createDraftSnapshotString(draft: RequestDraftState) {
       postResponse: draft.scripts.postResponse,
       tests: draft.scripts.tests,
     },
+    collectionId: draft.collectionId ?? null,
+    collectionName: draft.collectionName ?? null,
+    requestGroupId: draft.requestGroupId ?? null,
+    requestGroupName: draft.requestGroupName ?? draft.folderName ?? null,
   });
 }
 
@@ -133,8 +137,15 @@ function createDraftFromTab(tab: RequestTabRecord, explicitDraftSeed?: RequestDr
     scripts: createDefaultScriptsState(draftSeed?.scripts),
     activeEditorTab: 'params',
     dirty: false,
+    ...(draftSeed?.collectionId || tab.collectionId ? { collectionId: draftSeed?.collectionId ?? tab.collectionId } : {}),
     ...(draftSeed?.collectionName || tab.collectionName ? { collectionName: draftSeed?.collectionName ?? tab.collectionName } : {}),
-    ...(draftSeed?.folderName || tab.folderName ? { folderName: draftSeed?.folderName ?? tab.folderName } : {}),
+    ...(draftSeed?.requestGroupId || tab.requestGroupId ? { requestGroupId: draftSeed?.requestGroupId ?? tab.requestGroupId } : {}),
+    ...((draftSeed?.requestGroupName ?? draftSeed?.folderName ?? tab.requestGroupName ?? tab.folderName)
+      ? {
+          requestGroupName: draftSeed?.requestGroupName ?? draftSeed?.folderName ?? tab.requestGroupName ?? tab.folderName,
+          folderName: draftSeed?.requestGroupName ?? draftSeed?.folderName ?? tab.requestGroupName ?? tab.folderName,
+        }
+      : {}),
   };
 }
 
@@ -198,11 +209,26 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
           collectionName: placement.collectionName,
           dirty: false,
         };
+        const collectionId = placement.collectionId ?? entry.draft.collectionId;
+        const requestGroupId = placement.requestGroupId ?? entry.draft.requestGroupId;
+        const requestGroupName = placement.requestGroupName ?? placement.folderName;
 
+        delete nextDraft.collectionId;
+        delete nextDraft.requestGroupId;
+        delete nextDraft.requestGroupName;
         delete nextDraft.folderName;
 
-        if (placement.folderName) {
-          nextDraft.folderName = placement.folderName;
+        if (collectionId) {
+          nextDraft.collectionId = collectionId;
+        }
+
+        if (requestGroupId) {
+          nextDraft.requestGroupId = requestGroupId;
+        }
+
+        if (requestGroupName) {
+          nextDraft.requestGroupName = requestGroupName;
+          nextDraft.folderName = requestGroupName;
         }
 
         return {
@@ -357,3 +383,5 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
 export function resetRequestDraftStore() {
   useRequestDraftStore.setState(initialRequestDraftStoreState);
 }
+
+

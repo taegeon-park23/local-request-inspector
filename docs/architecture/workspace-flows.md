@@ -2,7 +2,7 @@
 
 - **Purpose:** Document the core user journeys and flow-level state transitions for the local-first API workbench.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-22
+- **Last Updated:** 2026-03-23
 - **Related Documents:** `ux-information-architecture.md`, `internal-api-contracts.md`, `script-execution-safety-model.md`, `../tasks/task-003-ux-information-architecture-and-workspace-flows.md`
 - **Status:** done
 - **Update Rule:** Update when primary workspace journeys or runtime-view responsibilities materially change.
@@ -34,7 +34,7 @@ User enters the `Workspace` section and chooses one of:
 2. Fill method and URL.
 3. Add params, headers, auth, body, and optional scripts.
 4. Choose environment from global or local selector.
-5. Save request into a collection/folder or continue unsaved.
+5. Save request into a collection/request group or continue unsaved from the working tab.
 6. Run request.
 7. Receive execution status updates.
 8. Review response, logs, and test results in result tabs.
@@ -42,9 +42,11 @@ User enters the `Workspace` section and chooses one of:
 
 ### 3.3 UX Notes
 - Saving should not be required before first run.
-- Execution status should be visible both locally in the tab and globally in the shell.
+- Execution status should be visible both locally in the working tab and globally in the shell.
 - After run completion, focus should move to the result panel while preserving editor context.
 - Redaction warnings should appear if logs/results hide secret material.
+- Closing a tab is not the same action as deleting the saved request represented in the persisted tree.
+- Explicit saved-request deletion should remove the tree leaf while leaving any open work as a detached draft until the user closes it.
 
 ## 4. Flow: Captured Inbound Request Inspection and Replay
 ### 4.1 Entry
@@ -172,3 +174,4 @@ User enters `History` from navigation, after execution completion, or via deep l
 2. Whether the `Scripts` section needs its own list/detail workspace in MVP or can remain request-context-first is **확실하지 않음**.
 3. Whether mock scenario state deserves a dedicated inspector panel is **확실하지 않음**.
 4. Whether first-use should auto-create default environments and starter scripts is **확실하지 않음**.
+

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useReducer, useState } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
+import { useShellStore } from '@client/app/providers/shell-store';
 import {
   createMockRule,
   deleteMockRule,
@@ -361,9 +362,53 @@ function MatcherEditor({
   );
 }
 
+function MocksExplorerSummaryCard({
+  title,
+  name,
+  ruleState,
+  methodSummary,
+  pathSummary,
+  responseSummary,
+  priorityLabel,
+  fixedDelayLabel,
+  t,
+}: {
+  title: string;
+  name: string;
+  ruleState: MockRuleStateLabel;
+  methodSummary: string;
+  pathSummary: string;
+  responseSummary: string;
+  priorityLabel: string;
+  fixedDelayLabel: string;
+  t: Translate;
+}) {
+  return (
+    <DetailViewerSection
+      title={title}
+      description={name}
+      className="observation-explorer-summary observation-explorer-summary--mocks"
+    >
+      <div className="request-work-surface__badges observation-explorer-summary__badges">
+        <StatusBadge kind="neutral" value={ruleState} />
+        <span className="workspace-chip">{priorityLabel}</span>
+      </div>
+      <KeyValueMetaList
+        items={[
+          { label: t('mocksRoute.sidebar.selectedSummary.labels.methodSummary'), value: methodSummary },
+          { label: t('mocksRoute.sidebar.selectedSummary.labels.pathSummary'), value: pathSummary },
+          { label: t('mocksRoute.sidebar.selectedSummary.labels.responseSummary'), value: responseSummary },
+          { label: t('mocksRoute.sidebar.selectedSummary.labels.fixedDelay'), value: fixedDelayLabel },
+        ]}
+      />
+    </DetailViewerSection>
+  );
+}
+
 export function MocksPlaceholder() {
   const queryClient = useQueryClient();
   const { t } = useI18n();
+  const setFloatingExplorerOpen = useShellStore((state) => state.setFloatingExplorerOpen);
   const mockDetailTabs = createMockDetailTabs(t);
   const methodModeOptions = createMethodModeOptions(t);
   const pathModeOptions = createPathModeOptions(t);
@@ -512,6 +557,10 @@ export function MocksPlaceholder() {
     isCreatingRule ? t('mocksRoute.helpers.sourceLabels.unsaved') : t('mocksRoute.helpers.sourceLabels.persisted'),
     t,
   );
+  const explorerSelectedRule = !isCreatingRule ? selectedRule : null;
+  const explorerSelectedPresentation = explorerSelectedRule
+    ? presentDraft(createDraft(explorerSelectedRule), t('mocksRoute.helpers.sourceLabels.persisted'), t)
+    : null;
   const currentError = mutationMessage([
     createRuleMutation.error as Error | null,
     updateRuleMutation.error as Error | null,
@@ -550,6 +599,16 @@ export function MocksPlaceholder() {
     deleteRuleMutation.mutate(selectedRule.id);
   };
 
+  const handleSelectRule = (ruleId: string) => {
+    selectRule(ruleId);
+    setFloatingExplorerOpen('mocks', false);
+  };
+
+  const handleStartCreatingRule = () => {
+    startCreatingRule();
+    setFloatingExplorerOpen('mocks', false);
+  };
+
   const handleCancelDraft = () => {
     if (listItems[0]) {
       selectRule(listItems[0].id);
@@ -563,6 +622,7 @@ export function MocksPlaceholder() {
     <RoutePanelTabsLayout
       layoutMode="floating-explorer"
       floatingExplorerRouteKey="mocks"
+      floatingExplorerVariant="focused-overlay"
       defaultActiveTab="explorer"
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
@@ -571,13 +631,9 @@ export function MocksPlaceholder() {
             <div>
               <p className="section-placeholder__eyebrow">{t('mocksRoute.sidebar.eyebrow')}</p>
               <h2>{t('mocksRoute.sidebar.title')}</h2>
-              <p>{t('mocksRoute.sidebar.description')}</p>
-              <div className="workspace-explorer__role-strip" aria-label="Mocks surface role">
-                <span className="workspace-chip">{t('roles.management')}</span>
-                <span className="workspace-chip workspace-chip--secondary">{t('mocksRoute.sidebar.resourceLaneChip')}</span>
-              </div>
+              <p className="observation-explorer__status-line">{t('mocksRoute.sidebar.description')}</p>
             </div>
-            <button type="button" className="workspace-button" onClick={() => startCreatingRule()}>
+            <button type="button" className="workspace-button workspace-button--secondary" onClick={handleStartCreatingRule}>
               <IconLabel icon="new">{t('mocksRoute.sidebar.newRule')}</IconLabel>
             </button>
           </header>
@@ -601,6 +657,32 @@ export function MocksPlaceholder() {
             </label>
           </div>
 
+          {isCreatingRule ? (
+            <MocksExplorerSummaryCard
+              title={t('mocksRoute.detail.header.createTitle')}
+              name={draft.name || t('mocksRoute.helpers.untitledRule')}
+              ruleState={currentPresentation.ruleState}
+              methodSummary={currentPresentation.methodSummary}
+              pathSummary={currentPresentation.pathSummary}
+              responseSummary={currentPresentation.responseSummary}
+              priorityLabel={t('mocksRoute.helpers.priorityChip', { priority: draft.priority })}
+              fixedDelayLabel={currentPresentation.fixedDelayLabel}
+              t={t}
+            />
+          ) : explorerSelectedPresentation && explorerSelectedRule ? (
+            <MocksExplorerSummaryCard
+              title={t('mocksRoute.sidebar.selectedSummary.title')}
+              name={explorerSelectedRule.name}
+              ruleState={explorerSelectedPresentation.ruleState}
+              methodSummary={explorerSelectedPresentation.methodSummary}
+              pathSummary={explorerSelectedPresentation.pathSummary}
+              responseSummary={explorerSelectedPresentation.responseSummary}
+              priorityLabel={t('mocksRoute.helpers.priorityChip', { priority: explorerSelectedRule.priority })}
+              fixedDelayLabel={explorerSelectedPresentation.fixedDelayLabel}
+              t={t}
+            />
+          ) : null}
+
           {isListLoading ? <EmptyStateCallout title={t('mocksRoute.empty.loadingList.title')} description={t('mocksRoute.empty.loadingList.description')} className="mocks-empty-state" /> : null}
           {listQuery.isError ? <EmptyStateCallout title={t('mocksRoute.empty.degraded.title')} description={t('mocksRoute.empty.degraded.description', { reason: degradedReason })} /> : null}
           {isEmpty ? <EmptyStateCallout title={t('mocksRoute.empty.noItems.title')} description={t('mocksRoute.empty.noItems.description')} className="mocks-empty-state" /> : null}
@@ -620,16 +702,15 @@ export function MocksPlaceholder() {
                       aria-label={t('mocksRoute.helpers.openRuleAction', { name: rule.name })}
                       aria-pressed={isSelected}
                       data-rule-state={rule.ruleState === 'Enabled' ? 'enabled' : 'disabled'}
-                      onClick={() => selectRule(rule.id)}
+                      onClick={() => handleSelectRule(rule.id)}
                     >
                       <span className="mocks-row__top">
                         <StatusBadge kind="neutral" value={rule.ruleState} />
                         <span className="workspace-chip">{t('mocksRoute.helpers.priorityChip', { priority: rule.priority })}</span>
-                        <span className="workspace-chip workspace-chip--secondary">{listPresentation.fixedDelayLabel}</span>
                       </span>
                       <span className="mocks-row__title">{rule.name}</span>
-                      <span className="mocks-row__summary">{listPresentation.matcherSummary}</span>
-                      <span className="mocks-row__meta">{listPresentation.responseSummary}</span>
+                      <span className="mocks-row__summary">{listPresentation.pathSummary}</span>
+                      <span className="mocks-row__meta">{listPresentation.responseSummary} · {listPresentation.fixedDelayLabel}</span>
                     </button>
                   </li>
                 );
@@ -670,20 +751,20 @@ export function MocksPlaceholder() {
           </div>
         ) : (
           <div className="mocks-detail">
-            <header className="mocks-detail__header">
+            <header className="mocks-detail__header observation-detail__header">
               <div>
                 <p className="section-placeholder__eyebrow">{isCreatingRule ? t('mocksRoute.detail.header.draftEyebrow') : t('mocksRoute.detail.header.persistedEyebrow')}</p>
                 <h2>{isCreatingRule ? t('mocksRoute.detail.header.createTitle') : t('mocksRoute.detail.header.editTitle')}</h2>
                 <p>{currentPresentation.matcherSummary}</p>
+                <p className="observation-detail__header-meta">{currentPresentation.fixedDelayLabel} · {currentPresentation.sourceLabel}</p>
                 <div className="workspace-explorer__role-strip" aria-label="Mock rule detail role">
                   <span className="workspace-chip">{t('roles.management')}</span>
                   <span className="workspace-chip workspace-chip--secondary">{t('mocksRoute.detail.header.authoredRuleChip')}</span>
                 </div>
               </div>
-              <div className="request-work-surface__badges">
+              <div className="request-work-surface__badges observation-detail__badge-rail">
                 <StatusBadge kind="neutral" value={currentPresentation.ruleState} />
                 <span className="workspace-chip">{t('mocksRoute.helpers.priorityChip', { priority: draft.priority })}</span>
-                <span className="workspace-chip">{currentPresentation.fixedDelayLabel}</span>
               </div>
             </header>
 

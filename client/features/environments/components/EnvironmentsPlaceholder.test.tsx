@@ -152,14 +152,14 @@ function createEnvironmentsFetch(initialEnvironments = defaultEnvironmentFixture
 
 describe('Environments MVP route', () => {
   it('renders persisted environments and keeps secret rows masked', async () => {
+    const user = userEvent.setup();
     vi.stubGlobal('fetch', createEnvironmentsFetch());
     renderApp(<AppRouter />, { initialEntries: ['/environments'] });
 
     expect(screen.getByRole('heading', { name: 'Environments' })).toBeInTheDocument();
     expect(screen.getByLabelText('Search environments')).toBeInTheDocument();
     expect(screen.getByLabelText('Sort environments')).toBeInTheDocument();
-    expect(await screen.findByRole('button', { name: 'Open environment Local API' })).toBeInTheDocument();
-    await userEvent.setup().click(screen.getByRole('tab', { name: 'Surface' }));
+    await user.click(await screen.findByRole('button', { name: 'Open environment Local API' }));
     expect(await screen.findByRole('button', { name: 'Save environment' })).toBeEnabled();
     expect(screen.getByText(/Persisted variables are managed here\./i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Where environment values resolve' })).toBeInTheDocument();
@@ -172,7 +172,7 @@ describe('Environments MVP route', () => {
 
 
 
-  it('shows selected environment content without extra panel tab clicks and supports explorer collapse', async () => {
+  it('auto-collapses the explorer after environment selection and shows the selected summary when reopened', async () => {
     const user = userEvent.setup();
     vi.stubGlobal('fetch', createEnvironmentsFetch());
     renderApp(<AppRouter />, { initialEntries: ['/environments'] });
@@ -184,12 +184,16 @@ describe('Environments MVP route', () => {
     expect(screen.getByRole('heading', { name: 'Edit environment' })).toBeInTheDocument();
     expect(screen.getByLabelText('Environment name')).toHaveValue('Local API');
     expect(within(detailPanel).getByText(/Current default intent/i)).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: 'Collapse explorer' }));
     expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
 
     await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
     expect(screen.getByLabelText('Section explorer')).toBeInTheDocument();
+    expect(within(explorer).getByRole('heading', { name: 'Current environment summary' })).toBeInTheDocument();
+    expect(within(explorer).getByText(/3 variables are managed here/i)).toBeInTheDocument();
+    expect(within(explorer).getByText('3 vars')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Collapse explorer' }));
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('creates, updates, and deletes a persisted environment', async () => {
@@ -198,10 +202,9 @@ describe('Environments MVP route', () => {
     renderApp(<AppRouter />, { initialEntries: ['/environments'] });
 
     await screen.findByRole('button', { name: 'Open environment Local API' });
-    await user.click(screen.getByRole('tab', { name: 'Surface' }));
-    await user.click(screen.getByRole('tab', { name: 'Explorer' }));
+    await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
     await user.click(screen.getByRole('button', { name: 'New environment' }));
-    await user.click(screen.getByRole('tab', { name: 'Surface' }));
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
 
     expect(screen.getByRole('heading', { name: 'Create environment' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create environment' })).toBeDisabled();
@@ -213,21 +216,20 @@ describe('Environments MVP route', () => {
     await user.click(screen.getByRole('button', { name: 'Create environment' }));
 
     expect(await screen.findByRole('heading', { name: 'Edit environment' })).toBeInTheDocument();
-    await user.click(screen.getByRole('tab', { name: 'Explorer' }));
+    await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Open environment Stage copy' })).toBeInTheDocument());
     expect(within(screen.getByLabelText('Environments list')).getAllByText('Default').length).toBeGreaterThan(0);
-    await user.click(screen.getByRole('tab', { name: 'Surface' }));
+    await user.click(screen.getByRole('button', { name: 'Open environment Stage copy' }));
 
     await user.clear(screen.getByLabelText('Environment name'));
     await user.type(screen.getByLabelText('Environment name'), 'Stage copy updated');
     await user.click(screen.getByRole('button', { name: 'Save environment' }));
-    await user.click(screen.getByRole('tab', { name: 'Explorer' }));
+    await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Open environment Stage copy updated' })).toBeInTheDocument());
 
     await user.click(screen.getByRole('button', { name: 'Open environment Stage copy updated' }));
-    await user.click(screen.getByRole('tab', { name: 'Surface' }));
     await user.click(screen.getByRole('button', { name: 'Delete environment' }));
-    await user.click(screen.getByRole('tab', { name: 'Explorer' }));
+    await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Open environment Stage copy updated' })).not.toBeInTheDocument());
   }, 30000);
   it('renders the environments route copy in Korean when the locale is switched', async () => {

@@ -1,4 +1,7 @@
-import type { WorkspaceSavedRequestSeed, WorkspaceExplorerNode } from '@client/features/workspace/data/workspace-explorer-fixtures';
+import type {
+  WorkspaceCollectionNode,
+  WorkspaceTreeRequestLeaf,
+} from '@client/features/workspace/workspace-request-tree.api';
 import type { AuthoredResourceBundleImportPreviewResult } from '@client/features/workspace/resource-bundle.api';
 import { useI18n } from '@client/app/providers/useI18n';
 import { IconLabel } from '@client/shared/ui/IconLabel';
@@ -11,11 +14,12 @@ interface WorkspaceImportPreview {
 }
 
 interface WorkspaceExplorerProps {
-  tree: WorkspaceExplorerNode[];
+  tree: WorkspaceCollectionNode[];
   selectedRequestId: string | null;
   onCreateRequest: () => void;
-  onOpenSavedRequest: (request: WorkspaceSavedRequestSeed) => void;
-  onExportRequest: (request: WorkspaceSavedRequestSeed) => void;
+  onOpenSavedRequest: (request: WorkspaceTreeRequestLeaf) => void | Promise<void>;
+  onDeleteRequest: (request: WorkspaceTreeRequestLeaf) => void;
+  onExportRequest: (request: WorkspaceTreeRequestLeaf) => void;
   onExportResources: () => void;
   onImportResources: (file: File) => void;
   importPreview: WorkspaceImportPreview | null;
@@ -27,14 +31,50 @@ interface WorkspaceExplorerProps {
   isExporting: boolean;
   isPreviewingImport: boolean;
   isImporting: boolean;
+  isDeletingRequest: boolean;
 }
 
 interface WorkspaceExplorerNodeListProps {
-  nodes: WorkspaceExplorerNode[];
-  depth: number;
+  nodes: WorkspaceCollectionNode[];
   selectedRequestId: string | null;
-  onOpenSavedRequest: (request: WorkspaceSavedRequestSeed) => void;
-  onExportRequest: (request: WorkspaceSavedRequestSeed) => void;
+  onOpenSavedRequest: (request: WorkspaceTreeRequestLeaf) => void | Promise<void>;
+  onDeleteRequest: (request: WorkspaceTreeRequestLeaf) => void;
+  onExportRequest: (request: WorkspaceTreeRequestLeaf) => void;
+}
+
+function findSelectedRequestPath(nodes: WorkspaceCollectionNode[], selectedRequestId: string | null) {
+  if (!selectedRequestId) {
+    return null;
+  }
+
+  for (const collection of nodes) {
+    for (const requestGroup of collection.children) {
+      for (const requestNode of requestGroup.children) {
+        if (requestNode.request.id === selectedRequestId) {
+          return {
+            collectionName: collection.name,
+            requestGroupName: requestGroup.name,
+            request: requestNode.request,
+          };
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+function getSelectionPathLabel(
+  tree: WorkspaceCollectionNode[],
+  selectedRequestId: string | null,
+) {
+  const selectedPath = findSelectedRequestPath(tree, selectedRequestId);
+
+  if (!selectedPath) {
+    return null;
+  }
+
+  return `${selectedPath.collectionName} / ${selectedPath.requestGroupName} / ${selectedPath.request.name}`;
 }
 
 export function WorkspaceExplorer({
@@ -42,6 +82,7 @@ export function WorkspaceExplorer({
   selectedRequestId,
   onCreateRequest,
   onOpenSavedRequest,
+  onDeleteRequest,
   onExportRequest,
   onExportResources,
   onImportResources,
@@ -54,18 +95,18 @@ export function WorkspaceExplorer({
   isExporting,
   isPreviewingImport,
   isImporting,
+  isDeletingRequest,
 }: WorkspaceExplorerProps) {
   const { t } = useI18n();
+  const selectionPathLabel = getSelectionPathLabel(tree, selectedRequestId);
 
   return (
     <div className="workspace-explorer">
-      <header className="workspace-explorer__header">
-        <p className="section-placeholder__eyebrow">{t('workspaceRoute.explorer.header.eyebrow')}</p>
-        <h2>{t('workspaceRoute.explorer.header.title')}</h2>
-        <p>{t('workspaceRoute.explorer.header.summary')}</p>
-        <div className="workspace-explorer__role-strip" aria-label="Explorer surface role">
-          <span className="workspace-chip">{t('workspaceRoute.explorer.header.authoringChip')}</span>
-          <span className="workspace-chip workspace-chip--secondary">{t('workspaceRoute.explorer.header.resourceLaneChip')}</span>
+      <header className="workspace-explorer__header workspace-explorer__header--stacked">
+        <div className="workspace-explorer__header-copy">
+          <p className="section-placeholder__eyebrow">{t('workspaceRoute.explorer.header.eyebrow')}</p>
+          <h2>{t('workspaceRoute.explorer.header.title')}</h2>
+          <p className="workspace-explorer__status-line">{t('workspaceRoute.explorer.header.summary')}</p>
         </div>
         <div className="workspace-explorer__header-actions">
           <button type="button" className="workspace-button" onClick={onCreateRequest}>
@@ -75,7 +116,7 @@ export function WorkspaceExplorer({
             type="button"
             className="workspace-button workspace-button--secondary"
             onClick={onExportResources}
-            disabled={isExporting || isPreviewingImport || isImporting}
+            disabled={isExporting || isPreviewingImport || isImporting || isDeletingRequest}
           >
             <IconLabel icon="export">
               {isExporting ? t('workspaceRoute.explorer.actions.exportingResources') : t('workspaceRoute.explorer.actions.exportResources')}
@@ -94,7 +135,7 @@ export function WorkspaceExplorer({
               className="workspace-explorer__file-input"
               type="file"
               accept="application/json,.json"
-              disabled={isPreviewingImport || isImporting}
+              disabled={isPreviewingImport || isImporting || isDeletingRequest}
               onChange={(event) => {
                 const file = event.currentTarget.files?.[0];
                 if (!file) {
@@ -107,57 +148,62 @@ export function WorkspaceExplorer({
             />
           </label>
         </div>
-        <p className="shared-readiness-note">
-          {t('workspaceRoute.explorer.notes.boundary')}
+        <p className="workspace-explorer__selection-line">
+          {selectionPathLabel
+            ? t('workspaceRoute.explorer.selection.current', { path: selectionPathLabel })
+            : t('workspaceRoute.explorer.selection.none')}
         </p>
-        {transferStatusMessage ? (
-          <div
-            className={`workspace-explorer__status workspace-explorer__status--${transferStatusTone}`}
-            role={transferStatusTone === 'error' ? 'alert' : 'status'}
-          >
-            <p>{transferStatusMessage}</p>
-            {transferStatusDetails.length > 0 ? (
-              <ul className="workspace-explorer__status-details">
-                {transferStatusDetails.map((detail) => (
-                  <li key={detail}>{detail}</li>
-                ))}
-              </ul>
-            ) : null}
-            {importPreview ? (
-              <>
-                <p className="workspace-explorer__preview-note">
-                  {t('workspaceRoute.explorer.notes.previewAdvisory', { fileName: importPreview.fileName })}
-                </p>
-                <div className="workspace-explorer__preview-actions">
-                  <button
-                    type="button"
-                    className="workspace-button"
-                    onClick={onConfirmImportPreview}
-                    disabled={isImporting || importPreview.result.summary.acceptedCount === 0}
-                  >
-                    <IconLabel icon="import">
-                      {isImporting ? t('workspaceRoute.explorer.actions.importingResources') : t('workspaceRoute.explorer.actions.confirmImport')}
-                    </IconLabel>
-                  </button>
-                  <button
-                    type="button"
-                    className="workspace-button workspace-button--secondary"
-                    onClick={onCancelImportPreview}
-                    disabled={isImporting}
-                  >
-                    <IconLabel icon="delete">{t('workspaceRoute.explorer.actions.cancelPreview')}</IconLabel>
-                  </button>
-                </div>
-              </>
-            ) : null}
-          </div>
-        ) : null}
       </header>
+      <p className="shared-readiness-note workspace-explorer__boundary-note">
+        {t('workspaceRoute.explorer.notes.boundary')}
+      </p>
+      {transferStatusMessage ? (
+        <div
+          className={`workspace-explorer__status workspace-explorer__status--${transferStatusTone}`}
+          role={transferStatusTone === 'error' ? 'alert' : 'status'}
+        >
+          <p>{transferStatusMessage}</p>
+          {transferStatusDetails.length > 0 ? (
+            <ul className="workspace-explorer__status-details">
+              {transferStatusDetails.map((detail) => (
+                <li key={detail}>{detail}</li>
+              ))}
+            </ul>
+          ) : null}
+          {importPreview ? (
+            <>
+              <p className="workspace-explorer__preview-note">
+                {t('workspaceRoute.explorer.notes.previewAdvisory', { fileName: importPreview.fileName })}
+              </p>
+              <div className="workspace-explorer__preview-actions">
+                <button
+                  type="button"
+                  className="workspace-button"
+                  onClick={onConfirmImportPreview}
+                  disabled={isImporting || importPreview.result.summary.acceptedCount === 0}
+                >
+                  <IconLabel icon="import">
+                    {isImporting ? t('workspaceRoute.explorer.actions.importingResources') : t('workspaceRoute.explorer.actions.confirmImport')}
+                  </IconLabel>
+                </button>
+                <button
+                  type="button"
+                  className="workspace-button workspace-button--secondary"
+                  onClick={onCancelImportPreview}
+                  disabled={isImporting}
+                >
+                  <IconLabel icon="delete">{t('workspaceRoute.explorer.actions.cancelPreview')}</IconLabel>
+                </button>
+              </div>
+            </>
+          ) : null}
+        </div>
+      ) : null}
       <WorkspaceExplorerNodeList
         nodes={tree}
-        depth={0}
         selectedRequestId={selectedRequestId}
         onOpenSavedRequest={onOpenSavedRequest}
+        onDeleteRequest={onDeleteRequest}
         onExportRequest={onExportRequest}
       />
     </div>
@@ -166,88 +212,82 @@ export function WorkspaceExplorer({
 
 function WorkspaceExplorerNodeList({
   nodes,
-  depth,
   selectedRequestId,
   onOpenSavedRequest,
+  onDeleteRequest,
   onExportRequest,
 }: WorkspaceExplorerNodeListProps) {
   const { t } = useI18n();
 
   return (
-    <ul className="workspace-explorer__tree" data-depth={depth}>
-      {nodes.map((node) => {
-        if (node.kind === 'request') {
-          const isSelected = selectedRequestId === node.request.id;
+    <ul className="workspace-explorer__tree" data-depth={0}>
+      {nodes.map((collection) => (
+        <li key={collection.id}>
+          <div className="workspace-tree-node" data-kind="collection">
+            <span className="workspace-tree-node__kind">{t('workspaceRoute.explorer.tree.kindCollection')}</span>
+            <span className="workspace-tree-node__label">{collection.name}</span>
+          </div>
+          <ul className="workspace-explorer__tree" data-depth={1}>
+            {collection.children.map((requestGroup) => (
+              <li key={requestGroup.id}>
+                <div className="workspace-tree-node" data-kind="request-group">
+                  <span className="workspace-tree-node__kind">{t('workspaceRoute.explorer.tree.kindRequestGroup')}</span>
+                  <span className="workspace-tree-node__label">{requestGroup.name}</span>
+                </div>
+                <ul className="workspace-explorer__tree" data-depth={2}>
+                  {requestGroup.children.map((requestNode) => {
+                    const isSelected = selectedRequestId === requestNode.request.id;
 
-          return (
-            <li key={node.id}>
-              <div className="workspace-request-row">
-                <button
-                  type="button"
-                  className={isSelected ? 'workspace-request workspace-request--selected' : 'workspace-request'}
-                  aria-label={t('workspaceRoute.explorer.actions.openRequest', { name: node.request.name })}
-                  aria-pressed={isSelected}
-                  data-kind={node.kind}
-                  data-resource-kind={node.request.resourceKind}
-                  onClick={() => onOpenSavedRequest(node.request)}
-                >
-                  <span className="workspace-request__header">
-                    <span className="workspace-request__title">{node.request.name}</span>
-                    <span className="workspace-request__badges">
-                      <span className="workspace-chip">{node.request.methodLabel}</span>
-                      <span
-                        className={
-                          node.request.resourceKind === 'persisted'
-                            ? 'workspace-chip workspace-chip--secondary'
-                            : 'workspace-chip workspace-chip--accent'
-                        }
-                      >
-                        {node.request.resourceKind === 'persisted'
-                          ? t('workspaceRoute.explorer.tree.savedChip')
-                          : t('workspaceRoute.explorer.tree.starterChip')}
-                      </span>
-                    </span>
-                  </span>
-                  <span className="workspace-request__meta">
-                    {node.request.summary}
-                  </span>
-                </button>
-                {node.request.resourceKind === 'persisted' ? (
-                  <button
-                    type="button"
-                    className="workspace-button workspace-button--ghost workspace-request-row__export"
-                    aria-label={t('workspaceRoute.explorer.actions.exportRequest', { name: node.request.name })}
-                    onClick={() => onExportRequest(node.request)}
-                  >
-                    <IconLabel icon="export">{t('workspaceRoute.explorer.actions.exportSingle')}</IconLabel>
-                  </button>
-                ) : null}
-              </div>
-            </li>
-          );
-        }
-
-        return (
-          <li key={node.id}>
-            <div className="workspace-tree-node" data-kind={node.kind}>
-              <span className="workspace-tree-node__kind">
-                {node.kind === 'collection'
-                  ? t('workspaceRoute.explorer.tree.kindCollection')
-                  : t('workspaceRoute.explorer.tree.kindFolder')}
-              </span>
-              <span className="workspace-tree-node__label">{node.name}</span>
-            </div>
-            <WorkspaceExplorerNodeList
-              nodes={node.children}
-              depth={depth + 1}
-              selectedRequestId={selectedRequestId}
-              onOpenSavedRequest={onOpenSavedRequest}
-              onExportRequest={onExportRequest}
-            />
-          </li>
-        );
-      })}
+                    return (
+                      <li key={requestNode.id}>
+                        <div className="workspace-request-row">
+                          <button
+                            type="button"
+                            className={isSelected ? 'workspace-request workspace-request--selected' : 'workspace-request'}
+                            aria-label={t('workspaceRoute.explorer.actions.openRequest', { name: requestNode.request.name })}
+                            aria-pressed={isSelected}
+                            data-kind={requestNode.kind}
+                            onClick={() => onOpenSavedRequest(requestNode.request)}
+                          >
+                            <span className="workspace-request__header">
+                              <span className="workspace-request__title">{requestNode.request.name}</span>
+                              <span className="workspace-request__badges">
+                                <span className="workspace-chip">{requestNode.request.methodLabel}</span>
+                              </span>
+                            </span>
+                            <span className="workspace-request__path">
+                              {collection.name} / {requestGroup.name}
+                            </span>
+                            <span className="workspace-request__meta workspace-request__meta--support">{requestNode.request.summary}</span>
+                          </button>
+                          <div className="workspace-request-row__actions">
+                            <button
+                              type="button"
+                              className="workspace-button workspace-button--ghost workspace-request-row__export"
+                              aria-label={t('workspaceRoute.explorer.actions.exportRequest', { name: requestNode.request.name })}
+                              onClick={() => onExportRequest(requestNode.request)}
+                            >
+                              <IconLabel icon="export">{t('workspaceRoute.explorer.actions.exportSingle')}</IconLabel>
+                            </button>
+                            <button
+                              type="button"
+                              className="workspace-button workspace-button--ghost workspace-request-row__delete"
+                              aria-label={t('workspaceRoute.explorer.actions.deleteRequest', { name: requestNode.request.name })}
+                              onClick={() => onDeleteRequest(requestNode.request)}
+                            >
+                              <IconLabel icon="delete">{t('workspaceRoute.explorer.actions.deleteRequestShort')}</IconLabel>
+                            </button>
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        </li>
+      ))}
     </ul>
   );
 }
-

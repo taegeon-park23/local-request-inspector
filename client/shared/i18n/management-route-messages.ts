@@ -10,6 +10,17 @@ export const managementRouteMessagesEn = {
       listAriaLabel: 'Environments list',
       openEnvironmentAction: 'Open environment {name}',
     },
+    selectedSummary: {
+      title: 'Current environment summary',
+      labels: {
+        default: 'Default',
+        variableCount: 'Variable count',
+        enabledVariables: 'Enabled variables',
+        secretVariables: 'Secret variables',
+        updatedAt: 'Updated at',
+        resolutionSummary: 'Resolution summary',
+      },
+    },
     sortOptions: {
       default: 'Default first',
       name: 'Name',
@@ -211,6 +222,15 @@ export const managementRouteMessagesEn = {
       listAriaLabel: 'Scripts list',
       openScriptAction: 'Open script {name}',
     },
+    selectedSummary: {
+      title: 'Current script summary',
+      labels: {
+        templateSource: 'Template source',
+        updatedAt: 'Updated at',
+        capabilitySummary: 'Capability summary',
+        sourcePreview: 'Source preview',
+      },
+    },
     stageFilterOptions: {
       all: 'All stages',
       preRequest: 'Pre-request',
@@ -347,6 +367,17 @@ export const managementRouteMessagesKo: RouteCatalogShape<typeof managementRoute
       sortLabel: '환경 정렬',
       listAriaLabel: '환경 목록',
       openEnvironmentAction: '환경 열기 {name}',
+    },
+    selectedSummary: {
+      title: '현재 환경 요약',
+      labels: {
+        default: '기본 여부',
+        variableCount: '변수 수',
+        enabledVariables: '활성 변수',
+        secretVariables: 'secret 변수',
+        updatedAt: '수정 시각',
+        resolutionSummary: '해상도 요약',
+      },
     },
     sortOptions: {
       default: '기본 우선',
@@ -548,6 +579,15 @@ export const managementRouteMessagesKo: RouteCatalogShape<typeof managementRoute
       stageFilterLabel: '단계 필터',
       listAriaLabel: '스크립트 목록',
       openScriptAction: '스크립트 열기 {name}',
+    },
+    selectedSummary: {
+      title: '현재 스크립트 요약',
+      labels: {
+        templateSource: '템플릿 출처',
+        updatedAt: '수정 시각',
+        capabilitySummary: 'Capability 요약',
+        sourcePreview: '소스 미리보기',
+      },
     },
     stageFilterOptions: {
       all: '모든 단계',
