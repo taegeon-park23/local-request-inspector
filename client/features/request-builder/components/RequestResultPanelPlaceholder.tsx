@@ -1,7 +1,12 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
+import type { RequestRunObservation } from '@client/features/request-builder/request-builder.api';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
-import { useRequestCommandStore } from '@client/features/request-builder/state/request-command-store';
+import {
+  useRequestCommandStore,
+  type RequestResultPanelTabId,
+} from '@client/features/request-builder/state/request-command-store';
+import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
 import { DetailViewerSection } from '@client/shared/ui/DetailViewerSection';
 import { EmptyStateCallout } from '@client/shared/ui/EmptyStateCallout';
 import { KeyValueMetaList } from '@client/shared/ui/KeyValueMetaList';
@@ -9,7 +14,6 @@ import { PanelTabs } from '@client/shared/ui/PanelTabs';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
 
 type TranslateFn = ReturnType<typeof useI18n>['t'];
-type ResultPanelTabId = 'response' | 'console' | 'tests' | 'execution-info';
 
 interface RequestResultPanelPlaceholderProps {
   activeTab: RequestTabRecord | null;
@@ -24,7 +28,7 @@ function getResultPanelTabs(t: TranslateFn) {
   ] as const;
 }
 
-function getResultPanelIcon(tabId: ResultPanelTabId) {
+function getResultPanelIcon(tabId: RequestResultPanelTabId) {
   switch (tabId) {
     case 'response':
       return 'response' as const;
@@ -134,22 +138,71 @@ function renderHeaderExecutionStatus(
   return <StatusBadge kind="neutral" value={t('workspaceRoute.resultPanel.summary.badges.noExecutionYet')} />;
 }
 
+function createLatestResultBadges(execution: RequestRunObservation | null, t: TranslateFn) {
+  if (!execution) {
+    return [];
+  }
+
+  const badges = [
+    <StatusBadge key="outcome" kind="executionOutcome" value={execution.executionOutcome} />,
+  ];
+
+  if (execution.testEntries.length > 0) {
+    badges.push(
+      <StatusBadge
+        key="tests"
+        kind="testSummary"
+        value={t('workspaceRoute.resultPanel.summary.badges.testsReady', { count: execution.testEntries.length })}
+      />,
+    );
+  }
+
+  if (execution.consoleEntries.length > 0) {
+    badges.push(
+      <StatusBadge
+        key="console"
+        kind="neutral"
+        value={t('workspaceRoute.resultPanel.summary.badges.consoleReady', { count: execution.consoleEntries.length })}
+      />,
+    );
+  }
+
+  if (execution.responseStatus !== null) {
+    badges.push(<StatusBadge key="transport" kind="transportOutcome" value={getTransportOutcomeLabel(execution.responseStatus)} />);
+  }
+
+  return badges;
+}
+
+function createPreviewItems(items: string[], emptyMessage: string, limit = 3) {
+  return items.length > 0 ? items.slice(0, limit) : [emptyMessage];
+}
+
 export function RequestResultPanelPlaceholder({
   activeTab,
 }: RequestResultPanelPlaceholderProps) {
   const { t } = useI18n();
-  const [activeResultTab, setActiveResultTab] = useState<ResultPanelTabId>('response');
   const resultPanelTabs = getResultPanelTabs(t);
   const commandEntry = useRequestCommandStore((state) =>
     activeTab ? state.byTabId[activeTab.id] : undefined,
   );
+  const setActiveResultTab = useRequestCommandStore((state) => state.setActiveResultTab);
+  const setActiveRoutePanel = useWorkspaceShellStore((state) => state.setActiveRoutePanel);
   const runStatus = commandEntry?.run ?? {
     status: 'idle' as const,
     message: null,
     latestExecution: null,
+    activeResultTab: 'response' as const,
   };
   const execution = runStatus.latestExecution;
   const executionStageSummaries = execution?.stageSummaries ?? [];
+  const activeResultTab = runStatus.activeResultTab;
+
+  useEffect(() => {
+    if (runStatus.status === 'success' || runStatus.status === 'error') {
+      setActiveRoutePanel('detail');
+    }
+  }, [runStatus.status, setActiveRoutePanel]);
 
   if (!activeTab) {
     return (
@@ -164,6 +217,15 @@ export function RequestResultPanelPlaceholder({
 
   const activeResultTabLabel = resultPanelTabs.find((tab) => tab.id === activeResultTab)?.label
     ?? t('workspaceRoute.resultPanel.tabs.response');
+  const latestResultBadges = createLatestResultBadges(execution, t);
+  const consolePreviewItems = createPreviewItems(
+    execution?.consoleEntries ?? [],
+    execution?.consoleSummary ?? t('workspaceRoute.resultPanel.summary.preview.consoleEmpty'),
+  );
+  const testPreviewItems = createPreviewItems(
+    execution?.testEntries ?? [],
+    execution?.testsSummary ?? t('workspaceRoute.resultPanel.summary.preview.testsEmpty'),
+  );
 
   return (
     <div className="workspace-detail-panel">
@@ -179,6 +241,11 @@ export function RequestResultPanelPlaceholder({
             <span className="workspace-chip workspace-chip--secondary">{activeResultTabLabel}</span>
             {renderHeaderExecutionStatus(t, runStatus, execution)}
           </div>
+          {latestResultBadges.length > 0 ? (
+            <div className="workspace-detail-panel__header-meta request-work-surface__badges" aria-label={t('workspaceRoute.resultPanel.summary.badges.latestAriaLabel')}>
+              {latestResultBadges}
+            </div>
+          ) : null}
         </div>
       </header>
 
@@ -186,7 +253,7 @@ export function RequestResultPanelPlaceholder({
         ariaLabel={t('workspaceRoute.resultPanel.tabs.ariaLabel')}
         tabs={resultPanelTabs}
         activeTab={activeResultTab}
-        onChange={setActiveResultTab}
+        onChange={(tabId) => setActiveResultTab(activeTab.id, tabId)}
       />
 
       <DetailViewerSection
@@ -211,6 +278,38 @@ export function RequestResultPanelPlaceholder({
             },
           ]}
         />
+        {execution ? (
+          <div className="workspace-detail-panel__result-stack">
+            <div className="workspace-detail-panel__result-summary">
+              <DetailViewerSection
+                icon="tests"
+                title={t('workspaceRoute.resultPanel.summary.preview.testsTitle')}
+                description={t('workspaceRoute.resultPanel.summary.preview.testsDescription')}
+                tone="muted"
+              >
+                <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.summary.preview.testsAriaLabel')}>
+                  {testPreviewItems.map((entry, index) => (
+                    <li key={`tests-preview-${index}`}>{entry}</li>
+                  ))}
+                </ul>
+              </DetailViewerSection>
+            </div>
+            <div className="workspace-detail-panel__result-support">
+              <DetailViewerSection
+                icon="console"
+                title={t('workspaceRoute.resultPanel.summary.preview.consoleTitle')}
+                description={t('workspaceRoute.resultPanel.summary.preview.consoleDescription')}
+                tone="muted"
+              >
+                <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.summary.preview.consoleAriaLabel')}>
+                  {consolePreviewItems.map((entry, index) => (
+                    <li key={`console-preview-${index}`}>{entry}</li>
+                  ))}
+                </ul>
+              </DetailViewerSection>
+            </div>
+          </div>
+        ) : null}
       </DetailViewerSection>
 
       {activeResultTab === 'response' ? (
@@ -244,6 +343,20 @@ export function RequestResultPanelPlaceholder({
                 />
               </div>
               <div className="workspace-detail-panel__result-support">
+                {execution.consoleEntries.length > 0 ? (
+                  <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.summary.preview.consoleAriaLabel')}>
+                    {consolePreviewItems.map((entry, index) => (
+                      <li key={`response-console-${index}`}>{entry}</li>
+                    ))}
+                  </ul>
+                ) : null}
+                {execution.testEntries.length > 0 ? (
+                  <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.summary.preview.testsAriaLabel')}>
+                    {testPreviewItems.map((entry, index) => (
+                      <li key={`response-tests-${index}`}>{entry}</li>
+                    ))}
+                  </ul>
+                ) : null}
                 <p className="shared-readiness-note">{execution.responsePreviewPolicy ?? t('workspaceRoute.resultPanel.response.values.previewSupportFallback')}</p>
                 <pre className="history-preview-block" data-testid="request-response-preview">{execution.responseBodyPreview || t('workspaceRoute.resultPanel.response.values.noBodyPreview')}</pre>
               </div>

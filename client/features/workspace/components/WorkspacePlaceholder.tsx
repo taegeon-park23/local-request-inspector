@@ -201,9 +201,11 @@ export function WorkspacePlaceholder() {
   const tabs = useWorkspaceShellStore((state) => state.tabs);
   const activeTabId = useWorkspaceShellStore((state) => state.activeTabId);
   const selectedExplorerItemId = useWorkspaceShellStore((state) => state.selectedExplorerItemId);
+  const activeRoutePanel = useWorkspaceShellStore((state) => state.activeRoutePanel);
   const openNewRequest = useWorkspaceShellStore((state) => state.openNewRequest);
   const openSavedRequest = useWorkspaceShellStore((state) => state.openSavedRequest);
   const setActiveTab = useWorkspaceShellStore((state) => state.setActiveTab);
+  const setActiveRoutePanel = useWorkspaceShellStore((state) => state.setActiveRoutePanel);
   const closeTab = useWorkspaceShellStore((state) => state.closeTab);
   const draftsByTabId = useRequestDraftStore((state) => state.draftsByTabId);
   const ensureDraftForTab = useRequestDraftStore((state) => state.ensureDraftForTab);
@@ -440,6 +442,8 @@ export function WorkspacePlaceholder() {
   return (
     <RoutePanelTabsLayout
       defaultActiveTab="main"
+      activeTab={activeRoutePanel}
+      onChange={setActiveRoutePanel}
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
         <WorkspaceExplorer

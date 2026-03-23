@@ -10,6 +10,8 @@ interface RoutePanelTabsLayoutProps {
   main: ReactNode;
   detail: ReactNode;
   defaultActiveTab?: RoutePanelTabId;
+  activeTab?: RoutePanelTabId;
+  onChange?: (tabId: RoutePanelTabId) => void;
 }
 
 interface SectionPlaceholderProps {
@@ -31,9 +33,20 @@ export function RoutePanelTabsLayout({
   main,
   detail,
   defaultActiveTab = 'main',
+  activeTab: controlledActiveTab,
+  onChange,
 }: RoutePanelTabsLayoutProps) {
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = useState<RoutePanelTabId>(defaultActiveTab);
+  const [uncontrolledActiveTab, setUncontrolledActiveTab] = useState<RoutePanelTabId>(defaultActiveTab);
+  const activeTab = controlledActiveTab ?? uncontrolledActiveTab;
+
+  const handleChange = (tabId: RoutePanelTabId) => {
+    if (controlledActiveTab === undefined) {
+      setUncontrolledActiveTab(tabId);
+    }
+
+    onChange?.(tabId);
+  };
 
   const tabs: PanelTabOption<RoutePanelTabId>[] = [
     { id: 'explorer', label: t('shell.routePanels.explorer'), icon: routePanelTabIcons.explorer },
@@ -47,7 +60,7 @@ export function RoutePanelTabsLayout({
         ariaLabel={t('shell.routePanels.tabList')}
         tabs={tabs}
         activeTab={activeTab}
-        onChange={setActiveTab}
+        onChange={handleChange}
       />
       <div className="shell-route-panels__body">
         <div
