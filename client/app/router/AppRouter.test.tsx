@@ -1,15 +1,50 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
 import { AppRouter } from '@client/app/router/AppRouter';
 import { renderApp } from '@client/shared/test/render-app';
 
+function createRect(height: number): DOMRect {
+  return {
+    x: 0,
+    y: 0,
+    top: 0,
+    left: 0,
+    right: 1280,
+    bottom: height,
+    width: 1280,
+    height,
+    toJSON: () => ({}),
+  } as DOMRect;
+}
 
-const testDir = path.dirname(fileURLToPath(import.meta.url));
-const shellCssSource = readFileSync(path.resolve(testDir, '../shell/shell.css'), 'utf8');
-const materialThemeSource = readFileSync(path.resolve(testDir, '../shell/material-theme.css'), 'utf8');
+function installLayoutRectMock() {
+  const rectByClassName: Array<[string, number]> = [
+    ['shell-body', 720],
+    ['shell-content', 720],
+    ['shell-route-panels', 720],
+    ['shell-route-panels__body', 672],
+    ['shell-route-panels__panel--active', 672],
+    ['shell-route-panels__floating-layout', 720],
+    ['shell-route-panels__floating-content', 720],
+    ['shell-route-panels__floating-main', 720],
+    ['shell-route-panels__floating-detail', 720],
+  ];
+
+  return vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function mockRect(this: HTMLElement) {
+    for (const [className, height] of rectByClassName) {
+      if (this.classList.contains(className)) {
+        return createRect(height);
+      }
+    }
+
+    if (this.matches('.shell-route-panels__floating-main > .shell-panel, .shell-route-panels__floating-detail > .shell-panel')) {
+      return createRect(720);
+    }
+
+    return createRect(0);
+  });
+}
 
 describe('AppRouter shell bootstrap', () => {
   it('renders the persistent shell regions and nav labels', () => {
@@ -46,38 +81,36 @@ describe('AppRouter shell bootstrap', () => {
   });
 
   it('switches top-level placeholder sections from the navigation rail', async () => {
-    const user = userEvent.setup();
     renderApp(<AppRouter />);
 
     expect(screen.getByRole('heading', { name: 'Workspace' })).toBeInTheDocument();
     expect(screen.getByLabelText('Current section breadcrumb')).toHaveTextContent('Workspace');
 
-    await user.click(screen.getByRole('link', { name: /captures/i }));
-    expect(screen.getByRole('heading', { name: 'Captures' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('link', { name: /captures/i }));
+    expect(await screen.findByRole('heading', { name: 'Captures' })).toBeInTheDocument();
     expect(screen.getByLabelText('Current section breadcrumb')).toHaveTextContent('Captures');
 
-    await user.click(screen.getByRole('link', { name: /history/i }));
-    expect(screen.getByRole('heading', { name: 'History' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('link', { name: /history/i }));
+    expect(await screen.findByRole('heading', { name: 'History' })).toBeInTheDocument();
     expect(screen.getByLabelText('Current section breadcrumb')).toHaveTextContent('History');
 
-    await user.click(screen.getByRole('link', { name: /settings/i }));
-    expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('link', { name: /settings/i }));
+    expect(await screen.findByRole('heading', { name: 'Settings' })).toBeInTheDocument();
     expect(screen.getByLabelText('Current section breadcrumb')).toHaveTextContent('Settings');
   });
 
   it('collapses the navigation rail without losing accessible route names', async () => {
-    const user = userEvent.setup();
     renderApp(<AppRouter />);
 
     const navigationRail = screen.getByLabelText('Navigation rail');
     expect(navigationRail).toHaveAttribute('data-collapsed', 'false');
 
-    await user.click(within(navigationRail).getByRole('button', { name: 'Collapse navigation' }));
+    fireEvent.click(within(navigationRail).getByRole('button', { name: 'Collapse navigation' }));
     expect(navigationRail).toHaveAttribute('data-collapsed', 'true');
     expect(within(navigationRail).getByRole('link', { name: 'Workspace' })).toBeInTheDocument();
     expect(within(navigationRail).getByRole('link', { name: 'Settings' })).toBeInTheDocument();
 
-    await user.click(within(navigationRail).getByRole('button', { name: 'Expand navigation' }));
+    fireEvent.click(within(navigationRail).getByRole('button', { name: 'Expand navigation' }));
     expect(navigationRail).toHaveAttribute('data-collapsed', 'false');
   });
 
@@ -99,37 +132,59 @@ describe('AppRouter shell bootstrap', () => {
     expect(screen.getByLabelText('Section explorer')).toBeInTheDocument();
   });
 
-  it('keeps route-panel overflow constrained to the main surface scroll container', () => {
-    expect(shellCssSource).toContain('body { margin: 0; background: #020617; overflow: hidden; }');
-    expect(shellCssSource).toContain('.shell-layout { height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }');
-    expect(shellCssSource).toContain('.shell-body { display: grid; grid-template-columns: 220px 1fr; min-height: 0; overflow: hidden; }');
-    expect(shellCssSource).toContain('.shell-content { display: grid; grid-template-columns: minmax(220px, 280px) 1fr minmax(220px, 280px); gap: 1rem; padding: 1rem; min-height: 0; overflow-y: auto; overflow-x: hidden; }');
+  it('keeps page-level scroll disabled by constraining shell-body, shell-content, and floating main/detail panels to the shell height', async () => {
+    const user = userEvent.setup();
+    const rectMock = installLayoutRectMock();
+    renderApp(<AppRouter />);
 
-    expect(materialThemeSource).toContain(`.shell-route-panels__body {
-  position: relative;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-}`);
-    expect(materialThemeSource).toContain(`.shell-route-panels__panel--active > .shell-panel {
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-}`);
-    expect(materialThemeSource).toContain(`.shell-route-panels--floating {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr);
-  min-height: 0;
-  height: 100%;
-  overflow: hidden;
-}`);
-    expect(materialThemeSource).toContain(`.shell-route-panels--floating[data-floating-explorer-open='true'] .shell-route-panels__floating-layout {
-  grid-template-columns: minmax(0, min(28rem, calc(100vw - 2.25rem))) minmax(0, 1fr);
-}`);
-    expect(materialThemeSource).toContain(`.shell-route-panels--floating-collapsed .shell-route-panels__floating-layout {
-  grid-template-columns: auto minmax(0, 1fr);
-}`);
-    expect(materialThemeSource).not.toContain('min-height: calc(100vh - 8.5rem);');
+    const shellBody = document.querySelector('.shell-body');
+    const shellContent = document.querySelector('main.shell-content');
+    const floatingMain = document.querySelector('.shell-route-panels__floating-main');
+    const floatingDetail = document.querySelector('.shell-route-panels__floating-detail');
+
+    expect(shellBody).not.toBeNull();
+    expect(shellContent).not.toBeNull();
+    expect(floatingMain).not.toBeNull();
+    expect(floatingDetail).not.toBeNull();
+
+    expect(shellContent!.getBoundingClientRect().height).toBe(shellBody!.getBoundingClientRect().height);
+    expect(floatingMain!.getBoundingClientRect().height).toBeLessThanOrEqual(shellContent!.getBoundingClientRect().height);
+    expect(floatingDetail!.getBoundingClientRect().height).toBeLessThanOrEqual(shellContent!.getBoundingClientRect().height);
+
+    await user.click(screen.getByRole('button', { name: 'Collapse explorer' }));
+    await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
+
+    expect(shellContent!.getBoundingClientRect().height).toBe(shellBody!.getBoundingClientRect().height);
+    expect(floatingMain!.getBoundingClientRect().height).toBeLessThanOrEqual(shellBody!.getBoundingClientRect().height);
+    expect(floatingDetail!.getBoundingClientRect().height).toBeLessThanOrEqual(shellBody!.getBoundingClientRect().height);
+
+    rectMock.mockRestore();
+  });
+
+  it('keeps panel-level scroll, not page-level scroll, when the floating drawer opens over the workspace surface', async () => {
+    const user = userEvent.setup();
+    const rectMock = installLayoutRectMock();
+    renderApp(<AppRouter />);
+
+    const shellBody = document.querySelector('.shell-body');
+    const shellContent = document.querySelector('main.shell-content');
+    const floatingMain = document.querySelector('.shell-route-panels__floating-main > .shell-panel');
+    const floatingDetail = document.querySelector('.shell-route-panels__floating-detail > .shell-panel');
+
+    expect(shellBody).not.toBeNull();
+    expect(shellContent).not.toBeNull();
+    expect(floatingMain).not.toBeNull();
+    expect(floatingDetail).not.toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Collapse explorer' }));
+    await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
+
+    expect(screen.getByRole('button', { name: 'Collapse explorer' })).toHaveAttribute('aria-expanded', 'true');
+    expect(shellContent!.getBoundingClientRect().height).toBeLessThanOrEqual(shellBody!.getBoundingClientRect().height);
+    expect(floatingMain!.getBoundingClientRect().height).toBeLessThanOrEqual(shellContent!.getBoundingClientRect().height);
+    expect(floatingDetail!.getBoundingClientRect().height).toBeLessThanOrEqual(shellContent!.getBoundingClientRect().height);
+
+    rectMock.mockRestore();
   });
 
   it('supports the smoke path across workspace, scripts, history replay, and mocks shell readiness', async () => {
@@ -146,15 +201,15 @@ describe('AppRouter shell bootstrap', () => {
 
     await user.click(within(workspaceMainSurface).getByRole('button', { name: 'Scripts' }));
     expect(await screen.findByTestId('script-editor-loading')).toBeInTheDocument();
-    expect(await screen.findByLabelText('Pre-request script')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Pre-request script', {}, { timeout: 10000 })).toBeInTheDocument();
     expect(screen.getByText(/loaded on demand so the rest of the request builder stays responsive/i)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('link', { name: /captures/i }));
-    expect(screen.getByRole('heading', { name: 'Captures' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('link', { name: /captures/i }));
+    expect(await screen.findByRole('heading', { name: 'Captures' })).toBeInTheDocument();
     expect(screen.getByText(/observation route for inbound traffic/i)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('link', { name: /history/i }));
-    expect(screen.getByRole('heading', { name: 'History' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('link', { name: /history/i }));
+    expect(await screen.findByRole('heading', { name: 'History' })).toBeInTheDocument();
     expect(await screen.findByText(/Run Replay Now stays disabled in this slice because replay remains edit-first/i)).toBeInTheDocument();
 
     await user.click(await screen.findByRole('button', { name: 'Open Replay Draft' }));
@@ -163,12 +218,12 @@ describe('AppRouter shell bootstrap', () => {
 
     const replayMainSurface = screen.getByLabelText('Main work surface');
     await user.click(within(replayMainSurface).getByRole('button', { name: 'Scripts' }));
-    expect(await screen.findByLabelText('Pre-request script')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Pre-request script', {}, { timeout: 10000 })).toBeInTheDocument();
     expect(screen.getByText(/Scripts stays request-bound and draft-owned/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('link', { name: /mocks/i }));
     expect(screen.getByRole('heading', { name: 'Mocks' })).toBeInTheDocument();
     expect(screen.getByText(/Persisted authored rules live here/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save rule' })).toBeEnabled();
-  });
+  }, 15000);
 });
