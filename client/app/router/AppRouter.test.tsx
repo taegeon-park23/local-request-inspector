@@ -21,7 +21,7 @@ describe('AppRouter shell bootstrap', () => {
     expect(screen.getByText('Runtime Connection')).toBeInTheDocument();
     const navigationRail = screen.getByLabelText('Navigation rail');
     expect(navigationRail).toBeInTheDocument();
-    expect(screen.getByRole('tablist', { name: 'Route layout panels' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Collapse explorer' })).toBeInTheDocument();
     expect(screen.getByLabelText('Section explorer')).toBeInTheDocument();
     expect(screen.getByLabelText('Main work surface')).toBeInTheDocument();
     expect(screen.getByLabelText('Contextual detail panel')).toBeInTheDocument();
@@ -39,6 +39,7 @@ describe('AppRouter shell bootstrap', () => {
     expect(screen.getByText('런타임 연결')).toBeInTheDocument();
     expect(screen.getAllByText('작업공간').length).toBeGreaterThan(0);
     expect(screen.getAllByText('설정').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: '탐색기 접기' })).toBeInTheDocument();
     expect(screen.getByRole('tablist', { name: '라우트 패널 탭' })).toBeInTheDocument();
     expect(screen.getByLabelText('섹션 탐색기')).toBeInTheDocument();
     expect(screen.getByLabelText('메인 작업면')).toBeInTheDocument();
@@ -81,6 +82,23 @@ describe('AppRouter shell bootstrap', () => {
     expect(navigationRail).toHaveAttribute('data-collapsed', 'false');
   });
 
+  it('lets workspace explorer selection surface content immediately and allows explorer collapse', async () => {
+    const user = userEvent.setup();
+    renderApp(<AppRouter />);
+
+    const explorer = screen.getByLabelText('Section explorer');
+    const detailPanel = screen.getByLabelText('Contextual detail panel');
+    await user.click(within(explorer).getByRole('button', { name: 'Open Health check' }));
+
+    expect(screen.getByLabelText('Request URL')).toHaveValue('http://localhost:5671/health');
+    expect(within(detailPanel).getByRole('tablist', { name: 'Result panel tabs' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Collapse explorer' }));
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
+    expect(screen.getByLabelText('Section explorer')).toBeInTheDocument();
+  });
 
   it('keeps route-panel overflow constrained to the main surface scroll container', () => {
     expect(shellCssSource).toContain('body { margin: 0; background: #020617; overflow: hidden; }');

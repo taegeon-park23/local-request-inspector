@@ -31,6 +31,26 @@ async function openNewRequest(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('Workspace request builder authoring shell', () => {
+
+
+  it('shows selected request content without route-panel tab clicks and supports explorer collapse', async () => {
+    const user = userEvent.setup();
+    renderApp(<AppRouter />);
+
+    const explorer = screen.getByLabelText('Section explorer');
+    const detailPanel = screen.getByLabelText('Contextual detail panel');
+
+    await user.click(within(explorer).getByRole('button', { name: 'Open Health check' }));
+    expect(screen.getByLabelText('Request URL')).toHaveValue('http://localhost:5671/health');
+    expect(within(detailPanel).getByRole('tablist', { name: 'Result panel tabs' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Collapse explorer' }));
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
+    expect(screen.getByLabelText('Section explorer')).toBeInTheDocument();
+  });
+
   it('renders method and url authoring controls for the active tab', async () => {
     const user = userEvent.setup();
     renderApp(<AppRouter />);

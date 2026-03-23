@@ -439,6 +439,8 @@ export function WorkspacePlaceholder() {
 
   return (
     <RoutePanelTabsLayout
+      layoutMode="floating-explorer"
+      floatingExplorerRouteKey="workspace"
       defaultActiveTab="main"
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>

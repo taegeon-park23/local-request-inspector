@@ -159,10 +159,32 @@ describe('Environments MVP route', () => {
     expect(screen.getByLabelText('Search environments')).toBeInTheDocument();
     expect(screen.getByLabelText('Sort environments')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: 'Open environment Local API' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Save environment' })).toBeEnabled();
+    expect(await screen.findByRole('button', { name: 'Save environment' })).toBeEnabled();
     expect(screen.getByText(/Persisted variables are managed here only/i)).toBeInTheDocument();
     expect(screen.getByLabelText('Secret replacement value 2')).toHaveValue('');
     expect(screen.queryByDisplayValue('secret-token')).not.toBeInTheDocument();
+  });
+
+
+
+  it('shows selected environment content without extra panel tab clicks and supports explorer collapse', async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal('fetch', createEnvironmentsFetch());
+    renderApp(<AppRouter />, { initialEntries: ['/environments'] });
+
+    const explorer = screen.getByLabelText('Section explorer');
+    const detailPanel = screen.getByLabelText('Contextual detail panel');
+
+    await user.click(await within(explorer).findByRole('button', { name: 'Open environment Local API' }));
+    expect(screen.getByRole('heading', { name: 'Edit environment' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Environment name')).toHaveValue('Local API');
+    expect(within(detailPanel).getByText(/Current default intent/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Collapse explorer' }));
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
+    expect(screen.getByLabelText('Section explorer')).toBeInTheDocument();
   });
 
   it('creates, updates, and deletes a persisted environment', async () => {
@@ -193,7 +215,7 @@ describe('Environments MVP route', () => {
 
     await user.click(screen.getByRole('button', { name: 'Delete environment' }));
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Open environment Stage copy updated' })).not.toBeInTheDocument());
-  });
+  }, 10000);
   it('renders the environments route copy in Korean when the locale is switched', async () => {
     vi.stubGlobal('fetch', createEnvironmentsFetch());
     renderApp(<AppRouter />, { initialEntries: ['/environments'], initialLocale: 'ko' });

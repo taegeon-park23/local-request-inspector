@@ -119,6 +119,28 @@ describe('Scripts MVP route', () => {
     expect(screen.getByText(/Top-level Scripts manages standalone saved scripts/i)).toBeInTheDocument();
   });
 
+
+
+  it('shows selected script content without extra panel tab clicks and supports explorer collapse', async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal('fetch', createScriptsFetch());
+    renderApp(<AppRouter />, { initialEntries: ['/scripts'] });
+
+    const explorer = screen.getByLabelText('Section explorer');
+    const detailPanel = screen.getByLabelText('Contextual detail panel');
+
+    await user.click(await within(explorer).findByRole('button', { name: 'Open script Health status assertions' }));
+    expect(screen.getByRole('heading', { name: 'Edit saved script' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Script name')).toHaveValue('Health status assertions');
+    expect(within(detailPanel).getByRole('button', { name: 'Use Trace ID starter' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Collapse explorer' }));
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
+    expect(screen.getByLabelText('Section explorer')).toBeInTheDocument();
+  });
+
   it('creates a saved script from a template, updates it, and deletes it', async () => {
     const user = userEvent.setup();
     vi.stubGlobal('fetch', createScriptsFetch());
