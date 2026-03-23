@@ -93,6 +93,11 @@ export interface WorkspaceRequestTreeResponse {
 
 export const workspaceRequestTreeQueryKey = ['workspace-request-tree', DEFAULT_WORKSPACE_ID] as const;
 
+export interface WorkspaceCollectionInput {
+  name: string;
+  description?: string;
+}
+
 export interface WorkspaceRequestGroupInput {
   name: string;
   description?: string;
@@ -124,6 +129,43 @@ async function parseJsonResponse<TData>(response: Response): Promise<TData> {
 export async function listWorkspaceRequestTree() {
   const response = await fetch(`/api/workspaces/${DEFAULT_WORKSPACE_ID}/request-tree`);
   return parseJsonResponse<WorkspaceRequestTreeResponse>(response);
+}
+
+export async function createWorkspaceCollection(
+  collection: WorkspaceCollectionInput,
+) {
+  const response = await fetch(`/api/workspaces/${DEFAULT_WORKSPACE_ID}/collections`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ collection }),
+  });
+
+  return parseJsonResponse<{ collection: WorkspaceCollectionRecord }>(response).then((payload) => payload.collection);
+}
+
+export async function updateWorkspaceCollection(
+  collectionId: string,
+  collection: WorkspaceCollectionInput,
+) {
+  const response = await fetch(`/api/collections/${collectionId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ collection }),
+  });
+
+  return parseJsonResponse<{ collection: WorkspaceCollectionRecord }>(response).then((payload) => payload.collection);
+}
+
+export async function deleteWorkspaceCollection(collectionId: string) {
+  const response = await fetch(`/api/collections/${collectionId}`, {
+    method: 'DELETE',
+  });
+
+  return parseJsonResponse<{ deletedCollectionId: string }>(response).then((payload) => payload.deletedCollectionId);
 }
 
 export async function readWorkspaceSavedRequestDetail(requestId: string) {
@@ -254,3 +296,5 @@ export function buildFallbackWorkspaceRequestTree(
     };
   });
 }
+
+

@@ -4409,6 +4409,8 @@ body {
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
 }
 
 .workspace-tree-composer {

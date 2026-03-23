@@ -3,6 +3,9 @@ import type { RoutePanelTabId } from '@client/features/shared-section-placeholde
 import {
   createRequestPlacementFields,
   readRequestGroupName,
+  replaceRequestPlacement,
+  resolveRequestPlacement,
+  type RequestPlacementValue,
 } from '@client/features/request-builder/request-placement';
 import type {
   ReplayRequestTabSeed,
@@ -20,6 +23,8 @@ interface WorkspaceShellState {
   openSavedRequest: (request: SavedWorkspaceRequestSeed) => void;
   openReplayRequest: (replaySeed: ReplayRequestTabSeed) => RequestTabRecord;
   markTabSaved: (tabId: string, request: SavedWorkspaceRequestSeed) => void;
+  syncCollectionPlacement: (collectionId: string, placement: RequestPlacementValue) => void;
+  syncRequestGroupPlacement: (requestGroupId: string, placement: RequestPlacementValue) => void;
   setActiveRoutePanel: (panelId: RoutePanelTabId) => void;
   setActiveTab: (tabId: string) => void;
   closeTab: (tabId: string) => void;
@@ -183,6 +188,32 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
         selectedExplorerItemId: state.activeTabId === tabId ? request.id : state.selectedExplorerItemId,
       };
     }),
+  syncCollectionPlacement: (collectionId, placement) =>
+    set((state) => ({
+      tabs: state.tabs.map((tab) => {
+        if (tab.collectionId !== collectionId) {
+          return tab;
+        }
+
+        return replaceRequestPlacement(
+          tab,
+          resolveRequestPlacement(placement, tab),
+        );
+      }),
+    })),
+  syncRequestGroupPlacement: (requestGroupId, placement) =>
+    set((state) => ({
+      tabs: state.tabs.map((tab) => {
+        if (tab.requestGroupId !== requestGroupId) {
+          return tab;
+        }
+
+        return replaceRequestPlacement(
+          tab,
+          resolveRequestPlacement(placement, tab),
+        );
+      }),
+    })),
   setActiveRoutePanel: (activeRoutePanel) =>
     set(() => ({ activeRoutePanel })),
   setActiveTab: (tabId) =>
@@ -224,3 +255,6 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
 export function resetWorkspaceShellStore() {
   useWorkspaceShellStore.setState(initialWorkspaceShellState);
 }
+
+
+

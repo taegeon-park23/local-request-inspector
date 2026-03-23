@@ -3473,6 +3473,16 @@ app.patch('/api/collections/:collectionId', (req, res) => {
       existingRecord,
       existingRecord.workspaceId || DEFAULT_WORKSPACE_ID,
     ));
+    const relatedRequests = listWorkspaceSavedRequestRecords(existingRecord.workspaceId || DEFAULT_WORKSPACE_ID)
+      .filter((record) => record.collectionId === req.params.collectionId);
+
+    for (const requestRecord of relatedRequests) {
+      resourceStorage.save('request', {
+        ...requestRecord,
+        collectionName: collection.name,
+      });
+    }
+
     return sendData(res, { collection: presentCollectionRecord(collection) });
   } catch (error) {
     return sendError(res, 500, 'collection_update_failed', error.message, {
@@ -5032,3 +5042,4 @@ app.listen(PORT, () => {
       : `[Ready] Built app shell unavailable at ${appShellStatus.appRoute}. Run "${appShellStatus.buildCommand}" or use ${appShellStatus.devClientUrl} for development.`,
   );
 });
+

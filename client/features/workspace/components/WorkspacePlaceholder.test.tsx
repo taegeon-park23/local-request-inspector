@@ -223,6 +223,575 @@ describe('Workspace request builder authoring shell', () => {
     expect(await within(explorer).findByText('Created request group Auth flows in the canonical explorer tree.')).toBeInTheDocument();
   });
 
+  it('creates a collection inside the canonical explorer tree', async () => {
+    const user = userEvent.setup();
+    const requestTreeResponse = {
+      defaults: {
+        collectionId: 'collection-saved-requests',
+        requestGroupId: 'request-group-general',
+        collectionName: 'Saved Requests',
+        requestGroupName: 'General',
+      },
+      collections: [
+        {
+          id: 'collection-saved-requests',
+          workspaceId: 'local-workspace',
+          name: 'Saved Requests',
+          description: '',
+        },
+      ],
+      requestGroups: [
+        {
+          id: 'request-group-general',
+          workspaceId: 'local-workspace',
+          collectionId: 'collection-saved-requests',
+          name: 'General',
+          description: '',
+        },
+      ],
+      tree: [
+        {
+          id: 'collection-node-collection-saved-requests',
+          kind: 'collection',
+          collectionId: 'collection-saved-requests',
+          name: 'Saved Requests',
+          description: '',
+          children: [
+            {
+              id: 'request-group-node-request-group-general',
+              kind: 'request-group',
+              collectionId: 'collection-saved-requests',
+              requestGroupId: 'request-group-general',
+              name: 'General',
+              description: '',
+              children: [],
+            },
+          ],
+        },
+      ],
+    };
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+      const method = init?.method ?? 'GET';
+
+      if (url === '/api/workspaces/local-workspace/requests' && method === 'GET') {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/request-tree' && method === 'GET') {
+        return createApiResponse(requestTreeResponse);
+      }
+
+      if (url === '/api/workspaces/local-workspace/collections' && method === 'POST') {
+        const payload = JSON.parse(String(init?.body ?? '{}')) as { collection?: { name?: string } };
+        const collectionName = payload.collection?.name ?? 'New Collection';
+        const collectionId = `collection-${collectionName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+
+        requestTreeResponse.collections.push({
+          id: collectionId,
+          workspaceId: 'local-workspace',
+          name: collectionName,
+          description: '',
+        });
+        requestTreeResponse.tree.push({
+          id: `collection-node-${collectionId}`,
+          kind: 'collection',
+          collectionId,
+          name: collectionName,
+          description: '',
+          children: [],
+        });
+
+        return createApiResponse({
+          collection: {
+            id: collectionId,
+            workspaceId: 'local-workspace',
+            name: collectionName,
+            description: '',
+          },
+        }, 201);
+      }
+
+      if (url === '/api/workspaces/local-workspace/environments' && method === 'GET') {
+        return createApiResponse({ items: [] });
+      }
+
+      throw new Error(`Unexpected fetch call: ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    const explorer = screen.getByLabelText('Section explorer');
+    await within(explorer).findByText('Saved Requests');
+
+    await user.click(within(explorer).getByRole('button', { name: 'New collection' }));
+    await user.type(screen.getByLabelText('Collection name'), 'Team API');
+    await user.click(screen.getByRole('button', { name: 'Create collection' }));
+
+    expect(await within(explorer).findByText('Team API')).toBeInTheDocument();
+    expect(await within(explorer).findByText('Created collection Team API in the canonical explorer tree.')).toBeInTheDocument();
+  });
+
+  it('renames a collection and updates the active draft placement copy', async () => {
+    const user = userEvent.setup();
+    const requestTreeResponse = {
+      defaults: {
+        collectionId: 'collection-saved-requests',
+        requestGroupId: 'request-group-general',
+        collectionName: 'Saved Requests',
+        requestGroupName: 'General',
+      },
+      collections: [
+        {
+          id: 'collection-saved-requests',
+          workspaceId: 'local-workspace',
+          name: 'Saved Requests',
+          description: '',
+        },
+        {
+          id: 'collection-team-api',
+          workspaceId: 'local-workspace',
+          name: 'Team API',
+          description: '',
+        },
+      ],
+      requestGroups: [
+        {
+          id: 'request-group-general',
+          workspaceId: 'local-workspace',
+          collectionId: 'collection-saved-requests',
+          name: 'General',
+          description: '',
+        },
+        {
+          id: 'request-group-team-requests',
+          workspaceId: 'local-workspace',
+          collectionId: 'collection-team-api',
+          name: 'Team Requests',
+          description: '',
+        },
+      ],
+      tree: [
+        {
+          id: 'collection-node-collection-saved-requests',
+          kind: 'collection',
+          collectionId: 'collection-saved-requests',
+          name: 'Saved Requests',
+          description: '',
+          children: [
+            {
+              id: 'request-group-node-request-group-general',
+              kind: 'request-group',
+              collectionId: 'collection-saved-requests',
+              requestGroupId: 'request-group-general',
+              name: 'General',
+              description: '',
+              children: [],
+            },
+          ],
+        },
+        {
+          id: 'collection-node-collection-team-api',
+          kind: 'collection',
+          collectionId: 'collection-team-api',
+          name: 'Team API',
+          description: '',
+          children: [
+            {
+              id: 'request-group-node-request-group-team-requests',
+              kind: 'request-group',
+              collectionId: 'collection-team-api',
+              requestGroupId: 'request-group-team-requests',
+              name: 'Team Requests',
+              description: '',
+              children: [],
+            },
+          ],
+        },
+      ],
+    };
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+      const method = init?.method ?? 'GET';
+
+      if (url === '/api/workspaces/local-workspace/requests' && method === 'GET') {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/request-tree' && method === 'GET') {
+        return createApiResponse(requestTreeResponse);
+      }
+
+      if (url === '/api/collections/collection-team-api' && method === 'PATCH') {
+        const payload = JSON.parse(String(init?.body ?? '{}')) as { collection?: { name?: string } };
+        const nextName = payload.collection?.name ?? 'Team Platform';
+        requestTreeResponse.collections[1]!.name = nextName;
+        requestTreeResponse.tree[1]!.name = nextName;
+
+        return createApiResponse({
+          collection: {
+            id: 'collection-team-api',
+            workspaceId: 'local-workspace',
+            name: nextName,
+            description: '',
+          },
+        });
+      }
+
+      if (url === '/api/workspaces/local-workspace/environments' && method === 'GET') {
+        return createApiResponse({ items: [] });
+      }
+
+      throw new Error(`Unexpected fetch call: ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    await openNewRequest(user);
+    await user.selectOptions(screen.getByLabelText('Save collection'), 'collection-team-api');
+    expect(screen.getByText('Request will save to Team API / Team Requests.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
+    const explorer = screen.getByLabelText('Section explorer');
+    await user.click(within(explorer).getByRole('button', { name: 'Rename collection Team API' }));
+    await user.clear(screen.getByLabelText('Collection name'));
+    await user.type(screen.getByLabelText('Collection name'), 'Team Platform');
+    await user.click(screen.getByRole('button', { name: 'Save rename' }));
+
+    await waitFor(() => expect(screen.getByText('Request will save to Team Platform / Team Requests.')).toBeInTheDocument());
+    expect(await within(explorer).findByRole('button', { name: 'Rename collection Team Platform' })).toBeInTheDocument();
+    expect(await within(explorer).findByText('Renamed collection to Team Platform in the canonical explorer tree.')).toBeInTheDocument();
+  });
+
+  it('deletes an empty collection and falls back the active draft placement to defaults', async () => {
+    const user = userEvent.setup();
+    const requestTreeResponse = {
+      defaults: {
+        collectionId: 'collection-saved-requests',
+        requestGroupId: 'request-group-general',
+        collectionName: 'Saved Requests',
+        requestGroupName: 'General',
+      },
+      collections: [
+        {
+          id: 'collection-saved-requests',
+          workspaceId: 'local-workspace',
+          name: 'Saved Requests',
+          description: '',
+        },
+        {
+          id: 'collection-temp',
+          workspaceId: 'local-workspace',
+          name: 'Temp Collection',
+          description: '',
+        },
+      ],
+      requestGroups: [
+        {
+          id: 'request-group-general',
+          workspaceId: 'local-workspace',
+          collectionId: 'collection-saved-requests',
+          name: 'General',
+          description: '',
+        },
+      ],
+      tree: [
+        {
+          id: 'collection-node-collection-saved-requests',
+          kind: 'collection',
+          collectionId: 'collection-saved-requests',
+          name: 'Saved Requests',
+          description: '',
+          children: [
+            {
+              id: 'request-group-node-request-group-general',
+              kind: 'request-group',
+              collectionId: 'collection-saved-requests',
+              requestGroupId: 'request-group-general',
+              name: 'General',
+              description: '',
+              children: [],
+            },
+          ],
+        },
+        {
+          id: 'collection-node-collection-temp',
+          kind: 'collection',
+          collectionId: 'collection-temp',
+          name: 'Temp Collection',
+          description: '',
+          children: [],
+        },
+      ],
+    };
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+      const method = init?.method ?? 'GET';
+
+      if (url === '/api/workspaces/local-workspace/requests' && method === 'GET') {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/request-tree' && method === 'GET') {
+        return createApiResponse(requestTreeResponse);
+      }
+
+      if (url === '/api/collections/collection-temp' && method === 'DELETE') {
+        requestTreeResponse.collections.splice(1, 1);
+        requestTreeResponse.tree.splice(1, 1);
+        return createApiResponse({ deletedCollectionId: 'collection-temp' });
+      }
+
+      if (url === '/api/workspaces/local-workspace/environments' && method === 'GET') {
+        return createApiResponse({ items: [] });
+      }
+
+      throw new Error(`Unexpected fetch call: ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    await openNewRequest(user);
+    await user.selectOptions(screen.getByLabelText('Save collection'), 'collection-temp');
+    expect(screen.getByText('Request will save to Temp Collection / General.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
+    const explorer = screen.getByLabelText('Section explorer');
+    await user.click(within(explorer).getByRole('button', { name: 'Delete collection Temp Collection' }));
+
+    await waitFor(() => expect(screen.getByText('Request will save to Saved Requests / General.')).toBeInTheDocument());
+    await waitFor(() => expect(within(explorer).queryByRole('button', { name: 'Delete collection Temp Collection' })).not.toBeInTheDocument());
+    expect(await within(explorer).findByText('Deleted collection Temp Collection from the canonical explorer tree. Drafts that referenced it moved to the default save placement.')).toBeInTheDocument();
+  });
+  it('renames a request group and updates the active draft placement copy', async () => {
+    const user = userEvent.setup();
+    const requestTreeResponse = {
+      defaults: {
+        collectionId: 'collection-saved-requests',
+        requestGroupId: 'request-group-general',
+        collectionName: 'Saved Requests',
+        requestGroupName: 'General',
+      },
+      collections: [
+        {
+          id: 'collection-saved-requests',
+          workspaceId: 'local-workspace',
+          name: 'Saved Requests',
+          description: '',
+        },
+      ],
+      requestGroups: [
+        {
+          id: 'request-group-general',
+          workspaceId: 'local-workspace',
+          collectionId: 'collection-saved-requests',
+          name: 'General',
+          description: '',
+        },
+        {
+          id: 'request-group-auth-flows',
+          workspaceId: 'local-workspace',
+          collectionId: 'collection-saved-requests',
+          name: 'Auth flows',
+          description: '',
+        },
+      ],
+      tree: [
+        {
+          id: 'collection-node-collection-saved-requests',
+          kind: 'collection',
+          collectionId: 'collection-saved-requests',
+          name: 'Saved Requests',
+          description: '',
+          children: [
+            {
+              id: 'request-group-node-request-group-general',
+              kind: 'request-group',
+              collectionId: 'collection-saved-requests',
+              requestGroupId: 'request-group-general',
+              name: 'General',
+              description: '',
+              children: [],
+            },
+            {
+              id: 'request-group-node-request-group-auth-flows',
+              kind: 'request-group',
+              collectionId: 'collection-saved-requests',
+              requestGroupId: 'request-group-auth-flows',
+              name: 'Auth flows',
+              description: '',
+              children: [],
+            },
+          ],
+        },
+      ],
+    };
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+      const method = init?.method ?? 'GET';
+
+      if (url === '/api/workspaces/local-workspace/requests' && method === 'GET') {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/request-tree' && method === 'GET') {
+        return createApiResponse(requestTreeResponse);
+      }
+
+      if (url === '/api/request-groups/request-group-auth-flows' && method === 'PATCH') {
+        const payload = JSON.parse(String(init?.body ?? '{}')) as { requestGroup?: { name?: string } };
+        const nextName = payload.requestGroup?.name ?? 'Authentication';
+        requestTreeResponse.requestGroups[1]!.name = nextName;
+        requestTreeResponse.tree[0]!.children[1]!.name = nextName;
+
+        return createApiResponse({
+          requestGroup: {
+            id: 'request-group-auth-flows',
+            workspaceId: 'local-workspace',
+            collectionId: 'collection-saved-requests',
+            name: nextName,
+            description: '',
+          },
+        });
+      }
+
+      if (url === '/api/workspaces/local-workspace/environments' && method === 'GET') {
+        return createApiResponse({ items: [] });
+      }
+
+      throw new Error(`Unexpected fetch call: ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    await openNewRequest(user);
+    await user.selectOptions(screen.getByLabelText('Save request group'), 'request-group-auth-flows');
+    expect(screen.getByText('Request will save to Saved Requests / Auth flows.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
+    const explorer = screen.getByLabelText('Section explorer');
+    await user.click(within(explorer).getByRole('button', { name: 'Rename request group Auth flows' }));
+    await user.clear(screen.getByLabelText('Request group name'));
+    await user.type(screen.getByLabelText('Request group name'), 'Authentication');
+    await user.click(screen.getByRole('button', { name: 'Save rename' }));
+
+    await waitFor(() => expect(screen.getByText('Request will save to Saved Requests / Authentication.')).toBeInTheDocument());
+    expect(await within(explorer).findByRole('button', { name: 'Rename request group Authentication' })).toBeInTheDocument();
+    expect(await within(explorer).findByText('Renamed request group to Authentication in the canonical explorer tree.')).toBeInTheDocument();
+  });
+
+  it('deletes an empty request group and falls back the active draft placement to defaults', async () => {
+    const user = userEvent.setup();
+    const requestTreeResponse = {
+      defaults: {
+        collectionId: 'collection-saved-requests',
+        requestGroupId: 'request-group-general',
+        collectionName: 'Saved Requests',
+        requestGroupName: 'General',
+      },
+      collections: [
+        {
+          id: 'collection-saved-requests',
+          workspaceId: 'local-workspace',
+          name: 'Saved Requests',
+          description: '',
+        },
+      ],
+      requestGroups: [
+        {
+          id: 'request-group-general',
+          workspaceId: 'local-workspace',
+          collectionId: 'collection-saved-requests',
+          name: 'General',
+          description: '',
+        },
+        {
+          id: 'request-group-temp',
+          workspaceId: 'local-workspace',
+          collectionId: 'collection-saved-requests',
+          name: 'Temp',
+          description: '',
+        },
+      ],
+      tree: [
+        {
+          id: 'collection-node-collection-saved-requests',
+          kind: 'collection',
+          collectionId: 'collection-saved-requests',
+          name: 'Saved Requests',
+          description: '',
+          children: [
+            {
+              id: 'request-group-node-request-group-general',
+              kind: 'request-group',
+              collectionId: 'collection-saved-requests',
+              requestGroupId: 'request-group-general',
+              name: 'General',
+              description: '',
+              children: [],
+            },
+            {
+              id: 'request-group-node-request-group-temp',
+              kind: 'request-group',
+              collectionId: 'collection-saved-requests',
+              requestGroupId: 'request-group-temp',
+              name: 'Temp',
+              description: '',
+              children: [],
+            },
+          ],
+        },
+      ],
+    };
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+      const method = init?.method ?? 'GET';
+
+      if (url === '/api/workspaces/local-workspace/requests' && method === 'GET') {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/request-tree' && method === 'GET') {
+        return createApiResponse(requestTreeResponse);
+      }
+
+      if (url === '/api/request-groups/request-group-temp' && method === 'DELETE') {
+        requestTreeResponse.requestGroups.splice(1, 1);
+        requestTreeResponse.tree[0]!.children.splice(1, 1);
+        return createApiResponse({ deletedRequestGroupId: 'request-group-temp' });
+      }
+
+      if (url === '/api/workspaces/local-workspace/environments' && method === 'GET') {
+        return createApiResponse({ items: [] });
+      }
+
+      throw new Error(`Unexpected fetch call: ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    await openNewRequest(user);
+    await user.selectOptions(screen.getByLabelText('Save request group'), 'request-group-temp');
+    expect(screen.getByText('Request will save to Saved Requests / Temp.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
+    const explorer = screen.getByLabelText('Section explorer');
+    await user.click(within(explorer).getByRole('button', { name: 'Delete request group Temp' }));
+
+    await waitFor(() => expect(screen.getByText('Request will save to Saved Requests / General.')).toBeInTheDocument());
+    await waitFor(() => expect(within(explorer).queryByRole('button', { name: 'Delete request group Temp' })).not.toBeInTheDocument());
+    expect(await within(explorer).findByText('Deleted request group Temp from the canonical explorer tree. Drafts that referenced it moved to the default save placement.')).toBeInTheDocument();
+  });
   it('persists the selected collection and request group when saving a draft', async () => {
     const user = userEvent.setup();
     let savedPayload: Record<string, unknown> | null = null;
@@ -1326,3 +1895,7 @@ describe('Workspace request builder authoring shell', () => {
     expect(within(detailPanel).getByText('아직 실행 정보가 없습니다')).toBeInTheDocument();
   });
 });
+
+
+
+

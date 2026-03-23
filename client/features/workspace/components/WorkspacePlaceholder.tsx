@@ -39,12 +39,18 @@ import {
 } from '@client/features/workspace/resource-bundle.api';
 import {
   buildFallbackWorkspaceRequestTree,
+  createWorkspaceCollection,
   createWorkspaceRequestGroup,
+  deleteWorkspaceCollection,
+  deleteWorkspaceRequestGroup,
   deleteWorkspaceSavedRequest,
   listWorkspaceRequestTree,
   readWorkspaceSavedRequestDetail,
+  updateWorkspaceCollection,
+  updateWorkspaceRequestGroup,
   workspaceRequestTreeQueryKey,
   type WorkspaceCollectionNode,
+  type WorkspaceRequestGroupNode,
   type WorkspaceTreeRequestLeaf,
 } from '@client/features/workspace/workspace-request-tree.api';
 import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
@@ -274,7 +280,11 @@ export function WorkspacePlaceholder() {
   const draftsByTabId = useRequestDraftStore((state) => state.draftsByTabId);
   const ensureDraftForTab = useRequestDraftStore((state) => state.ensureDraftForTab);
   const removeDraft = useRequestDraftStore((state) => state.removeDraft);
+  const syncDraftCollectionPlacement = useRequestDraftStore((state) => state.syncCollectionPlacement);
+  const syncDraftRequestGroupPlacement = useRequestDraftStore((state) => state.syncRequestGroupPlacement);
   const removeCommandState = useRequestCommandStore((state) => state.removeTab);
+  const syncTabCollectionPlacement = useWorkspaceShellStore((state) => state.syncCollectionPlacement);
+  const syncTabRequestGroupPlacement = useWorkspaceShellStore((state) => state.syncRequestGroupPlacement);
 
   const savedRequestsQuery = useQuery({
     queryKey: workspaceSavedRequestsQueryKey,
@@ -312,6 +322,15 @@ export function WorkspacePlaceholder() {
       void queryClient.invalidateQueries({ queryKey: workspaceRequestTreeQueryKey });
     }
   }, [queryClient, savedRequestsQuery.dataUpdatedAt]);
+
+  const defaultRequestPlacement = requestTreeQuery.data?.defaults
+    ? createRequestPlacementFields({
+        collectionId: requestTreeQuery.data.defaults.collectionId,
+        collectionName: requestTreeQuery.data.defaults.collectionName,
+        requestGroupId: requestTreeQuery.data.defaults.requestGroupId,
+        requestGroupName: requestTreeQuery.data.defaults.requestGroupName,
+      })
+    : null;
 
   const exportResourcesMutation = useMutation({
     mutationFn: async () => {
@@ -414,6 +433,79 @@ export function WorkspacePlaceholder() {
     },
   });
 
+  const createCollectionMutation = useMutation({
+    mutationFn: ({ name }: { name: string }) => createWorkspaceCollection({ name }),
+    onSuccess: async (collection) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: workspaceRequestTreeQueryKey }),
+        queryClient.invalidateQueries({ queryKey: workspaceSavedRequestsQueryKey }),
+      ]);
+      setResourceTransferStatus({
+        tone: 'success',
+        message: t('workspaceRoute.explorer.status.collectionCreated', { name: collection.name }),
+      });
+    },
+    onError: (error) => {
+      setResourceTransferStatus({
+        tone: 'error',
+        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.collectionCreateFailed'),
+      });
+    },
+  });
+
+  const renameCollectionMutation = useMutation({
+    mutationFn: ({ collectionId, name }: { collectionId: string; name: string }) => (
+      updateWorkspaceCollection(collectionId, { name })
+    ),
+    onSuccess: async (collection) => {
+      syncDraftCollectionPlacement(collection.id, {
+        collectionId: collection.id,
+        collectionName: collection.name,
+      });
+      syncTabCollectionPlacement(collection.id, {
+        collectionId: collection.id,
+        collectionName: collection.name,
+      });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: workspaceRequestTreeQueryKey }),
+        queryClient.invalidateQueries({ queryKey: workspaceSavedRequestsQueryKey }),
+      ]);
+      setResourceTransferStatus({
+        tone: 'success',
+        message: t('workspaceRoute.explorer.status.collectionRenamed', { name: collection.name }),
+      });
+    },
+    onError: (error) => {
+      setResourceTransferStatus({
+        tone: 'error',
+        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.collectionRenameFailed'),
+      });
+    },
+  });
+
+  const deleteCollectionMutation = useMutation({
+    mutationFn: (collection: WorkspaceCollectionNode) => deleteWorkspaceCollection(collection.collectionId),
+    onSuccess: async (_deletedCollectionId, collection) => {
+      if (defaultRequestPlacement) {
+        syncDraftCollectionPlacement(collection.collectionId, defaultRequestPlacement);
+        syncTabCollectionPlacement(collection.collectionId, defaultRequestPlacement);
+      }
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: workspaceRequestTreeQueryKey }),
+        queryClient.invalidateQueries({ queryKey: workspaceSavedRequestsQueryKey }),
+      ]);
+      setResourceTransferStatus({
+        tone: 'info',
+        message: t('workspaceRoute.explorer.status.collectionDeleted', { name: collection.name }),
+      });
+    },
+    onError: (error) => {
+      setResourceTransferStatus({
+        tone: 'error',
+        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.collectionDeleteFailed'),
+      });
+    },
+  });
   const createRequestGroupMutation = useMutation({
     mutationFn: ({ collectionId, name }: { collectionId: string; name: string }) => (
       createWorkspaceRequestGroup(collectionId, { name })
@@ -432,6 +524,60 @@ export function WorkspacePlaceholder() {
       setResourceTransferStatus({
         tone: 'error',
         message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.requestGroupCreateFailed'),
+      });
+    },
+  });
+
+  const renameRequestGroupMutation = useMutation({
+    mutationFn: ({ requestGroupId, name }: { requestGroupId: string; name: string }) => (
+      updateWorkspaceRequestGroup(requestGroupId, { name })
+    ),
+    onSuccess: async (requestGroup) => {
+      syncDraftRequestGroupPlacement(requestGroup.id, {
+        requestGroupId: requestGroup.id,
+        requestGroupName: requestGroup.name,
+      });
+      syncTabRequestGroupPlacement(requestGroup.id, {
+        requestGroupId: requestGroup.id,
+        requestGroupName: requestGroup.name,
+      });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: workspaceRequestTreeQueryKey }),
+        queryClient.invalidateQueries({ queryKey: workspaceSavedRequestsQueryKey }),
+      ]);
+      setResourceTransferStatus({
+        tone: 'success',
+        message: t('workspaceRoute.explorer.status.requestGroupRenamed', { name: requestGroup.name }),
+      });
+    },
+    onError: (error) => {
+      setResourceTransferStatus({
+        tone: 'error',
+        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.requestGroupRenameFailed'),
+      });
+    },
+  });
+
+  const deleteRequestGroupMutation = useMutation({
+    mutationFn: (requestGroup: WorkspaceRequestGroupNode) => deleteWorkspaceRequestGroup(requestGroup.requestGroupId),
+    onSuccess: async (_deletedRequestGroupId, requestGroup) => {
+      if (defaultRequestPlacement) {
+        syncDraftRequestGroupPlacement(requestGroup.requestGroupId, defaultRequestPlacement);
+        syncTabRequestGroupPlacement(requestGroup.requestGroupId, defaultRequestPlacement);
+      }
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: workspaceRequestTreeQueryKey }),
+        queryClient.invalidateQueries({ queryKey: workspaceSavedRequestsQueryKey }),
+      ]);
+      setResourceTransferStatus({
+        tone: 'info',
+        message: t('workspaceRoute.explorer.status.requestGroupDeleted', { name: requestGroup.name }),
+      });
+    },
+    onError: (error) => {
+      setResourceTransferStatus({
+        tone: 'error',
+        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.requestGroupDeleteFailed'),
       });
     },
   });
@@ -533,6 +679,32 @@ export function WorkspacePlaceholder() {
     void openDraftFromSeed();
   };
 
+  const handleCreateCollection = async (name: string) => {
+    const nextName = name.trim();
+
+    if (nextName.length === 0) {
+      return;
+    }
+
+    await createCollectionMutation.mutateAsync({ name: nextName });
+  };
+
+  const handleRenameCollection = async (collection: WorkspaceCollectionNode, name: string) => {
+    const nextName = name.trim();
+
+    if (nextName.length === 0 || nextName === collection.name) {
+      return;
+    }
+
+    await renameCollectionMutation.mutateAsync({
+      collectionId: collection.collectionId,
+      name: nextName,
+    });
+  };
+
+  const handleDeleteCollection = async (collection: WorkspaceCollectionNode) => {
+    await deleteCollectionMutation.mutateAsync(collection);
+  };
   const handleCreateRequestGroup = async (collection: WorkspaceCollectionNode, name: string) => {
     const nextName = name.trim();
 
@@ -544,6 +716,23 @@ export function WorkspacePlaceholder() {
       collectionId: collection.collectionId,
       name: nextName,
     });
+  };
+
+  const handleRenameRequestGroup = async (requestGroup: WorkspaceRequestGroupNode, name: string) => {
+    const nextName = name.trim();
+
+    if (nextName.length === 0 || nextName === requestGroup.name) {
+      return;
+    }
+
+    await renameRequestGroupMutation.mutateAsync({
+      requestGroupId: requestGroup.requestGroupId,
+      name: nextName,
+    });
+  };
+
+  const handleDeleteRequestGroup = async (requestGroup: WorkspaceRequestGroupNode) => {
+    await deleteRequestGroupMutation.mutateAsync(requestGroup);
   };
 
   const handleOpenSavedRequest = async (request: WorkspaceTreeRequestLeaf) => {
@@ -657,10 +846,15 @@ export function WorkspacePlaceholder() {
           tree={explorerTree}
           selectedRequestId={selectedExplorerItemId}
           onCreateRequest={handleCreateRequest}
+          onCreateCollection={handleCreateCollection}
+          onRenameCollection={handleRenameCollection}
+          onDeleteCollection={handleDeleteCollection}
           onOpenSavedRequest={handleOpenSavedRequest}
           onDeleteRequest={(request) => deleteSavedRequestMutation.mutate(request.id)}
           onExportRequest={(request) => exportRequestMutation.mutate(request)}
           onCreateRequestGroup={handleCreateRequestGroup}
+          onRenameRequestGroup={handleRenameRequestGroup}
+          onDeleteRequestGroup={handleDeleteRequestGroup}
           onExportResources={() => exportResourcesMutation.mutate()}
           onImportResources={handleImportResources}
           importPreview={pendingImportPreview}
@@ -673,7 +867,12 @@ export function WorkspacePlaceholder() {
           isPreviewingImport={previewResourcesMutation.isPending}
           isImporting={importResourcesMutation.isPending}
           isDeletingRequest={deleteSavedRequestMutation.isPending}
+          isCreatingCollection={createCollectionMutation.isPending}
+          isRenamingCollection={renameCollectionMutation.isPending}
+          isDeletingCollection={deleteCollectionMutation.isPending}
           isCreatingRequestGroup={createRequestGroupMutation.isPending}
+          isRenamingRequestGroup={renameRequestGroupMutation.isPending}
+          isDeletingRequestGroup={deleteRequestGroupMutation.isPending}
         />
         </section>
       )}
@@ -714,5 +913,11 @@ export function WorkspacePlaceholder() {
     />
   );
 }
+
+
+
+
+
+
 
 

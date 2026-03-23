@@ -37,6 +37,8 @@ interface RequestDraftStoreState {
     tabId: string,
     placement: RequestPlacementValue,
   ) => void;
+  syncCollectionPlacement: (collectionId: string, placement: RequestPlacementValue) => void;
+  syncRequestGroupPlacement: (requestGroupId: string, placement: RequestPlacementValue) => void;
   updateDraftName: (tabId: string, name: string) => void;
   updateDraftMethod: (tabId: string, method: RequestDraftState['method']) => void;
   updateDraftUrl: (tabId: string, url: string) => void;
@@ -126,6 +128,36 @@ function withDirtyState(entry: RequestDraftEntry, draft: RequestDraftState): Req
     draft: nextDraft,
   };
 }
+
+function syncPlacementBaseline(
+  baseline: string,
+  placement: RequestPlacementValue,
+) {
+  const baselineSnapshot = JSON.parse(baseline) as Record<string, unknown> & RequestPlacementValue;
+  return JSON.stringify(
+    replaceRequestPlacement(
+      baselineSnapshot,
+      resolveRequestPlacement(placement, baselineSnapshot),
+    ),
+  );
+}
+
+function syncEntryPlacement(entry: RequestDraftEntry, placement: RequestPlacementValue): RequestDraftEntry {
+  const nextDraft = replaceRequestPlacement(
+    entry.draft,
+    resolveRequestPlacement(placement, entry.draft),
+  );
+  const nextBaseline = syncPlacementBaseline(entry.baseline, placement);
+
+  return {
+    baseline: nextBaseline,
+    draft: {
+      ...nextDraft,
+      dirty: createDraftSnapshotString(nextDraft) !== nextBaseline,
+    },
+  };
+}
+
 
 function createDraftFromTab(tab: RequestTabRecord, explicitDraftSeed?: RequestDraftSeed): RequestDraftState {
   const savedSeed = explicitDraftSeed ? null : (tab.requestId ? getSavedWorkspaceRequestSeedById(tab.requestId) : null);
@@ -231,6 +263,34 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
         return withDirtyState(entry, nextDraft);
       }),
     ),
+  syncCollectionPlacement: (collectionId, placement) =>
+    set((state) => {
+      const nextEntries = Object.entries(state.draftsByTabId).map(([tabId, entry]) => {
+        if (entry.draft.collectionId !== collectionId) {
+          return [tabId, entry];
+        }
+
+        return [tabId, syncEntryPlacement(entry, placement)];
+      });
+
+      return {
+        draftsByTabId: Object.fromEntries(nextEntries),
+      };
+    }),
+  syncRequestGroupPlacement: (requestGroupId, placement) =>
+    set((state) => {
+      const nextEntries = Object.entries(state.draftsByTabId).map(([tabId, entry]) => {
+        if (entry.draft.requestGroupId !== requestGroupId) {
+          return [tabId, entry];
+        }
+
+        return [tabId, syncEntryPlacement(entry, placement)];
+      });
+
+      return {
+        draftsByTabId: Object.fromEntries(nextEntries),
+      };
+    }),
   updateDraftName: (tabId, name) =>
     set((state) =>
       updateDraftEntry(state, tabId, (entry) => withDirtyState(entry, { ...entry.draft, name })),
@@ -377,5 +437,7 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
 export function resetRequestDraftStore() {
   useRequestDraftStore.setState(initialRequestDraftStoreState);
 }
+
+
 
 
