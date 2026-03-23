@@ -2,7 +2,7 @@
 
 - **Purpose:** Define the bounded next-step design for request-level environment selection and server-owned environment resolution after `T027` made environments a real persisted workflow surface.
 - **Created:** 2026-03-22
-- **Last Updated:** 2026-03-22
+- **Last Updated:** 2026-03-23
 - **Related Documents:** `request-builder-mvp.md`, `internal-api-contracts.md`, `script-execution-safety-model.md`, `workspace-flows.md`, `../tasks/task-011-request-builder-mvp-design.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`
 - **Status:** implemented baseline
 - **Update Rule:** Update when request-level environment selection, environment resolution ownership, or runtime secret-handling boundaries materially change.
@@ -117,10 +117,31 @@ Do not persist:
 - inline warning for missing environment reference
 - no dedicated resolved-preview inspector yet
 
-## 10. Open Questions
+## 10. Authoring Guidance Alignment
+### 10.1 Placeholder syntax used in runtime resolution
+- The implemented runtime resolution baseline uses bounded `{{VARIABLE_NAME}}` placeholder substitution.
+- Current request-resolution docs explicitly call out substitution in URL, params, headers, body, and auth inputs.
+- Management-surface guidance in `/environments` should therefore demonstrate examples such as:
+  - URL: `https://api.example.com/{{baseUrl}}/users`
+  - Header: `Authorization: Bearer {{token}}`
+  - JSON body: `{ "workspaceId": "{{workspaceId}}" }`
+
+### 10.2 Secret versus plain rows in route guidance
+- Plain rows may continue showing their authored value in the environment-management route.
+- Secret rows remain write-only in the route read model.
+- `hasStoredValue` indicates only whether a secret-backed value is already stored.
+- `replacementValue` is the write-only replacement payload used during save; it is not a readable echo of the stored secret.
+
+### 10.3 Script access wording
+- The architecture safety guidance recommends a controlled `env` object or getter API for script access.
+- Example guidance may therefore use `env.get('token')` as the current best-aligned script example.
+- The exact final runtime helper surface is still **확실하지 않음** because the current docs describe the capability shape but do not yet freeze a concrete script API contract in code-facing detail.
+
+## 11. Open Questions
 1. Whether the request header should also show a compact "default-seeded" hint for newly created requests remains **확실하지 않음**.
 2. Whether unresolved placeholders should later split into blocking vs warning-only tiers remains **확실하지 않음**.
 3. Whether environment labels should be copied into saved-request summaries for explorer readability remains **확실하지 않음**.
+4. Whether the future script runtime should keep `env.get(...)` exactly or expose a closely related helper name remains **확실하지 않음**.
 
-## 11. Canonical Decision
+## 12. Canonical Decision
 The implemented environment baseline is request-level selector plus server-owned run-time resolution, not a top-bar global selector. The request definition persists explicit `selectedEnvironmentId`, new requests seed from the current workspace default only at creation time, and deleted environment references surface as a blocking missing-reference state instead of being silently cleared.

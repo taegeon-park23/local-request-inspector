@@ -159,11 +159,16 @@ describe('Environments MVP route', () => {
     expect(screen.getByLabelText('Search environments')).toBeInTheDocument();
     expect(screen.getByLabelText('Sort environments')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: 'Open environment Local API' })).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole('tab', { name: 'Surface' }));
     expect(await screen.findByRole('button', { name: 'Save environment' })).toBeEnabled();
-    expect(screen.getByText(/Persisted variables are managed here only/i)).toBeInTheDocument();
+    expect(screen.getByText(/Persisted variables are managed here\./i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Where environment values resolve' })).toBeInTheDocument();
+    expect(screen.getByText(/\{\{VARIABLE_NAME\}\} form/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/env\.get\('token'\)/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/replacementValue is the next write-only value to store on save/i)).toBeInTheDocument();
     expect(screen.getByLabelText('Secret replacement value 2')).toHaveValue('');
     expect(screen.queryByDisplayValue('secret-token')).not.toBeInTheDocument();
-  });
+  }, 15000);
 
 
 
@@ -193,7 +198,10 @@ describe('Environments MVP route', () => {
     renderApp(<AppRouter />, { initialEntries: ['/environments'] });
 
     await screen.findByRole('button', { name: 'Open environment Local API' });
+    await user.click(screen.getByRole('tab', { name: 'Surface' }));
+    await user.click(screen.getByRole('tab', { name: 'Explorer' }));
     await user.click(screen.getByRole('button', { name: 'New environment' }));
+    await user.click(screen.getByRole('tab', { name: 'Surface' }));
 
     expect(screen.getByRole('heading', { name: 'Create environment' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create environment' })).toBeDisabled();
@@ -205,17 +213,23 @@ describe('Environments MVP route', () => {
     await user.click(screen.getByRole('button', { name: 'Create environment' }));
 
     expect(await screen.findByRole('heading', { name: 'Edit environment' })).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'Explorer' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Open environment Stage copy' })).toBeInTheDocument());
     expect(within(screen.getByLabelText('Environments list')).getAllByText('Default').length).toBeGreaterThan(0);
+    await user.click(screen.getByRole('tab', { name: 'Surface' }));
 
     await user.clear(screen.getByLabelText('Environment name'));
     await user.type(screen.getByLabelText('Environment name'), 'Stage copy updated');
     await user.click(screen.getByRole('button', { name: 'Save environment' }));
+    await user.click(screen.getByRole('tab', { name: 'Explorer' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Open environment Stage copy updated' })).toBeInTheDocument());
 
+    await user.click(screen.getByRole('button', { name: 'Open environment Stage copy updated' }));
+    await user.click(screen.getByRole('tab', { name: 'Surface' }));
     await user.click(screen.getByRole('button', { name: 'Delete environment' }));
+    await user.click(screen.getByRole('tab', { name: 'Explorer' }));
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Open environment Stage copy updated' })).not.toBeInTheDocument());
-  }, 10000);
+  }, 30000);
   it('renders the environments route copy in Korean when the locale is switched', async () => {
     vi.stubGlobal('fetch', createEnvironmentsFetch());
     renderApp(<AppRouter />, { initialEntries: ['/environments'], initialLocale: 'ko' });

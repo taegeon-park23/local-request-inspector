@@ -2,7 +2,7 @@
 
 - **Purpose:** Implement the bounded request-level environment selector and server-owned runtime resolution contract defined by `T029`.
 - **Created:** 2026-03-22
-- **Last Updated:** 2026-03-22
+- **Last Updated:** 2026-03-23
 - **Related Documents:** `task-011-request-builder-mvp-design.md`, `task-027-placeholder-route-mvp.md`, `task-029-request-environment-selection-and-resolution-plan.md`, `../architecture/request-environment-selection-and-resolution.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`, `../tracking/post-m3-reactivation-guide.md`
 - **Status:** done
 - **Priority:** P1
@@ -78,6 +78,12 @@ This task is done when all of the following are true:
 - Execution observations now carry `environmentId` and `environmentLabel`.
 - History records now persist and expose the resolved environment metadata.
 - The request result panel now shows the environment label in `Execution Info`.
+
+### 6.5 Environment route guidance follow-up
+- The `/environments` management surface now includes an operator-facing example section tied back to the `T029`/`T030` resolution contract.
+- The guidance explicitly demonstrates the bounded `{{VARIABLE_NAME}}` substitution pattern across URL, header, and JSON body examples.
+- The same guidance now explains the route-specific difference between plain variables, secret variables, `hasStoredValue`, and `replacementValue`.
+- Script example copy currently uses `env.get('token')` because that best matches the architecture safety recommendation for a controlled environment getter API; the final runtime helper name remains **확실하지 않음** and should be updated if a stricter script contract lands later.
 
 ## 7. Validation
 Validated in this sandbox on 2026-03-22:
