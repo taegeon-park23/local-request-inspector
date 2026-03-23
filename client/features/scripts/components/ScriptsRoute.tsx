@@ -162,15 +162,21 @@ export function ScriptsRoute() {
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
         <div className="scripts-explorer">
-          <header className="scripts-explorer__header">
-            <div>
-              <p className="section-placeholder__eyebrow">{t('scriptsRoute.sidebar.eyebrow')}</p>
-              <h2>{t('scriptsRoute.sidebar.title')}</h2>
-              <p>{t('scriptsRoute.sidebar.summary')}</p>
+          <header className="scripts-explorer__header explorer-intro explorer-intro--compact">
+            <div className="explorer-intro__topline">
+              <div className="explorer-intro__copy">
+                <p className="section-placeholder__eyebrow">{t('scriptsRoute.sidebar.eyebrow')}</p>
+                <div className="explorer-intro__title-row">
+                  <h2>{t('scriptsRoute.sidebar.title')}</h2>
+                </div>
+                <p>{t('scriptsRoute.sidebar.summary')}</p>
+              </div>
+              <div className="explorer-intro__actions">
+                <button type="button" className="workspace-button" onClick={() => { setDraft(createScriptDraft()); setIsCreatingDraft(true); setSelectedScriptId(null); }}>
+                  <IconLabel icon="new">{t('scriptsRoute.sidebar.newButton')}</IconLabel>
+                </button>
+              </div>
             </div>
-            <button type="button" className="workspace-button" onClick={() => { setDraft(createScriptDraft()); setIsCreatingDraft(true); setSelectedScriptId(null); }}>
-              <IconLabel icon="new">{t('scriptsRoute.sidebar.newButton')}</IconLabel>
-            </button>
           </header>
           <div className="scripts-filter-grid">
             <label className="request-field">
@@ -188,7 +194,7 @@ export function ScriptsRoute() {
           {listQuery.isError ? <EmptyStateCallout title={t('scriptsRoute.empty.degraded.title')} description={listQuery.error instanceof Error ? listQuery.error.message : t('scriptsRoute.empty.degraded.fallbackDescription')} /> : null}
           {!listQuery.isPending && (listQuery.data ?? []).length === 0 ? <EmptyStateCallout title={t('scriptsRoute.empty.noItems.title')} description={t('scriptsRoute.empty.noItems.description')} /> : null}
           {!listQuery.isPending && (listQuery.data ?? []).length > 0 && sortedItems.length === 0 ? <EmptyStateCallout title={t('scriptsRoute.empty.noFilteredItems.title')} description={t('scriptsRoute.empty.noFilteredItems.description')} /> : null}
-          {sortedItems.length > 0 ? <ul className="scripts-list" aria-label={t('scriptsRoute.sidebar.listAriaLabel')}>{sortedItems.map((script) => <li key={script.id}><button type="button" className={script.id === effectiveSelectedId && !isCreatingDraft ? 'workspace-request workspace-request--selected' : 'workspace-request'} aria-label={t('scriptsRoute.sidebar.openScriptAction', { name: script.name })} onClick={() => { setIsCreatingDraft(false); setSelectedScriptId(script.id); }}><span className="workspace-request__header"><span className="workspace-request__title">{script.name}</span><span className="workspace-request__badges"><span className="workspace-chip">{getScriptTypeLabel(script.scriptType, t)}</span></span></span><span className="workspace-request__meta">{script.description || t('scriptsRoute.list.noDescription')}</span><span className="workspace-request__meta">{script.sourcePreview || t('scriptsRoute.list.emptySource')}</span></button></li>)}</ul> : null}
+          {sortedItems.length > 0 ? <ul className="scripts-list" aria-label={t('scriptsRoute.sidebar.listAriaLabel')}>{sortedItems.map((script) => <li key={script.id}><button type="button" className={script.id === effectiveSelectedId && !isCreatingDraft ? 'workspace-request workspace-request--selected' : 'workspace-request'} aria-label={t('scriptsRoute.sidebar.openScriptAction', { name: script.name })} onClick={() => { setIsCreatingDraft(false); setSelectedScriptId(script.id); }}><span className="workspace-request__header"><span className="workspace-request__title" title={script.name}>{script.name}</span><span className="workspace-request__badges"><span className="workspace-chip">{getScriptTypeLabel(script.scriptType, t)}</span></span></span><span className="workspace-request__meta workspace-request__meta--clamp" title={script.description || t('scriptsRoute.list.noDescription')}>{script.description || t('scriptsRoute.list.noDescription')}</span><span className="workspace-request__meta" title={script.sourcePreview || t('scriptsRoute.list.emptySource')}>{script.sourcePreview || t('scriptsRoute.list.emptySource')}</span></button></li>)}</ul> : null}
         </div>
         </section>
       )}

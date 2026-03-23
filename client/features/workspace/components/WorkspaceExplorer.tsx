@@ -59,15 +59,19 @@ export function WorkspaceExplorer({
 
   return (
     <div className="workspace-explorer">
-      <header className="workspace-explorer__header">
-        <p className="section-placeholder__eyebrow">{t('workspaceRoute.explorer.header.eyebrow')}</p>
-        <h2>{t('workspaceRoute.explorer.header.title')}</h2>
-        <p>{t('workspaceRoute.explorer.header.summary')}</p>
+      <header className="workspace-explorer__header explorer-intro explorer-intro--compact">
+        <div className="explorer-intro__copy">
+          <p className="section-placeholder__eyebrow">{t('workspaceRoute.explorer.header.eyebrow')}</p>
+          <div className="explorer-intro__title-row">
+            <h2>{t('workspaceRoute.explorer.header.title')}</h2>
+          </div>
+          <p>{t('workspaceRoute.explorer.header.summary')}</p>
+        </div>
         <div className="workspace-explorer__role-strip" aria-label="Explorer surface role">
           <span className="workspace-chip">{t('workspaceRoute.explorer.header.authoringChip')}</span>
           <span className="workspace-chip workspace-chip--secondary">{t('workspaceRoute.explorer.header.resourceLaneChip')}</span>
         </div>
-        <div className="workspace-explorer__header-actions">
+        <div className="workspace-explorer__header-actions explorer-intro__actions">
           <button type="button" className="workspace-button" onClick={onCreateRequest}>
             <IconLabel icon="new">{t('workspaceRoute.explorer.actions.newRequest')}</IconLabel>
           </button>
@@ -192,7 +196,7 @@ function WorkspaceExplorerNodeList({
                   onClick={() => onOpenSavedRequest(node.request)}
                 >
                   <span className="workspace-request__header">
-                    <span className="workspace-request__title">{node.request.name}</span>
+                    <span className="workspace-request__title" title={node.request.name}>{node.request.name}</span>
                     <span className="workspace-request__badges">
                       <span className="workspace-chip">{node.request.methodLabel}</span>
                       <span
@@ -208,7 +212,7 @@ function WorkspaceExplorerNodeList({
                       </span>
                     </span>
                   </span>
-                  <span className="workspace-request__meta">
+                  <span className="workspace-request__meta workspace-request__meta--clamp" title={node.request.summary}>
                     {node.request.summary}
                   </span>
                 </button>
@@ -250,4 +254,3 @@ function WorkspaceExplorerNodeList({
     </ul>
   );
 }
-

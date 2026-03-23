@@ -183,10 +183,12 @@ export function HistoryPlaceholder() {
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
         <div className="history-explorer">
-          <header className="history-explorer__header">
-            <div>
+          <header className="history-explorer__header explorer-intro explorer-intro--compact">
+            <div className="explorer-intro__copy">
               <p className="section-placeholder__eyebrow">{t('historyRoute.sidebar.eyebrow')}</p>
-              <h2>{t('historyRoute.sidebar.title')}</h2>
+              <div className="explorer-intro__title-row">
+                <h2>{t('historyRoute.sidebar.title')}</h2>
+              </div>
               <p>{observationHealth === 'ready' ? t('historyRoute.sidebar.health.ready') : t('historyRoute.sidebar.health.degraded')}</p>
               <div className="workspace-explorer__role-strip" aria-label="History surface role">
                 <span className="workspace-chip">{t('roles.observation')}</span>
@@ -272,10 +274,10 @@ export function HistoryPlaceholder() {
                         <StatusBadge kind="transportOutcome" value={history.transportOutcome} />
                         <span className="workspace-chip workspace-chip--secondary">{history.sourceLabel}</span>
                       </span>
-                      <span className="history-row__title">{history.requestLabel}</span>
-                      <span className="history-row__path">{history.hostPathHint}</span>
-                      <span className="history-row__summary">{history.testSummaryLabel}</span>
-                      <span className="history-row__meta">
+                      <span className="history-row__title" title={history.requestLabel}>{history.requestLabel}</span>
+                      <span className="history-row__path" title={history.hostPathHint}>{history.hostPathHint}</span>
+                      <span className="history-row__summary" title={history.testSummaryLabel}>{history.testSummaryLabel}</span>
+                      <span className="history-row__meta" title={`${history.durationLabel} · ${history.executedAtLabel}`}>
                         {history.durationLabel} · {history.executedAtLabel}
                       </span>
                     </button>

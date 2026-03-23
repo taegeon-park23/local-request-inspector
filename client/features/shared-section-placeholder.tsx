@@ -79,13 +79,14 @@ export function RoutePanelTabsLayout({
         data-floating-explorer-open={floatingExplorerOpen}
       >
         <div className="shell-route-panels__floating-layout">
-          <div className="shell-route-panels__floating-overlay">
+          <div className="shell-route-panels__floating-overlay" data-floating-explorer-overlay="true">
             <button
               type="button"
-              className="workspace-button workspace-button--secondary shell-route-panels__floating-toggle"
+              className="shell-route-panels__floating-toggle"
               aria-expanded={floatingExplorerOpen}
               aria-controls={`floating-explorer-${floatingExplorerRouteKey}`}
               onClick={handleFloatingExplorerToggle}
+              data-floating-explorer-toggle="true"
             >
               <AppIcon
                 name="overview"
@@ -97,12 +98,13 @@ export function RoutePanelTabsLayout({
                   : t('shell.routePanels.floatingExplorer.expandAction')}
               </span>
             </button>
-            <div className="shell-route-panels__floating-explorer-slot">
+            <div className="shell-route-panels__floating-explorer-slot" data-floating-explorer-slot="true">
               <div
                 id={`floating-explorer-${floatingExplorerRouteKey}`}
                 className={floatingExplorerOpen
                   ? 'shell-route-panels__floating-explorer shell-route-panels__floating-explorer--open'
                   : 'shell-route-panels__floating-explorer shell-route-panels__floating-explorer--closed'}
+                data-floating-explorer-drawer="true"
               >
                 {explorer}
               </div>

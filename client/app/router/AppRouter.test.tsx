@@ -132,6 +132,28 @@ describe('AppRouter shell bootstrap', () => {
     expect(screen.getByLabelText('Section explorer')).toBeInTheDocument();
   });
 
+  it('keeps the floating explorer toggle separate from the drawer surface and preserves compact explorer wrappers', () => {
+    renderApp(<AppRouter />);
+
+    const overlay = document.querySelector('[data-floating-explorer-overlay=\"true\"]');
+    const toggle = document.querySelector('[data-floating-explorer-toggle=\"true\"]');
+    const slot = document.querySelector('[data-floating-explorer-slot=\"true\"]');
+    const drawer = document.querySelector('[data-floating-explorer-drawer=\"true\"]');
+    const explorerHeader = document.querySelector('.workspace-explorer__header.explorer-intro');
+    const explorerFilters = document.querySelector('.workspace-explorer__tree');
+
+    expect(overlay).not.toBeNull();
+    expect(toggle).not.toBeNull();
+    expect(slot).not.toBeNull();
+    expect(drawer).not.toBeNull();
+    expect(explorerHeader).not.toBeNull();
+    expect(explorerFilters).not.toBeNull();
+    expect(toggle?.parentElement).toBe(overlay);
+    expect(slot?.parentElement).toBe(overlay);
+    expect(toggle?.nextElementSibling).toBe(slot);
+    expect(drawer?.parentElement).toBe(slot);
+  });
+
   it('keeps page-level scroll disabled by constraining shell-body, shell-content, and floating main/detail panels to the shell height', async () => {
     const user = userEvent.setup();
     const rectMock = installLayoutRectMock();
@@ -224,6 +246,7 @@ describe('AppRouter shell bootstrap', () => {
     await user.click(screen.getByRole('link', { name: /mocks/i }));
     expect(screen.getByRole('heading', { name: 'Mocks' })).toBeInTheDocument();
     expect(screen.getByText(/Persisted authored rules live here/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Save rule' })).toBeEnabled();
+    await user.click(screen.getByRole('button', { name: 'New Rule' }));
+    expect(screen.getByRole('button', { name: 'Create rule' })).toBeDisabled();
   }, 15000);
 });

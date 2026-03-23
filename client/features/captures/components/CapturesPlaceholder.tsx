@@ -187,17 +187,23 @@ export function CapturesPlaceholder() {
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
         <div className="captures-explorer">
-          <header className="captures-explorer__header">
+          <header className="captures-explorer__header explorer-intro explorer-intro--compact">
+            <div className="explorer-intro__topline">
+              <div className="explorer-intro__copy">
+                <p className="section-placeholder__eyebrow">{t('capturesRoute.sidebar.eyebrow')}</p>
+                <div className="explorer-intro__title-row">
+                  <h2>{t('capturesRoute.sidebar.title')}</h2>
+                </div>
+                <p>{connectionCopyByHealth[observationHealth]}</p>
+              </div>
+              <StatusBadge kind="connection" value={connectionHealth} />
+            </div>
             <div>
-              <p className="section-placeholder__eyebrow">{t('capturesRoute.sidebar.eyebrow')}</p>
-              <h2>{t('capturesRoute.sidebar.title')}</h2>
-              <p>{connectionCopyByHealth[observationHealth]}</p>
               <div className="workspace-explorer__role-strip" aria-label="Capture surface role">
                 <span className="workspace-chip">{t('roles.observation')}</span>
                 <span className="workspace-chip workspace-chip--secondary">{t('capturesRoute.sidebar.roleChip')}</span>
               </div>
             </div>
-            <StatusBadge kind="connection" value={connectionHealth} />
           </header>
 
           <div className="captures-filter-grid">
@@ -280,9 +286,9 @@ export function CapturesPlaceholder() {
                         <StatusBadge kind="mockOutcome" value={capture.mockOutcome} />
                         <span className="workspace-chip workspace-chip--secondary">{capture.scopeLabel}</span>
                       </span>
-                      <span className="capture-row__path">{capture.host}{capture.path}</span>
-                      <span className="capture-row__summary">{capture.bodyHint}</span>
-                      <span className="capture-row__meta">{capture.receivedAtLabel} · {capture.scopeLabel}</span>
+                      <span className="capture-row__path" title={`${capture.host}${capture.path}`}>{capture.host}{capture.path}</span>
+                      <span className="capture-row__summary" title={capture.bodyHint}>{capture.bodyHint}</span>
+                      <span className="capture-row__meta" title={`${capture.receivedAtLabel} · ${capture.scopeLabel}`}>{capture.receivedAtLabel} · {capture.scopeLabel}</span>
                     </button>
                   </li>
                 );

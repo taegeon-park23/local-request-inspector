@@ -185,15 +185,21 @@ export function EnvironmentsRoute() {
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
         <div className="environments-explorer">
-          <header className="environments-explorer__header">
-            <div>
-              <p className="section-placeholder__eyebrow">{t('environmentsRoute.sidebar.eyebrow')}</p>
-              <h2>{t('environmentsRoute.sidebar.title')}</h2>
-              <p>{t('environmentsRoute.sidebar.summary')}</p>
+          <header className="environments-explorer__header explorer-intro explorer-intro--compact">
+            <div className="explorer-intro__topline">
+              <div className="explorer-intro__copy">
+                <p className="section-placeholder__eyebrow">{t('environmentsRoute.sidebar.eyebrow')}</p>
+                <div className="explorer-intro__title-row">
+                  <h2>{t('environmentsRoute.sidebar.title')}</h2>
+                </div>
+                <p>{t('environmentsRoute.sidebar.summary')}</p>
+              </div>
+              <div className="explorer-intro__actions">
+                <button type="button" className="workspace-button" onClick={() => { setDraft(createEnvironmentDraft()); setIsCreatingDraft(true); setSelectedEnvironmentId(null); }}>
+                  <IconLabel icon="new">{t('environmentsRoute.sidebar.newButton')}</IconLabel>
+                </button>
+              </div>
             </div>
-            <button type="button" className="workspace-button" onClick={() => { setDraft(createEnvironmentDraft()); setIsCreatingDraft(true); setSelectedEnvironmentId(null); }}>
-              <IconLabel icon="new">{t('environmentsRoute.sidebar.newButton')}</IconLabel>
-            </button>
           </header>
           <div className="environments-filter-grid">
             <label className="request-field">
@@ -211,7 +217,7 @@ export function EnvironmentsRoute() {
           {listQuery.isError ? <EmptyStateCallout title={t('environmentsRoute.empty.degraded.title')} description={listQuery.error instanceof Error ? listQuery.error.message : t('environmentsRoute.empty.degraded.fallbackDescription')} /> : null}
           {!listQuery.isPending && (listQuery.data ?? []).length === 0 ? <EmptyStateCallout title={t('environmentsRoute.empty.noItems.title')} description={t('environmentsRoute.empty.noItems.description')} /> : null}
           {!listQuery.isPending && (listQuery.data ?? []).length > 0 && sortedItems.length === 0 ? <EmptyStateCallout title={t('environmentsRoute.empty.noFilteredItems.title')} description={t('environmentsRoute.empty.noFilteredItems.description')} /> : null}
-          {sortedItems.length > 0 ? <ul className="environments-list" aria-label={t('environmentsRoute.sidebar.listAriaLabel')}>{sortedItems.map((environment) => <li key={environment.id}><button type="button" className={environment.id === effectiveSelectedId && !isCreatingDraft ? 'workspace-request workspace-request--selected' : 'workspace-request'} aria-label={t('environmentsRoute.sidebar.openEnvironmentAction', { name: environment.name })} onClick={() => { setIsCreatingDraft(false); setSelectedEnvironmentId(environment.id); }}><span className="workspace-request__header"><span className="workspace-request__title">{environment.name}</span><span className="workspace-request__badges">{environment.isDefault ? <span className="workspace-chip">{t('environmentsRoute.list.defaultChip')}</span> : null}<span className="workspace-chip workspace-chip--secondary">{t('environmentsRoute.list.varsChip', { count: environment.variableCount })}</span></span></span><span className="workspace-request__meta">{environment.description || t('environmentsRoute.list.noDescription')}</span><span className="workspace-request__meta">{environment.resolutionSummary}</span></button></li>)}</ul> : null}
+          {sortedItems.length > 0 ? <ul className="environments-list" aria-label={t('environmentsRoute.sidebar.listAriaLabel')}>{sortedItems.map((environment) => <li key={environment.id}><button type="button" className={environment.id === effectiveSelectedId && !isCreatingDraft ? 'workspace-request workspace-request--selected' : 'workspace-request'} aria-label={t('environmentsRoute.sidebar.openEnvironmentAction', { name: environment.name })} onClick={() => { setIsCreatingDraft(false); setSelectedEnvironmentId(environment.id); }}><span className="workspace-request__header"><span className="workspace-request__title" title={environment.name}>{environment.name}</span><span className="workspace-request__badges">{environment.isDefault ? <span className="workspace-chip">{t('environmentsRoute.list.defaultChip')}</span> : null}<span className="workspace-chip workspace-chip--secondary">{t('environmentsRoute.list.varsChip', { count: environment.variableCount })}</span></span></span><span className="workspace-request__meta workspace-request__meta--clamp" title={environment.description || t('environmentsRoute.list.noDescription')}>{environment.description || t('environmentsRoute.list.noDescription')}</span><span className="workspace-request__meta" title={environment.resolutionSummary}>{environment.resolutionSummary}</span></button></li>)}</ul> : null}
         </div>
         </section>
       )}

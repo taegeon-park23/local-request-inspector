@@ -567,19 +567,27 @@ export function MocksPlaceholder() {
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
         <div className="mocks-explorer">
-          <header className="mocks-explorer__header">
+          <header className="mocks-explorer__header explorer-intro explorer-intro--compact">
+            <div className="explorer-intro__topline">
+              <div className="explorer-intro__copy">
+                <p className="section-placeholder__eyebrow">{t('mocksRoute.sidebar.eyebrow')}</p>
+                <div className="explorer-intro__title-row">
+                  <h2>{t('mocksRoute.sidebar.title')}</h2>
+                </div>
+                <p>{t('mocksRoute.sidebar.description')}</p>
+              </div>
+              <div className="explorer-intro__actions">
+                <button type="button" className="workspace-button" onClick={() => startCreatingRule()}>
+                  <IconLabel icon="new">{t('mocksRoute.sidebar.newRule')}</IconLabel>
+                </button>
+              </div>
+            </div>
             <div>
-              <p className="section-placeholder__eyebrow">{t('mocksRoute.sidebar.eyebrow')}</p>
-              <h2>{t('mocksRoute.sidebar.title')}</h2>
-              <p>{t('mocksRoute.sidebar.description')}</p>
               <div className="workspace-explorer__role-strip" aria-label="Mocks surface role">
                 <span className="workspace-chip">{t('roles.management')}</span>
                 <span className="workspace-chip workspace-chip--secondary">{t('mocksRoute.sidebar.resourceLaneChip')}</span>
               </div>
             </div>
-            <button type="button" className="workspace-button" onClick={() => startCreatingRule()}>
-              <IconLabel icon="new">{t('mocksRoute.sidebar.newRule')}</IconLabel>
-            </button>
           </header>
 
           <div className="mocks-filter-grid">
@@ -627,9 +635,9 @@ export function MocksPlaceholder() {
                         <span className="workspace-chip">{t('mocksRoute.helpers.priorityChip', { priority: rule.priority })}</span>
                         <span className="workspace-chip workspace-chip--secondary">{listPresentation.fixedDelayLabel}</span>
                       </span>
-                      <span className="mocks-row__title">{rule.name}</span>
-                      <span className="mocks-row__summary">{listPresentation.matcherSummary}</span>
-                      <span className="mocks-row__meta">{listPresentation.responseSummary}</span>
+                      <span className="mocks-row__title" title={rule.name}>{rule.name}</span>
+                      <span className="mocks-row__summary" title={listPresentation.matcherSummary}>{listPresentation.matcherSummary}</span>
+                      <span className="mocks-row__meta" title={listPresentation.responseSummary}>{listPresentation.responseSummary}</span>
                     </button>
                   </li>
                 );
