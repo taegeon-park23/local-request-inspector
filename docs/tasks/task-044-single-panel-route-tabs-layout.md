@@ -3,7 +3,7 @@
 - **Purpose:** Replace the current explorer/main/detail three-column route layout with a single-panel tabbed route layout so one route panel occupies the full main surface at a time.
 - **Created:** 2026-03-23
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `task-043-shell-density-and-collapsible-navigation-refinement.md`, `../architecture/material-3-adoption-plan.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`
+- **Related Documents:** `task-043-shell-density-and-collapsible-navigation-refinement.md`, `../architecture/material-3-adoption-plan.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`, `task-047-route-panel-scroll-containment-follow-up.md`
 - **Status:** done
 - **Priority:** P1
 
@@ -50,6 +50,11 @@ If `npm.cmd run test:ui` remains sandbox-blocked, request a local rerun with the
 - Converted `Workspace`, `Environments`, and `Scripts` to the floating explorer mode so explorer, main, and detail stay mounted together and selection updates are visible immediately.
 - Added shell-store persistence for per-route floating explorer open/collapsed state and responsive dock/overlay CSS in `client/app/shell/material-theme.css`.
 - Expanded shell and route tests so workspace-oriented routes cover explorer-driven selection visibility plus explorer collapse/expand behavior without extra route-panel tab clicks.
+- T047 later tightened the shell height and route-panel overflow contract so the T044 single-panel tabs stay inside the main surface without exposing extra page background when route content grows.
+- Added a shared route-panel tab layout in `client/features/shared-section-placeholder.tsx` so explorer, main surface, and contextual detail render as route-local tabs instead of simultaneous columns.
+- Converted `Workspace`, `Captures`, `History`, `Mocks`, `Environments`, `Scripts`, `Settings`, and the shared placeholder path to the single-panel route-tab pattern.
+- Updated shell layout CSS so the route content area is one full-width surface and each top-level route panel now occupies the full main region while inactive panels remain mounted to preserve feature state.
+- Added route-panel tab labels to the shared i18n catalog and expanded shell smoke coverage in `client/app/router/AppRouter.test.tsx`.
 
 ## 7. Validation Results
 - `npm run typecheck` — passed in sandbox on 2026-03-23 after the floating-explorer follow-up

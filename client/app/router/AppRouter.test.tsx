@@ -1,7 +1,15 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AppRouter } from '@client/app/router/AppRouter';
 import { renderApp } from '@client/shared/test/render-app';
+
+
+const testDir = path.dirname(fileURLToPath(import.meta.url));
+const shellCssSource = readFileSync(path.resolve(testDir, '../shell/shell.css'), 'utf8');
+const materialThemeSource = readFileSync(path.resolve(testDir, '../shell/material-theme.css'), 'utf8');
 
 describe('AppRouter shell bootstrap', () => {
   it('renders the persistent shell regions and nav labels', () => {
@@ -32,6 +40,7 @@ describe('AppRouter shell bootstrap', () => {
     expect(screen.getAllByText('작업공간').length).toBeGreaterThan(0);
     expect(screen.getAllByText('설정').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: '탐색기 접기' })).toBeInTheDocument();
+    expect(screen.getByRole('tablist', { name: '라우트 패널 탭' })).toBeInTheDocument();
     expect(screen.getByLabelText('섹션 탐색기')).toBeInTheDocument();
     expect(screen.getByLabelText('메인 작업면')).toBeInTheDocument();
     expect(screen.getByLabelText('컨텍스트 상세 패널')).toBeInTheDocument();
@@ -91,6 +100,26 @@ describe('AppRouter shell bootstrap', () => {
     expect(screen.getByLabelText('Section explorer')).toBeInTheDocument();
   });
 
+  it('keeps route-panel overflow constrained to the main surface scroll container', () => {
+    expect(shellCssSource).toContain('body { margin: 0; background: #020617; overflow: hidden; }');
+    expect(shellCssSource).toContain('.shell-layout { height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }');
+    expect(shellCssSource).toContain('.shell-body { display: grid; grid-template-columns: 220px 1fr; min-height: 0; overflow: hidden; }');
+    expect(shellCssSource).toContain('.shell-content { display: grid; grid-template-columns: minmax(220px, 280px) 1fr minmax(220px, 280px); gap: 1rem; padding: 1rem; min-height: 0; overflow-y: auto; overflow-x: hidden; }');
+
+    expect(materialThemeSource).toContain(`.shell-route-panels__body {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}`);
+    expect(materialThemeSource).toContain(`.shell-route-panels__panel--active > .shell-panel {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}`);
+    expect(materialThemeSource).not.toContain('min-height: calc(100vh - 8.5rem);');
+  });
+
   it('supports the smoke path across workspace, scripts, history replay, and mocks shell readiness', async () => {
     const user = userEvent.setup();
     renderApp(<AppRouter />);
@@ -127,6 +156,7 @@ describe('AppRouter shell bootstrap', () => {
 
     await user.click(screen.getByRole('link', { name: /mocks/i }));
     expect(screen.getByRole('heading', { name: 'Mocks' })).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'Surface' }));
     expect(screen.getByText(/Persisted authored rules live here/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save rule' })).toBeEnabled();
   });
