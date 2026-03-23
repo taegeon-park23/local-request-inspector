@@ -115,6 +115,7 @@ Tasks are prioritized using these criteria:
 
 ### Phase Z — Workspace Result UX Follow-Up
 50. **T047** Workspace result panel auto focus and immediate feedback — complete
+51. **T048** Floating explorer density and visibility refresh — complete
 
 ### Phase AA — Parked Optional Future Work
 51. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule bundle scope
@@ -153,6 +154,7 @@ Recently completed foundation work:
 
 Ready to start now:
 - `T047` is landed: workspace runs now auto-focus the most relevant result tab from shared per-tab command state, restore the single-panel workspace detail panel after run completion, and expose immediate console/test summary feedback without changing execution contracts
+- `T048` is landed: floating explorer routes now use a lighter overlay toggle, compact one-line header summaries, tighter search/list spacing, shared truncation rules, and route-aware width clamps that improve first-screen list visibility without reopening the T047 scroll-containment slice
 - `T046` is landed: shell route-panel regions plus Environments, Scripts, and Workspace explorer generated ARIA/action labels now localize through the shared i18n layer while request-builder generated ARIA and runtime-owned status-token boundaries remain deferred
 - `T045` is landed: the Mocks route sidebar/detail/contextual chrome, route-local empty states, authored-rule action labels, detail-tab labels, and helper-generated authored-rule summaries now localize through the shared i18n layer while preserving backend contracts and runtime-owned status-token boundaries
 - `T044` is landed: top-level routes now switch explorer, main surface, and contextual detail through one route-local tab strip, so only one panel occupies the full main region at a time while underlying feature state stays mounted

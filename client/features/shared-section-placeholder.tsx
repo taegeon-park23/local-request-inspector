@@ -30,6 +30,14 @@ interface SectionPlaceholderProps {
   children?: ReactNode;
 }
 
+interface FloatingExplorerHeaderProps {
+  eyebrow: string;
+  title: string;
+  summary: string;
+  actions?: ReactNode;
+  children?: ReactNode;
+}
+
 const routePanelTabIcons: Record<RoutePanelTabId, AppIconName> = {
   explorer: 'overview',
   main: 'workspace',
@@ -77,6 +85,7 @@ export function RoutePanelTabsLayout({
       <div
         className={floatingExplorerOpen ? 'shell-route-panels shell-route-panels--floating' : 'shell-route-panels shell-route-panels--floating shell-route-panels--floating-collapsed'}
         data-floating-explorer-open={floatingExplorerOpen}
+        data-floating-explorer-route={floatingExplorerRouteKey}
       >
         <div className="shell-route-panels__floating-layout">
           <div className="shell-route-panels__floating-overlay">
@@ -150,6 +159,26 @@ export function RoutePanelTabsLayout({
         </div>
       </div>
     </div>
+  );
+}
+
+export function FloatingExplorerHeader({
+  eyebrow,
+  title,
+  summary,
+  actions,
+  children,
+}: FloatingExplorerHeaderProps) {
+  return (
+    <header className="floating-explorer-header">
+      <div className="floating-explorer-header__copy">
+        <p className="section-placeholder__eyebrow">{eyebrow}</p>
+        <h2>{title}</h2>
+        <p className="floating-explorer-header__summary" title={summary}>{summary}</p>
+      </div>
+      {actions ? <div className="floating-explorer-header__actions">{actions}</div> : null}
+      {children ? <div className="floating-explorer-header__meta">{children}</div> : null}
+    </header>
   );
 }
 

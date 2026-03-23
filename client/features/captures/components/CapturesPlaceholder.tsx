@@ -18,7 +18,10 @@ import { PanelTabs } from '@client/shared/ui/PanelTabs';
 import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
 import { IconLabel } from '@client/shared/ui/IconLabel';
-import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
+import {
+  FloatingExplorerHeader,
+  RoutePanelTabsLayout,
+} from '@client/features/shared-section-placeholder';
 
 type TranslateFn = ReturnType<typeof useI18n>['t'];
 type CaptureDetailTabId = 'timeline' | 'deferred-detail';
@@ -187,18 +190,17 @@ export function CapturesPlaceholder() {
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
         <div className="captures-explorer">
-          <header className="captures-explorer__header">
-            <div>
-              <p className="section-placeholder__eyebrow">{t('capturesRoute.sidebar.eyebrow')}</p>
-              <h2>{t('capturesRoute.sidebar.title')}</h2>
-              <p>{connectionCopyByHealth[observationHealth]}</p>
-              <div className="workspace-explorer__role-strip" aria-label="Capture surface role">
-                <span className="workspace-chip">{t('roles.observation')}</span>
-                <span className="workspace-chip workspace-chip--secondary">{t('capturesRoute.sidebar.roleChip')}</span>
-              </div>
+          <FloatingExplorerHeader
+            eyebrow={t('capturesRoute.sidebar.eyebrow')}
+            title={t('capturesRoute.sidebar.title')}
+            summary={connectionCopyByHealth[observationHealth]}
+            actions={<StatusBadge kind="connection" value={connectionHealth} />}
+          >
+            <div className="workspace-explorer__role-strip" aria-label="Capture surface role">
+              <span className="workspace-chip">{t('roles.observation')}</span>
+              <span className="workspace-chip workspace-chip--secondary">{t('capturesRoute.sidebar.roleChip')}</span>
             </div>
-            <StatusBadge kind="connection" value={connectionHealth} />
-          </header>
+          </FloatingExplorerHeader>
 
           <div className="captures-filter-grid">
             <label className="request-field">
@@ -280,8 +282,8 @@ export function CapturesPlaceholder() {
                         <StatusBadge kind="mockOutcome" value={capture.mockOutcome} />
                         <span className="workspace-chip workspace-chip--secondary">{capture.scopeLabel}</span>
                       </span>
-                      <span className="capture-row__path">{capture.host}{capture.path}</span>
-                      <span className="capture-row__summary">{capture.bodyHint}</span>
+                      <span className="capture-row__path" title={`${capture.host}${capture.path}`}>{capture.host}{capture.path}</span>
+                      <span className="capture-row__summary" title={capture.bodyHint}>{capture.bodyHint}</span>
                       <span className="capture-row__meta">{capture.receivedAtLabel} · {capture.scopeLabel}</span>
                     </button>
                   </li>

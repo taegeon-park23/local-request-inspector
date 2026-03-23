@@ -57,6 +57,7 @@ describe('AppRouter shell bootstrap', () => {
     const navigationRail = screen.getByLabelText('Navigation rail');
     expect(navigationRail).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Collapse explorer' })).toBeInTheDocument();
+    expect(document.querySelector('[data-floating-explorer-route="workspace"]')).toBeInTheDocument();
     expect(screen.getByLabelText('Section explorer')).toBeInTheDocument();
     expect(screen.getByLabelText('Main work surface')).toBeInTheDocument();
     expect(screen.getByLabelText('Contextual detail panel')).toBeInTheDocument();
@@ -120,8 +121,10 @@ describe('AppRouter shell bootstrap', () => {
 
     const explorer = screen.getByLabelText('Section explorer');
     const detailPanel = screen.getByLabelText('Contextual detail panel');
-    await user.click(within(explorer).getByRole('button', { name: 'Open Health check' }));
+    const healthButton = within(explorer).getByRole('button', { name: 'Open Health check' });
+    await user.click(healthButton);
 
+    expect(healthButton).toBeInTheDocument();
     expect(screen.getByLabelText('Request URL')).toHaveValue('http://localhost:5671/health');
     expect(within(detailPanel).getByRole('tablist', { name: 'Result panel tabs' })).toBeInTheDocument();
 
@@ -210,6 +213,7 @@ describe('AppRouter shell bootstrap', () => {
 
     fireEvent.click(screen.getByRole('link', { name: /history/i }));
     expect(await screen.findByRole('heading', { name: 'History' })).toBeInTheDocument();
+    expect(document.querySelector('.history-explorer .floating-explorer-header__summary')).not.toBeNull();
     expect(await screen.findByText(/Run Replay Now stays disabled in this slice because replay remains edit-first/i)).toBeInTheDocument();
 
     await user.click(await screen.findByRole('button', { name: 'Open Replay Draft' }));
@@ -224,6 +228,6 @@ describe('AppRouter shell bootstrap', () => {
     await user.click(screen.getByRole('link', { name: /mocks/i }));
     expect(screen.getByRole('heading', { name: 'Mocks' })).toBeInTheDocument();
     expect(screen.getByText(/Persisted authored rules live here/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Save rule' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'New Rule' })).toBeEnabled();
   }, 15000);
 });

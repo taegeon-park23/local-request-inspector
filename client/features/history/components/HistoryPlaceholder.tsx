@@ -23,7 +23,10 @@ import { PanelTabs } from '@client/shared/ui/PanelTabs';
 import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
 import { IconLabel } from '@client/shared/ui/IconLabel';
-import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
+import {
+  FloatingExplorerHeader,
+  RoutePanelTabsLayout,
+} from '@client/features/shared-section-placeholder';
 
 type Translate = ReturnType<typeof useI18n>['t'];
 
@@ -183,17 +186,16 @@ export function HistoryPlaceholder() {
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
         <div className="history-explorer">
-          <header className="history-explorer__header">
-            <div>
-              <p className="section-placeholder__eyebrow">{t('historyRoute.sidebar.eyebrow')}</p>
-              <h2>{t('historyRoute.sidebar.title')}</h2>
-              <p>{observationHealth === 'ready' ? t('historyRoute.sidebar.health.ready') : t('historyRoute.sidebar.health.degraded')}</p>
-              <div className="workspace-explorer__role-strip" aria-label="History surface role">
-                <span className="workspace-chip">{t('roles.observation')}</span>
-                <span className="workspace-chip workspace-chip--secondary">{t('historyRoute.sidebar.roleChip')}</span>
-              </div>
+          <FloatingExplorerHeader
+            eyebrow={t('historyRoute.sidebar.eyebrow')}
+            title={t('historyRoute.sidebar.title')}
+            summary={observationHealth === 'ready' ? t('historyRoute.sidebar.health.ready') : t('historyRoute.sidebar.health.degraded')}
+          >
+            <div className="workspace-explorer__role-strip" aria-label="History surface role">
+              <span className="workspace-chip">{t('roles.observation')}</span>
+              <span className="workspace-chip workspace-chip--secondary">{t('historyRoute.sidebar.roleChip')}</span>
             </div>
-          </header>
+          </FloatingExplorerHeader>
 
           <div className="history-filter-grid">
             <label className="request-field">
@@ -272,9 +274,9 @@ export function HistoryPlaceholder() {
                         <StatusBadge kind="transportOutcome" value={history.transportOutcome} />
                         <span className="workspace-chip workspace-chip--secondary">{history.sourceLabel}</span>
                       </span>
-                      <span className="history-row__title">{history.requestLabel}</span>
-                      <span className="history-row__path">{history.hostPathHint}</span>
-                      <span className="history-row__summary">{history.testSummaryLabel}</span>
+                      <span className="history-row__title" title={history.requestLabel}>{history.requestLabel}</span>
+                      <span className="history-row__path" title={history.hostPathHint}>{history.hostPathHint}</span>
+                      <span className="history-row__summary" title={history.testSummaryLabel}>{history.testSummaryLabel}</span>
                       <span className="history-row__meta">
                         {history.durationLabel} · {history.executedAtLabel}
                       </span>
