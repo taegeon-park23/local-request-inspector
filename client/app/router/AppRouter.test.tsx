@@ -40,7 +40,6 @@ describe('AppRouter shell bootstrap', () => {
     expect(screen.getAllByText('작업공간').length).toBeGreaterThan(0);
     expect(screen.getAllByText('설정').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: '탐색기 접기' })).toBeInTheDocument();
-    expect(screen.getByRole('tablist', { name: '라우트 패널 탭' })).toBeInTheDocument();
     expect(screen.getByLabelText('섹션 탐색기')).toBeInTheDocument();
     expect(screen.getByLabelText('메인 작업면')).toBeInTheDocument();
     expect(screen.getByLabelText('컨텍스트 상세 패널')).toBeInTheDocument();
@@ -156,7 +155,6 @@ describe('AppRouter shell bootstrap', () => {
 
     await user.click(screen.getByRole('link', { name: /mocks/i }));
     expect(screen.getByRole('heading', { name: 'Mocks' })).toBeInTheDocument();
-    await user.click(screen.getByRole('tab', { name: 'Surface' }));
     expect(screen.getByText(/Persisted authored rules live here/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save rule' })).toBeEnabled();
   });

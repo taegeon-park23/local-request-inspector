@@ -561,6 +561,8 @@ export function MocksPlaceholder() {
 
   return (
     <RoutePanelTabsLayout
+      layoutMode="floating-explorer"
+      floatingExplorerRouteKey="mocks"
       defaultActiveTab="explorer"
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
@@ -971,4 +973,3 @@ export function MocksPlaceholder() {
     />
   );
 }
-

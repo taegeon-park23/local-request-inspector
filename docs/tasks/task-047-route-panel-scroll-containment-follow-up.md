@@ -47,6 +47,7 @@ This task is complete when:
 - `client/app/shell/shell.css` now treats `html`, `body`, and `#root` as height carriers while `.shell-layout` owns the viewport lock and outer overflow clipping.
 - `client/app/shell/material-theme.css` now gives the route-panel stack a `minmax(0, 1fr)` body, clips inactive panel overflow, and lets only the active `.shell-panel` scroll vertically.
 - `client/app/router/AppRouter.test.tsx` now reads the shell CSS sources directly to pin the scroll-containment contract and prevent the viewport-coupled `min-height` rule from returning.
+- Merge-recovery follow-up on 2026-03-23: the floating-explorer layout no longer uses viewport-coupled `min-height` formulas for its dock, explorer sheet, or main/detail surfaces, so overflow stays inside the shell after header height is consumed by `.shell-layout`.
 
 ## 7. Recommended Follow-Up Direction
 - If later UX work expands this area, keep future changes bounded to one concern such as mobile safe-area spacing, scroll-shadow affordances, or route-panel sticky subheaders rather than reopening full shell layout redesign.
