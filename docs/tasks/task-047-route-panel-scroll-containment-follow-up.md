@@ -48,6 +48,8 @@ This task is complete when:
 - `client/app/shell/material-theme.css` now gives the route-panel stack a `minmax(0, 1fr)` body, clips inactive panel overflow, and lets only the active `.shell-panel` scroll vertically.
 - `client/app/router/AppRouter.test.tsx` now reads the shell CSS sources directly to pin the scroll-containment contract and prevent the viewport-coupled `min-height` rule from returning.
 - Merge-recovery follow-up on 2026-03-23: the floating-explorer layout no longer uses viewport-coupled `min-height` formulas for its dock, explorer sheet, or main/detail surfaces, so overflow stays inside the shell after header height is consumed by `.shell-layout`.
+- Design follow-up on 2026-03-23: the floating explorer now participates in the route grid instead of reserving main-surface space through overlay padding, which keeps the workspace main/detail panes stretched to the viewport-owned shell height and preserves their internal scrolling when the explorer is opened or collapsed.
+- Design follow-up on 2026-03-23: workspace explorer actions now refocus the main authoring surface immediately after creating or opening a request so explorer interaction restores the expected main-surface scroll and editing context.
 
 ## 7. Recommended Follow-Up Direction
 - If later UX work expands this area, keep future changes bounded to one concern such as mobile safe-area spacing, scroll-shadow affordances, or route-panel sticky subheaders rather than reopening full shell layout redesign.
