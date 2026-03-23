@@ -9,6 +9,16 @@ import { useRequestBuilderCommands } from '@client/features/request-builder/hook
 import type { RequestDraftState } from '@client/features/request-builder/request-draft.types';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
 import { RequestKeyValueEditor } from '@client/features/request-builder/components/RequestKeyValueEditor';
+import {
+  createRequestPlacementFromSelection,
+  DEFAULT_REQUEST_GROUP_NAME,
+  findSelectedPlacementCollection,
+  findSelectedPlacementGroup,
+  formatRequestPlacementPath,
+  getCollectionPlacementValue,
+  getRequestGroupPlacementValue,
+  type RequestPlacementCollectionOption,
+} from '@client/features/request-builder/request-placement';
 import { useRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
 import type { AppIconName } from '@client/shared/ui/AppIcon';
 import { IconLabel } from '@client/shared/ui/IconLabel';
@@ -61,17 +71,6 @@ const authTypeOptions: Array<{ value: RequestDraftState['auth']['type']; label: 
   { value: 'api-key', label: 'API key' },
 ];
 
-interface RequestPlacementGroupOption {
-  requestGroupId?: string;
-  requestGroupName: string;
-}
-
-interface RequestPlacementCollectionOption {
-  collectionId?: string;
-  collectionName: string;
-  requestGroups: RequestPlacementGroupOption[];
-}
-
 interface RequestWorkSurfacePlaceholderProps {
   activeTab: RequestTabRecord | null;
   onCreateRequest: () => void;
@@ -89,30 +88,6 @@ function formatSavedAt(
   }
 
   return savedAtMessage(formatDateTime(savedAt, { timeStyle: 'short' }));
-}
-
-function findSelectedCollection(
-  placementOptions: RequestPlacementCollectionOption[],
-  draft: RequestDraftState,
-) {
-  return placementOptions.find((collection) => (
-    (draft.collectionId && collection.collectionId === draft.collectionId)
-    || (!draft.collectionId && collection.collectionName === draft.collectionName)
-  )) ?? placementOptions[0] ?? null;
-}
-
-function findSelectedRequestGroup(
-  collection: RequestPlacementCollectionOption | null,
-  draft: RequestDraftState,
-) {
-  if (!collection) {
-    return null;
-  }
-
-  return collection.requestGroups.find((requestGroup) => (
-    (draft.requestGroupId && requestGroup.requestGroupId === draft.requestGroupId)
-    || requestGroup.requestGroupName === (draft.requestGroupName ?? draft.folderName)
-  )) ?? collection.requestGroups[0] ?? null;
 }
 
 export function RequestWorkSurfacePlaceholder({
@@ -173,9 +148,7 @@ export function RequestWorkSurfacePlaceholder({
 
   const displayTitle = draft.name.trim() || 'Untitled Request';
   const replaySource = activeTab.source === 'replay' ? activeTab.replaySource ?? null : null;
-  const requestPlacementPath = draft.collectionName
-    ? `${draft.collectionName}${draft.requestGroupName || draft.folderName ? ` / ${draft.requestGroupName ?? draft.folderName}` : ''}`
-    : null;
+  const requestPlacementPath = formatRequestPlacementPath(draft);
   const locationSummary = replaySource
     ? replaySource.description
     : activeTab.source === 'saved'
@@ -204,14 +177,15 @@ export function RequestWorkSurfacePlaceholder({
         : selectedEnvironment
           ? t('workspaceRoute.requestBuilder.environment.selected', { name: selectedEnvironment.name, count: selectedEnvironment.enabledVariableCount })
           : t('workspaceRoute.requestBuilder.environment.noneSelected');
-  const selectedCollection = findSelectedCollection(placementOptions, draft);
-  const selectedRequestGroup = findSelectedRequestGroup(selectedCollection, draft);
-  const collectionSelectValue = selectedCollection?.collectionId ?? selectedCollection?.collectionName ?? '';
-  const requestGroupSelectValue = selectedRequestGroup?.requestGroupId ?? selectedRequestGroup?.requestGroupName ?? '';
-  const placementSupportCopy = selectedCollection && selectedRequestGroup
-    ? t('workspaceRoute.requestBuilder.placement.selected', {
-        path: `${selectedCollection.collectionName} / ${selectedRequestGroup.requestGroupName}`,
-      })
+  const selectedCollection = findSelectedPlacementCollection(placementOptions, draft);
+  const selectedRequestGroup = findSelectedPlacementGroup(selectedCollection, draft);
+  const collectionSelectValue = selectedCollection ? getCollectionPlacementValue(selectedCollection) : '';
+  const requestGroupSelectValue = selectedRequestGroup ? getRequestGroupPlacementValue(selectedRequestGroup) : '';
+  const selectedPlacementPath = selectedCollection && selectedRequestGroup
+    ? formatRequestPlacementPath(createRequestPlacementFromSelection(selectedCollection, selectedRequestGroup))
+    : null;
+  const placementSupportCopy = selectedPlacementPath
+    ? t('workspaceRoute.requestBuilder.placement.selected', { path: selectedPlacementPath })
     : t('workspaceRoute.requestBuilder.placement.unavailable');
 
   return (
@@ -254,25 +228,22 @@ export function RequestWorkSurfacePlaceholder({
                   value={collectionSelectValue}
                   onChange={(event) => {
                     const nextCollection = placementOptions.find((collection) => (
-                      (collection.collectionId ?? collection.collectionName) === event.currentTarget.value
+                      getCollectionPlacementValue(collection) === event.currentTarget.value
                     ));
 
                     if (!nextCollection) {
                       return;
                     }
 
-                    const nextRequestGroup = nextCollection.requestGroups[0] ?? { requestGroupName: 'General' };
-                    updateDraftPlacement(draft.tabId, {
-                      ...(nextCollection.collectionId ? { collectionId: nextCollection.collectionId } : {}),
-                      collectionName: nextCollection.collectionName,
-                      ...(nextRequestGroup.requestGroupId ? { requestGroupId: nextRequestGroup.requestGroupId } : {}),
-                      requestGroupName: nextRequestGroup.requestGroupName,
-                      folderName: nextRequestGroup.requestGroupName,
-                    });
+                    const nextRequestGroup = nextCollection.requestGroups[0] ?? { requestGroupName: DEFAULT_REQUEST_GROUP_NAME };
+                    updateDraftPlacement(
+                      draft.tabId,
+                      createRequestPlacementFromSelection(nextCollection, nextRequestGroup),
+                    );
                   }}
                 >
                   {placementOptions.map((collection) => (
-                    <option key={collection.collectionId ?? collection.collectionName} value={collection.collectionId ?? collection.collectionName}>
+                    <option key={getCollectionPlacementValue(collection)} value={getCollectionPlacementValue(collection)}>
                       {collection.collectionName}
                     </option>
                   ))}
@@ -285,26 +256,23 @@ export function RequestWorkSurfacePlaceholder({
                   value={requestGroupSelectValue}
                   onChange={(event) => {
                     const nextRequestGroup = selectedCollection?.requestGroups.find((requestGroup) => (
-                      (requestGroup.requestGroupId ?? requestGroup.requestGroupName) === event.currentTarget.value
+                      getRequestGroupPlacementValue(requestGroup) === event.currentTarget.value
                     ));
 
                     if (!selectedCollection || !nextRequestGroup) {
                       return;
                     }
 
-                    updateDraftPlacement(draft.tabId, {
-                      ...(selectedCollection.collectionId ? { collectionId: selectedCollection.collectionId } : {}),
-                      collectionName: selectedCollection.collectionName,
-                      ...(nextRequestGroup.requestGroupId ? { requestGroupId: nextRequestGroup.requestGroupId } : {}),
-                      requestGroupName: nextRequestGroup.requestGroupName,
-                      folderName: nextRequestGroup.requestGroupName,
-                    });
+                    updateDraftPlacement(
+                      draft.tabId,
+                      createRequestPlacementFromSelection(selectedCollection, nextRequestGroup),
+                    );
                   }}
                   disabled={!selectedCollection || selectedCollection.requestGroups.length === 0}
                 >
                   {(selectedCollection?.requestGroups.length ?? 0) > 0
                     ? selectedCollection?.requestGroups.map((requestGroup) => (
-                        <option key={requestGroup.requestGroupId ?? requestGroup.requestGroupName} value={requestGroup.requestGroupId ?? requestGroup.requestGroupName}>
+                        <option key={getRequestGroupPlacementValue(requestGroup)} value={getRequestGroupPlacementValue(requestGroup)}>
                           {requestGroup.requestGroupName}
                         </option>
                       ))

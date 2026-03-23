@@ -13,6 +13,13 @@ import { RequestResultPanelPlaceholder } from '@client/features/request-builder/
 import { useI18n } from '@client/app/providers/useI18n';
 import { RequestTabShell } from '@client/features/request-builder/components/RequestTabShell';
 import { RequestWorkSurfacePlaceholder } from '@client/features/request-builder/components/RequestWorkSurfacePlaceholder';
+import {
+  createRequestPlacementFields,
+  DEFAULT_REQUEST_GROUP_NAME,
+  readRequestGroupName,
+  resolveRequestPlacement,
+  type RequestPlacementCollectionOption,
+} from '@client/features/request-builder/request-placement';
 import { useRequestCommandStore } from '@client/features/request-builder/state/request-command-store';
 import { useRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
 import type { RequestDraftSeed } from '@client/features/request-builder/request-draft.types';
@@ -211,15 +218,6 @@ function resolveSeededEnvironmentId(draftSeed: RequestDraftSeed | undefined, def
   return defaultEnvironmentId;
 }
 
-function readSavedRequestGroupName(record: SavedRequestResourceRecord) {
-  const recordWithPlacement = record as SavedRequestResourceRecord & {
-    requestGroupName?: string;
-    folderName?: string;
-  };
-
-  return recordWithPlacement.requestGroupName ?? recordWithPlacement.folderName;
-}
-
 function buildRequestPlacementOptions(
   tree: WorkspaceCollectionNode[],
   defaults: {
@@ -228,7 +226,7 @@ function buildRequestPlacementOptions(
     collectionName: string;
     requestGroupName: string;
   } | undefined,
-) {
+): RequestPlacementCollectionOption[] {
   if (tree.length > 0) {
     return tree.map((collection) => ({
       collectionId: collection.collectionId,
@@ -239,7 +237,7 @@ function buildRequestPlacementOptions(
             requestGroupName: requestGroup.name,
           }))
         : [{
-            requestGroupName: defaults?.requestGroupName ?? 'General',
+            requestGroupName: defaults?.requestGroupName ?? DEFAULT_REQUEST_GROUP_NAME,
           }],
     }));
   }
@@ -518,13 +516,14 @@ export function WorkspacePlaceholder() {
       }
 
       const defaultPlacement = requestTreeQuery.data?.defaults;
-      ensureDraftForTab(nextTab, {
-        ...(defaultPlacement?.collectionId ? { collectionId: defaultPlacement.collectionId } : {}),
+      const seededPlacement = createRequestPlacementFields({
+        ...resolveRequestPlacement(draftSeed, defaultPlacement),
         collectionName: draftSeed?.collectionName ?? defaultPlacement?.collectionName ?? 'Saved Requests',
-        ...(defaultPlacement?.requestGroupId ? { requestGroupId: defaultPlacement.requestGroupId } : {}),
-        requestGroupName: draftSeed?.requestGroupName ?? draftSeed?.folderName ?? defaultPlacement?.requestGroupName ?? 'General',
-        folderName: draftSeed?.requestGroupName ?? draftSeed?.folderName ?? defaultPlacement?.requestGroupName ?? 'General',
+        requestGroupName: readRequestGroupName(draftSeed) ?? defaultPlacement?.requestGroupName ?? DEFAULT_REQUEST_GROUP_NAME,
+      });
+      ensureDraftForTab(nextTab, {
         ...(draftSeed ?? {}),
+        ...seededPlacement,
         selectedEnvironmentId: resolveSeededEnvironmentId(draftSeed, defaultEnvironmentId),
       });
     }
@@ -559,11 +558,8 @@ export function WorkspacePlaceholder() {
       name: request.name,
       methodLabel: request.methodLabel,
       summary: request.summary,
-      collectionId: request.collectionId,
       collectionName: request.collectionName,
-      requestGroupId: request.requestGroupId,
-      requestGroupName: request.requestGroupName,
-      folderName: request.requestGroupName,
+      ...createRequestPlacementFields(request),
     });
 
     if (existingTab) {
@@ -589,15 +585,7 @@ export function WorkspacePlaceholder() {
         multipartBody: savedRecord.multipartBody,
         auth: savedRecord.auth,
         scripts: savedRecord.scripts,
-        ...(savedRecord.collectionId ? { collectionId: savedRecord.collectionId } : {}),
-        collectionName: savedRecord.collectionName,
-        ...(savedRecord.requestGroupId ? { requestGroupId: savedRecord.requestGroupId } : {}),
-        ...(readSavedRequestGroupName(savedRecord)
-          ? {
-              requestGroupName: readSavedRequestGroupName(savedRecord),
-              folderName: readSavedRequestGroupName(savedRecord),
-            }
-          : {}),
+        ...createRequestPlacementFields(savedRecord),
       });
     }
   };

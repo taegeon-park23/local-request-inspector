@@ -3,6 +3,10 @@ import { useI18n } from '@client/app/providers/useI18n';
 import type { RequestRunObservation } from '@client/features/request-builder/request-builder.api';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
 import {
+  formatRequestPlacementPath,
+  readRequestGroupName,
+} from '@client/features/request-builder/request-placement';
+import {
   useRequestCommandStore
 } from '@client/features/request-builder/state/request-command-store';
 import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
@@ -49,7 +53,7 @@ function getTabSourceCopy(activeTab: RequestTabRecord, t: TranslateFn) {
     return t('workspaceRoute.resultPanel.source.draftRequestTab');
   }
 
-  const requestGroupName = activeTab.requestGroupName ?? activeTab.folderName;
+  const requestGroupName = readRequestGroupName(activeTab);
 
   if (activeTab.collectionName && requestGroupName) {
     return t('workspaceRoute.resultPanel.source.savedInCollectionFolder', {
@@ -75,16 +79,18 @@ function getTransportOutcomeLabel(responseStatus: number | null) {
   return `HTTP ${responseStatus}`;
 }
 
-function formatObservedPlacement(
+function formatPlacementLabel(
   collectionName: string | undefined,
-  folderName: string | undefined,
+  requestGroupName: string | undefined,
   t: TranslateFn,
 ) {
   if (!collectionName) {
     return t('workspaceRoute.resultPanel.linkage.noSavedPlacementRecorded');
   }
 
-  return folderName ? `${collectionName} / ${folderName}` : collectionName;
+  return formatRequestPlacementPath(
+    requestGroupName ? { collectionName, requestGroupName } : { collectionName },
+  ) ?? t('workspaceRoute.resultPanel.linkage.noSavedPlacementRecorded');
 }
 
 function formatObservedLinkage(
@@ -99,7 +105,9 @@ function formatObservedLinkage(
   }
 
   if (collectionName) {
-    const placement = formatObservedPlacement(collectionName, folderName, t);
+    const placement = formatRequestPlacementPath(
+      folderName ? { collectionName, folderName } : { collectionName },
+    ) ?? t('workspaceRoute.resultPanel.linkage.noSavedPlacementRecorded');
     return sourceLabel === 'Saved request snapshot'
       ? placement
       : t('workspaceRoute.resultPanel.linkage.draftSavePlacement', { placement });
@@ -487,7 +495,11 @@ export function RequestResultPanelPlaceholder({
                     },
                     {
                       label: t('workspaceRoute.resultPanel.executionInfo.labels.placement'),
-                      value: formatObservedPlacement(execution.requestCollectionName, execution.requestGroupName ?? execution.requestFolderName, t),
+                      value: formatPlacementLabel(
+                        execution.requestCollectionName,
+                        execution.requestGroupName ?? execution.requestFolderName,
+                        t,
+                      ),
                     },
                     { label: t('workspaceRoute.resultPanel.executionInfo.labels.environment'), value: execution.environmentLabel ?? t('workspaceRoute.resultPanel.executionInfo.values.noEnvironmentSelected') },
                     { label: t('workspaceRoute.resultPanel.executionInfo.labels.errorCode'), value: execution.errorCode ?? t('workspaceRoute.resultPanel.executionInfo.values.noExecutionErrorCode') },

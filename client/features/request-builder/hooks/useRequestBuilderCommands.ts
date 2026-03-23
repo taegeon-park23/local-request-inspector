@@ -14,9 +14,13 @@ import {
   workspaceSavedRequestsQueryKey,
 } from '@client/features/request-builder/request-builder.api';
 import type { RequestDraftState } from '@client/features/request-builder/request-draft.types';
-import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
+import type { RequestTabRecord, SavedWorkspaceRequestSeed } from '@client/features/request-builder/request-tab.types';
 import { useRequestCommandStore } from '@client/features/request-builder/state/request-command-store';
 import { useRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
+import {
+  createRequestPlacementFields,
+  readRequestGroupName,
+} from '@client/features/request-builder/request-placement';
 import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
 import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
 
@@ -86,6 +90,7 @@ function createFailedExecutionObservation(
 ): RequestRunObservation {
   const now = new Date().toISOString();
   const details = error instanceof RequestBuilderApiError ? error.details : {};
+  const requestGroupName = readRequestGroupName(draft);
 
   return {
     executionId: typeof details.executionId === 'string' ? details.executionId : `failed-${draft.tabId}-${Date.now()}`,
@@ -115,10 +120,10 @@ function createFailedExecutionObservation(
     authSummary: createAuthSummary(draft),
     environmentId: draft.selectedEnvironmentId ?? null,
     ...(draft.collectionName ? { requestCollectionName: draft.collectionName } : {}),
-    ...(draft.requestGroupName || draft.folderName
+    ...(requestGroupName
       ? {
-          requestGroupName: draft.requestGroupName ?? draft.folderName,
-          requestFolderName: draft.requestGroupName ?? draft.folderName,
+          requestGroupName,
+          requestFolderName: requestGroupName,
         }
       : {}),
     errorCode: error instanceof RequestBuilderApiError ? error.code : 'execution_failed',
@@ -136,21 +141,14 @@ function createFailedExecutionObservation(
   };
 }
 
-function mapSavedRecordToTabSeed(record: SavedRequestResourceRecord) {
+function mapSavedRecordToTabSeed(record: SavedRequestResourceRecord): SavedWorkspaceRequestSeed {
   return {
     id: record.id,
     name: record.name,
     methodLabel: record.method,
     summary: record.summary,
-    ...(record.collectionId ? { collectionId: record.collectionId } : {}),
     collectionName: record.collectionName,
-    ...(record.requestGroupId ? { requestGroupId: record.requestGroupId } : {}),
-    ...(record.requestGroupName || record.folderName
-      ? {
-          requestGroupName: record.requestGroupName ?? record.folderName,
-          folderName: record.requestGroupName ?? record.folderName,
-        }
-      : {}),
+    ...createRequestPlacementFields(record),
   };
 }
 
@@ -271,15 +269,8 @@ export function useRequestBuilderCommands(
 
       markTabSaved(activeTab.id, mapSavedRecordToTabSeed(savedRecord));
       commitSavedDraft(activeTab.id, {
-        ...(savedRecord.collectionId ? { collectionId: savedRecord.collectionId } : {}),
         collectionName: savedRecord.collectionName,
-        ...(savedRecord.requestGroupId ? { requestGroupId: savedRecord.requestGroupId } : {}),
-        ...(savedRecord.requestGroupName || savedRecord.folderName
-          ? {
-              requestGroupName: savedRecord.requestGroupName ?? savedRecord.folderName,
-              folderName: savedRecord.requestGroupName ?? savedRecord.folderName,
-            }
-          : {}),
+        ...createRequestPlacementFields(savedRecord),
       });
       finishSaveSuccess(activeTab.id, savedRecord.updatedAt);
       queryClient.setQueryData<SavedRequestResourceRecord[]>(workspaceSavedRequestsQueryKey, (current) =>

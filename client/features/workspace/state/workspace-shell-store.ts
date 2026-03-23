@@ -1,5 +1,9 @@
 import { create } from 'zustand';
 import type { RoutePanelTabId } from '@client/features/shared-section-placeholder';
+import {
+  createRequestPlacementFields,
+  readRequestGroupName,
+} from '@client/features/request-builder/request-placement';
 import type {
   ReplayRequestTabSeed,
   RequestTabRecord,
@@ -53,15 +57,7 @@ function createSavedTab(request: SavedWorkspaceRequestSeed): RequestTabRecord {
     methodLabel: request.methodLabel,
     source: 'saved',
     summary: request.summary,
-    ...(request.collectionId ? { collectionId: request.collectionId } : {}),
-    collectionName: request.collectionName,
-    ...(request.requestGroupId ? { requestGroupId: request.requestGroupId } : {}),
-    ...(request.requestGroupName || request.folderName
-      ? {
-          requestGroupName: request.requestGroupName ?? request.folderName,
-          folderName: request.requestGroupName ?? request.folderName,
-        }
-      : {}),
+    ...createRequestPlacementFields(request),
     hasUnsavedChanges: false,
   };
 }
@@ -171,21 +167,15 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
             methodLabel: request.methodLabel,
             source: 'saved',
             summary: request.summary,
-            ...(request.collectionId ? { collectionId: request.collectionId } : {}),
-            collectionName: request.collectionName,
-            ...(request.requestGroupId ? { requestGroupId: request.requestGroupId } : {}),
+            ...createRequestPlacementFields(request),
             hasUnsavedChanges: false,
           };
 
           delete nextTab.replaySource;
-          delete nextTab.requestGroupName;
-          delete nextTab.folderName;
 
-          const requestGroupName = request.requestGroupName ?? request.folderName;
-
-          if (requestGroupName) {
-            nextTab.requestGroupName = requestGroupName;
-            nextTab.folderName = requestGroupName;
+          if (!readRequestGroupName(request)) {
+            delete nextTab.requestGroupName;
+            delete nextTab.folderName;
           }
 
           return nextTab;
@@ -234,8 +224,3 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
 export function resetWorkspaceShellStore() {
   useWorkspaceShellStore.setState(initialWorkspaceShellState);
 }
-
-
-
-
-

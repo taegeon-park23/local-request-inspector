@@ -6,6 +6,11 @@ import type {
 } from '@client/features/request-builder/request-draft.types';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
 import type { WorkspaceSavedRequestSeed } from '@client/features/workspace/data/workspace-explorer-fixtures';
+import {
+  createRequestPlacementFields,
+  readRequestGroupName,
+  resolveRequestPlacement,
+} from '@client/features/request-builder/request-placement';
 
 export const DEFAULT_WORKSPACE_ID = 'local-workspace';
 export const DEFAULT_REQUEST_COLLECTION_NAME = 'Saved Requests';
@@ -174,8 +179,8 @@ export function compareSavedRequestResources(left: SavedRequestResourceRecord, r
     return collectionDiff;
   }
 
-  const requestGroupDiff = String(left.requestGroupName || left.folderName || '').localeCompare(
-    String(right.requestGroupName || right.folderName || ''),
+  const requestGroupDiff = String(readRequestGroupName(left) || '').localeCompare(
+    String(readRequestGroupName(right) || ''),
   );
   if (requestGroupDiff !== 0) {
     return requestGroupDiff;
@@ -219,6 +224,8 @@ export function createRequestDefinitionInput(
   activeTab: RequestTabRecord,
   draft: RequestDraftState,
 ): RequestDefinitionInput {
+  const placement = resolveRequestPlacement(draft, activeTab);
+
   return {
     ...(activeTab.requestId ? { id: activeTab.requestId } : {}),
     workspaceId: DEFAULT_WORKSPACE_ID,
@@ -234,39 +241,25 @@ export function createRequestDefinitionInput(
     multipartBody: cloneRows(draft.multipartBody),
     auth: cloneAuth(draft.auth),
     scripts: cloneScripts(draft.scripts),
-    ...(draft.collectionId || activeTab.collectionId
-      ? { collectionId: draft.collectionId ?? activeTab.collectionId }
-      : {}),
-    collectionName: draft.collectionName ?? activeTab.collectionName ?? DEFAULT_REQUEST_COLLECTION_NAME,
-    ...(draft.requestGroupId || activeTab.requestGroupId
-      ? { requestGroupId: draft.requestGroupId ?? activeTab.requestGroupId }
-      : {}),
-    ...((draft.requestGroupName ?? draft.folderName ?? activeTab.requestGroupName ?? activeTab.folderName)
-      ? {
-          requestGroupName: draft.requestGroupName ?? draft.folderName ?? activeTab.requestGroupName ?? activeTab.folderName,
-          folderName: draft.requestGroupName ?? draft.folderName ?? activeTab.requestGroupName ?? activeTab.folderName,
-        }
-      : {}),
+    ...createRequestPlacementFields({
+      ...placement,
+      collectionName: placement.collectionName ?? DEFAULT_REQUEST_COLLECTION_NAME,
+    }),
   };
 }
 
 export function mapSavedRequestResourceToWorkspaceSeed(
   record: SavedRequestResourceRecord,
 ): WorkspaceSavedRequestSeed {
+  const placement = createRequestPlacementFields(record);
+
   return {
     id: record.id,
     name: record.name,
     methodLabel: record.method,
     summary: record.summary,
-    ...(record.collectionId ? { collectionId: record.collectionId } : {}),
     collectionName: record.collectionName,
-    ...(record.requestGroupId ? { requestGroupId: record.requestGroupId } : {}),
-    ...(record.requestGroupName || record.folderName
-      ? {
-          requestGroupName: record.requestGroupName ?? record.folderName,
-          folderName: record.requestGroupName ?? record.folderName,
-        }
-      : {}),
+    ...placement,
     resourceKind: 'persisted',
     draftSeed: {
       name: record.name,
@@ -281,15 +274,7 @@ export function mapSavedRequestResourceToWorkspaceSeed(
       multipartBody: cloneRows(record.multipartBody),
       auth: cloneAuth(record.auth),
       scripts: cloneScripts(record.scripts),
-      ...(record.collectionId ? { collectionId: record.collectionId } : {}),
-      collectionName: record.collectionName,
-      ...(record.requestGroupId ? { requestGroupId: record.requestGroupId } : {}),
-      ...(record.requestGroupName || record.folderName
-        ? {
-            requestGroupName: record.requestGroupName ?? record.folderName,
-            folderName: record.requestGroupName ?? record.folderName,
-          }
-        : {}),
+      ...placement,
     },
   };
 }

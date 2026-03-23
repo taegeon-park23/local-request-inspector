@@ -11,6 +11,12 @@ import type {
   RequestScriptStageId,
 } from '@client/features/request-builder/request-draft.types';
 import { getSavedWorkspaceRequestSeedById } from '@client/features/workspace/data/workspace-explorer-fixtures';
+import {
+  readRequestGroupName,
+  replaceRequestPlacement,
+  resolveRequestPlacement,
+  type RequestPlacementValue,
+} from '@client/features/request-builder/request-placement';
 
 interface RequestDraftEntry {
   baseline: string;
@@ -26,16 +32,10 @@ interface RequestDraftStoreState {
   nextRowSequence: number;
   ensureDraftForTab: (tab: RequestTabRecord, draftSeed?: RequestDraftSeed) => void;
   removeDraft: (tabId: string) => void;
-  commitSavedDraft: (tabId: string, placement: { collectionId?: string; collectionName: string; requestGroupId?: string; requestGroupName?: string; folderName?: string }) => void;
+  commitSavedDraft: (tabId: string, placement: RequestPlacementValue & { collectionName: string }) => void;
   updateDraftPlacement: (
     tabId: string,
-    placement: {
-      collectionId?: string;
-      collectionName?: string;
-      requestGroupId?: string;
-      requestGroupName?: string;
-      folderName?: string;
-    },
+    placement: RequestPlacementValue,
   ) => void;
   updateDraftName: (tabId: string, name: string) => void;
   updateDraftMethod: (tabId: string, method: RequestDraftState['method']) => void;
@@ -110,7 +110,7 @@ function createDraftSnapshotString(draft: RequestDraftState) {
     collectionId: draft.collectionId ?? null,
     collectionName: draft.collectionName ?? null,
     requestGroupId: draft.requestGroupId ?? null,
-    requestGroupName: draft.requestGroupName ?? draft.folderName ?? null,
+    requestGroupName: readRequestGroupName(draft) ?? null,
   });
 }
 
@@ -147,15 +147,7 @@ function createDraftFromTab(tab: RequestTabRecord, explicitDraftSeed?: RequestDr
     scripts: createDefaultScriptsState(draftSeed?.scripts),
     activeEditorTab: 'params',
     dirty: false,
-    ...(draftSeed?.collectionId || tab.collectionId ? { collectionId: draftSeed?.collectionId ?? tab.collectionId } : {}),
-    ...(draftSeed?.collectionName || tab.collectionName ? { collectionName: draftSeed?.collectionName ?? tab.collectionName } : {}),
-    ...(draftSeed?.requestGroupId || tab.requestGroupId ? { requestGroupId: draftSeed?.requestGroupId ?? tab.requestGroupId } : {}),
-    ...((draftSeed?.requestGroupName ?? draftSeed?.folderName ?? tab.requestGroupName ?? tab.folderName)
-      ? {
-          requestGroupName: draftSeed?.requestGroupName ?? draftSeed?.folderName ?? tab.requestGroupName ?? tab.folderName,
-          folderName: draftSeed?.requestGroupName ?? draftSeed?.folderName ?? tab.requestGroupName ?? tab.folderName,
-        }
-      : {}),
+    ...resolveRequestPlacement(draftSeed, tab),
   };
 }
 
@@ -214,32 +206,13 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
   commitSavedDraft: (tabId, placement) =>
     set((state) =>
       updateDraftEntry(state, tabId, (entry) => {
-        const nextDraft: RequestDraftState = {
-          ...entry.draft,
-          collectionName: placement.collectionName,
-          dirty: false,
-        };
-        const collectionId = placement.collectionId ?? entry.draft.collectionId;
-        const requestGroupId = placement.requestGroupId ?? entry.draft.requestGroupId;
-        const requestGroupName = placement.requestGroupName ?? placement.folderName;
-
-        delete nextDraft.collectionId;
-        delete nextDraft.requestGroupId;
-        delete nextDraft.requestGroupName;
-        delete nextDraft.folderName;
-
-        if (collectionId) {
-          nextDraft.collectionId = collectionId;
-        }
-
-        if (requestGroupId) {
-          nextDraft.requestGroupId = requestGroupId;
-        }
-
-        if (requestGroupName) {
-          nextDraft.requestGroupName = requestGroupName;
-          nextDraft.folderName = requestGroupName;
-        }
+        const nextDraft = replaceRequestPlacement(
+          {
+            ...entry.draft,
+            dirty: false,
+          },
+          resolveRequestPlacement(placement, entry.draft),
+        );
 
         return {
           baseline: createDraftSnapshotString(nextDraft),
@@ -250,36 +223,10 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
   updateDraftPlacement: (tabId, placement) =>
     set((state) =>
       updateDraftEntry(state, tabId, (entry) => {
-        const nextDraft: RequestDraftState = {
-          ...entry.draft,
-        };
-        const collectionName = placement.collectionName ?? entry.draft.collectionName;
-        const collectionId = placement.collectionId ?? entry.draft.collectionId;
-        const requestGroupId = placement.requestGroupId ?? entry.draft.requestGroupId;
-        const requestGroupName = placement.requestGroupName ?? placement.folderName;
-
-        delete nextDraft.collectionName;
-        delete nextDraft.collectionId;
-        delete nextDraft.requestGroupId;
-        delete nextDraft.requestGroupName;
-        delete nextDraft.folderName;
-
-        if (collectionName) {
-          nextDraft.collectionName = collectionName;
-        }
-
-        if (collectionId) {
-          nextDraft.collectionId = collectionId;
-        }
-
-        if (requestGroupId) {
-          nextDraft.requestGroupId = requestGroupId;
-        }
-
-        if (requestGroupName) {
-          nextDraft.requestGroupName = requestGroupName;
-          nextDraft.folderName = requestGroupName;
-        }
+        const nextDraft = replaceRequestPlacement(
+          entry.draft,
+          resolveRequestPlacement(placement, entry.draft),
+        );
 
         return withDirtyState(entry, nextDraft);
       }),

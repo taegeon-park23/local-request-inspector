@@ -3,6 +3,10 @@ import {
   RequestBuilderApiError,
   type SavedRequestResourceRecord,
 } from '@client/features/request-builder/request-builder.api';
+import {
+  DEFAULT_REQUEST_GROUP_NAME,
+  readRequestGroupName as readRequestPlacementGroupName,
+} from '@client/features/request-builder/request-placement';
 
 interface ApiEnvelope<TData> {
   data: TData;
@@ -176,17 +180,6 @@ function compareSavedRequests(left: SavedRequestResourceRecord, right: SavedRequ
   return String(right.updatedAt || '').localeCompare(String(left.updatedAt || ''));
 }
 
-function readRequestGroupName(record: SavedRequestResourceRecord) {
-  const recordWithPlacement = record as SavedRequestResourceRecord & {
-    collectionId?: string;
-    requestGroupId?: string;
-    requestGroupName?: string;
-    folderName?: string;
-  };
-
-  return recordWithPlacement.requestGroupName || recordWithPlacement.folderName || 'General';
-}
-
 function readCollectionId(record: SavedRequestResourceRecord) {
   const recordWithPlacement = record as SavedRequestResourceRecord & {
     collectionId?: string;
@@ -200,7 +193,7 @@ function readRequestGroupId(record: SavedRequestResourceRecord) {
     requestGroupId?: string;
   };
 
-  return recordWithPlacement.requestGroupId ?? `fallback-${readRequestGroupName(record)}`;
+  return recordWithPlacement.requestGroupId ?? `fallback-${readRequestPlacementGroupName(record) ?? DEFAULT_REQUEST_GROUP_NAME}`;
 }
 
 export function buildFallbackWorkspaceRequestTree(
@@ -213,7 +206,7 @@ export function buildFallbackWorkspaceRequestTree(
 
   for (const request of [...requests].sort(compareSavedRequests)) {
     const collectionName = String(request.collectionName || 'Saved Requests');
-    const requestGroupName = String(readRequestGroupName(request));
+    const requestGroupName = String(readRequestPlacementGroupName(request) ?? DEFAULT_REQUEST_GROUP_NAME);
     const collectionGroups = collectionMap.get(collectionName) ?? new Map<string, SavedRequestResourceRecord[]>();
 
     if (!collectionMap.has(collectionName)) {
@@ -252,8 +245,8 @@ export function buildFallbackWorkspaceRequestTree(
           collectionId: readCollectionId(request),
           collectionName: request.collectionName,
           requestGroupId: readRequestGroupId(request),
-          requestGroupName: readRequestGroupName(request),
-          folderName: readRequestGroupName(request),
+          requestGroupName: readRequestPlacementGroupName(request) ?? DEFAULT_REQUEST_GROUP_NAME,
+          folderName: readRequestPlacementGroupName(request) ?? DEFAULT_REQUEST_GROUP_NAME,
           updatedAt: request.updatedAt,
         },
       })),
