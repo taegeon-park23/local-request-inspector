@@ -22,6 +22,7 @@ import { IconLabel } from '@client/shared/ui/IconLabel';
 import { KeyValueMetaList } from '@client/shared/ui/KeyValueMetaList';
 import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
+import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
 
 type EnvironmentSortOrder = 'default' | 'name' | 'updated';
 
@@ -96,6 +97,9 @@ export function EnvironmentsRoute() {
   const [sortOrder, setSortOrder] = useState<EnvironmentSortOrder>('default');
   const [selectedEnvironmentId, setSelectedEnvironmentId] = useState<string | null>(null);
   const [isCreatingDraft, setIsCreatingDraft] = useState(false);
+  const activePanel = useWorkspaceUiStore((state) => state.routePanels.environments.activePanel);
+  const setRouteActivePanel = useWorkspaceUiStore((state) => state.setRouteActivePanel);
+
   const [draft, setDraft] = useState<EnvironmentInput>(createEnvironmentDraft);
 
   const sortOptions: Array<{ value: EnvironmentSortOrder; label: string }> = [
@@ -176,6 +180,8 @@ export function EnvironmentsRoute() {
       layoutMode="floating-explorer"
       floatingExplorerRouteKey="environments"
       defaultActiveTab="explorer"
+      activeTab={activePanel}
+      onActiveTabChange={(panel) => setRouteActivePanel('environments', panel)}
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
         <div className="environments-explorer">

@@ -2,7 +2,7 @@
 
 - **Purpose:** Define an implementation-ready, review-friendly plan for replacing the legacy single-page frontend with a React + Vite + TypeScript workspace shell using small, testable slices.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-18
+- **Last Updated:** 2026-03-23
 - **Related Documents:** `frontend-stack-and-shell.md`, `request-builder-mvp.md`, `script-editor-and-automation-ux.md`, `mock-engine-rules-spec.md`, `history-and-inspector-behavior.md`, `testing-and-qa-strategy.md`, `developer-environment-and-tooling-baseline.md`, `../tasks/task-010-frontend-workspace-shell-implementation-plan.md`
 - **Status:** done
 - **Update Rule:** Update when shell boundaries, route strategy, slice sequencing, or shared primitive assumptions materially change.
@@ -237,7 +237,28 @@ Examples:
 - captures list polling/stream-hydrated cache state
 - mock rule list/detail
 
-## 7.3 Anti-pattern to avoid
+## 7.3 Thin shell/workspace orchestration policy
+Use one thin orchestration store for shell/workspace UI state that must coordinate across otherwise separate features without becoming a second source of truth for server data or drafts.
+
+The orchestration layer may own:
+- floating explorer open/collapsed state when the same explorer/main/detail tab pattern is reused across multiple routes
+- workspace result-panel visibility and the currently active result sub-tab
+- the next shell auto-focus target after high-signal transitions such as explorer selection or request run completion
+- route-panel selection when a workflow needs to move the user from explorer to authoring or from authoring to observation
+
+The orchestration layer must not own:
+- request draft field values
+- saved environment/script records
+- execution/history/capture payloads already owned by TanStack Query or feature-local runtime stores
+- feature-specific validation logic
+
+Interaction policy:
+1. Explorer selection in `Workspace` should move the user back to the main authoring surface so the newly selected request opens in the work area immediately.
+2. Request run completion in `Workspace` should move the user to the result panel and default the active result sub-tab to `response`.
+3. `RequestResultPanelPlaceholder` should consume the shared orchestration state for its active tab instead of maintaining isolated local tab state.
+4. `Environments` and `Scripts` should reuse the same route-panel/open-state pattern so explorer-first management routes behave consistently with each other.
+
+## 7.4 Anti-pattern to avoid
 Do not put server-fetched resource records into long-lived Zustand stores just to share them across components. Keep canonical server data in Query caches and derive view state around it.
 
 ## 8. Request Builder Tab State vs Execution Result State

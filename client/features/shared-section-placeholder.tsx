@@ -17,9 +17,7 @@ interface RoutePanelTabsLayoutProps {
   detail: ReactNode;
   defaultActiveTab?: RoutePanelTabId;
   activeTab?: RoutePanelTabId;
-  onChange?: (tabId: RoutePanelTabId) => void;
-  layoutMode?: RoutePanelLayoutMode;
-  floatingExplorerRouteKey?: FloatingExplorerRouteKey;
+  onActiveTabChange?: (tab: RoutePanelTabId) => void;
 }
 
 interface SectionPlaceholderProps {
@@ -41,66 +39,20 @@ export function RoutePanelTabsLayout({
   main,
   detail,
   defaultActiveTab = 'main',
-  layoutMode = 'tabs',
-  floatingExplorerRouteKey,
   activeTab: controlledActiveTab,
-  onChange,
+  onActiveTabChange,
 }: RoutePanelTabsLayoutProps) {
   const { t } = useI18n();
   const [uncontrolledActiveTab, setUncontrolledActiveTab] = useState<RoutePanelTabId>(defaultActiveTab);
   const activeTab = controlledActiveTab ?? uncontrolledActiveTab;
 
-  const handleChange = (tabId: RoutePanelTabId) => {
+  const handleActiveTabChange = (tab: RoutePanelTabId) => {
     if (controlledActiveTab === undefined) {
-      setUncontrolledActiveTab(tabId);
+      setUncontrolledActiveTab(tab);
     }
 
-    onChange?.(tabId);
+    onActiveTabChange?.(tab);
   };
-  const floatingExplorerOpen = useShellStore((state) => (
-    floatingExplorerRouteKey ? state.floatingExplorerOpenByRoute[floatingExplorerRouteKey] : true
-  ));
-  const toggleFloatingExplorer = useShellStore((state) => state.toggleFloatingExplorer);
-
-  if (layoutMode === 'floating-explorer' && floatingExplorerRouteKey) {
-    const toggleLabel = floatingExplorerOpen
-      ? t('shell.routePanels.floatingExplorer.collapseAction')
-      : t('shell.routePanels.floatingExplorer.expandAction');
-
-    return (
-      <div
-        className={floatingExplorerOpen ? 'shell-route-panels shell-route-panels--floating' : 'shell-route-panels shell-route-panels--floating shell-route-panels--floating-collapsed'}
-        data-floating-explorer-open={floatingExplorerOpen ? 'true' : 'false'}
-      >
-        <div className="shell-route-panels__floating-layout">
-          <div className="shell-route-panels__floating-explorer-slot">
-            <button
-              type="button"
-              className="workspace-button workspace-button--ghost shell-route-panels__floating-toggle"
-              aria-label={toggleLabel}
-              aria-expanded={floatingExplorerOpen}
-              aria-controls={`floating-explorer-${floatingExplorerRouteKey}`}
-              onClick={() => toggleFloatingExplorer(floatingExplorerRouteKey)}
-              title={toggleLabel}
-            >
-              <AppIcon name="overview" size={18} />
-              <span className="shell-route-panels__floating-toggle-copy">{toggleLabel}</span>
-            </button>
-            <div
-              id={`floating-explorer-${floatingExplorerRouteKey}`}
-              className={floatingExplorerOpen ? 'shell-route-panels__floating-explorer shell-route-panels__floating-explorer--open' : 'shell-route-panels__floating-explorer shell-route-panels__floating-explorer--closed'}
-            >
-              {explorer}
-            </div>
-          </div>
-          <div className="shell-route-panels__floating-content">
-            <div className="shell-route-panels__floating-main">{main}</div>
-            <div className="shell-route-panels__floating-detail">{detail}</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   const tabs: PanelTabOption<RoutePanelTabId>[] = [
     { id: 'explorer', label: t('shell.routePanels.explorer'), icon: routePanelTabIcons.explorer },
@@ -114,7 +66,7 @@ export function RoutePanelTabsLayout({
         ariaLabel={t('shell.routePanels.tabList')}
         tabs={tabs}
         activeTab={activeTab}
-        onChange={handleChange}
+        onChange={handleActiveTabChange}
       />
       <div className="shell-route-panels__body">
         <div

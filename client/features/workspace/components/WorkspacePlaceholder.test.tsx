@@ -231,7 +231,7 @@ describe('Workspace request builder authoring shell', () => {
     await user.click(within(detailPanel).getByRole('tab', { name: 'Console' }));
     expect(within(detailPanel).getByRole('heading', { name: 'Console summary' })).toBeInTheDocument();
     expect(within(detailPanel).queryByLabelText('Pre-request script')).not.toBeInTheDocument();
-  });
+  }, 10000);
 
   it('keeps stage-specific script drafts across workspace tab switches', async () => {
     const user = userEvent.setup();

@@ -32,6 +32,7 @@ import {
 } from '@client/features/workspace/resource-bundle.api';
 import type { WorkspaceSavedRequestSeed } from '@client/features/workspace/data/workspace-explorer-fixtures';
 import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
+import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
 import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
 
 interface ResourceTransferStatus {
@@ -205,7 +206,9 @@ export function WorkspacePlaceholder() {
   const openNewRequest = useWorkspaceShellStore((state) => state.openNewRequest);
   const openSavedRequest = useWorkspaceShellStore((state) => state.openSavedRequest);
   const setActiveTab = useWorkspaceShellStore((state) => state.setActiveTab);
-  const setActiveRoutePanel = useWorkspaceShellStore((state) => state.setActiveRoutePanel);
+  const workspaceActivePanel = useWorkspaceUiStore((state) => state.routePanels.workspace.activePanel);
+  const setWorkspaceActivePanel = useWorkspaceUiStore((state) => state.setRouteActivePanel);
+  const focusWorkspaceWorkSurface = useWorkspaceUiStore((state) => state.focusWorkspaceWorkSurface);
   const closeTab = useWorkspaceShellStore((state) => state.closeTab);
   const draftsByTabId = useRequestDraftStore((state) => state.draftsByTabId);
   const ensureDraftForTab = useRequestDraftStore((state) => state.ensureDraftForTab);
@@ -391,6 +394,11 @@ export function WorkspacePlaceholder() {
     }
   };
 
+  const handleSelectTab = (tabId: string) => {
+    setActiveTab(tabId);
+    focusWorkspaceWorkSurface();
+  };
+
   const handleCloseTab = (tabId: string) => {
     removeDraft(tabId);
     removeCommandState(tabId);
@@ -444,8 +452,8 @@ export function WorkspacePlaceholder() {
       layoutMode="floating-explorer"
       floatingExplorerRouteKey="workspace"
       defaultActiveTab="main"
-      activeTab={activeRoutePanel}
-      onChange={setActiveRoutePanel}
+      activeTab={workspaceActivePanel}
+      onActiveTabChange={(panel) => setWorkspaceActivePanel('workspace', panel)}
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
         <WorkspaceExplorer
@@ -485,7 +493,7 @@ export function WorkspacePlaceholder() {
           tabs={resolvedTabs}
           activeTabId={activeTabId}
           onCreateRequest={handleCreateRequest}
-          onSelectTab={setActiveTab}
+          onSelectTab={handleSelectTab}
           onCloseTab={handleCloseTab}
         />
 

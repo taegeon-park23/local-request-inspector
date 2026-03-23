@@ -18,6 +18,7 @@ import type { RequestTabRecord } from '@client/features/request-builder/request-
 import { useRequestCommandStore } from '@client/features/request-builder/state/request-command-store';
 import { useRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
 import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
+import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
 
 function isJsonBodyMalformed(draft: RequestDraftState) {
   if (draft.bodyMode !== 'json') {
@@ -170,6 +171,7 @@ export function useRequestBuilderCommands(
   const finishRunError = useRequestCommandStore((state) => state.finishRunError);
   const commitSavedDraft = useRequestDraftStore((state) => state.commitSavedDraft);
   const markTabSaved = useWorkspaceShellStore((state) => state.markTabSaved);
+  const focusWorkspaceResultPanel = useWorkspaceUiStore((state) => state.focusWorkspaceResultPanel);
 
   const saveStatus = commandEntry?.save ?? {
     status: 'idle',
@@ -289,6 +291,7 @@ export function useRequestBuilderCommands(
       }
 
       finishRunSuccess(activeTab.id, execution);
+      focusWorkspaceResultPanel('response');
       queryClient.invalidateQueries({ queryKey: executionHistoryListQueryKey });
     },
     onError: (error) => {
@@ -302,6 +305,7 @@ export function useRequestBuilderCommands(
       );
 
       finishRunError(activeTab.id, failedExecution, failedExecution.errorSummary ?? 'Failed to run request.');
+      focusWorkspaceResultPanel('response');
     },
   });
 

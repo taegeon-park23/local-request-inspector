@@ -14,6 +14,7 @@ import { resetRequestDraftStore } from '@client/features/request-builder/state/r
 import { defaultScriptTemplateFixtureRecords, defaultSavedScriptFixtureRecords } from '@client/features/scripts/data/script-fixtures';
 import { defaultRuntimeStatusFixture } from '@client/features/settings/data/runtime-status-fixtures';
 import { resetWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
+import { resetWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
 
 let objectUrlSequence = 0;
 
@@ -358,6 +359,7 @@ afterEach(() => {
   resetHistoryStore();
   resetMocksStore();
   resetWorkspaceShellStore();
+  resetWorkspaceUiStore();
   resetRequestDraftStore();
   resetRequestCommandStore();
   vi.restoreAllMocks();
