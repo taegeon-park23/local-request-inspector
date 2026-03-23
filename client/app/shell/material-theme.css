@@ -144,6 +144,30 @@ body {
   color: var(--m3-color-on-surface);
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(155, 209, 255, 0.32) rgba(255, 255, 255, 0.04);
+}
+
+*::-webkit-scrollbar {
+  width: 0.45rem;
+  height: 0.45rem;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(155, 209, 255, 0.28);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(155, 209, 255, 0.42);
+}
+
 :where(button, input, select, textarea, a) {
   font: inherit;
 }
@@ -3503,7 +3527,11 @@ body {
 }
 
 .shell-route-panels--floating {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
   min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 .shell-route-panels__floating-layout {
@@ -3511,6 +3539,7 @@ body {
   min-width: 0;
   min-height: 0;
   height: 100%;
+  overflow: hidden;
 }
 
 .shell-route-panels__floating-explorer-slot {
@@ -3518,17 +3547,17 @@ body {
   inset: 0 auto 0 0;
   z-index: 3;
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
   gap: 0.75rem;
+  width: min(24rem, calc(100vw - 3rem));
+  max-width: 100%;
+  padding: 0.8rem 0 0 0.8rem;
   pointer-events: none;
 }
 
-.shell-route-panels__floating-toggle,
-.shell-route-panels__floating-explorer {
-  pointer-events: auto;
-}
-
 .shell-route-panels__floating-toggle {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -3537,8 +3566,8 @@ body {
   border-radius: 1rem;
   box-shadow: var(--app-shadow-2);
   background: color-mix(in srgb, var(--app-surface-2) 90%, var(--app-surface-1));
-  margin-top: 0.8rem;
-  margin-left: 0.8rem;
+  z-index: 1;
+  pointer-events: auto;
 }
 
 .shell-route-panels__floating-toggle-copy {
@@ -3546,12 +3575,14 @@ body {
 }
 
 .shell-route-panels__floating-explorer {
-  width: min(24rem, calc(100vw - 3rem));
-  margin-top: 0.8rem;
+  width: 100%;
   border-radius: 1.25rem;
   box-shadow: var(--app-shadow-3);
   transition: opacity 160ms ease, transform 160ms ease;
-  max-height: calc(100% - 1.6rem);
+  min-height: 0;
+  max-height: min(44rem, calc(100% - 4.6rem));
+  overflow: hidden;
+  pointer-events: auto;
 }
 
 .shell-route-panels__floating-explorer > .shell-panel {
@@ -3580,6 +3611,8 @@ body {
   min-width: 0;
   min-height: 0;
   height: 100%;
+  overflow: hidden;
+  padding-left: 4.35rem;
 }
 
 .shell-route-panels__floating-main,
@@ -3595,12 +3628,8 @@ body {
   overflow-x: hidden;
 }
 
-.shell-route-panels--floating[data-floating-explorer-open='true'] .shell-route-panels__floating-content {
-  padding-left: min(24.75rem, calc(100vw - 2.25rem));
-}
-
-.shell-route-panels--floating-collapsed .shell-route-panels__floating-content {
-  padding-left: 4.4rem;
+.shell-route-panels--floating-collapsed .shell-route-panels__floating-explorer-slot {
+  width: auto;
 }
 
 @media (max-width: 1180px) {
@@ -3612,18 +3641,21 @@ body {
 @media (max-width: 900px) {
   .shell-route-panels__floating-layout {
     min-height: auto;
+    overflow: visible;
   }
 
   .shell-route-panels__floating-explorer-slot {
     position: fixed;
     inset: auto auto 1rem 1rem;
     z-index: 20;
+    display: flex;
     align-items: flex-end;
+    width: auto;
+    padding: 0;
   }
 
   .shell-route-panels__floating-toggle {
     border-radius: 999px;
-    margin: 0;
   }
 
   .shell-route-panels__floating-explorer {
@@ -3631,7 +3663,7 @@ body {
     inset: 4.8rem 0.75rem 0.75rem 0.75rem;
     width: auto;
     max-width: none;
-    margin-top: 0;
+    max-height: none;
   }
 
   .shell-route-panels__floating-explorer > .shell-panel,

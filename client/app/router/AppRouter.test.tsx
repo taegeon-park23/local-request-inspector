@@ -116,6 +116,40 @@ describe('AppRouter shell bootstrap', () => {
   overflow-y: auto;
   overflow-x: hidden;
 }`);
+    expect(materialThemeSource).toContain(`.shell-route-panels--floating {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}`);
+    expect(materialThemeSource).toContain(`.shell-route-panels__floating-explorer-slot {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: min(24rem, calc(100vw - 3rem));
+  max-width: 100%;
+  padding: 0.8rem 0 0 0.8rem;
+  pointer-events: none;
+}`);
+    expect(materialThemeSource).toContain(`.shell-route-panels__floating-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
+  gap: 0.75rem;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  padding-left: 4.35rem;
+}`);
+    expect(materialThemeSource).toContain(`*::-webkit-scrollbar {
+  width: 0.45rem;
+  height: 0.45rem;
+}`);
     expect(materialThemeSource).not.toContain('min-height: calc(100vh - 8.5rem);');
   });
 
