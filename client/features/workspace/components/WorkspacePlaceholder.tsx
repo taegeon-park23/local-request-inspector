@@ -202,6 +202,7 @@ export function WorkspacePlaceholder() {
   const tabs = useWorkspaceShellStore((state) => state.tabs);
   const activeTabId = useWorkspaceShellStore((state) => state.activeTabId);
   const selectedExplorerItemId = useWorkspaceShellStore((state) => state.selectedExplorerItemId);
+  const activeRoutePanel = useWorkspaceShellStore((state) => state.activeRoutePanel);
   const openNewRequest = useWorkspaceShellStore((state) => state.openNewRequest);
   const openSavedRequest = useWorkspaceShellStore((state) => state.openSavedRequest);
   const setActiveTab = useWorkspaceShellStore((state) => state.setActiveTab);
@@ -448,6 +449,8 @@ export function WorkspacePlaceholder() {
 
   return (
     <RoutePanelTabsLayout
+      layoutMode="floating-explorer"
+      floatingExplorerRouteKey="workspace"
       defaultActiveTab="main"
       activeTab={workspaceActivePanel}
       onActiveTabChange={(panel) => setWorkspaceActivePanel('workspace', panel)}

@@ -1,9 +1,15 @@
 import { useState, type ReactNode } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
+import {
+  useShellStore,
+  type FloatingExplorerRouteKey,
+} from '@client/app/providers/shell-store';
+import { AppIcon, type AppIconName } from '@client/shared/ui/AppIcon';
 import { PanelTabs, type PanelTabOption } from '@client/shared/ui/PanelTabs';
-import type { AppIconName } from '@client/shared/ui/AppIcon';
 
 export type RoutePanelTabId = 'explorer' | 'main' | 'detail';
+
+type RoutePanelLayoutMode = 'tabs' | 'floating-explorer';
 
 interface RoutePanelTabsLayoutProps {
   explorer: ReactNode;

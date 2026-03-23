@@ -348,6 +348,9 @@ export const workspaceRouteMessagesEn = {
         badges: {
           running: 'Running',
           noExecutionYet: 'No execution yet',
+          latestAriaLabel: 'Latest execution outcome badges',
+          testsReady: '{count} test result(s)',
+          consoleReady: '{count} console line(s)',
         },
         labels: {
           activeRequest: 'Active request',
@@ -359,6 +362,16 @@ export const workspaceRouteMessagesEn = {
         values: {
           executionInProgress: 'Execution in progress',
           noExecutionYet: 'No execution yet',
+        },
+        preview: {
+          testsTitle: 'Tests preview',
+          testsDescription: 'Key assertion feedback is pinned here right after a run so you can triage without switching tabs.',
+          testsAriaLabel: 'Tests preview',
+          testsEmpty: 'No tests were recorded for the latest execution.',
+          consoleTitle: 'Console preview',
+          consoleDescription: 'Recent bounded console lines surface here immediately after execution to reduce first-feedback time.',
+          consoleAriaLabel: 'Console preview',
+          consoleEmpty: 'No console entries were recorded for the latest execution.',
         },
       },
       response: {
@@ -817,6 +830,9 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         badges: {
           running: '실행 중',
           noExecutionYet: '아직 실행 없음',
+          latestAriaLabel: '최신 실행 결과 배지',
+          testsReady: '테스트 결과 {count}개',
+          consoleReady: '콘솔 줄 {count}개',
         },
         labels: {
           activeRequest: '활성 요청',
@@ -828,6 +844,16 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         values: {
           executionInProgress: '실행이 진행 중입니다',
           noExecutionYet: '아직 실행이 없습니다',
+        },
+        preview: {
+          testsTitle: '테스트 미리보기',
+          testsDescription: '핵심 assertion 피드백을 실행 직후 여기에 고정해 탭을 전환하지 않아도 바로 판단할 수 있게 합니다.',
+          testsAriaLabel: '테스트 미리보기',
+          testsEmpty: '최신 실행에서는 테스트가 기록되지 않았습니다.',
+          consoleTitle: '콘솔 미리보기',
+          consoleDescription: '최근 제한된 콘솔 줄을 실행 직후 여기에 노출해 첫 피드백 시간을 줄입니다.',
+          consoleAriaLabel: '콘솔 미리보기',
+          consoleEmpty: '최신 실행에서는 콘솔 항목이 기록되지 않았습니다.',
         },
       },
       response: {

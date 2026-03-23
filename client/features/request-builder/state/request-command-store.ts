@@ -9,10 +9,13 @@ export interface RequestSaveCommandState {
   savedAt: string | null;
 }
 
+export type RequestResultPanelTabId = 'response' | 'console' | 'tests' | 'execution-info';
+
 export interface RequestRunCommandState {
   status: RequestAsyncStatus;
   message: string | null;
   latestExecution: RequestRunObservation | null;
+  activeResultTab: RequestResultPanelTabId;
 }
 
 interface RequestCommandEntry {
@@ -26,6 +29,7 @@ interface RequestCommandStoreState {
   finishSaveSuccess: (tabId: string, savedAt: string) => void;
   finishSaveError: (tabId: string, message: string) => void;
   startRun: (tabId: string) => void;
+  setActiveResultTab: (tabId: string, activeResultTab: RequestResultPanelTabId) => void;
   finishRunSuccess: (tabId: string, execution: RequestRunObservation) => void;
   finishRunError: (tabId: string, execution: RequestRunObservation, message: string) => void;
   removeTab: (tabId: string) => void;
@@ -46,8 +50,21 @@ function createEmptyRequestCommandEntry(): RequestCommandEntry {
       status: 'idle',
       message: null,
       latestExecution: null,
+      activeResultTab: 'response',
     },
   };
+}
+
+function resolveAutoFocusedResultTab(execution: RequestRunObservation, fallback: RequestResultPanelTabId) {
+  if (execution.testEntries.length > 0) {
+    return 'tests' as const;
+  }
+
+  if (execution.consoleEntries.length > 0) {
+    return 'console' as const;
+  }
+
+  return fallback === 'console' || fallback === 'tests' ? 'response' : fallback;
 }
 
 function createRunStatusMessage(execution: RequestRunObservation) {
@@ -121,6 +138,17 @@ export const useRequestCommandStore = create<RequestCommandStoreState>((set) => 
           status: 'pending',
           message: 'Running request...',
           latestExecution: entry.run.latestExecution,
+          activeResultTab: entry.run.activeResultTab,
+        },
+      })),
+    ),
+  setActiveResultTab: (tabId, activeResultTab) =>
+    set((state) =>
+      withEntry(state, tabId, (entry) => ({
+        ...entry,
+        run: {
+          ...entry.run,
+          activeResultTab,
         },
       })),
     ),
@@ -132,6 +160,7 @@ export const useRequestCommandStore = create<RequestCommandStoreState>((set) => 
           status: 'success',
           message: createRunStatusMessage(execution),
           latestExecution: execution,
+          activeResultTab: resolveAutoFocusedResultTab(execution, entry.run.activeResultTab),
         },
       })),
     ),
@@ -143,6 +172,7 @@ export const useRequestCommandStore = create<RequestCommandStoreState>((set) => 
           status: 'error',
           message,
           latestExecution: execution,
+          activeResultTab: resolveAutoFocusedResultTab(execution, entry.run.activeResultTab),
         },
       })),
     ),

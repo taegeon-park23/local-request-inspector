@@ -113,10 +113,13 @@ Tasks are prioritized using these criteria:
 ### Phase Y — Generated Aria Localization Slice
 49. **T046** Shell and management generated ARIA localization pass — complete
 
-### Phase Z — Parked Optional Future Work
-50. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule bundle scope
-51. Later write-time migration-engine work if compatibility pressure justifies it
-52. Bounded packaging polish only if a delivery milestone identifies a concrete readiness gap
+### Phase Z — Workspace Result UX Follow-Up
+50. **T047** Workspace result panel auto focus and immediate feedback — complete
+
+### Phase AA — Parked Optional Future Work
+51. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule bundle scope
+52. Later write-time migration-engine work if compatibility pressure justifies it
+53. Bounded packaging polish only if a delivery milestone identifies a concrete readiness gap
 
 ## Why T001 Is First
 T001 is the first execution task because it has the highest leverage:
@@ -149,6 +152,7 @@ Recently completed foundation work:
 - `T017` Developer environment and tooling baseline
 
 Ready to start now:
+- `T047` is landed: workspace runs now auto-focus the most relevant result tab from shared per-tab command state, restore the single-panel workspace detail panel after run completion, and expose immediate console/test summary feedback without changing execution contracts
 - `T046` is landed: shell route-panel regions plus Environments, Scripts, and Workspace explorer generated ARIA/action labels now localize through the shared i18n layer while request-builder generated ARIA and runtime-owned status-token boundaries remain deferred
 - `T045` is landed: the Mocks route sidebar/detail/contextual chrome, route-local empty states, authored-rule action labels, detail-tab labels, and helper-generated authored-rule summaries now localize through the shared i18n layer while preserving backend contracts and runtime-owned status-token boundaries
 - `T044` is landed: top-level routes now switch explorer, main surface, and contextual detail through one route-local tab strip, so only one panel occupies the full main region at a time while underlying feature state stays mounted

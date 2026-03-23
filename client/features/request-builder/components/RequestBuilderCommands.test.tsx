@@ -501,7 +501,10 @@ describe('Request builder save/run wiring', () => {
       }),
     );
 
-    await waitFor(() => expect(screen.getByTestId('request-response-preview')).toHaveTextContent('demo-1'));
+    const routePanelTabs = screen.getByRole('tablist', { name: 'Route panel tabs' });
+    await waitFor(() => expect(within(routePanelTabs).getByRole('tab', { name: 'Details' })).toHaveAttribute('aria-selected', 'true'));
+    await waitFor(() => expect(screen.getByText('PASS response status is 201')).toBeInTheDocument());
+    expect(screen.getByRole('heading', { name: 'Tests summary' })).toBeInTheDocument();
     expect(screen.getByText(/This right-hand panel is reserved for run observation only/i)).toBeInTheDocument();
     expect(screen.getByText(/Run does not save automatically and does not clear unsaved authoring changes\./i)).toBeInTheDocument();
     expect(screen.getByText('HTTP 201', { selector: '[data-kind="transportOutcome"]' })).toBeInTheDocument();
@@ -509,6 +512,10 @@ describe('Request builder save/run wiring', () => {
     expect(screen.getAllByText(/Preview is bounded before richer diagnostics/i).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
     expect(screen.getByTestId('run-command-status')).toHaveTextContent('Request run completed.');
+
+    expect(screen.getByText('Tests preview')).toBeInTheDocument();
+    expect(screen.getByText('Console preview')).toBeInTheDocument();
+    expect(screen.getByText('[pre-request] prepared request')).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Console' }));
     expect(screen.getByText('2 bounded console entries captured across script stages.')).toBeInTheDocument();
