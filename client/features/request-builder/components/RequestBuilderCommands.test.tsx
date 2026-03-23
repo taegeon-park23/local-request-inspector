@@ -27,8 +27,8 @@ function getUrl(input: RequestInfo | URL) {
 }
 
 async function openNewRequest(user: ReturnType<typeof userEvent.setup>) {
-  const explorer = screen.getByLabelText('Section explorer');
-  await user.click(within(explorer).getByRole('button', { name: 'New Request' }));
+  const mainSurface = screen.getByLabelText('Main work surface');
+  await user.click(within(mainSurface).getByRole('button', { name: 'New Request' }));
 }
 
 describe('Request builder save/run wiring', () => {
@@ -800,3 +800,4 @@ describe('Request builder save/run wiring', () => {
     expect(updatePayload.request.name).toBe('Replay of Create user refined');
   });
 });
+

@@ -238,10 +238,9 @@ describe('AppRouter shell bootstrap', () => {
     const user = userEvent.setup();
     renderApp(<AppRouter />);
 
-    const workspaceExplorer = screen.getByLabelText('Section explorer');
     const workspaceMainSurface = screen.getByLabelText('Main work surface');
 
-    await user.click(within(workspaceExplorer).getByRole('button', { name: 'New Request' }));
+    await user.click(within(workspaceMainSurface).getByRole('button', { name: 'New Request' }));
     expect(screen.getByText(/Save updates the request definition\. Run does not save automatically and does not clear unsaved authoring changes\./i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Run' })).toBeDisabled();

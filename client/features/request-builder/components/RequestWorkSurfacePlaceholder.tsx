@@ -17,6 +17,7 @@ import {
   formatRequestPlacementPath,
   getCollectionPlacementValue,
   getRequestGroupPlacementValue,
+  isPendingRequestPlacementGroup,
   type RequestPlacementCollectionOption,
 } from '@client/features/request-builder/request-placement';
 import { useRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
@@ -184,8 +185,14 @@ export function RequestWorkSurfacePlaceholder({
   const selectedPlacementPath = selectedCollection && selectedRequestGroup
     ? formatRequestPlacementPath(createRequestPlacementFromSelection(selectedCollection, selectedRequestGroup))
     : null;
+  const selectedRequestGroupPendingCreate = isPendingRequestPlacementGroup(selectedRequestGroup);
   const placementSupportCopy = selectedPlacementPath
-    ? t('workspaceRoute.requestBuilder.placement.selected', { path: selectedPlacementPath })
+    ? selectedRequestGroupPendingCreate
+      ? t('workspaceRoute.requestBuilder.placement.pendingCreate', {
+          path: selectedPlacementPath,
+          groupName: selectedRequestGroup?.requestGroupName ?? DEFAULT_REQUEST_GROUP_NAME,
+        })
+      : t('workspaceRoute.requestBuilder.placement.selected', { path: selectedPlacementPath })
     : t('workspaceRoute.requestBuilder.placement.unavailable');
 
   return (
@@ -268,12 +275,14 @@ export function RequestWorkSurfacePlaceholder({
                       createRequestPlacementFromSelection(selectedCollection, nextRequestGroup),
                     );
                   }}
-                  disabled={!selectedCollection || selectedCollection.requestGroups.length === 0}
+                  disabled={!selectedCollection || selectedRequestGroupPendingCreate || selectedCollection.requestGroups.length === 0}
                 >
                   {(selectedCollection?.requestGroups.length ?? 0) > 0
                     ? selectedCollection?.requestGroups.map((requestGroup) => (
                         <option key={getRequestGroupPlacementValue(requestGroup)} value={getRequestGroupPlacementValue(requestGroup)}>
-                          {requestGroup.requestGroupName}
+                          {isPendingRequestPlacementGroup(requestGroup)
+                            ? t('workspaceRoute.requestBuilder.placement.pendingOption', { name: requestGroup.requestGroupName })
+                            : requestGroup.requestGroupName}
                         </option>
                       ))
                     : <option value="">{t('workspaceRoute.requestBuilder.placement.noRequestGroups')}</option>}

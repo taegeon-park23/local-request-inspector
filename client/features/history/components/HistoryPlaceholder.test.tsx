@@ -56,7 +56,7 @@ describe('History S18 fidelity refinement', () => {
       sourceLabel: 'Saved request snapshot',
       requestResourceId: 'request-create-user',
       requestCollectionName: 'Saved Requests',
-      requestFolderName: 'Core Flows',
+      requestGroupName: 'Core Flows',
       hostPathHint: 'api.example.com/users/with/a/very/long/request/path/that/should-stay-visible-in-history-cards',
       responsePreviewSizeLabel: '73 B preview',
       responsePreviewPolicy: 'Persisted response preview is bounded and redacted before deeper diagnostics are added.',
@@ -528,8 +528,8 @@ describe('History S18 fidelity refinement', () => {
     vi.stubGlobal('fetch', fetchMock);
     renderApp(<AppRouter />, { initialEntries: ['/workspace'] });
 
-    const explorer = screen.getByLabelText('Section explorer');
-    await user.click(within(explorer).getByRole('button', { name: 'New Request' }));
+    const mainSurface = screen.getByLabelText('Main work surface');
+    await user.click(within(mainSurface).getByRole('button', { name: 'New Request' }));
     await user.type(screen.getByLabelText('Request name'), 'Runtime probe');
     await user.type(screen.getByLabelText('Request URL'), 'https://api.example.com/runtime');
 
@@ -551,3 +551,4 @@ describe('History S18 fidelity refinement', () => {
     expect(Object.keys(useRequestDraftStore.getState().draftsByTabId)).toHaveLength(1);
   });
 });
+

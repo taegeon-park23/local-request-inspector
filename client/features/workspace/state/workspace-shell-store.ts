@@ -180,7 +180,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
 
           if (!readRequestGroupName(request)) {
             delete nextTab.requestGroupName;
-            delete nextTab.folderName;
+
           }
 
           return nextTab;
@@ -255,6 +255,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
 export function resetWorkspaceShellStore() {
   useWorkspaceShellStore.setState(initialWorkspaceShellState);
 }
+
 
 
 

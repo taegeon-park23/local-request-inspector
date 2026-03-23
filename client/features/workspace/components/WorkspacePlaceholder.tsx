@@ -26,6 +26,7 @@ import type { RequestDraftSeed } from '@client/features/request-builder/request-
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
 import { workspaceMockRulesQueryKey } from '@client/features/mocks/mock-rules.api';
 import { WorkspaceExplorer } from '@client/features/workspace/components/WorkspaceExplorer';
+import { WorkspaceResourceManagerPanel } from '@client/features/workspace/components/WorkspaceResourceManagerPanel';
 import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import {
   downloadAuthoredResourceBundle,
@@ -244,6 +245,7 @@ function buildRequestPlacementOptions(
           }))
         : [{
             requestGroupName: defaults?.requestGroupName ?? DEFAULT_REQUEST_GROUP_NAME,
+            pendingCreation: true,
           }],
     }));
   }
@@ -261,6 +263,28 @@ function buildRequestPlacementOptions(
     }],
   }];
 }
+
+function findWorkspaceRequestById(
+  tree: WorkspaceCollectionNode[],
+  requestId: string | null | undefined,
+) {
+  if (!requestId) {
+    return null;
+  }
+
+  for (const collection of tree) {
+    for (const requestGroup of collection.children) {
+      const requestNode = requestGroup.children.find((child) => child.request.id === requestId);
+
+      if (requestNode) {
+        return requestNode.request;
+      }
+    }
+  }
+
+  return null;
+}
+
 export function WorkspacePlaceholder() {
   const queryClient = useQueryClient();
   const { locale, t } = useI18n();
@@ -637,6 +661,8 @@ export function WorkspacePlaceholder() {
   const requestPlacementOptions = buildRequestPlacementOptions(explorerTree, requestTreeQuery.data?.defaults);
   const resolvedTabs = tabs.map((tab) => resolvePresentationTab(tab, draftsByTabId[tab.id]));
   const activeTab = resolvedTabs.find((tab) => tab.id === activeTabId) ?? null;
+  const activeDraft = activeTab ? draftsByTabId[activeTab.id]?.draft ?? null : null;
+  const activeSavedRequest = findWorkspaceRequestById(explorerTree, activeTab?.requestId);
   const activeTabKey = activeTab?.id ?? 'empty';
 
   const openDraftFromSeed = async (draftSeed?: RequestDraftSeed) => {
@@ -686,7 +712,7 @@ export function WorkspacePlaceholder() {
       return;
     }
 
-    await createCollectionMutation.mutateAsync({ name: nextName });
+    return createCollectionMutation.mutateAsync({ name: nextName });
   };
 
   const handleRenameCollection = async (collection: WorkspaceCollectionNode, name: string) => {
@@ -696,7 +722,7 @@ export function WorkspacePlaceholder() {
       return;
     }
 
-    await renameCollectionMutation.mutateAsync({
+    return renameCollectionMutation.mutateAsync({
       collectionId: collection.collectionId,
       name: nextName,
     });
@@ -712,7 +738,7 @@ export function WorkspacePlaceholder() {
       return;
     }
 
-    await createRequestGroupMutation.mutateAsync({
+    return createRequestGroupMutation.mutateAsync({
       collectionId: collection.collectionId,
       name: nextName,
     });
@@ -725,7 +751,7 @@ export function WorkspacePlaceholder() {
       return;
     }
 
-    await renameRequestGroupMutation.mutateAsync({
+    return renameRequestGroupMutation.mutateAsync({
       requestGroupId: requestGroup.requestGroupId,
       name: nextName,
     });
@@ -845,34 +871,7 @@ export function WorkspacePlaceholder() {
         <WorkspaceExplorer
           tree={explorerTree}
           selectedRequestId={selectedExplorerItemId}
-          onCreateRequest={handleCreateRequest}
-          onCreateCollection={handleCreateCollection}
-          onRenameCollection={handleRenameCollection}
-          onDeleteCollection={handleDeleteCollection}
           onOpenSavedRequest={handleOpenSavedRequest}
-          onDeleteRequest={(request) => deleteSavedRequestMutation.mutate(request.id)}
-          onExportRequest={(request) => exportRequestMutation.mutate(request)}
-          onCreateRequestGroup={handleCreateRequestGroup}
-          onRenameRequestGroup={handleRenameRequestGroup}
-          onDeleteRequestGroup={handleDeleteRequestGroup}
-          onExportResources={() => exportResourcesMutation.mutate()}
-          onImportResources={handleImportResources}
-          importPreview={pendingImportPreview}
-          onConfirmImportPreview={handleConfirmImportPreview}
-          onCancelImportPreview={handleCancelImportPreview}
-          transferStatusMessage={resourceTransferStatus?.message ?? null}
-          transferStatusDetails={resourceTransferStatus?.details}
-          transferStatusTone={resourceTransferStatus?.tone}
-          isExporting={exportResourcesMutation.isPending || exportRequestMutation.isPending}
-          isPreviewingImport={previewResourcesMutation.isPending}
-          isImporting={importResourcesMutation.isPending}
-          isDeletingRequest={deleteSavedRequestMutation.isPending}
-          isCreatingCollection={createCollectionMutation.isPending}
-          isRenamingCollection={renameCollectionMutation.isPending}
-          isDeletingCollection={deleteCollectionMutation.isPending}
-          isCreatingRequestGroup={createRequestGroupMutation.isPending}
-          isRenamingRequestGroup={renameRequestGroupMutation.isPending}
-          isDeletingRequestGroup={deleteRequestGroupMutation.isPending}
         />
         </section>
       )}
@@ -897,6 +896,39 @@ export function WorkspacePlaceholder() {
           onCloseTab={handleCloseTab}
         />
 
+        <WorkspaceResourceManagerPanel
+          tree={explorerTree}
+          activeTab={activeTab}
+          activeDraft={activeDraft}
+          activeSavedRequest={activeSavedRequest}
+          onCreateCollection={handleCreateCollection}
+          onRenameCollection={handleRenameCollection}
+          onDeleteCollection={handleDeleteCollection}
+          onCreateRequestGroup={handleCreateRequestGroup}
+          onRenameRequestGroup={handleRenameRequestGroup}
+          onDeleteRequestGroup={handleDeleteRequestGroup}
+          onExportRequest={(request) => exportRequestMutation.mutate(request)}
+          onDeleteRequest={(request) => deleteSavedRequestMutation.mutate(request.id)}
+          onExportResources={() => exportResourcesMutation.mutate()}
+          onImportResources={handleImportResources}
+          importPreview={pendingImportPreview}
+          onConfirmImportPreview={handleConfirmImportPreview}
+          onCancelImportPreview={handleCancelImportPreview}
+          transferStatusMessage={resourceTransferStatus?.message ?? null}
+          transferStatusDetails={resourceTransferStatus?.details}
+          transferStatusTone={resourceTransferStatus?.tone}
+          isExporting={exportResourcesMutation.isPending || exportRequestMutation.isPending}
+          isPreviewingImport={previewResourcesMutation.isPending}
+          isImporting={importResourcesMutation.isPending}
+          isDeletingRequest={deleteSavedRequestMutation.isPending}
+          isCreatingCollection={createCollectionMutation.isPending}
+          isRenamingCollection={renameCollectionMutation.isPending}
+          isDeletingCollection={deleteCollectionMutation.isPending}
+          isCreatingRequestGroup={createRequestGroupMutation.isPending}
+          isRenamingRequestGroup={renameRequestGroupMutation.isPending}
+          isDeletingRequestGroup={deleteRequestGroupMutation.isPending}
+        />
+
         <RequestWorkSurfacePlaceholder
           key={`work-${activeTabKey}`}
           activeTab={activeTab}
@@ -913,6 +945,7 @@ export function WorkspacePlaceholder() {
     />
   );
 }
+
 
 
 

@@ -56,7 +56,7 @@ export interface RequestDefinitionInput {
   collectionName?: string;
   requestGroupId?: string;
   requestGroupName?: string;
-  folderName?: string;
+
 }
 
 export interface SavedRequestResourceRecord extends RequestDefinitionInput {
@@ -112,7 +112,7 @@ export interface RequestRunObservation {
   environmentLabel?: string;
   requestCollectionName?: string;
   requestGroupName?: string;
-  requestFolderName?: string;
+
   requestSourceLabel?: string;
   errorCode?: string;
   errorSummary?: string;
@@ -320,3 +320,7 @@ export async function runRequestDefinition(input: RequestDefinitionInput) {
 
   return parseJsonResponse<{ execution: RequestRunObservation }>(response).then((payload) => payload.execution);
 }
+
+
+
+

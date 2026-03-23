@@ -2,7 +2,7 @@
 
 - **Purpose:** Document the core user journeys and flow-level state transitions for the local-first API workbench.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-23
+- **Last Updated:** 2026-03-24
 - **Related Documents:** `ux-information-architecture.md`, `internal-api-contracts.md`, `script-execution-safety-model.md`, `../tasks/task-003-ux-information-architecture-and-workspace-flows.md`
 - **Status:** done
 - **Update Rule:** Update when primary workspace journeys or runtime-view responsibilities materially change.
@@ -45,6 +45,7 @@ User enters the `Workspace` section and chooses one of:
 - Execution status should be visible both locally in the working tab and globally in the shell.
 - After run completion, focus should move to the result panel while preserving editor context.
 - Redaction warnings should appear if logs/results hide secret material.
+- The workspace explorer is navigation-only: it opens saved requests and shows canonical placement, but collection/request-group/request management belongs to the main workspace surface.
 - Closing a tab is not the same action as deleting the saved request represented in the persisted tree.
 - Explicit saved-request deletion should remove the tree leaf while leaving any open work as a detached draft until the user closes it.
 

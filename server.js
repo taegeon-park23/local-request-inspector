@@ -643,7 +643,6 @@ function normalizePersistedRequestRecord(record) {
     requestGroupId: normalizeText(record.requestGroupId),
     collectionName: normalizeText(record.collectionName) || DEFAULT_REQUEST_COLLECTION_NAME,
     requestGroupName: normalizeText(record.requestGroupName || record.folderName) || DEFAULT_REQUEST_GROUP_NAME,
-    folderName: normalizeText(record.requestGroupName || record.folderName) || DEFAULT_REQUEST_GROUP_NAME,
     summary: record.summary || createRequestSummary(record.method, record.url),
   };
 }
@@ -828,7 +827,6 @@ function createExecutionObservation({
       : 'No environment selected',
     requestCollectionName: requestSnapshot?.collectionName || undefined,
     requestGroupName: requestSnapshot?.requestGroupName || requestSnapshot?.folderName || undefined,
-    requestFolderName: requestSnapshot?.requestGroupName || requestSnapshot?.folderName || undefined,
     requestSourceLabel: requestSnapshot?.sourceLabel || 'Runtime request snapshot',
     stageSummaries: stageSummaries || [],
     ...(errorCode ? { errorCode } : {}),
@@ -1012,9 +1010,6 @@ function createPersistedRequestSnapshot(request, targetUrl) {
     requestGroupName: typeof request.requestGroupName === 'string'
       ? request.requestGroupName
       : (typeof request.folderName === 'string' ? request.folderName : ''),
-    folderName: typeof request.requestGroupName === 'string'
-      ? request.requestGroupName
-      : (typeof request.folderName === 'string' ? request.folderName : ''),
     sourceLabel: request.id ? 'Saved request snapshot' : 'Ad hoc request snapshot',
   };
 }
@@ -1154,9 +1149,6 @@ function createPersistedRequestSnapshotSafely(request, targetUrl) {
       requestGroupName: typeof request?.requestGroupName === 'string'
         ? request.requestGroupName
         : (typeof request?.folderName === 'string' ? request.folderName : ''),
-      folderName: typeof request?.requestGroupName === 'string'
-        ? request.requestGroupName
-        : (typeof request?.folderName === 'string' ? request.folderName : ''),
       sourceLabel: request?.id ? 'Saved request snapshot' : 'Ad hoc request snapshot',
     };
   }
@@ -1184,7 +1176,6 @@ function createExecutionRequestSeed(input) {
     collectionName: input.collectionName || null,
     requestGroupId: input.requestGroupId || null,
     requestGroupName: input.requestGroupName || input.folderName || null,
-    folderName: input.requestGroupName || input.folderName || null,
   };
 }
 
@@ -2282,7 +2273,6 @@ function createHistoryRecord(runtimeRecord) {
     environmentId,
     requestCollectionName: requestSnapshot.collectionName || undefined,
     requestGroupName: requestSnapshot.requestGroupName || requestSnapshot.folderName || undefined,
-    requestFolderName: requestSnapshot.requestGroupName || requestSnapshot.folderName || undefined,
     responseSummary:
       runtimeRecord.responseStatus === null
         ? 'Persisted history does not include a transport response body for this execution.'
@@ -2912,7 +2902,6 @@ function buildWorkspaceRequestTree(workspaceId) {
             collectionName: request.collectionName,
             requestGroupId: request.requestGroupId,
             requestGroupName: request.requestGroupName,
-            folderName: request.requestGroupName,
             updatedAt: request.updatedAt,
           },
         })),
@@ -3670,7 +3659,6 @@ app.patch('/api/request-groups/:requestGroupId', (req, res) => {
       resourceStorage.save('request', {
         ...requestRecord,
         requestGroupName: requestGroup.name,
-        folderName: requestGroup.name,
       });
     }
 

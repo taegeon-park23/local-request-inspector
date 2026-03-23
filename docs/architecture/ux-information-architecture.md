@@ -2,7 +2,7 @@
 
 - **Purpose:** Define the high-level workspace shell, navigation model, screen responsibilities, and visibility rules for the local-first API workbench.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-23
+- **Last Updated:** 2026-03-24
 - **Related Documents:** `overview.md`, `shared-schema.md`, `internal-api-contracts.md`, `script-execution-safety-model.md`, `workspace-flows.md`, `../tasks/task-003-ux-information-architecture-and-workspace-flows.md`
 - **Status:** done
 - **Update Rule:** Update when workspace shell, navigation, or summary/detail responsibilities materially change.
@@ -75,6 +75,7 @@ Recommended shell regions:
 - **Secondary sidebar / explorer**
   - section-specific tree or list
   - collection tree, capture list, history list, mock list, etc.
+  - in `Workspace`, the explorer is navigation-only and should not own collection/request-group/request CRUD
 - **Primary content area**
   - editor, detail view, or split-pane work surface
 - **Contextual detail / result panel**
@@ -88,7 +89,7 @@ Recommended shell regions:
 | Global top bar | high-level context and quick actions | workspace switcher, environment switcher, search, send/run, cancel, connection health |
 | Left navigation rail | mode switch | Workspace, Captures, History, Mocks, Environments, Scripts, Settings |
 | Secondary sidebar | persisted-tree or list navigation | saved request tree, capture summaries, execution summaries, mock rules |
-| Primary content area | focused editing or inspection | request builder, mock editor, environment editor, execution detail |
+| Primary content area | focused editing, inspection, and route-local management | request builder, workspace saved-resource manager, mock editor, environment editor, execution detail |
 | Contextual detail panel | detail and diagnostics | response body, headers, logs, tests, match trace, metadata |
 
 ## 5. Information Grouping by Scope
@@ -115,7 +116,7 @@ These may need to exist even when workspace ownership is missing or partial:
 ## 6. Screen Map
 | Section | Summary View | Detail / Editor View | Key Secondary Panels |
 | --- | --- | --- | --- |
-| Workspace | collection tree, recent requests, favorites | request builder tabs, request metadata editor | response panel, test panel, logs, resolved variables |
+| Workspace | collection tree and saved request navigation | request builder tabs, saved-resource manager, request metadata editor | response panel, test panel, logs, resolved variables |
 | Captures | capture list with filters | captured request inspector | raw request, matched mock rule, replay configuration |
 | History | execution summary list | execution detail | response, tests, console, stage timeline |
 | Mocks | rule list and status indicators | mock rule editor | match diagnostics, scenario state, sample response |

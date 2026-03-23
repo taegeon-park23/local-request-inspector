@@ -177,7 +177,7 @@ const defaultWorkspaceSavedRequest = {
   collectionName: 'Saved Requests',
   requestGroupId: 'request-group-general',
   requestGroupName: 'General',
-  folderName: 'General',
+
   summary: 'Starter persisted health check request.',
   createdAt: '2026-03-21T00:00:00.000Z',
   updatedAt: '2026-03-21T00:00:00.000Z',
@@ -245,7 +245,7 @@ beforeEach(() => {
                       collectionName: 'Saved Requests',
                       requestGroupId: 'request-group-general',
                       requestGroupName: 'General',
-                      folderName: 'General',
+                    
                       updatedAt: '2026-03-21T00:00:00.000Z',
                     },
                   },
@@ -435,7 +435,7 @@ beforeEach(() => {
             collectionName: 'Saved Requests',
             requestGroupId: 'request-group-general',
             requestGroupName: 'General',
-            folderName: 'General',
+          
             createdAt: '2026-03-21T00:00:00.000Z',
             updatedAt: '2026-03-21T00:00:00.000Z',
           }],
@@ -519,4 +519,5 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
+
 

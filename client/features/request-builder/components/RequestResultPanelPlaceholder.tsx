@@ -56,9 +56,9 @@ function getTabSourceCopy(activeTab: RequestTabRecord, t: TranslateFn) {
   const requestGroupName = readRequestGroupName(activeTab);
 
   if (activeTab.collectionName && requestGroupName) {
-    return t('workspaceRoute.resultPanel.source.savedInCollectionFolder', {
+    return t('workspaceRoute.resultPanel.source.savedInCollectionRequestGroup', {
       collectionName: activeTab.collectionName,
-      folderName: requestGroupName,
+      requestGroupName,
     });
   }
 
@@ -97,7 +97,7 @@ function formatObservedLinkage(
   requestResourceId: string | null | undefined,
   sourceLabel: string | undefined,
   collectionName: string | undefined,
-  folderName: string | undefined,
+  requestGroupName: string | undefined,
   t: TranslateFn,
 ) {
   if (requestResourceId) {
@@ -106,7 +106,7 @@ function formatObservedLinkage(
 
   if (collectionName) {
     const placement = formatRequestPlacementPath(
-      folderName ? { collectionName, folderName } : { collectionName },
+      requestGroupName ? { collectionName, requestGroupName } : { collectionName },
     ) ?? t('workspaceRoute.resultPanel.linkage.noSavedPlacementRecorded');
     return sourceLabel === 'Saved request snapshot'
       ? placement
@@ -489,7 +489,7 @@ export function RequestResultPanelPlaceholder({
                         execution.requestResourceId,
                         execution.requestSourceLabel,
                         execution.requestCollectionName,
-                        execution.requestGroupName ?? execution.requestFolderName,
+                        execution.requestGroupName,
                         t,
                       ),
                     },
@@ -497,7 +497,7 @@ export function RequestResultPanelPlaceholder({
                       label: t('workspaceRoute.resultPanel.executionInfo.labels.placement'),
                       value: formatPlacementLabel(
                         execution.requestCollectionName,
-                        execution.requestGroupName ?? execution.requestFolderName,
+                        execution.requestGroupName,
                         t,
                       ),
                     },
@@ -533,4 +533,5 @@ export function RequestResultPanelPlaceholder({
     </div>
   );
 }
+
 

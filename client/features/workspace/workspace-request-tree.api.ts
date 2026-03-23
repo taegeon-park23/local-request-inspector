@@ -49,7 +49,6 @@ export interface WorkspaceTreeRequestLeaf {
   collectionName: string;
   requestGroupId: string;
   requestGroupName: string;
-  folderName?: string;
   updatedAt?: string;
 }
 
@@ -288,7 +287,7 @@ export function buildFallbackWorkspaceRequestTree(
           collectionName: request.collectionName,
           requestGroupId: readRequestGroupId(request),
           requestGroupName: readRequestPlacementGroupName(request) ?? DEFAULT_REQUEST_GROUP_NAME,
-          folderName: readRequestPlacementGroupName(request) ?? DEFAULT_REQUEST_GROUP_NAME,
+
           updatedAt: request.updatedAt,
         },
       })),
@@ -296,5 +295,8 @@ export function buildFallbackWorkspaceRequestTree(
     };
   });
 }
+
+
+
 
 

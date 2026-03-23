@@ -72,7 +72,7 @@ export const workspaceExplorerTree: WorkspaceExplorerNode[] = [
               methodLabel: 'GET',
               summary: 'Starter request scaffold for list retrieval.',
               collectionName: 'Core APIs',
-              folderName: 'User flows',
+              requestGroupName: 'User flows',
               resourceKind: 'starter',
               draftSeed: {
                 name: 'List users',
@@ -84,7 +84,7 @@ export const workspaceExplorerTree: WorkspaceExplorerNode[] = [
                 ],
                 headers: [{ id: 'users-accept', key: 'Accept', value: 'application/json', enabled: true }],
                 collectionName: 'Core APIs',
-                folderName: 'User flows',
+                requestGroupName: 'User flows',
               },
             },
           },
@@ -98,7 +98,7 @@ export const workspaceExplorerTree: WorkspaceExplorerNode[] = [
               methodLabel: 'POST',
               summary: 'Starter request scaffold for authentication flow scaffolding.',
               collectionName: 'Core APIs',
-              folderName: 'User flows',
+              requestGroupName: 'User flows',
               resourceKind: 'starter',
               draftSeed: {
                 name: 'Create session',
@@ -110,7 +110,7 @@ export const workspaceExplorerTree: WorkspaceExplorerNode[] = [
                 bodyMode: 'json',
                 bodyText: '{\n  "email": "demo@example.com",\n  "password": "secret"\n}',
                 collectionName: 'Core APIs',
-                folderName: 'User flows',
+                requestGroupName: 'User flows',
               },
             },
           },
@@ -175,3 +175,4 @@ export function getSavedWorkspaceRequestSeedById(requestId: string): WorkspaceSa
 
   return null;
 }
+

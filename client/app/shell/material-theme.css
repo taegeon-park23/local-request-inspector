@@ -4439,6 +4439,60 @@ body {
   grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
 }
 
+.workspace-resource-manager {
+  display: grid;
+  gap: var(--m3-space-4);
+}
+
+.workspace-resource-manager__header-copy,
+.workspace-resource-manager__section,
+.workspace-resource-manager__section-copy {
+  display: grid;
+  gap: var(--m3-space-3);
+}
+
+.workspace-resource-manager__header-copy > *,
+.workspace-resource-manager__section-copy > * {
+  margin: 0;
+}
+
+.workspace-resource-manager__grid {
+  display: grid;
+  gap: var(--m3-space-4);
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+}
+
+.workspace-resource-manager__section {
+  padding: var(--m3-space-4);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--m3-shape-l);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 12rem),
+    var(--m3-color-surface-container-lowest);
+}
+
+.workspace-resource-manager__badge-rail {
+  justify-content: flex-end;
+}
+
+.workspace-resource-manager__import-label {
+  position: relative;
+  overflow: hidden;
+}
+
+.workspace-resource-manager__file-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.workspace-explorer .workspace-request {
+  display: grid;
+  width: 100%;
+  text-align: left;
+}
+
 .management-explorer-summary {
   position: sticky;
   top: 0;

@@ -38,12 +38,12 @@ function createFallbackPreviewSizeLabel(history: HistoryRecord, t: Translate) {
   });
 }
 
-function formatObservedPlacement(collectionName: string | undefined, folderName: string | undefined, t: Translate) {
+function formatObservedPlacement(collectionName: string | undefined, requestGroupName: string | undefined, t: Translate) {
   if (!collectionName) {
     return t('historyRoute.helpers.placementNone');
   }
 
-  return folderName ? `${collectionName} / ${folderName}` : collectionName;
+  return requestGroupName ? `${collectionName} / ${requestGroupName}` : collectionName;
 }
 
 function createFallbackBodyModeSummary(bodyMode: HistoryRecord['requestBodyMode'], t: Translate) {
@@ -92,9 +92,9 @@ function formatHistoryRequestLinkage(history: HistoryRecord, t: Translate) {
 
   if (history.requestCollectionName) {
     return history.sourceLabel === 'Saved request snapshot'
-      ? formatObservedPlacement(history.requestCollectionName, history.requestGroupName ?? history.requestFolderName, t)
+      ? formatObservedPlacement(history.requestCollectionName, history.requestGroupName, t)
       : t('historyRoute.helpers.linkedRequestDraftPlacement', {
-        placement: formatObservedPlacement(history.requestCollectionName, history.requestGroupName ?? history.requestFolderName, t),
+        placement: formatObservedPlacement(history.requestCollectionName, history.requestGroupName, t),
       });
   }
 
@@ -433,7 +433,7 @@ export function HistoryPlaceholder() {
                     { label: t('historyRoute.summaryCards.requestSnapshot.labels.requestLabel'), value: selectedHistory.requestLabel },
                     { label: t('historyRoute.summaryCards.requestSnapshot.labels.snapshotSource'), value: selectedHistory.sourceLabel },
                     { label: t('historyRoute.summaryCards.requestSnapshot.labels.linkedRequest'), value: formatHistoryRequestLinkage(selectedHistory, t) },
-                    { label: t('historyRoute.summaryCards.requestSnapshot.labels.placement'), value: formatObservedPlacement(selectedHistory.requestCollectionName, selectedHistory.requestGroupName ?? selectedHistory.requestFolderName, t) },
+                    { label: t('historyRoute.summaryCards.requestSnapshot.labels.placement'), value: formatObservedPlacement(selectedHistory.requestCollectionName, selectedHistory.requestGroupName, t) },
                     { label: t('historyRoute.summaryCards.requestSnapshot.labels.url'), value: selectedHistory.url },
                     { label: t('historyRoute.summaryCards.requestSnapshot.labels.requestInput'), value: selectedHistory.requestInputSummary ?? createFallbackRequestInputSummary(selectedHistory, t) },
                   ]}
@@ -640,3 +640,6 @@ export function HistoryPlaceholder() {
     />
   );
 }
+
+
+

@@ -66,7 +66,7 @@ export interface HistoryRecord {
   requestResourceId?: string | null;
   requestCollectionName?: string;
   requestGroupName?: string;
-  requestFolderName?: string;
+
   responseSummary: string;
   headersSummary: string;
   bodyHint: string;
@@ -98,3 +98,6 @@ export interface HistoryFixtureScenario {
   listItems: HistoryRecord[];
   selectedHistoryId: string | null;
 }
+
+
+

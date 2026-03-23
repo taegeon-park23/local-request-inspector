@@ -3,12 +3,12 @@ export interface RequestPlacementValue {
   collectionName?: string;
   requestGroupId?: string;
   requestGroupName?: string;
-  folderName?: string;
 }
 
 export interface RequestPlacementGroupOption {
   requestGroupId?: string;
   requestGroupName: string;
+  pendingCreation?: boolean;
 }
 
 export interface RequestPlacementCollectionOption {
@@ -20,9 +20,9 @@ export interface RequestPlacementCollectionOption {
 export const DEFAULT_REQUEST_GROUP_NAME = 'General';
 
 export function readRequestGroupName(
-  placement: Pick<RequestPlacementValue, 'requestGroupName' | 'folderName'> | null | undefined,
+  placement: Pick<RequestPlacementValue, 'requestGroupName'> | null | undefined,
 ) {
-  return placement?.requestGroupName ?? placement?.folderName;
+  return placement?.requestGroupName;
 }
 
 export function createRequestPlacementFields(placement: RequestPlacementValue): RequestPlacementValue {
@@ -43,7 +43,6 @@ export function createRequestPlacementFields(placement: RequestPlacementValue): 
 
   if (requestGroupName) {
     nextPlacement.requestGroupName = requestGroupName;
-    nextPlacement.folderName = requestGroupName;
   }
 
   return nextPlacement;
@@ -88,13 +87,12 @@ export function replaceRequestPlacement<T extends RequestPlacementValue>(
   delete nextTarget.collectionName;
   delete nextTarget.requestGroupId;
   delete nextTarget.requestGroupName;
-  delete nextTarget.folderName;
 
   return Object.assign(nextTarget, createRequestPlacementFields(placement));
 }
 
 export function formatRequestPlacementPath(
-  placement: Pick<RequestPlacementValue, 'collectionName' | 'requestGroupName' | 'folderName'> | null | undefined,
+  placement: Pick<RequestPlacementValue, 'collectionName' | 'requestGroupName'> | null | undefined,
 ) {
   if (!placement?.collectionName) {
     return null;
@@ -136,6 +134,10 @@ export function getCollectionPlacementValue(collection: RequestPlacementCollecti
 
 export function getRequestGroupPlacementValue(requestGroup: RequestPlacementGroupOption) {
   return requestGroup.requestGroupId ?? requestGroup.requestGroupName;
+}
+
+export function isPendingRequestPlacementGroup(requestGroup: RequestPlacementGroupOption | null | undefined) {
+  return Boolean(requestGroup && requestGroup.pendingCreation === true && !requestGroup.requestGroupId);
 }
 
 export function createRequestPlacementFromSelection(

@@ -5,7 +5,7 @@ export const workspaceRouteMessagesEn = {
         eyebrow: 'Workspace explorer',
         title: 'Collections',
         summary:
-          'Persisted collections, request groups, and saved requests are the canonical explorer source. Working tabs stay separate from this saved tree.',
+          'Persisted collections, request groups, and saved requests stay browsable here. Management actions now live in the main workspace surface so the saved tree stays navigation-first.',
         authoringChip: 'Authoring',
         resourceLaneChip: 'Resource lane',
       },
@@ -45,6 +45,8 @@ export const workspaceRouteMessagesEn = {
       notes: {
         boundary:
           'Export and import stay limited to authored request definitions and mock rules. Runtime history, captures, and execution artifacts remain outside this bundle.',
+        navigationOnly:
+          'This explorer is navigation-only. Create, rename, delete, import, and export now happen in the main workspace surface.',
         previewAdvisory:
           'Preview is advisory only. Workspace changes before confirm can still change imported names or validation outcomes for {fileName}.',
       },
@@ -75,20 +77,20 @@ export const workspaceRouteMessagesEn = {
         exportBundleLabel: '{requestCount} saved request definition(s) and {mockRuleCount} mock rule(s)',
         exportSavedRequestLabel: 'saved request {name}',
         exportSingleFailed: 'Saved request export failed before a bundle could be downloaded.',
-        requestDeleted: 'Saved request was deleted from the canonical explorer tree. Open tabs were kept as detached drafts.',
-        requestDeleteFailed: 'Saved request deletion failed before the explorer tree could be updated.',
-        collectionCreated: 'Created collection {name} in the canonical explorer tree.',
-        collectionCreateFailed: 'Collection creation failed before the explorer tree could be updated.',
-        collectionRenamed: 'Renamed collection to {name} in the canonical explorer tree.',
-        collectionRenameFailed: 'Collection rename failed before the explorer tree could be updated.',
-        collectionDeleted: 'Deleted collection {name} from the canonical explorer tree. Drafts that referenced it moved to the default save placement.',
-        collectionDeleteFailed: 'Collection deletion failed before the explorer tree could be updated.',
-        requestGroupCreated: 'Created request group {name} in the canonical explorer tree.',
-        requestGroupCreateFailed: 'Request group creation failed before the explorer tree could be updated.',
-        requestGroupRenamed: 'Renamed request group to {name} in the canonical explorer tree.',
-        requestGroupRenameFailed: 'Request group rename failed before the explorer tree could be updated.',
-        requestGroupDeleted: 'Deleted request group {name} from the canonical explorer tree. Drafts that referenced it moved to the default save placement.',
-        requestGroupDeleteFailed: 'Request group deletion failed before the explorer tree could be updated.',
+        requestDeleted: 'Deleted the saved request from the canonical saved tree. Open tabs were kept as detached drafts.',
+        requestDeleteFailed: 'Saved request deletion failed before the canonical saved tree could be updated.',
+        collectionCreated: 'Created collection {name} in the canonical saved tree.',
+        collectionCreateFailed: 'Collection creation failed before the canonical saved tree could be updated.',
+        collectionRenamed: 'Renamed collection to {name} in the canonical saved tree.',
+        collectionRenameFailed: 'Collection rename failed before the canonical saved tree could be updated.',
+        collectionDeleted: 'Deleted collection {name} from the canonical saved tree. Drafts that referenced it moved to the default save placement.',
+        collectionDeleteFailed: 'Collection deletion failed before the canonical saved tree could be updated.',
+        requestGroupCreated: 'Created request group {name} in the canonical saved tree.',
+        requestGroupCreateFailed: 'Request group creation failed before the canonical saved tree could be updated.',
+        requestGroupRenamed: 'Renamed request group to {name} in the canonical saved tree.',
+        requestGroupRenameFailed: 'Request group rename failed before the canonical saved tree could be updated.',
+        requestGroupDeleted: 'Deleted request group {name} from the canonical saved tree. Drafts that referenced it moved to the default save placement.',
+        requestGroupDeleteFailed: 'Request group deletion failed before the canonical saved tree could be updated.',
         bundleCollectionCount: 'Collections in bundle: {count}',
         bundleRequestGroupCount: 'Request groups in bundle: {count}',
         bundleRequestCount: 'Saved requests in bundle: {count}',
@@ -121,6 +123,55 @@ export const workspaceRouteMessagesEn = {
       selection: {
         current: 'Current selection: {path}',
         none: 'No saved request is selected in the explorer.',
+      },
+    },
+    management: {
+      ariaLabel: 'Saved resource manager',
+      header: {
+        eyebrow: 'Saved resource manager',
+        title: 'Manage saved workspace resources',
+        summary:
+          'Collections, request groups, saved-request deletion, and authored-resource transfer now stay in the main surface so explorer traversal remains read-focused.',
+      },
+      badges: {
+        savedTree: 'Saved tree',
+        mainSurface: 'Main surface',
+      },
+      sections: {
+        transferTitle: 'Authored resource transfer',
+        transferDescription:
+          'Export or preview-import authored resources from the main surface without turning the explorer into a mutation lane.',
+        collectionTitle: 'Collections',
+        collectionDescription:
+          'Create, rename, or delete empty collections here. Request placement copy stays aligned after successful mutation.',
+        requestGroupTitle: 'Request groups',
+        requestGroupDescription:
+          'Create, rename, or delete empty request groups from the same main-surface manager instead of inside the explorer tree.',
+        requestTitle: 'Saved request actions',
+        requestDescription:
+          'Request creation stays in the tab strip and request editing stays in the builder. Export and delete the persisted saved request here when the active tab is saved-backed.',
+      },
+      fields: {
+        manageCollection: 'Manage collection',
+        manageRequestGroup: 'Manage request group',
+      },
+      actions: {
+        exportSavedRequest: 'Export saved request',
+        deleteSavedRequest: 'Delete saved request',
+      },
+      state: {
+        activePlacement: 'Active save placement: {path}',
+        noActivePlacement: 'No active save placement is selected yet.',
+        transferBoundary:
+          'Import and export remain limited to authored request definitions and mock rules. Runtime history, captures, and execution artifacts remain excluded.',
+        collectionCount: '{count} request group(s) belong to the selected collection.',
+        collectionUnavailable: 'No collection is available to manage yet.',
+        requestCount: '{count} saved request(s) belong to the selected request group.',
+        requestGroupUnavailable: 'Select a collection first to manage request groups.',
+        requestSelected: 'Managing saved request {name}.',
+        requestDetached:
+          'The active tab is a draft or replay tab. Rename it in the request builder, or open a saved request tab to export or delete persisted state.',
+        requestUnavailable: 'Open a saved request tab to export or delete the persisted request definition.',
       },
     },
     tabShell: {
@@ -171,6 +222,8 @@ export const workspaceRouteMessagesEn = {
       },
       placement: {
         selected: 'Request will save to {path}.',
+        pendingCreate: 'First save will create {groupName} in {path}.',
+        pendingOption: '{name} (created on first save)',
         unavailable: 'No canonical save placement is available yet.',
         noRequestGroups: 'Create a request group to enable saved placement.',
       },
@@ -387,7 +440,7 @@ export const workspaceRouteMessagesEn = {
         draftRequestTab: 'Draft request tab',
         savedRequest: 'Saved request',
         savedInCollection: 'Saved in {collectionName}',
-        savedInCollectionFolder: 'Saved in {collectionName} / {folderName}',
+        savedInCollectionRequestGroup: 'Saved in {collectionName} / {requestGroupName}',
       },
       linkage: {
         noSavedPlacementRecorded: 'No saved placement recorded',
@@ -542,7 +595,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         eyebrow: '작업공간 탐색기',
         title: '컬렉션',
         summary:
-          '저장된 컬렉션, 요청 그룹, 요청이 탐색기의 기준 소스입니다. 작업 탭은 이 저장 트리와 분리되어 유지됩니다.',
+          '저장된 컬렉션, 요청 그룹, 요청은 여기서 탐색만 합니다. 관리 동작은 메인 작업공간 surface로 옮겨 저장 트리가 탐색 중심으로 유지됩니다.',
         authoringChip: '작성',
         resourceLaneChip: '리소스 레인',
       },
@@ -582,6 +635,8 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
       notes: {
         boundary:
           '내보내기와 가져오기는 작성된 요청 정의와 mock rule에만 한정됩니다. 런타임 히스토리, 캡처, 실행 artifact는 이 번들 범위 밖에 있습니다.',
+        navigationOnly:
+          '이 탐색기는 탐색 전용입니다. 생성, 이름 변경, 삭제, 가져오기, 내보내기는 이제 메인 작업공간 surface에서 처리합니다.',
         previewAdvisory:
           '미리보기는 참고용입니다. 확정 전에 작업공간이 바뀌면 {fileName}의 가져오기 이름이나 검증 결과가 달라질 수 있습니다.',
       },
@@ -612,20 +667,20 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         exportBundleLabel: '저장 요청 {requestCount}개와 mock rule {mockRuleCount}개',
         exportSavedRequestLabel: '저장 요청 {name}',
         exportSingleFailed: '번들을 다운로드하기 전에 저장 요청 내보내기에 실패했습니다.',
-        requestDeleted: '저장 요청을 기준 탐색기 트리에서 삭제했습니다. 열려 있던 탭은 분리된 draft로 유지했습니다.',
-        requestDeleteFailed: '탐색기 트리를 갱신하기 전에 저장 요청 삭제에 실패했습니다.',
-        collectionCreated: '기준 탐색기 트리에 컬렉션 {name}을 만들었습니다.',
-        collectionCreateFailed: '탐색기 트리를 갱신하기 전에 컬렉션 생성에 실패했습니다.',
-        collectionRenamed: '기준 탐색기 트리에서 컬렉션 이름을 {name}(으)로 바꿨습니다.',
-        collectionRenameFailed: '탐색기 트리를 갱신하기 전에 컬렉션 이름 변경에 실패했습니다.',
-        collectionDeleted: '기준 탐색기 트리에서 컬렉션 {name}을 삭제했습니다. 이 컬렉션을 가리키던 draft는 기본 저장 위치로 이동했습니다.',
-        collectionDeleteFailed: '탐색기 트리를 갱신하기 전에 컬렉션 삭제에 실패했습니다.',
-        requestGroupCreated: '기준 탐색기 트리에 요청 그룹 {name}을 만들었습니다.',
-        requestGroupCreateFailed: '탐색기 트리를 갱신하기 전에 요청 그룹 생성에 실패했습니다.',
-        requestGroupRenamed: '기준 탐색기 트리에서 요청 그룹 이름을 {name}(으)로 바꿨습니다.',
-        requestGroupRenameFailed: '탐색기 트리를 갱신하기 전에 요청 그룹 이름 변경에 실패했습니다.',
-        requestGroupDeleted: '기준 탐색기 트리에서 요청 그룹 {name}을 삭제했습니다. 이 그룹을 가리키던 draft는 기본 저장 위치로 이동했습니다.',
-        requestGroupDeleteFailed: '탐색기 트리를 갱신하기 전에 요청 그룹 삭제에 실패했습니다.',
+        requestDeleted: '저장 요청을 기준 저장 트리에서 삭제했습니다. 열려 있던 탭은 분리된 draft로 유지했습니다.',
+        requestDeleteFailed: '기준 저장 트리를 갱신하기 전에 저장 요청 삭제에 실패했습니다.',
+        collectionCreated: '기준 저장 트리에 컬렉션 {name}을 만들었습니다.',
+        collectionCreateFailed: '기준 저장 트리를 갱신하기 전에 컬렉션 생성에 실패했습니다.',
+        collectionRenamed: '기준 저장 트리에서 컬렉션 이름을 {name}(으)로 바꿨습니다.',
+        collectionRenameFailed: '기준 저장 트리를 갱신하기 전에 컬렉션 이름 변경에 실패했습니다.',
+        collectionDeleted: '기준 저장 트리에서 컬렉션 {name}을 삭제했습니다. 이 컬렉션을 가리키던 draft는 기본 저장 위치로 이동했습니다.',
+        collectionDeleteFailed: '기준 저장 트리를 갱신하기 전에 컬렉션 삭제에 실패했습니다.',
+        requestGroupCreated: '기준 저장 트리에 요청 그룹 {name}을 만들었습니다.',
+        requestGroupCreateFailed: '기준 저장 트리를 갱신하기 전에 요청 그룹 생성에 실패했습니다.',
+        requestGroupRenamed: '기준 저장 트리에서 요청 그룹 이름을 {name}(으)로 바꿨습니다.',
+        requestGroupRenameFailed: '기준 저장 트리를 갱신하기 전에 요청 그룹 이름 변경에 실패했습니다.',
+        requestGroupDeleted: '기준 저장 트리에서 요청 그룹 {name}을 삭제했습니다. 이 그룹을 가리키던 draft는 기본 저장 위치로 이동했습니다.',
+        requestGroupDeleteFailed: '기준 저장 트리를 갱신하기 전에 요청 그룹 삭제에 실패했습니다.',
         bundleCollectionCount: '번들 안의 컬렉션: {count}',
         bundleRequestGroupCount: '번들 안의 요청 그룹: {count}',
         bundleRequestCount: '번들 안의 저장 요청: {count}',
@@ -658,6 +713,55 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
       selection: {
         current: '현재 선택: {path}',
         none: '탐색기에서 선택된 저장 요청이 없습니다.',
+      },
+    },
+    management: {
+      ariaLabel: '저장 리소스 관리자',
+      header: {
+        eyebrow: '저장 리소스 관리자',
+        title: '저장된 작업공간 리소스 관리',
+        summary:
+          '컬렉션, 요청 그룹, 저장 요청 삭제, 작성 리소스 전송은 메인 surface에 남겨 탐색기가 읽기 중심의 저장 트리 탐색기로 유지되게 합니다.',
+      },
+      badges: {
+        savedTree: '저장 트리',
+        mainSurface: '메인 surface',
+      },
+      sections: {
+        transferTitle: '작성 리소스 전송',
+        transferDescription:
+          '탐색기를 변경 레인으로 쓰지 않고 메인 surface에서 작성 리소스를 내보내거나 미리 본 뒤 가져옵니다.',
+        collectionTitle: '컬렉션',
+        collectionDescription:
+          '여기서 컬렉션을 생성, 이름 변경, 삭제합니다. 성공 후 요청 배치 문구도 함께 정렬됩니다.',
+        requestGroupTitle: '요청 그룹',
+        requestGroupDescription:
+          '요청 그룹 생성, 이름 변경, 빈 그룹 삭제를 탐색기 트리 안이 아니라 같은 메인 관리자에서 처리합니다.',
+        requestTitle: '저장 요청 동작',
+        requestDescription:
+          '요청 생성은 탭 스트립에 남고, 요청 편집은 빌더에 남습니다. 활성 탭이 저장 요청일 때만 여기서 내보내기와 삭제를 수행합니다.',
+      },
+      fields: {
+        manageCollection: '관리할 컬렉션',
+        manageRequestGroup: '관리할 요청 그룹',
+      },
+      actions: {
+        exportSavedRequest: '저장 요청 내보내기',
+        deleteSavedRequest: '저장 요청 삭제',
+      },
+      state: {
+        activePlacement: '활성 저장 위치: {path}',
+        noActivePlacement: '아직 선택된 활성 저장 위치가 없습니다.',
+        transferBoundary:
+          '가져오기와 내보내기는 작성된 요청 정의와 mock rule에만 한정됩니다. 런타임 히스토리, 캡처, 실행 artifact는 계속 제외됩니다.',
+        collectionCount: '선택한 컬렉션에는 요청 그룹이 {count}개 있습니다.',
+        collectionUnavailable: '아직 관리할 컬렉션이 없습니다.',
+        requestCount: '선택한 요청 그룹에는 저장 요청이 {count}개 있습니다.',
+        requestGroupUnavailable: '요청 그룹을 관리하려면 먼저 컬렉션을 선택하세요.',
+        requestSelected: '저장 요청 {name}을 관리하는 중입니다.',
+        requestDetached:
+          '활성 탭은 draft 또는 replay 탭입니다. 이름 변경은 요청 빌더에서 하고, 저장 상태 내보내기나 삭제는 저장 요청 탭을 열어 수행하세요.',
+        requestUnavailable: '저장 요청 정의를 내보내거나 삭제하려면 저장 요청 탭을 여세요.',
       },
     },
     tabShell: {
@@ -708,6 +812,8 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
       },
       placement: {
         selected: '{path} 위치에 저장됩니다.',
+        pendingCreate: '첫 저장 시 {path}에 {groupName} 그룹이 생성됩니다.',
+        pendingOption: '{name} (첫 저장 시 생성)',
         unavailable: '아직 정규 저장 위치를 선택할 수 없습니다.',
         noRequestGroups: '저장 위치를 사용하려면 요청 그룹을 먼저 만드세요.',
       },
@@ -925,7 +1031,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         draftRequestTab: 'draft 요청 탭',
         savedRequest: '저장된 요청',
         savedInCollection: '{collectionName}에 저장됨',
-        savedInCollectionFolder: '{collectionName} / {folderName}에 저장됨',
+        savedInCollectionRequestGroup: '{collectionName} / {requestGroupName}에 저장됨',
       },
       linkage: {
         noSavedPlacementRecorded: '저장 위치 기록이 없습니다',
@@ -1068,6 +1174,9 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
     },
   },
 };
+
+
+
 
 
 

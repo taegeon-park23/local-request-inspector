@@ -4,6 +4,7 @@ import {
   sortSavedRequestResources,
   type SavedRequestResourceRecord,
 } from '@client/features/request-builder/request-builder.api';
+import { readRequestGroupName } from '@client/features/request-builder/request-placement';
 import {
   type WorkspaceCollectionNode,
   type WorkspaceExplorerNode,
@@ -48,8 +49,8 @@ function createCollectionNodeId(collectionName: string) {
   return `collection-live-${collectionName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 }
 
-function createFolderNodeId(collectionName: string, folderName: string) {
-  return `folder-live-${collectionName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${folderName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+function createFolderNodeId(collectionName: string, requestGroupName: string) {
+  return `folder-live-${collectionName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${requestGroupName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 }
 
 export function buildWorkspaceExplorerTree(savedRequests: SavedRequestResourceRecord[]) {
@@ -75,10 +76,12 @@ export function buildWorkspaceExplorerTree(savedRequests: SavedRequestResourceRe
       collectionMap.set(collectionName, collectionEntry);
     }
 
-    if (record.folderName) {
-      const folderRecords = collectionEntry.folders.get(record.folderName) ?? [];
+    const requestGroupName = readRequestGroupName(record);
+
+    if (requestGroupName) {
+      const folderRecords = collectionEntry.folders.get(requestGroupName) ?? [];
       folderRecords.push(record);
-      collectionEntry.folders.set(record.folderName, folderRecords);
+      collectionEntry.folders.set(requestGroupName, folderRecords);
       continue;
     }
 
@@ -90,10 +93,10 @@ export function buildWorkspaceExplorerTree(savedRequests: SavedRequestResourceRe
     .map(([collectionName, collectionEntry]) => {
       const folderChildren: WorkspaceFolderNode[] = [...collectionEntry.folders.entries()]
         .sort(([leftFolderName], [rightFolderName]) => leftFolderName.localeCompare(rightFolderName))
-        .map(([folderName, folderRecords]) => ({
-          id: createFolderNodeId(collectionName, folderName),
+        .map(([requestGroupName, folderRecords]) => ({
+          id: createFolderNodeId(collectionName, requestGroupName),
           kind: 'folder',
-          name: folderName,
+          name: requestGroupName,
           children: sortSavedRequestResources(folderRecords).map((record) => createWorkspaceRequestNode(record)),
         }));
 

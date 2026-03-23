@@ -123,7 +123,7 @@ function createFailedExecutionObservation(
     ...(requestGroupName
       ? {
           requestGroupName,
-          requestFolderName: requestGroupName,
+
         }
       : {}),
     errorCode: error instanceof RequestBuilderApiError ? error.code : 'execution_failed',
@@ -340,3 +340,4 @@ export function useRequestBuilderCommands(
     },
   };
 }
+

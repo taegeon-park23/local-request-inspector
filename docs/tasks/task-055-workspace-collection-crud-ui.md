@@ -29,7 +29,7 @@ This slice stays intentionally narrow. It does not add nested collections, non-e
 - updated tracking docs so this slice becomes the latest landed workspace follow-up
 
 ### Explicitly Still Deferred
-- empty-collection placement UX beyond the current fallback semantics
+- empty-collection placement UX beyond the current fallback semantics at T055 time (closed later by `T056`)
 - auto-provisioning request groups when a user intentionally wants a new empty collection to become an active save target
 - full removal of `folderName` / `requestFolderName` compatibility aliases
 - detached-draft result-panel polish after explicit saved-request deletion
@@ -82,3 +82,4 @@ This task is complete when:
   - full alias cleanup for `folderName` / `requestFolderName`
   - detached-draft result-panel polish after explicit saved-request deletion
   - environment/script authored-resource bundle expansion
+

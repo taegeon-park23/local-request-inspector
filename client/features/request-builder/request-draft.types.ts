@@ -65,7 +65,6 @@ export interface RequestDraftState {
   collectionName?: string;
   requestGroupId?: string;
   requestGroupName?: string;
-  folderName?: string;
 }
 
 export interface RequestDraftSeed {
@@ -85,6 +84,7 @@ export interface RequestDraftSeed {
   collectionName?: string;
   requestGroupId?: string;
   requestGroupName?: string;
-  folderName?: string;
 }
+
+
 

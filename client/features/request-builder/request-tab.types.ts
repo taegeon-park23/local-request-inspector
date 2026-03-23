@@ -24,7 +24,6 @@ export interface SavedWorkspaceRequestSeed {
   collectionName: string;
   requestGroupId?: string;
   requestGroupName?: string;
-  folderName?: string;
 }
 
 export interface RequestTabRecord {
@@ -39,8 +38,9 @@ export interface RequestTabRecord {
   collectionName?: string;
   requestGroupId?: string;
   requestGroupName?: string;
-  folderName?: string;
   replaySource?: RequestReplaySourceCue;
   hasUnsavedChanges: boolean;
 }
+
+
 

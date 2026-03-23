@@ -78,8 +78,8 @@ describe('Replay bridge S8', () => {
     const user = userEvent.setup();
     renderApp(<AppRouter />, { initialEntries: ['/workspace'] });
 
-    const explorer = screen.getByLabelText('Section explorer');
-    await user.click(within(explorer).getByRole('button', { name: 'New Request' }));
+    const mainSurface = screen.getByLabelText('Main work surface');
+    await user.click(within(mainSurface).getByRole('button', { name: 'New Request' }));
     await user.type(screen.getByLabelText('Request URL'), 'https://draft-one.example');
 
     await user.click(screen.getByRole('link', { name: /history/i }));
@@ -98,3 +98,4 @@ describe('Replay bridge S8', () => {
     expect(Object.keys(useRequestDraftStore.getState().draftsByTabId)).toHaveLength(2);
   });
 });
+
