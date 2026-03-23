@@ -192,6 +192,21 @@ describe('Environments MVP route', () => {
     expect(screen.getByLabelText('Section explorer')).toBeInTheDocument();
   });
 
+  it('uses the compact explorer header, filters, and list structure', async () => {
+    vi.stubGlobal('fetch', createEnvironmentsFetch());
+    renderApp(<AppRouter />, { initialEntries: ['/environments'] });
+
+    const explorer = screen.getByLabelText('Section explorer');
+    const header = explorer.querySelector('.route-explorer__header');
+    const filters = explorer.querySelector('.route-explorer__filters');
+
+    expect(header).not.toBeNull();
+    expect(header?.querySelector('.route-explorer__hint')).not.toBeNull();
+    expect(filters).not.toBeNull();
+    expect(await within(explorer).findByRole('button', { name: 'Open environment Local API' })).toHaveClass('workspace-request');
+    expect(explorer.querySelector('.environments-list')).not.toBeNull();
+  });
+
   it('creates, updates, and deletes a persisted environment', async () => {
     const user = userEvent.setup();
     vi.stubGlobal('fetch', createEnvironmentsFetch());

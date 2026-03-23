@@ -277,6 +277,18 @@ describe('Mocks S16 persisted CRUD surface', () => {
     expect(await screen.findByRole('button', { name: '모크 규칙 열기 Stripe webhook accepted' })).toBeInTheDocument();
   });
 
+  it('uses the compact explorer header, filters, and list structure', async () => {
+    vi.stubGlobal('fetch', createMockRulesFetch());
+    renderApp(<AppRouter />, { initialEntries: ['/mocks'] });
+
+    const explorer = screen.getByLabelText('Section explorer');
+    expect(explorer.querySelector('.route-explorer__header')).not.toBeNull();
+    expect(explorer.querySelector('.route-explorer__hint')).not.toBeNull();
+    expect(explorer.querySelector('.route-explorer__filters')).not.toBeNull();
+    expect(await within(explorer).findByRole('button', { name: 'Open mock rule Stripe webhook accepted' })).toHaveClass('mocks-row');
+    expect(explorer.querySelector('.mocks-list')).not.toBeNull();
+  });
+
   it('creates and updates a persisted mock rule from the New Rule entrypoint', async () => {
     const user = userEvent.setup();
     const fetchMock = createMockRulesFetch();

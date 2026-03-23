@@ -51,6 +51,17 @@ describe('Workspace request builder authoring shell', () => {
     expect(screen.getByLabelText('Section explorer')).toBeInTheDocument();
   });
 
+  it('uses the compact explorer header, actions, and tree structure', async () => {
+    renderApp(<AppRouter />);
+
+    const explorer = screen.getByLabelText('Section explorer');
+    expect(explorer.querySelector('.route-explorer__header')).not.toBeNull();
+    expect(explorer.querySelector('.route-explorer__hint')).not.toBeNull();
+    expect(explorer.querySelector('.route-explorer__actions')).not.toBeNull();
+    expect(within(explorer).getByRole('button', { name: 'Open Health check' })).toHaveClass('workspace-request');
+    expect(explorer.querySelector('.workspace-explorer__tree')).not.toBeNull();
+  });
+
   it('renders method and url authoring controls for the active tab', async () => {
     const user = userEvent.setup();
     renderApp(<AppRouter />);

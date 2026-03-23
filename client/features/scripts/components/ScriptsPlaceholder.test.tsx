@@ -141,6 +141,21 @@ describe('Scripts MVP route', () => {
     expect(screen.getByLabelText('Section explorer')).toBeInTheDocument();
   });
 
+  it('uses the compact explorer header, filters, and list structure', async () => {
+    vi.stubGlobal('fetch', createScriptsFetch());
+    renderApp(<AppRouter />, { initialEntries: ['/scripts'] });
+
+    const explorer = screen.getByLabelText('Section explorer');
+    const header = explorer.querySelector('.route-explorer__header');
+    const filters = explorer.querySelector('.route-explorer__filters');
+
+    expect(header).not.toBeNull();
+    expect(header?.querySelector('.route-explorer__hint')).not.toBeNull();
+    expect(filters).not.toBeNull();
+    expect(await within(explorer).findByRole('button', { name: 'Open script Health status assertions' })).toHaveClass('workspace-request');
+    expect(explorer.querySelector('.scripts-list')).not.toBeNull();
+  });
+
   it('creates a saved script from a template, updates it, and deletes it', async () => {
     const user = userEvent.setup();
     vi.stubGlobal('fetch', createScriptsFetch());

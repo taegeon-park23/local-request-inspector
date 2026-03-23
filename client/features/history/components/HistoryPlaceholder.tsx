@@ -183,11 +183,13 @@ export function HistoryPlaceholder() {
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
         <div className="history-explorer">
-          <header className="history-explorer__header">
-            <div>
+          <header className="history-explorer__header route-explorer__header">
+            <div className="route-explorer__intro">
               <p className="section-placeholder__eyebrow">{t('historyRoute.sidebar.eyebrow')}</p>
-              <h2>{t('historyRoute.sidebar.title')}</h2>
-              <p>{observationHealth === 'ready' ? t('historyRoute.sidebar.health.ready') : t('historyRoute.sidebar.health.degraded')}</p>
+              <div className="route-explorer__title-row">
+                <h2>{t('historyRoute.sidebar.title')}</h2>
+                <p className="route-explorer__hint">{observationHealth === 'ready' ? t('historyRoute.sidebar.health.ready') : t('historyRoute.sidebar.health.degraded')}</p>
+              </div>
               <div className="workspace-explorer__role-strip" aria-label="History surface role">
                 <span className="workspace-chip">{t('roles.observation')}</span>
                 <span className="workspace-chip workspace-chip--secondary">{t('historyRoute.sidebar.roleChip')}</span>
@@ -195,7 +197,7 @@ export function HistoryPlaceholder() {
             </div>
           </header>
 
-          <div className="history-filter-grid">
+          <div className="history-filter-grid route-explorer__filters">
             <label className="request-field">
               <span>{t('historyRoute.filters.searchLabel')}</span>
               <input

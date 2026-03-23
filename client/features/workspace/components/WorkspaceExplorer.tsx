@@ -59,15 +59,19 @@ export function WorkspaceExplorer({
 
   return (
     <div className="workspace-explorer">
-      <header className="workspace-explorer__header">
-        <p className="section-placeholder__eyebrow">{t('workspaceRoute.explorer.header.eyebrow')}</p>
-        <h2>{t('workspaceRoute.explorer.header.title')}</h2>
-        <p>{t('workspaceRoute.explorer.header.summary')}</p>
+      <header className="workspace-explorer__header route-explorer__header">
+        <div className="route-explorer__intro">
+          <p className="section-placeholder__eyebrow">{t('workspaceRoute.explorer.header.eyebrow')}</p>
+          <div className="route-explorer__title-row">
+            <h2>{t('workspaceRoute.explorer.header.title')}</h2>
+            <p className="route-explorer__hint">{t('workspaceRoute.explorer.header.summary')}</p>
+          </div>
+        </div>
         <div className="workspace-explorer__role-strip" aria-label="Explorer surface role">
           <span className="workspace-chip">{t('workspaceRoute.explorer.header.authoringChip')}</span>
           <span className="workspace-chip workspace-chip--secondary">{t('workspaceRoute.explorer.header.resourceLaneChip')}</span>
         </div>
-        <div className="workspace-explorer__header-actions">
+        <div className="workspace-explorer__header-actions route-explorer__actions">
           <button type="button" className="workspace-button" onClick={onCreateRequest}>
             <IconLabel icon="new">{t('workspaceRoute.explorer.actions.newRequest')}</IconLabel>
           </button>

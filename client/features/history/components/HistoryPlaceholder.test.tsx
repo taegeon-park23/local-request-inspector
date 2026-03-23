@@ -219,6 +219,39 @@ describe('History S18 fidelity refinement', () => {
     ).toBe(true);
   });
 
+  it('uses the compact explorer header, filters, and list structure', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/execution-histories' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: defaultHistoryFixtureScenario.listItems });
+      }
+
+      if (url.startsWith('/api/execution-histories/') && (!init || !init.method || init.method === 'GET')) {
+        const historyId = url.split('/').pop() ?? '';
+        return createApiResponse({
+          history: defaultHistoryFixtureScenario.listItems.find((history) => history.id === historyId),
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />, { initialEntries: ['/history'] });
+
+    const explorer = screen.getByLabelText('Section explorer');
+    expect(explorer.querySelector('.route-explorer__header')).not.toBeNull();
+    expect(explorer.querySelector('.route-explorer__hint')).not.toBeNull();
+    expect(explorer.querySelector('.route-explorer__filters')).not.toBeNull();
+    expect(await within(explorer).findByRole('button', { name: /Open history Create user/i })).toHaveClass('history-row');
+    expect(explorer.querySelector('.history-list')).not.toBeNull();
+  });
+
   it('renders client-owned history-route copy in Korean without changing the English-default contracts', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = getUrl(input);

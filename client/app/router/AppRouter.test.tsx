@@ -132,6 +132,22 @@ describe('AppRouter shell bootstrap', () => {
     expect(screen.getByLabelText('Section explorer')).toBeInTheDocument();
   });
 
+  it('keeps the floating explorer toggle separate from the drawer surface wrapper', () => {
+    renderApp(<AppRouter />);
+
+    const toggle = screen.getByRole('button', { name: 'Collapse explorer' });
+    const control = document.querySelector('.shell-route-panels__floating-overlay-control');
+    const overlay = document.querySelector('.shell-route-panels__floating-overlay');
+    const drawer = document.querySelector('.shell-route-panels__floating-explorer');
+
+    expect(control).not.toBeNull();
+    expect(overlay).not.toBeNull();
+    expect(drawer).not.toBeNull();
+    expect(control).toContainElement(toggle);
+    expect(overlay).not.toContainElement(toggle);
+    expect(overlay).toContainElement(drawer as HTMLElement);
+  });
+
   it('keeps page-level scroll disabled by constraining shell-body, shell-content, and floating main/detail panels to the shell height', async () => {
     const user = userEvent.setup();
     const rectMock = installLayoutRectMock();

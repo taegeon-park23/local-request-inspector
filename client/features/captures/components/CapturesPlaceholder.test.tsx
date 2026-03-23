@@ -185,6 +185,40 @@ describe('Captures S18 fidelity refinement', () => {
     expect(useCapturesStore.getState().selectedCaptureId).toBe(secondCapture.id);
   });
 
+  it('uses the compact explorer header, filters, and list structure', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/captured-requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: defaultCaptureFixtureRecords });
+      }
+
+      if (url.startsWith('/api/captured-requests/') && (!init || !init.method || init.method === 'GET')) {
+        const captureId = url.split('/').pop() ?? '';
+        return createApiResponse({ capture: defaultCaptureFixtureRecords.find((capture) => capture.id === captureId) });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />, {
+      initialEntries: ['/captures'],
+      runtimeEventsAdapterFactory: connectedAdapterFactory,
+    });
+
+    const explorer = screen.getByLabelText('Section explorer');
+    expect(explorer.querySelector('.route-explorer__header')).not.toBeNull();
+    expect(explorer.querySelector('.route-explorer__hint')).not.toBeNull();
+    expect(explorer.querySelector('.route-explorer__filters')).not.toBeNull();
+    expect(await within(explorer).findByRole('button', { name: /Open capture POST \/webhooks\/stripe/i })).toHaveClass('capture-row');
+    expect(explorer.querySelector('.captures-list')).not.toBeNull();
+  });
+
   it('shows loading state while persisted captures are being queried', async () => {
     let resolveList!: (value: Response) => void;
 

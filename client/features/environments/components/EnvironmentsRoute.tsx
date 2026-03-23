@@ -185,17 +185,19 @@ export function EnvironmentsRoute() {
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
         <div className="environments-explorer">
-          <header className="environments-explorer__header">
-            <div>
+          <header className="environments-explorer__header route-explorer__header">
+            <div className="route-explorer__intro">
               <p className="section-placeholder__eyebrow">{t('environmentsRoute.sidebar.eyebrow')}</p>
-              <h2>{t('environmentsRoute.sidebar.title')}</h2>
-              <p>{t('environmentsRoute.sidebar.summary')}</p>
+              <div className="route-explorer__title-row">
+                <h2>{t('environmentsRoute.sidebar.title')}</h2>
+                <p className="route-explorer__hint">{t('environmentsRoute.sidebar.summary')}</p>
+              </div>
             </div>
             <button type="button" className="workspace-button" onClick={() => { setDraft(createEnvironmentDraft()); setIsCreatingDraft(true); setSelectedEnvironmentId(null); }}>
               <IconLabel icon="new">{t('environmentsRoute.sidebar.newButton')}</IconLabel>
             </button>
           </header>
-          <div className="environments-filter-grid">
+          <div className="environments-filter-grid route-explorer__filters">
             <label className="request-field">
               <span>{t('environmentsRoute.sidebar.searchLabel')}</span>
               <input aria-label={t('environmentsRoute.sidebar.searchLabel')} type="text" value={searchText} onChange={(event) => setSearchText(event.currentTarget.value)} />

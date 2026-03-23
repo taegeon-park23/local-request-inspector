@@ -162,17 +162,19 @@ export function ScriptsRoute() {
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
         <div className="scripts-explorer">
-          <header className="scripts-explorer__header">
-            <div>
+          <header className="scripts-explorer__header route-explorer__header">
+            <div className="route-explorer__intro">
               <p className="section-placeholder__eyebrow">{t('scriptsRoute.sidebar.eyebrow')}</p>
-              <h2>{t('scriptsRoute.sidebar.title')}</h2>
-              <p>{t('scriptsRoute.sidebar.summary')}</p>
+              <div className="route-explorer__title-row">
+                <h2>{t('scriptsRoute.sidebar.title')}</h2>
+                <p className="route-explorer__hint">{t('scriptsRoute.sidebar.summary')}</p>
+              </div>
             </div>
             <button type="button" className="workspace-button" onClick={() => { setDraft(createScriptDraft()); setIsCreatingDraft(true); setSelectedScriptId(null); }}>
               <IconLabel icon="new">{t('scriptsRoute.sidebar.newButton')}</IconLabel>
             </button>
           </header>
-          <div className="scripts-filter-grid">
+          <div className="scripts-filter-grid route-explorer__filters">
             <label className="request-field">
               <span>{t('scriptsRoute.sidebar.searchLabel')}</span>
               <input aria-label={t('scriptsRoute.sidebar.searchLabel')} type="text" value={searchText} onChange={(event) => setSearchText(event.currentTarget.value)} />

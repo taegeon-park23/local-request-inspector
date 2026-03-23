@@ -567,11 +567,13 @@ export function MocksPlaceholder() {
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
         <div className="mocks-explorer">
-          <header className="mocks-explorer__header">
-            <div>
+          <header className="mocks-explorer__header route-explorer__header">
+            <div className="route-explorer__intro">
               <p className="section-placeholder__eyebrow">{t('mocksRoute.sidebar.eyebrow')}</p>
-              <h2>{t('mocksRoute.sidebar.title')}</h2>
-              <p>{t('mocksRoute.sidebar.description')}</p>
+              <div className="route-explorer__title-row">
+                <h2>{t('mocksRoute.sidebar.title')}</h2>
+                <p className="route-explorer__hint">{t('mocksRoute.sidebar.description')}</p>
+              </div>
               <div className="workspace-explorer__role-strip" aria-label="Mocks surface role">
                 <span className="workspace-chip">{t('roles.management')}</span>
                 <span className="workspace-chip workspace-chip--secondary">{t('mocksRoute.sidebar.resourceLaneChip')}</span>
@@ -582,7 +584,7 @@ export function MocksPlaceholder() {
             </button>
           </header>
 
-          <div className="mocks-filter-grid">
+          <div className="mocks-filter-grid route-explorer__filters">
             <label className="request-field">
               <span>{t('mocksRoute.filters.searchLabel')}</span>
               <input aria-label={t('mocksRoute.filters.searchLabel')} type="text" value={searchText} onChange={(event) => setSearchText(event.currentTarget.value)} />
