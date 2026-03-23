@@ -3223,7 +3223,7 @@ body {
 .shell-body {
   grid-template-columns: var(--app-shell-nav-width) minmax(0, 1fr);
   gap: var(--app-shell-gap);
-  align-items: start;
+  align-items: stretch;
 }
 
 .shell-nav {
@@ -3440,7 +3440,17 @@ body {
 
 /* T044 - single-panel route tabs layout */
 .shell-content {
+  display: grid;
+  align-items: stretch;
   grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.shell-content > * {
+  min-height: 0;
 }
 
 .shell-route-panels {
@@ -3449,6 +3459,8 @@ body {
   gap: 0.75rem;
   min-width: 0;
   min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 .shell-route-panels > .shared-panel-tabs {
@@ -3460,12 +3472,14 @@ body {
   position: relative;
   min-width: 0;
   min-height: 0;
+  height: 100%;
   overflow: hidden;
 }
 
 .shell-route-panels__panel {
   min-width: 0;
   min-height: 0;
+  height: 100%;
 }
 
 .shell-route-panels__panel--inactive {
@@ -3511,29 +3525,44 @@ body {
 }
 
 .shell-route-panels__floating-layout {
+  position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
   height: 100%;
-  gap: 0.75rem;
   overflow: hidden;
+}
+
+.shell-route-panels__floating-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: start;
+  justify-items: start;
+  gap: 0.75rem;
+  min-width: 0;
+  min-height: 0;
+  padding: 0.8rem;
+  pointer-events: none;
+  z-index: 3;
 }
 
 .shell-route-panels__floating-explorer-slot {
   position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: 0.75rem;
+  grid-template-rows: minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
-  z-index: 3;
+  width: min(24rem, calc(100vw - 3rem));
+  max-width: 100%;
+  overflow: visible;
 }
 
 .shell-route-panels__floating-toggle {
-  position: sticky;
-  top: 0;
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -3542,7 +3571,7 @@ body {
   border-radius: 1rem;
   box-shadow: var(--app-shadow-2);
   background: color-mix(in srgb, var(--app-surface-2) 90%, var(--app-surface-1));
-  margin-top: 0.8rem;
+  pointer-events: auto;
 }
 
 .shell-route-panels__floating-toggle-copy {
@@ -3550,19 +3579,22 @@ body {
 }
 
 .shell-route-panels__floating-explorer {
+  position: absolute;
+  inset: 0 auto auto 0;
   width: min(24rem, calc(100vw - 3rem));
-  margin-top: 0.8rem;
+  max-width: 100%;
+  height: 100%;
   border-radius: 1.25rem;
   box-shadow: var(--app-shadow-3);
   transition: opacity 160ms ease, transform 160ms ease;
   min-height: 0;
-  max-height: calc(100% - 1.6rem);
   overflow: hidden;
+  pointer-events: auto;
 }
 
 .shell-route-panels__floating-explorer > .shell-panel {
   height: 100%;
-  max-height: inherit;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -3571,6 +3603,7 @@ body {
   opacity: 0;
   transform: translateX(-1rem);
   visibility: hidden;
+  pointer-events: none;
 }
 
 .shell-route-panels__floating-explorer--open {
@@ -3581,7 +3614,9 @@ body {
 
 .shell-route-panels__floating-content {
   display: grid;
+  align-items: stretch;
   grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
+  grid-template-rows: minmax(0, 1fr);
   gap: 0.75rem;
   min-width: 0;
   min-height: 0;
@@ -3591,75 +3626,69 @@ body {
 
 .shell-route-panels__floating-main,
 .shell-route-panels__floating-detail {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 .shell-route-panels__floating-main > .shell-panel,
 .shell-route-panels__floating-detail > .shell-panel {
   height: 100%;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
 .shell-route-panels--floating[data-floating-explorer-open='true'] .shell-route-panels__floating-layout {
-  grid-template-columns: minmax(0, min(28rem, calc(100vw - 2.25rem))) minmax(0, 1fr);
-}
-
-.shell-route-panels--floating[data-floating-explorer-open='true'] .shell-route-panels__floating-explorer-slot {
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .shell-route-panels--floating-collapsed .shell-route-panels__floating-layout {
-  grid-template-columns: auto minmax(0, 1fr);
-}
-
-.shell-route-panels--floating-collapsed .shell-route-panels__floating-explorer-slot {
-  grid-template-columns: auto 0;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 @media (max-width: 1180px) {
   .shell-route-panels__floating-content {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  .shell-route-panels__floating-detail {
+    display: none;
+  }
 }
 
 @media (max-width: 900px) {
-  .shell-route-panels__floating-layout {
-    min-height: auto;
-    overflow: visible;
+  .shell-route-panels__floating-overlay {
+    inset: auto auto 1rem 1rem;
+    grid-template-rows: auto;
+    padding: 0;
   }
 
   .shell-route-panels__floating-explorer-slot {
     position: fixed;
-    inset: auto auto 1rem 1rem;
+    inset: 4.8rem 0.75rem 0.75rem 0.75rem;
+    width: auto;
+    max-width: none;
     z-index: 20;
-    display: flex;
-    align-items: flex-end;
   }
 
   .shell-route-panels__floating-toggle {
     border-radius: 999px;
-    margin: 0;
   }
 
   .shell-route-panels__floating-explorer {
-    position: fixed;
-    inset: 4.8rem 0.75rem 0.75rem 0.75rem;
+    position: absolute;
+    inset: 0;
     width: auto;
     max-width: none;
-    margin-top: 0;
   }
 
   .shell-route-panels__floating-explorer > .shell-panel,
   .shell-route-panels__floating-main > .shell-panel,
   .shell-route-panels__floating-detail > .shell-panel {
-    min-height: auto;
-  }
-
-  .shell-route-panels__floating-content,
-  .shell-route-panels--floating[data-floating-explorer-open='true'] .shell-route-panels__floating-content,
-  .shell-route-panels--floating-collapsed .shell-route-panels__floating-content {
-    padding-left: 0;
+    min-height: 0;
   }
 }

@@ -79,7 +79,7 @@ export function RoutePanelTabsLayout({
         data-floating-explorer-open={floatingExplorerOpen}
       >
         <div className="shell-route-panels__floating-layout">
-          <div className="shell-route-panels__floating-explorer-slot">
+          <div className="shell-route-panels__floating-overlay">
             <button
               type="button"
               className="workspace-button workspace-button--secondary shell-route-panels__floating-toggle"
@@ -97,13 +97,15 @@ export function RoutePanelTabsLayout({
                   : t('shell.routePanels.floatingExplorer.expandAction')}
               </span>
             </button>
-            <div
-              id={`floating-explorer-${floatingExplorerRouteKey}`}
-              className={floatingExplorerOpen
-                ? 'shell-route-panels__floating-explorer shell-route-panels__floating-explorer--open'
-                : 'shell-route-panels__floating-explorer shell-route-panels__floating-explorer--closed'}
-            >
-              {explorer}
+            <div className="shell-route-panels__floating-explorer-slot">
+              <div
+                id={`floating-explorer-${floatingExplorerRouteKey}`}
+                className={floatingExplorerOpen
+                  ? 'shell-route-panels__floating-explorer shell-route-panels__floating-explorer--open'
+                  : 'shell-route-panels__floating-explorer shell-route-panels__floating-explorer--closed'}
+              >
+                {explorer}
+              </div>
             </div>
           </div>
           <div className="shell-route-panels__floating-content">
