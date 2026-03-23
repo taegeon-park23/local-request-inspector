@@ -49,6 +49,7 @@ This task is complete when:
 - Wired the workspace single-panel layout to shared route-panel selection so run completion can move the route back to the detail panel after `T044`.
 - Updated the workspace result panel to show immediate outcome badges and bounded preview lists for console/tests in the summary and response surfaces.
 - Added focused store-level regression coverage for the new auto-focus rules.
+- Follow-up merge-fix note: the result panel now imports `useEffect` and relies only on the per-request command store for `activeResultTab`, removing the duplicate local declaration that broke Vite/Babel pre-transform on the latest `main`.
 
 ## 7. Validation Results
 - `npm.cmd run typecheck` — passed in sandbox on 2026-03-23
