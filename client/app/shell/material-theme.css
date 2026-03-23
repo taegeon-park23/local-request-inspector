@@ -154,7 +154,8 @@ body {
 }
 
 .shell-layout {
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   background:
     radial-gradient(circle at top left, rgba(155, 209, 255, 0.08), transparent 24rem),
     linear-gradient(180deg, var(--m3-color-surface-container-lowest), var(--m3-color-surface));
@@ -289,6 +290,8 @@ body {
 
 .shell-body {
   grid-template-columns: 18rem 1fr;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .shell-nav {
@@ -475,6 +478,9 @@ body {
   align-items: start;
   gap: var(--m3-space-5);
   padding: var(--m3-space-5);
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .shell-panel {
@@ -3439,8 +3445,10 @@ body {
 
 .shell-route-panels {
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 0.75rem;
   min-width: 0;
+  min-height: 0;
 }
 
 .shell-route-panels > .shared-panel-tabs {
@@ -3451,26 +3459,36 @@ body {
 .shell-route-panels__body {
   position: relative;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .shell-route-panels__panel {
   min-width: 0;
+  min-height: 0;
 }
 
 .shell-route-panels__panel--inactive {
   position: absolute;
-  top: 0;
-  left: -200vw;
-  width: 100%;
+  inset: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .shell-route-panels__panel--active {
   position: relative;
   display: block;
+  height: 100%;
 }
 
 .shell-route-panels__panel > .shell-panel {
-  min-height: calc(100vh - 8.5rem);
+  min-height: 0;
+}
+
+.shell-route-panels__panel--active > .shell-panel {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 @media (max-width: 1024px) {
@@ -3482,7 +3500,4 @@ body {
     width: 100%;
   }
 
-  .shell-route-panels__panel > .shell-panel {
-    min-height: auto;
-  }
 }
