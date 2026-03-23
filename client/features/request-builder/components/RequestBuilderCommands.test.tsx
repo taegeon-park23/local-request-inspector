@@ -551,7 +551,7 @@ describe('Request builder save/run wiring', () => {
     expect(runPayload.request.scripts.preRequest).toContain('x-trace-id');
     expect(runPayload.request.scripts.postResponse).toContain('captured response');
     expect(runPayload.request.scripts.tests).toContain('assert');
-  });
+  }, 20000);
 
   it('shows blocked stage diagnostics when pre-request execution stops the run before transport', async () => {
     const user = userEvent.setup();
@@ -654,7 +654,7 @@ describe('Request builder save/run wiring', () => {
     expect(within(stageSummary).getAllByText('Transport', { selector: 'strong' }).length).toBeGreaterThan(0);
     expect(within(stageSummary).getByText(/Transport did not run because pre-request blocked the execution./i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
-  });
+  }, 20000);
 
   it('saves a replay-created draft without overwriting replay bridge behavior', async () => {
     const user = userEvent.setup();

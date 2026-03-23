@@ -24,6 +24,7 @@ import { IconLabel } from '@client/shared/ui/IconLabel';
 import { KeyValueMetaList } from '@client/shared/ui/KeyValueMetaList';
 import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
+import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
 
 type ScriptStageFilter = 'all' | ScriptType;
 
@@ -72,6 +73,9 @@ export function ScriptsRoute() {
   const [stageFilter, setStageFilter] = useState<ScriptStageFilter>('all');
   const [selectedScriptId, setSelectedScriptId] = useState<string | null>(null);
   const [isCreatingDraft, setIsCreatingDraft] = useState(false);
+  const activePanel = useWorkspaceUiStore((state) => state.routePanels.scripts.activePanel);
+  const setRouteActivePanel = useWorkspaceUiStore((state) => state.setRouteActivePanel);
+
   const [draft, setDraft] = useState<SavedScriptInput>(createScriptDraft);
 
   const stageFilterOptions: Array<{ value: ScriptStageFilter; label: string }> = [
@@ -151,6 +155,8 @@ export function ScriptsRoute() {
   return (
     <RoutePanelTabsLayout
       defaultActiveTab="explorer"
+      activeTab={activePanel}
+      onActiveTabChange={(panel) => setRouteActivePanel('scripts', panel)}
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
         <div className="scripts-explorer">

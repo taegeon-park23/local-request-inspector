@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
 import { useRequestCommandStore } from '@client/features/request-builder/state/request-command-store';
@@ -7,10 +6,9 @@ import { EmptyStateCallout } from '@client/shared/ui/EmptyStateCallout';
 import { KeyValueMetaList } from '@client/shared/ui/KeyValueMetaList';
 import { PanelTabs } from '@client/shared/ui/PanelTabs';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
+import { useWorkspaceUiStore, type WorkspaceResultPanelTabId } from '@client/features/workspace/state/workspace-ui-store';
 
 type TranslateFn = ReturnType<typeof useI18n>['t'];
-type ResultPanelTabId = 'response' | 'console' | 'tests' | 'execution-info';
-
 interface RequestResultPanelPlaceholderProps {
   activeTab: RequestTabRecord | null;
 }
@@ -24,7 +22,7 @@ function getResultPanelTabs(t: TranslateFn) {
   ] as const;
 }
 
-function getResultPanelIcon(tabId: ResultPanelTabId) {
+function getResultPanelIcon(tabId: WorkspaceResultPanelTabId) {
   switch (tabId) {
     case 'response':
       return 'response' as const;
@@ -138,7 +136,8 @@ export function RequestResultPanelPlaceholder({
   activeTab,
 }: RequestResultPanelPlaceholderProps) {
   const { t } = useI18n();
-  const [activeResultTab, setActiveResultTab] = useState<ResultPanelTabId>('response');
+  const activeResultTab = useWorkspaceUiStore((state) => state.activeResultTab);
+  const setActiveResultTab = useWorkspaceUiStore((state) => state.setActiveResultTab);
   const resultPanelTabs = getResultPanelTabs(t);
   const commandEntry = useRequestCommandStore((state) =>
     activeTab ? state.byTabId[activeTab.id] : undefined,
