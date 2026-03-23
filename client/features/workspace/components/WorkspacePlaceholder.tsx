@@ -441,6 +441,8 @@ export function WorkspacePlaceholder() {
 
   return (
     <RoutePanelTabsLayout
+      layoutMode="floating-explorer"
+      floatingExplorerRouteKey="workspace"
       defaultActiveTab="main"
       activeTab={activeRoutePanel}
       onChange={setActiveRoutePanel}
