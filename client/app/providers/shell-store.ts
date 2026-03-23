@@ -1,7 +1,13 @@
 import type { RuntimeConnectionHealth } from '@client/features/runtime-events/runtime-events.types';
 import { create } from 'zustand';
 
-export type FloatingExplorerRouteKey = 'workspace' | 'environments' | 'scripts';
+export type FloatingExplorerRouteKey =
+  | 'workspace'
+  | 'captures'
+  | 'history'
+  | 'mocks'
+  | 'environments'
+  | 'scripts';
 
 type FloatingExplorerOpenByRoute = Record<FloatingExplorerRouteKey, boolean>;
 
@@ -17,6 +23,9 @@ interface ShellState {
 
 const initialFloatingExplorerOpenByRoute: FloatingExplorerOpenByRoute = {
   workspace: true,
+  captures: true,
+  history: true,
+  mocks: true,
   environments: true,
   scripts: true,
 };

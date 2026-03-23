@@ -56,6 +56,7 @@ If `npm.cmd run test:ui` remains sandbox-blocked, request a local rerun with the
 - Updated shell layout CSS so the route content area is one full-width surface and each top-level route panel now occupies the full main region while inactive panels remain mounted to preserve feature state.
 - Added route-panel tab labels to the shared i18n catalog and expanded shell smoke coverage in `client/app/router/AppRouter.test.tsx`.
 - Follow-up on 2026-03-23: a thin workspace UI orchestration store now controls the active workspace route panel, floating explorer open/collapsed state for `Workspace`, `Environments`, and `Scripts`, and the active request result sub-tab so explorer-selection and run-complete transitions can move focus predictably without duplicating feature data ownership.
+- Merge-recovery follow-up on 2026-03-23: `RoutePanelTabsLayout` again supports the floating-explorer variant directly, and the immediate explorer-to-main/detail flow now also applies to `Captures`, `History`, and `Mocks` so list selection does not force users back through route-panel tabs after the explorer interaction.
 
 ## 7. Validation Results
 - `npm run typecheck` — passed in sandbox on 2026-03-23 after the floating-explorer follow-up

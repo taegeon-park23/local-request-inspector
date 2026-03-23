@@ -177,6 +177,8 @@ export function HistoryPlaceholder() {
 
   return (
     <RoutePanelTabsLayout
+      layoutMode="floating-explorer"
+      floatingExplorerRouteKey="history"
       defaultActiveTab="explorer"
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
@@ -599,4 +601,3 @@ export function HistoryPlaceholder() {
     />
   );
 }
-
