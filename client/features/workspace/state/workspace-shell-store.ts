@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { RoutePanelTabId } from '@client/features/shared-section-placeholder';
 import type {
   ReplayRequestTabSeed,
   RequestTabRecord,
@@ -9,22 +10,25 @@ interface WorkspaceShellState {
   tabs: RequestTabRecord[];
   activeTabId: string | null;
   selectedExplorerItemId: string | null;
+  activeRoutePanel: RoutePanelTabId;
   nextDraftSequence: number;
   openNewRequest: () => void;
   openSavedRequest: (request: SavedWorkspaceRequestSeed) => void;
   openReplayRequest: (replaySeed: ReplayRequestTabSeed) => RequestTabRecord;
   markTabSaved: (tabId: string, request: SavedWorkspaceRequestSeed) => void;
+  setActiveRoutePanel: (panelId: RoutePanelTabId) => void;
   setActiveTab: (tabId: string) => void;
   closeTab: (tabId: string) => void;
 }
 
 const initialWorkspaceShellState: Pick<
   WorkspaceShellState,
-  'tabs' | 'activeTabId' | 'selectedExplorerItemId' | 'nextDraftSequence'
+  'tabs' | 'activeTabId' | 'selectedExplorerItemId' | 'activeRoutePanel' | 'nextDraftSequence'
 > = {
   tabs: [],
   activeTabId: null,
   selectedExplorerItemId: null,
+  activeRoutePanel: 'main',
   nextDraftSequence: 1,
 };
 
@@ -96,6 +100,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
         tabs: [...state.tabs, draftTab],
         activeTabId: draftTab.id,
         selectedExplorerItemId: null,
+        activeRoutePanel: 'main',
         nextDraftSequence: state.nextDraftSequence + 1,
       };
     }),
@@ -107,6 +112,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
         return {
           activeTabId: existingTab.id,
           selectedExplorerItemId: request.id,
+          activeRoutePanel: 'main',
         };
       }
 
@@ -116,6 +122,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
         tabs: [...state.tabs, savedTab],
         activeTabId: savedTab.id,
         selectedExplorerItemId: request.id,
+        activeRoutePanel: 'main',
       };
     }),
   openReplayRequest: (replaySeed) => {
@@ -128,6 +135,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
         tabs: [...state.tabs, replayTab],
         activeTabId: replayTab.id,
         selectedExplorerItemId: null,
+        activeRoutePanel: 'main',
         nextDraftSequence: state.nextDraftSequence + 1,
       };
     });
@@ -172,6 +180,8 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
         selectedExplorerItemId: state.activeTabId === tabId ? request.id : state.selectedExplorerItemId,
       };
     }),
+  setActiveRoutePanel: (activeRoutePanel) =>
+    set(() => ({ activeRoutePanel })),
   setActiveTab: (tabId) =>
     set((state) => {
       const activeTab = state.tabs.find((tab) => tab.id === tabId);
@@ -183,6 +193,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
       return {
         activeTabId: tabId,
         selectedExplorerItemId: activeTab.requestId ?? null,
+        activeRoutePanel: 'main',
       };
     }),
   closeTab: (tabId) =>
@@ -202,6 +213,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
         tabs: nextTabs,
         activeTabId: fallbackTabId,
         selectedExplorerItemId: fallbackTab?.requestId ?? null,
+        activeRoutePanel: fallbackTab ? 'main' : state.activeRoutePanel,
       };
     }),
 }));

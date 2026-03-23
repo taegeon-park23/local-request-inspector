@@ -180,6 +180,7 @@ export function useRequestBuilderCommands(
     status: 'idle',
     message: null,
     latestExecution: null,
+    activeResultTab: 'response' as const,
   };
 
   const selectedEnvironmentId = typeof draft?.selectedEnvironmentId === 'string' && draft.selectedEnvironmentId.trim().length > 0

@@ -16,6 +16,8 @@ interface RoutePanelTabsLayoutProps {
   main: ReactNode;
   detail: ReactNode;
   defaultActiveTab?: RoutePanelTabId;
+  activeTab?: RoutePanelTabId;
+  onChange?: (tabId: RoutePanelTabId) => void;
   layoutMode?: RoutePanelLayoutMode;
   floatingExplorerRouteKey?: FloatingExplorerRouteKey;
 }
@@ -41,9 +43,20 @@ export function RoutePanelTabsLayout({
   defaultActiveTab = 'main',
   layoutMode = 'tabs',
   floatingExplorerRouteKey,
+  activeTab: controlledActiveTab,
+  onChange,
 }: RoutePanelTabsLayoutProps) {
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = useState<RoutePanelTabId>(defaultActiveTab);
+  const [uncontrolledActiveTab, setUncontrolledActiveTab] = useState<RoutePanelTabId>(defaultActiveTab);
+  const activeTab = controlledActiveTab ?? uncontrolledActiveTab;
+
+  const handleChange = (tabId: RoutePanelTabId) => {
+    if (controlledActiveTab === undefined) {
+      setUncontrolledActiveTab(tabId);
+    }
+
+    onChange?.(tabId);
+  };
   const floatingExplorerOpen = useShellStore((state) => (
     floatingExplorerRouteKey ? state.floatingExplorerOpenByRoute[floatingExplorerRouteKey] : true
   ));
@@ -101,7 +114,7 @@ export function RoutePanelTabsLayout({
         ariaLabel={t('shell.routePanels.tabList')}
         tabs={tabs}
         activeTab={activeTab}
-        onChange={setActiveTab}
+        onChange={handleChange}
       />
       <div className="shell-route-panels__body">
         <div
