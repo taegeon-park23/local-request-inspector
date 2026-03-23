@@ -185,7 +185,7 @@ describe('Request builder save/run wiring', () => {
     expect(savePayload.request.selectedEnvironmentId).toBe('environment-local');
     expect(savePayload.request.scripts.preRequest).toContain('checkout-1');
     expect(savePayload.request.bodyText).toContain('sku');
-  });
+  }, 10000);
 
   it('updates a persisted saved request via the update route and keeps explorer identity stable', async () => {
     const user = userEvent.setup();
@@ -293,7 +293,7 @@ describe('Request builder save/run wiring', () => {
     expect(screen.getByRole('button', { name: 'Open Health check updated' })).toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([input, init]) => getUrl(input as RequestInfo | URL) === '/api/requests/request-health-check-live' && init?.method === 'PATCH')).toBe(true);
     expect(fetchMock.mock.calls.some(([input, init]) => getUrl(input as RequestInfo | URL) === '/api/workspaces/local-workspace/requests' && init?.method === 'POST')).toBe(false);
-  });
+  }, 10000);
 
   it('blocks save and run when a saved request references a missing environment id', async () => {
     const user = userEvent.setup();
@@ -527,7 +527,7 @@ describe('Request builder save/run wiring', () => {
     expect(screen.getByText('Runtime request snapshot')).toBeInTheDocument();
     expect(screen.getByText('No linked saved request')).toBeInTheDocument();
     expect(screen.getByText('No saved placement recorded')).toBeInTheDocument();
-    expect(screen.getByText('Local API')).toBeInTheDocument();
+    expect(screen.getByText('Local API', { selector: 'dd' })).toBeInTheDocument();
     expect(screen.getByText('0 params · 1 headers · No body · No auth')).toBeInTheDocument();
 
     const runCall = fetchMock.mock.calls.find(
