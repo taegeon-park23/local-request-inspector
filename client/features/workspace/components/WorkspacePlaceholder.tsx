@@ -331,6 +331,7 @@ export function WorkspacePlaceholder() {
   const activeTabKey = activeTab?.id ?? 'empty';
 
   const openDraftFromSeed = async (draftSeed?: RequestDraftSeed) => {
+    focusWorkspaceWorkSurface();
     const previousTabIds = new Set(useWorkspaceShellStore.getState().tabs.map((tab) => tab.id));
     openNewRequest();
     const nextTab = useWorkspaceShellStore
@@ -362,6 +363,7 @@ export function WorkspacePlaceholder() {
   };
 
   const handleOpenSavedRequest = (request: WorkspaceSavedRequestSeed) => {
+    focusWorkspaceWorkSurface();
     if (request.resourceKind === 'starter') {
       void openDraftFromSeed({
         name: request.name,
