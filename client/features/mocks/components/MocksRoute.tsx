@@ -14,7 +14,6 @@ import {
   updateMockRule,
   workspaceMockRulesQueryKey,
 } from '@client/features/mocks/mock-rules.api';
-import { defaultNewMockRuleInput } from '@client/features/mocks/data/mock-rule-fixtures';
 import type {
   MockRuleBodyMatcherMode,
   MockRuleDetailTabId,
@@ -86,6 +85,26 @@ function createMatcherRow(prefix: 'query' | 'header'): MockRuleMatcherRow {
 
 function createResponseHeaderRow(): MockRuleResponseHeaderRow {
   return { id: createLocalRowId('response-header'), key: '', value: '', enabled: true };
+}
+
+function createDefaultNewMockRuleInput(): MockRuleInput {
+  return {
+    name: 'Untitled Mock Rule',
+    enabled: false,
+    priority: 100,
+    methodMode: 'any',
+    method: 'GET',
+    pathMode: 'exact',
+    pathValue: '',
+    queryMatchers: [],
+    headerMatchers: [],
+    bodyMatcherMode: 'none',
+    bodyMatcherValue: '',
+    responseStatusCode: 200,
+    responseHeaders: [{ id: createLocalRowId('response-header'), key: 'Content-Type', value: 'application/json', enabled: true }],
+    responseBody: '{\n  "mocked": true\n}',
+    fixedDelayMs: 0,
+  };
 }
 
 function createRuleState(enabled: boolean): MockRuleStateLabel {
@@ -417,7 +436,7 @@ export function MocksRoute() {
   const stateFilterOptions = createStateFilterOptions(t);
   const [activeDetailTab, setActiveDetailTab] = useState<MockRuleDetailTabId>('overview');
   const [resourceTransferStatus, setResourceTransferStatus] = useState<MockResourceTransferStatus | null>(null);
-  const [draft, draftDispatch] = useReducer(mockRuleDraftReducer, defaultNewMockRuleInput, createDraft);
+  const [draft, draftDispatch] = useReducer(mockRuleDraftReducer, createDefaultNewMockRuleInput(), createDraft);
   const selectedRuleId = useMocksStore((state) => state.selectedRuleId);
   const searchText = useMocksStore((state) => state.searchText);
   const stateFilter = useMocksStore((state) => state.stateFilter);
@@ -454,7 +473,7 @@ export function MocksRoute() {
 
   useEffect(() => {
     if (isCreatingRule) {
-      draftDispatch({ type: 'replace', draft: createDraft(defaultNewMockRuleInput) });
+      draftDispatch({ type: 'replace', draft: createDraft(createDefaultNewMockRuleInput()) });
       return;
     }
 
@@ -1054,3 +1073,5 @@ export function MocksRoute() {
     />
   );
 }
+
+

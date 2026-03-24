@@ -2,7 +2,7 @@ function registerEnvironmentScriptRoutes(app, dependencies) {
   const {
     sendData,
     sendError,
-    resourceStorage,
+    repositories,
     defaultWorkspaceId,
     validateEnvironmentInput,
     createEnvironmentRecord,
@@ -19,6 +19,8 @@ function registerEnvironmentScriptRoutes(app, dependencies) {
     listSystemScriptTemplates,
     readSystemScriptTemplate,
   } = dependencies;
+  const environmentRepository = repositories.resources.environments;
+  const scriptRepository = repositories.resources.scripts;
 
   app.get('/api/workspaces/:workspaceId/environments', (req, res) => {
     try {
@@ -61,7 +63,7 @@ function registerEnvironmentScriptRoutes(app, dependencies) {
   app.get('/api/environments/:environmentId', (req, res) => {
     try {
       const environment = normalizePersistedEnvironmentRecord(
-        resourceStorage.read('environment', req.params.environmentId),
+        environmentRepository.read(req.params.environmentId),
       );
 
       if (!environment) {
@@ -90,7 +92,7 @@ function registerEnvironmentScriptRoutes(app, dependencies) {
 
     try {
       const existingRecord = normalizePersistedEnvironmentRecord(
-        resourceStorage.read('environment', req.params.environmentId),
+        environmentRepository.read(req.params.environmentId),
       );
 
       if (!existingRecord) {
@@ -124,7 +126,7 @@ function registerEnvironmentScriptRoutes(app, dependencies) {
   app.delete('/api/environments/:environmentId', (req, res) => {
     try {
       const existingRecord = normalizePersistedEnvironmentRecord(
-        resourceStorage.read('environment', req.params.environmentId),
+        environmentRepository.read(req.params.environmentId),
       );
 
       if (!existingRecord) {
@@ -133,7 +135,7 @@ function registerEnvironmentScriptRoutes(app, dependencies) {
         });
       }
 
-      resourceStorage.delete('environment', req.params.environmentId);
+      environmentRepository.delete(req.params.environmentId);
       reconcileWorkspaceEnvironmentDefaults(existingRecord.workspaceId || defaultWorkspaceId);
 
       return sendData(res, { deletedEnvironmentId: req.params.environmentId });
@@ -169,7 +171,7 @@ function registerEnvironmentScriptRoutes(app, dependencies) {
 
     try {
       const script = createSavedScriptRecord(input, null, req.params.workspaceId);
-      resourceStorage.save('script', script);
+      scriptRepository.save(script);
       return sendData(res, { script }, 201);
     } catch (error) {
       return sendError(res, 500, 'script_create_failed', error.message);
@@ -179,7 +181,7 @@ function registerEnvironmentScriptRoutes(app, dependencies) {
   app.get('/api/scripts/:scriptId', (req, res) => {
     try {
       const script = normalizePersistedSavedScriptRecord(
-        resourceStorage.read('script', req.params.scriptId),
+        scriptRepository.read(req.params.scriptId),
       );
 
       if (!script) {
@@ -208,7 +210,7 @@ function registerEnvironmentScriptRoutes(app, dependencies) {
 
     try {
       const existingRecord = normalizePersistedSavedScriptRecord(
-        resourceStorage.read('script', req.params.scriptId),
+        scriptRepository.read(req.params.scriptId),
       );
 
       if (!existingRecord) {
@@ -225,7 +227,7 @@ function registerEnvironmentScriptRoutes(app, dependencies) {
         existingRecord,
         existingRecord.workspaceId || defaultWorkspaceId,
       );
-      resourceStorage.save('script', script);
+      scriptRepository.save(script);
       return sendData(res, { script });
     } catch (error) {
       return sendError(res, 500, 'script_update_failed', error.message, {
@@ -236,7 +238,7 @@ function registerEnvironmentScriptRoutes(app, dependencies) {
 
   app.delete('/api/scripts/:scriptId', (req, res) => {
     try {
-      const deleted = resourceStorage.delete('script', req.params.scriptId);
+      const deleted = scriptRepository.delete(req.params.scriptId);
 
       if (!deleted) {
         return sendError(res, 404, 'script_not_found', 'Saved script was not found.', {
@@ -282,3 +284,4 @@ function registerEnvironmentScriptRoutes(app, dependencies) {
 module.exports = {
   registerEnvironmentScriptRoutes,
 };
+

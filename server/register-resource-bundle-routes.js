@@ -2,7 +2,7 @@ function registerResourceBundleRoutes(app, dependencies) {
   const {
     sendData,
     sendError,
-    resourceStorage,
+    repositories,
     defaultWorkspaceId,
     buildAuthoredResourceBundle,
     normalizePersistedRequestRecord,
@@ -14,6 +14,11 @@ function registerResourceBundleRoutes(app, dependencies) {
     parseWorkspaceResourceBundleImportRequest,
     prepareWorkspaceResourceBundleImport,
   } = dependencies;
+  const collectionRepository = repositories.resources.collections;
+  const requestGroupRepository = repositories.resources.requestGroups;
+  const requestRepository = repositories.resources.requests;
+  const mockRuleRepository = repositories.resources.mockRules;
+  const scriptRepository = repositories.resources.scripts;
 
   app.get('/api/workspaces/:workspaceId/resource-bundle', (req, res) => {
     try {
@@ -41,7 +46,7 @@ function registerResourceBundleRoutes(app, dependencies) {
 
   app.get('/api/requests/:requestId/resource-bundle', (req, res) => {
     try {
-      const requestRecord = normalizePersistedRequestRecord(resourceStorage.read('request', req.params.requestId));
+      const requestRecord = normalizePersistedRequestRecord(requestRepository.read(req.params.requestId));
 
       if (!requestRecord) {
         return sendError(res, 404, 'request_not_found', 'Saved request was not found.', {
@@ -86,23 +91,23 @@ function registerResourceBundleRoutes(app, dependencies) {
       const importPlan = prepareWorkspaceResourceBundleImport(bundle, req.params.workspaceId);
 
       for (const collectionRecord of importPlan.acceptedCollections) {
-        resourceStorage.save('collection', collectionRecord);
+        collectionRepository.save(collectionRecord);
       }
 
       for (const requestGroupRecord of importPlan.acceptedRequestGroups) {
-        resourceStorage.save('request-group', requestGroupRecord);
+        requestGroupRepository.save(requestGroupRecord);
       }
 
       for (const requestRecord of importPlan.acceptedRequests) {
-        resourceStorage.save('request', requestRecord);
+        requestRepository.save(requestRecord);
       }
 
       for (const mockRuleRecord of importPlan.acceptedMockRules) {
-        resourceStorage.save('mock-rule', mockRuleRecord);
+        mockRuleRepository.save(mockRuleRecord);
       }
 
       for (const scriptRecord of importPlan.acceptedScripts) {
-        resourceStorage.save('script', scriptRecord);
+        scriptRepository.save(scriptRecord);
       }
 
       return sendData(res, {
@@ -150,3 +155,4 @@ function registerResourceBundleRoutes(app, dependencies) {
 module.exports = {
   registerResourceBundleRoutes,
 };
+

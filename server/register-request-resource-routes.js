@@ -2,7 +2,7 @@ function registerRequestResourceRoutes(app, dependencies) {
   const {
     sendData,
     sendError,
-    resourceStorage,
+    repositories,
     defaultWorkspaceId,
     listWorkspaceSavedRequestRecords,
     buildWorkspaceRequestTree,
@@ -25,6 +25,9 @@ function registerRequestResourceRoutes(app, dependencies) {
     normalizeSavedRequest,
     normalizePersistedRequestRecord,
   } = dependencies;
+  const collectionRepository = repositories.resources.collections;
+  const requestGroupRepository = repositories.resources.requestGroups;
+  const requestRepository = repositories.resources.requests;
 
   app.get('/api/workspaces/:workspaceId/requests', (req, res) => {
     try {
@@ -93,7 +96,7 @@ function registerRequestResourceRoutes(app, dependencies) {
   app.get('/api/collections/:collectionId', (req, res) => {
     try {
       const collection = normalizePersistedCollectionRecord(
-        resourceStorage.read('collection', req.params.collectionId),
+        collectionRepository.read(req.params.collectionId),
       );
 
       if (!collection) {
@@ -122,7 +125,7 @@ function registerRequestResourceRoutes(app, dependencies) {
 
     try {
       const existingRecord = normalizePersistedCollectionRecord(
-        resourceStorage.read('collection', req.params.collectionId),
+        collectionRepository.read(req.params.collectionId),
       );
 
       if (!existingRecord) {
@@ -157,7 +160,7 @@ function registerRequestResourceRoutes(app, dependencies) {
         .filter((record) => record.collectionId === req.params.collectionId);
 
       for (const requestRecord of relatedRequests) {
-        resourceStorage.save('request', {
+        requestRepository.save({
           ...requestRecord,
           collectionName: collection.name,
         });
@@ -174,7 +177,7 @@ function registerRequestResourceRoutes(app, dependencies) {
   app.delete('/api/collections/:collectionId', (req, res) => {
     try {
       const existingRecord = normalizePersistedCollectionRecord(
-        resourceStorage.read('collection', req.params.collectionId),
+        collectionRepository.read(req.params.collectionId),
       );
 
       if (!existingRecord) {
@@ -194,7 +197,7 @@ function registerRequestResourceRoutes(app, dependencies) {
         });
       }
 
-      resourceStorage.delete('collection', req.params.collectionId);
+      collectionRepository.delete(req.params.collectionId);
       return sendData(res, { deletedCollectionId: req.params.collectionId });
     } catch (error) {
       return sendError(res, 500, 'collection_delete_failed', error.message, {
@@ -206,7 +209,7 @@ function registerRequestResourceRoutes(app, dependencies) {
   app.get('/api/collections/:collectionId/request-groups', (req, res) => {
     try {
       const collection = normalizePersistedCollectionRecord(
-        resourceStorage.read('collection', req.params.collectionId),
+        collectionRepository.read(req.params.collectionId),
       );
 
       if (!collection) {
@@ -229,7 +232,7 @@ function registerRequestResourceRoutes(app, dependencies) {
   app.post('/api/collections/:collectionId/request-groups', (req, res) => {
     const input = req.body?.requestGroup;
     const collection = normalizePersistedCollectionRecord(
-      resourceStorage.read('collection', req.params.collectionId),
+      collectionRepository.read(req.params.collectionId),
     );
 
     if (!collection) {
@@ -282,7 +285,7 @@ function registerRequestResourceRoutes(app, dependencies) {
   app.get('/api/request-groups/:requestGroupId', (req, res) => {
     try {
       const requestGroup = normalizePersistedRequestGroupRecord(
-        resourceStorage.read('request-group', req.params.requestGroupId),
+        requestGroupRepository.read(req.params.requestGroupId),
       );
 
       if (!requestGroup) {
@@ -305,7 +308,7 @@ function registerRequestResourceRoutes(app, dependencies) {
 
     try {
       existingRecord = normalizePersistedRequestGroupRecord(
-        resourceStorage.read('request-group', req.params.requestGroupId),
+        requestGroupRepository.read(req.params.requestGroupId),
       );
 
       if (!existingRecord) {
@@ -359,7 +362,7 @@ function registerRequestResourceRoutes(app, dependencies) {
         .filter((record) => record.requestGroupId === req.params.requestGroupId);
 
       for (const requestRecord of relatedRequests) {
-        resourceStorage.save('request', {
+        requestRepository.save({
           ...requestRecord,
           requestGroupName: requestGroup.name,
         });
@@ -376,7 +379,7 @@ function registerRequestResourceRoutes(app, dependencies) {
   app.delete('/api/request-groups/:requestGroupId', (req, res) => {
     try {
       const existingRecord = normalizePersistedRequestGroupRecord(
-        resourceStorage.read('request-group', req.params.requestGroupId),
+        requestGroupRepository.read(req.params.requestGroupId),
       );
 
       if (!existingRecord) {
@@ -395,7 +398,7 @@ function registerRequestResourceRoutes(app, dependencies) {
         });
       }
 
-      resourceStorage.delete('request-group', req.params.requestGroupId);
+      requestGroupRepository.delete(req.params.requestGroupId);
       return sendData(res, { deletedRequestGroupId: req.params.requestGroupId });
     } catch (error) {
       return sendError(res, 500, 'request_group_delete_failed', error.message, {
@@ -437,7 +440,7 @@ function registerRequestResourceRoutes(app, dependencies) {
 
     try {
       const record = normalizeSavedRequest(input, null, req.params.workspaceId);
-      resourceStorage.save('request', record);
+      requestRepository.save(record);
       return sendData(res, { request: record }, 201);
     } catch (error) {
       if (error.code) {
@@ -453,7 +456,7 @@ function registerRequestResourceRoutes(app, dependencies) {
   app.get('/api/requests/:requestId', (req, res) => {
     try {
       const existingRecord = normalizePersistedRequestRecord(
-        resourceStorage.read('request', req.params.requestId),
+        requestRepository.read(req.params.requestId),
       );
 
       if (!existingRecord) {
@@ -484,7 +487,7 @@ function registerRequestResourceRoutes(app, dependencies) {
 
     try {
       const existingRecord = normalizePersistedRequestRecord(
-        resourceStorage.read('request', req.params.requestId),
+        requestRepository.read(req.params.requestId),
       );
 
       if (!existingRecord) {
@@ -518,7 +521,7 @@ function registerRequestResourceRoutes(app, dependencies) {
         existingRecord,
         existingRecord.workspaceId || req.body?.request?.workspaceId || defaultWorkspaceId,
       );
-      resourceStorage.save('request', record);
+      requestRepository.save(record);
       return sendData(res, { request: record });
     } catch (error) {
       if (error.code) {
@@ -536,7 +539,7 @@ function registerRequestResourceRoutes(app, dependencies) {
   app.delete('/api/requests/:requestId', (req, res) => {
     try {
       const existingRecord = normalizePersistedRequestRecord(
-        resourceStorage.read('request', req.params.requestId),
+        requestRepository.read(req.params.requestId),
       );
 
       if (!existingRecord) {
@@ -545,7 +548,7 @@ function registerRequestResourceRoutes(app, dependencies) {
         });
       }
 
-      resourceStorage.delete('request', req.params.requestId);
+      requestRepository.delete(req.params.requestId);
       return sendData(res, { deletedRequestId: req.params.requestId });
     } catch (error) {
       return sendError(res, 500, 'request_delete_failed', error.message, {
@@ -558,3 +561,4 @@ function registerRequestResourceRoutes(app, dependencies) {
 module.exports = {
   registerRequestResourceRoutes,
 };
+

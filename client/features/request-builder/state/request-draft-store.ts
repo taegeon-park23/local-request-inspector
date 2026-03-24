@@ -10,7 +10,6 @@ import type {
   RequestKeyValueRow,
   RequestScriptStageId,
 } from '@client/features/request-builder/request-draft.types';
-import { getSavedWorkspaceRequestSeedById } from '@client/features/workspace/data/workspace-explorer-fixtures';
 import {
   readRequestGroupName,
   replaceRequestPlacement,
@@ -161,9 +160,7 @@ function syncEntryPlacement(entry: RequestDraftEntry, placement: RequestPlacemen
 }
 
 
-function createDraftFromTab(tab: RequestTabRecord, explicitDraftSeed?: RequestDraftSeed): RequestDraftState {
-  const savedSeed = explicitDraftSeed ? null : (tab.requestId ? getSavedWorkspaceRequestSeedById(tab.requestId) : null);
-  const draftSeed = explicitDraftSeed ?? savedSeed?.draftSeed;
+function createDraftFromTab(tab: RequestTabRecord, draftSeed?: RequestDraftSeed): RequestDraftState {
 
   return {
     tabId: tab.id,
@@ -452,6 +449,7 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
 export function resetRequestDraftStore() {
   useRequestDraftStore.setState(initialRequestDraftStoreState);
 }
+
 
 
 

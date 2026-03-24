@@ -27,6 +27,7 @@ function collectSeamTestFiles(directoryPath) {
 
 const seamTestRoots = [
   path.join(projectRoot, 'storage'),
+  path.join(projectRoot, 'server'),
   path.join(projectRoot, 'scripts'),
 ];
 
@@ -35,7 +36,7 @@ const seamTestFiles = seamTestRoots
   .sort((left, right) => left.localeCompare(right));
 
 if (seamTestFiles.length === 0) {
-  console.log('No low-level seam tests were found under storage/ or scripts/.');
+  console.log('No low-level seam tests were found under storage/, server/, or scripts/.');
   process.exit(0);
 }
 
@@ -52,3 +53,4 @@ for (const seamTestFile of seamTestFiles) {
     process.exit(result.status ?? 1);
   }
 }
+

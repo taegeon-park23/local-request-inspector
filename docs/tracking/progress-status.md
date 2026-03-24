@@ -2,7 +2,7 @@
 
 - **Purpose:** Provide a compact live snapshot without requiring contributors to read archived task history by default.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-24
+- **Last Updated:** 2026-03-25
 - **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `completed-work-summary.md`, `../prd/overview.md`
 - **Update Rule:** Update after each active-task status change or verification-state change.
 
@@ -24,12 +24,15 @@
 - The current implementation slice already landed runtime query repositories, execution cancellation/result APIs, replay-now flows for history/captures, and linked saved-script transfer remapping.
 - Runtime cancellation/history/capture routes are now registered through `server/register-runtime-routes.js`, reducing the size of the remaining monolithic route block in `server.js`.
 - Legacy inspector mock/assets/execute routes plus the inbound capture catch-all now register through `server/register-legacy-inspector-routes.js`, and inbound mock evaluation reads saved rules through the repository seam.
+- Request-resource, environment/script, mock-rule, execution, resource-bundle, and legacy capture writes now route through `repositories.resources.*` and `repositories.runtime.queries` instead of direct storage calls inside the route modules.
+- Workspace saved-resource load failures now surface as explicit degraded state, and the shipped request-draft/mock authoring paths no longer depend on fixture-backed production defaults.
+- Node HTTP seam tests now cover request-resource mutation, blocked execution paths, and resource-bundle preview/import under `server/*.test.js`.
 - The latest archived implementation is `T072`, which shipped linked request-stage saved-script references with export blocking.
 - Completed work history has been pruned out of `docs/tasks/` and condensed into `completed-work-summary.md`.
 
 ## Verification
 - `npm.cmd run check` passed on 2026-03-24.
-- `npm.cmd run test:node` passed on 2026-03-24.
+- `npm.cmd run test:node` passed on 2026-03-24, including the new `server/*.test.js` HTTP seam coverage.
 - Codex-side Playwright smoke passed on 2026-03-24 for workspace run, history replay-now, capture replay-now, and settings route load.
 - Agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - Codex-side UI verification should use the Playwright skill workflow.
@@ -41,3 +44,5 @@
 2. Read `master-task-board.md` and `priority-roadmap.md`.
 3. Read `completed-work-summary.md` only if archived context is actually needed.
 4. Continue `T073` until its server/runtime, replay/transfer, and doc-cleanup scope is complete before introducing another bounded task.
+
+

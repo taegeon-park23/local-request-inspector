@@ -2,7 +2,7 @@
 
 - **Purpose:** Decompose the server runtime into bounded route and service seams, replace direct storage access with explicit repositories, and establish the execution/observation interfaces needed for the next follow-up tasks.
 - **Created:** 2026-03-24
-- **Last Updated:** 2026-03-24
+- **Last Updated:** 2026-03-25
 - **Related Documents:** `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`, `../architecture/internal-api-contracts.md`, `../architecture/script-execution-safety-model.md`
 - **Status:** doing
 - **Update Rule:** Update when the implementation scope, blockers, or verification status changes.
@@ -51,6 +51,10 @@
 - Extracted legacy inspector mock/assets/execute routes and the inbound capture catch-all into `server/register-legacy-inspector-routes.js`, and switched inbound mock-rule evaluation to the repository seam instead of raw storage scans.
 - Landed bounded execution follow-up APIs for cancellation, replay, persisted result reads, and persisted test-result reads while preserving the existing route payload shape.
 - Replaced the legacy in-server VM execution path with bounded runner modules, including worker-thread fallback for spawn-restricted sandbox environments and redaction-safe freeform console handling.
+- Rewired request-resource, environment/script, mock-rule, execution, resource-bundle, and legacy capture routes to use `repositories.resources.*` and `repositories.runtime.queries` instead of direct raw storage calls inside the route modules.
+- Removed production fallback-to-empty behavior from the workspace request tree/request list loader, so saved-resource route failures now surface as explicit degraded state instead of looking like an empty workspace.
+- Removed production fixture-backed draft/mock defaults from `client/features/request-builder/state/request-draft-store.ts` and `client/features/mocks/components/MocksRoute.tsx` so shipped authoring state no longer depends on seed fixture modules.
+- Added Node HTTP seam coverage for request-resource mutation, blocked execution failure paths, and resource-bundle preview/import under `server/*.test.js`, and extended `scripts/run-node-seam-tests.mjs` to include `server/`.
 - Completed history/capture replay-now flows so both routes open a replay draft, queue an immediate run, and return focus to the Workspace result panel.
 - Removed linked saved-script export blocking by serializing/remapping linked request-stage bindings during resource bundle export/import.
 
@@ -60,5 +64,8 @@
 - The Playwright skill CLI path was attempted first, but sandboxed `npx` package fetch failed in this environment, so browser validation continued with the built-in Playwright MCP against the same local app.
 
 ## Remaining Work
-- Continue reducing `server.js` so route registration and orchestration are split more cleanly across bounded modules instead of accumulating additional runtime logic in one file.
+- Continue reducing `server.js` so the remaining execution, import, and environment helpers move behind bounded services instead of staying in the bootstrap file.
+- Remove the remaining production false-success defaults and fixture-derived fallbacks that can still mask degraded runtime/resource state outside the newly updated workspace and mock/request-draft paths.
 - Finish the live-doc cleanup slice that upgrades already-decided PRD/architecture uncertainty markers and renames remaining implementation-only `Placeholder` artifacts where they are now misleading.
+
+

@@ -1,7 +1,7 @@
 # Master Task Board
 - **Purpose:** Provide the canonical live execution status for work that is still operationally relevant.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-24
+- **Last Updated:** 2026-03-25
 - **Related Documents:** `priority-roadmap.md`, `progress-status.md`, `completed-work-summary.md`, `../prd/overview.md`, `../architecture/overview.md`
 - **Update Rule:** Update when an active task is created, completed, blocked, reprioritized, or archived.
 
@@ -19,8 +19,8 @@
 ## Current State
 - **Current active implementation:** `T073` server decomposition, runtime hardening, replay/transfer follow-up, and documentation cleanup.
 - **Most recent archived implementation:** `T072` request-stage linked reusable-script reference baseline.
-- **Highest-priority next step:** continue `T073` by shrinking `server.js` further and finishing the remaining live-doc cleanup after the newly landed runtime/replay/transfer slice.
-- **Verification baseline:** `npm.cmd run check` and `npm.cmd run test:node` passed on 2026-03-24.
+- **Highest-priority next step:** continue `T073` by moving the remaining execution/import/environment helpers out of `server.js` and clearing the last production false-success fallbacks after the new repository-seam and Node HTTP test slice.
+- **Verification baseline:** `npm.cmd run check` and `npm.cmd run test:node` passed on 2026-03-24, including the new `server/*.test.js` HTTP seam coverage.
 - **Codex smoke baseline:** Playwright smoke passed on 2026-03-24 for workspace run, history replay-now, capture replay-now, and settings route load.
 - **Closed UI-test rerun policy:** agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - **Codex UI verification lane:** use the Playwright skill workflow against the dev route or built shell when available.
@@ -31,3 +31,5 @@
 - `docs/tasks/` is reserved for active or incomplete task docs only.
 - Future work must start from a newly defined bounded task, not from reopening archived task files.
 - `T073` explicitly owns the linked request-stage transfer follow-up, replay completion, and runtime API expansion that were previously deferred.
+
+

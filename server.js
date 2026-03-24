@@ -91,7 +91,6 @@ const app = express();
 const PORT = 5671;
 const persistence = bootstrapPersistence();
 const resourceStorage = persistence.resourceStorage;
-const runtimeStorage = persistence.runtimeStorage;
 const repositories = persistence.repositories;
 const activeExecutions = new Map();
 
@@ -1743,7 +1742,7 @@ function prepareWorkspaceResourceBundleImport(bundle, workspaceId) {
 registerRequestResourceRoutes(app, {
   sendData,
   sendError,
-  resourceStorage,
+  repositories,
   defaultWorkspaceId: DEFAULT_WORKSPACE_ID,
   listWorkspaceSavedRequestRecords,
   buildWorkspaceRequestTree,
@@ -1770,7 +1769,7 @@ registerRequestResourceRoutes(app, {
 registerEnvironmentScriptRoutes(app, {
   sendData,
   sendError,
-  resourceStorage,
+  repositories,
   defaultWorkspaceId: DEFAULT_WORKSPACE_ID,
   validateEnvironmentInput,
   createEnvironmentRecord,
@@ -1791,7 +1790,7 @@ registerEnvironmentScriptRoutes(app, {
 registerResourceBundleRoutes(app, {
   sendData,
   sendError,
-  resourceStorage,
+  repositories,
   defaultWorkspaceId: DEFAULT_WORKSPACE_ID,
   buildAuthoredResourceBundle,
   normalizePersistedRequestRecord,
@@ -1807,7 +1806,7 @@ registerResourceBundleRoutes(app, {
 registerMockRuleRoutes(app, {
   sendData,
   sendError,
-  resourceStorage,
+  repositories,
   defaultWorkspaceId: DEFAULT_WORKSPACE_ID,
   buildAuthoredResourceBundle,
   validateMockRuleInput,
@@ -1820,8 +1819,7 @@ registerMockRuleRoutes(app, {
 registerExecutionRoutes(app, {
   sendData,
   sendError,
-  resourceStorage,
-  runtimeStorage,
+  repositories,
   defaultWorkspaceId: DEFAULT_WORKSPACE_ID,
   registerActiveExecution,
   clearActiveExecution,
@@ -1880,7 +1878,6 @@ registerLegacyInspectorRoutes(app, {
   rootDir: __dirname,
   defaultWorkspaceId: DEFAULT_WORKSPACE_ID,
   repositories,
-  runtimeStorage,
   evaluateMockRules,
   runLegacyCallbackInChildProcess,
   createPersistedCapturedRequestRecord,
@@ -1900,6 +1897,8 @@ app.listen(PORT, () => {
       : `[Ready] Built app shell unavailable at ${appShellStatus.appRoute}. Run "${appShellStatus.buildCommand}" or use ${appShellStatus.devClientUrl} for development.`,
   );
 });
+
+
 
 
 

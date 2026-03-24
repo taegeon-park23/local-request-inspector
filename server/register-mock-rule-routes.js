@@ -2,7 +2,7 @@ function registerMockRuleRoutes(app, dependencies) {
   const {
     sendData,
     sendError,
-    resourceStorage,
+    repositories,
     defaultWorkspaceId,
     buildAuthoredResourceBundle,
     validateMockRuleInput,
@@ -10,6 +10,7 @@ function registerMockRuleRoutes(app, dependencies) {
     normalizePersistedMockRuleRecord,
     listWorkspaceMockRuleRecords,
   } = dependencies;
+  const mockRuleRepository = repositories.resources.mockRules;
 
   app.get('/api/workspaces/:workspaceId/mock-rules', (req, res) => {
     try {
@@ -30,7 +31,7 @@ function registerMockRuleRoutes(app, dependencies) {
 
     try {
       const rule = createMockRuleRecord(input, null, req.params.workspaceId);
-      resourceStorage.save('mock-rule', rule);
+      mockRuleRepository.save(rule);
       return sendData(res, { rule }, 201);
     } catch (error) {
       return sendError(res, 500, 'mock_rule_create_failed', error.message);
@@ -40,7 +41,7 @@ function registerMockRuleRoutes(app, dependencies) {
   app.get('/api/mock-rules/:mockRuleId', (req, res) => {
     try {
       const rule = normalizePersistedMockRuleRecord(
-        resourceStorage.read('mock-rule', req.params.mockRuleId),
+        mockRuleRepository.read(req.params.mockRuleId),
       );
 
       if (!rule) {
@@ -69,7 +70,7 @@ function registerMockRuleRoutes(app, dependencies) {
 
     try {
       const existingRule = normalizePersistedMockRuleRecord(
-        resourceStorage.read('mock-rule', req.params.mockRuleId),
+        mockRuleRepository.read(req.params.mockRuleId),
       );
 
       if (!existingRule) {
@@ -79,7 +80,7 @@ function registerMockRuleRoutes(app, dependencies) {
       }
 
       const rule = createMockRuleRecord(input, existingRule, existingRule.workspaceId || defaultWorkspaceId);
-      resourceStorage.save('mock-rule', rule);
+      mockRuleRepository.save(rule);
       return sendData(res, { rule });
     } catch (error) {
       return sendError(res, 500, 'mock_rule_update_failed', error.message, {
@@ -90,7 +91,7 @@ function registerMockRuleRoutes(app, dependencies) {
 
   app.delete('/api/mock-rules/:mockRuleId', (req, res) => {
     try {
-      const deleted = resourceStorage.delete('mock-rule', req.params.mockRuleId);
+      const deleted = mockRuleRepository.delete(req.params.mockRuleId);
 
       if (!deleted) {
         return sendError(res, 404, 'mock_rule_not_found', 'Mock rule was not found.', {
@@ -109,7 +110,7 @@ function registerMockRuleRoutes(app, dependencies) {
   app.post('/api/mock-rules/:mockRuleId/enable', (req, res) => {
     try {
       const existingRule = normalizePersistedMockRuleRecord(
-        resourceStorage.read('mock-rule', req.params.mockRuleId),
+        mockRuleRepository.read(req.params.mockRuleId),
       );
 
       if (!existingRule) {
@@ -126,7 +127,7 @@ function registerMockRuleRoutes(app, dependencies) {
         existingRule,
         existingRule.workspaceId || defaultWorkspaceId,
       );
-      resourceStorage.save('mock-rule', rule);
+      mockRuleRepository.save(rule);
       return sendData(res, { rule });
     } catch (error) {
       return sendError(res, 500, 'mock_rule_enable_failed', error.message, {
@@ -138,7 +139,7 @@ function registerMockRuleRoutes(app, dependencies) {
   app.post('/api/mock-rules/:mockRuleId/disable', (req, res) => {
     try {
       const existingRule = normalizePersistedMockRuleRecord(
-        resourceStorage.read('mock-rule', req.params.mockRuleId),
+        mockRuleRepository.read(req.params.mockRuleId),
       );
 
       if (!existingRule) {
@@ -155,7 +156,7 @@ function registerMockRuleRoutes(app, dependencies) {
         existingRule,
         existingRule.workspaceId || defaultWorkspaceId,
       );
-      resourceStorage.save('mock-rule', rule);
+      mockRuleRepository.save(rule);
       return sendData(res, { rule });
     } catch (error) {
       return sendError(res, 500, 'mock_rule_disable_failed', error.message, {
@@ -167,7 +168,7 @@ function registerMockRuleRoutes(app, dependencies) {
   app.get('/api/mock-rules/:mockRuleId/resource-bundle', (req, res) => {
     try {
       const mockRule = normalizePersistedMockRuleRecord(
-        resourceStorage.read('mock-rule', req.params.mockRuleId),
+        mockRuleRepository.read(req.params.mockRuleId),
       );
 
       if (!mockRule) {
@@ -197,3 +198,4 @@ function registerMockRuleRoutes(app, dependencies) {
 module.exports = {
   registerMockRuleRoutes,
 };
+

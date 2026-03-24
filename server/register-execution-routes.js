@@ -4,8 +4,7 @@ function registerExecutionRoutes(app, dependencies) {
   const {
     sendData,
     sendError,
-    resourceStorage,
-    runtimeStorage,
+    repositories,
     defaultWorkspaceId,
     registerActiveExecution,
     clearActiveExecution,
@@ -46,6 +45,8 @@ function registerExecutionRoutes(app, dependencies) {
     createPersistedTestResultRecords,
     createFriendlyStageSummary,
   } = dependencies;
+  const runtimeQueries = repositories.runtime.queries;
+  const scriptRepository = repositories.resources.scripts;
 
   app.post('/api/executions/run', async (req, res) => {
     const input = req.body?.request;
@@ -71,7 +72,7 @@ function registerExecutionRoutes(app, dependencies) {
       try {
         const linkedScriptResolution = resolveRequestScriptsForExecution(
           executionRequest.scripts,
-          (scriptId) => normalizePersistedSavedScriptRecord(resourceStorage.read('script', scriptId)),
+          (scriptId) => normalizePersistedSavedScriptRecord(scriptRepository.read(scriptId)),
         );
         executionRequest = {
           ...executionRequest,
@@ -320,7 +321,7 @@ function registerExecutionRoutes(app, dependencies) {
         ...(errorSummary ? { errorSummary } : {}),
       });
 
-      runtimeStorage.insertExecutionHistory({
+      runtimeQueries.insertExecutionHistory({
         id: executionId,
         workspaceId: input.workspaceId || null,
         requestId: input.id || null,
@@ -333,7 +334,7 @@ function registerExecutionRoutes(app, dependencies) {
         errorCode: errorCode || null,
         errorMessage: errorSummary || null,
       });
-      runtimeStorage.insertExecutionResult({
+      runtimeQueries.insertExecutionResult({
         executionId,
         responseStatus,
         responseHeadersJson: JSON.stringify(responseHeaders),
@@ -349,7 +350,7 @@ function registerExecutionRoutes(app, dependencies) {
         requestSnapshotJson: JSON.stringify(requestSnapshot),
         redactionApplied: true,
       });
-      runtimeStorage.insertTestResults(createPersistedTestResultRecords(executionId, stageResults.tests));
+      runtimeQueries.insertTestResults(createPersistedTestResultRecords(executionId, stageResults.tests));
 
       return sendData(res, { execution });
     } catch (error) {
@@ -397,7 +398,7 @@ function registerExecutionRoutes(app, dependencies) {
       });
 
       try {
-        runtimeStorage.insertExecutionHistory({
+        runtimeQueries.insertExecutionHistory({
           id: executionId,
           workspaceId: input.workspaceId || null,
           requestId: input.id || null,
@@ -412,7 +413,7 @@ function registerExecutionRoutes(app, dependencies) {
           errorCode: transportStageResult.errorCode || error?.code || error?.cause?.code || 'execution_failed',
           errorMessage: transportStageResult.errorSummary || error.message,
         });
-        runtimeStorage.insertExecutionResult({
+        runtimeQueries.insertExecutionResult({
           executionId,
           responseStatus: null,
           responseHeadersJson: '[]',
@@ -439,3 +440,4 @@ function registerExecutionRoutes(app, dependencies) {
 module.exports = {
   registerExecutionRoutes,
 };
+

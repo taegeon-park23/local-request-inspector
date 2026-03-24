@@ -45,7 +45,6 @@ import {
   previewWorkspaceResources,
 } from '@client/features/workspace/resource-bundle.api';
 import {
-  buildFallbackWorkspaceRequestTree,
   createWorkspaceCollection,
   createWorkspaceRequestGroup,
   deleteWorkspaceCollection,
@@ -318,33 +317,11 @@ export function WorkspaceRoute() {
 
   const savedRequestsQuery = useQuery({
     queryKey: workspaceSavedRequestsQueryKey,
-    queryFn: async () => {
-      try {
-        return await listWorkspaceSavedRequests();
-      } catch {
-        return [];
-      }
-    },
+    queryFn: listWorkspaceSavedRequests,
   });
   const requestTreeQuery = useQuery({
     queryKey: workspaceRequestTreeQueryKey,
-    queryFn: async () => {
-      try {
-        return await listWorkspaceRequestTree();
-      } catch {
-        return {
-          defaults: {
-            collectionId: 'saved-requests',
-            requestGroupId: 'general',
-            collectionName: 'Saved Requests',
-            requestGroupName: 'General',
-          },
-          collections: [],
-          requestGroups: [],
-          tree: [],
-        };
-      }
-    },
+    queryFn: listWorkspaceRequestTree,
   });
 
   useEffect(() => {
@@ -685,9 +662,29 @@ export function WorkspaceRoute() {
     },
   });
 
-  const explorerTree = requestTreeQuery.data?.tree?.length
-    ? requestTreeQuery.data.tree
-    : buildFallbackWorkspaceRequestTree(savedRequestsQuery.data ?? []);
+  const workspaceLoadStatus = requestTreeQuery.error || savedRequestsQuery.error
+    ? {
+        tone: 'error' as const,
+        message: t('workspaceRoute.explorer.status.workspaceResourcesDegraded'),
+        details: [
+          ...(requestTreeQuery.error instanceof Error
+            ? [t('workspaceRoute.explorer.status.requestTreeDegraded'), requestTreeQuery.error.message]
+            : []),
+          ...(savedRequestsQuery.error instanceof Error
+            ? [t('workspaceRoute.explorer.status.savedRequestsDegraded'), savedRequestsQuery.error.message]
+            : []),
+        ],
+      }
+    : null;
+  const mergedManagerStatuses = workspaceLoadStatus
+    ? {
+        ...managerStatuses,
+        collections: managerStatuses.collections ?? workspaceLoadStatus,
+        'request-groups': managerStatuses['request-groups'] ?? workspaceLoadStatus,
+        'saved-request': managerStatuses['saved-request'] ?? workspaceLoadStatus,
+      }
+    : managerStatuses;
+  const explorerTree = requestTreeQuery.data?.tree ?? [];
   const requestPlacementOptions = buildRequestPlacementOptions(explorerTree, requestTreeQuery.data?.defaults);
   const resolvedTabs = tabs.map((tab) => resolvePresentationTab(tab, draftsByTabId[tab.id]));
   const activeTab = resolvedTabs.find((tab) => tab.id === activeTabId) ?? null;
@@ -929,6 +926,18 @@ export function WorkspaceRoute() {
       onActiveTabChange={(panel) => setWorkspaceActivePanel('workspace', panel)}
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
+        {workspaceLoadStatus ? (
+          <div className={`workspace-explorer__status workspace-explorer__status--${workspaceLoadStatus.tone}`} role="alert">
+            <p>{workspaceLoadStatus.message}</p>
+            {workspaceLoadStatus.details.length > 0 ? (
+              <ul className="workspace-explorer__status-details">
+                {workspaceLoadStatus.details.map((detail) => (
+                  <li key={detail}>{detail}</li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
         <WorkspaceExplorer
           tree={explorerTree}
           selectedRequestId={selectedExplorerItemId}
@@ -948,6 +957,19 @@ export function WorkspaceRoute() {
               <span className="workspace-chip workspace-chip--secondary">{t('routes.workspace.contextChip')}</span>
             </div>
           </SectionHeading>
+
+        {workspaceLoadStatus ? (
+          <div className={`workspace-explorer__status workspace-explorer__status--${workspaceLoadStatus.tone}`} role="alert">
+            <p>{workspaceLoadStatus.message}</p>
+            {workspaceLoadStatus.details.length > 0 ? (
+              <ul className="workspace-explorer__status-details">
+                {workspaceLoadStatus.details.map((detail) => (
+                  <li key={`main-${detail}`}>{detail}</li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
 
         <RequestTabShell
           tabs={resolvedTabs}
@@ -975,7 +997,7 @@ export function WorkspaceRoute() {
           importPreview={pendingImportPreview}
           onConfirmImportPreview={handleConfirmImportPreview}
           onCancelImportPreview={handleCancelImportPreview}
-          statuses={managerStatuses}
+          statuses={mergedManagerStatuses}
           isExporting={exportResourcesMutation.isPending || exportRequestMutation.isPending}
           isPreviewingImport={previewResourcesMutation.isPending}
           isImporting={importResourcesMutation.isPending}
@@ -1004,6 +1026,7 @@ export function WorkspaceRoute() {
     />
   );
 }
+
 
 
 

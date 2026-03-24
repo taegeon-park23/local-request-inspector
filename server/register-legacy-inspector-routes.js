@@ -41,7 +41,6 @@ function registerLegacyInspectorRoutes(app, dependencies) {
     rootDir,
     defaultWorkspaceId,
     repositories,
-    runtimeStorage,
     evaluateMockRules,
     runLegacyCallbackInChildProcess,
     createPersistedCapturedRequestRecord,
@@ -195,7 +194,7 @@ function registerLegacyInspectorRoutes(app, dependencies) {
     });
 
     try {
-      runtimeStorage.insertCapturedRequest(persistedCapture);
+      repositories.runtime.queries.insertCapturedRequest(persistedCapture);
     } catch (error) {
       console.error('Captured request persistence error:', error);
     }
@@ -218,3 +217,4 @@ function registerLegacyInspectorRoutes(app, dependencies) {
 module.exports = {
   registerLegacyInspectorRoutes,
 };
+

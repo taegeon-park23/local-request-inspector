@@ -55,6 +55,9 @@ export const workspaceRouteMessagesEn = {
           'Previewing authored resources from {fileName}. No changes will be written until you confirm import.',
         fileReadFailed: 'Selected file could not be read for import.',
         exportFailed: 'Resource export failed before a bundle could be downloaded.',
+        workspaceResourcesDegraded: 'Workspace saved-resource data is degraded. Empty states are hidden until the resource routes respond again.',
+        requestTreeDegraded: 'Saved request tree could not be loaded from the server.',
+        savedRequestsDegraded: 'Saved request list could not be loaded from the server.',
         previewNoResources:
           'Preview found no saved-request, mock-rule, or saved-script resources in {fileName}. Nothing will be written until you choose a bundle with authored resources.',
         previewNoImportable:
@@ -730,6 +733,9 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
           '{fileName}의 작성 리소스를 미리 보는 중입니다. 가져오기를 확정하기 전까지는 어떤 변경도 기록되지 않습니다.',
         fileReadFailed: '가져오기를 위해 선택한 파일을 읽을 수 없습니다.',
         exportFailed: '번들을 다운로드하기 전에 리소스 내보내기에 실패했습니다.',
+        workspaceResourcesDegraded: '워크스페이스 저장 리소스 데이터가 저하되었습니다. 리소스 경로가 다시 응답할 때까지 빈 상태를 정상처럼 숨기지 않습니다.',
+        requestTreeDegraded: '저장 요청 트리를 서버에서 불러오지 못했습니다.',
+        savedRequestsDegraded: '저장 요청 목록을 서버에서 불러오지 못했습니다.',
         previewNoResources:
           '{fileName}에서 저장 요청, mock rule, 또는 저장 스크립트 리소스를 찾지 못했습니다. 작성 리소스가 포함된 번들을 선택하기 전까지는 아무것도 기록되지 않습니다.',
         previewNoImportable:
@@ -1344,6 +1350,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
     },
   },
 };
+
 
 
 
