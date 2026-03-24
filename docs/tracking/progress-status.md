@@ -9,6 +9,7 @@
 ## Current Snapshot
 - `T073` is actively in progress.
 - The task currently owns server decomposition, child-process script-runner hardening, replay completion, linked-script transfer follow-up, and live-doc cleanup.
+- Environment CRUD, saved-script CRUD, and script-template read routes now register through `server/register-environment-script-routes.js`.
 - Mock-rule CRUD, enable/disable, and single-rule bundle export now register through `server/register-mock-rule-routes.js`.
 - Built-shell status, `/app` static serving, and fallback rendering now register through `server/register-app-shell-routes.js`.
 - App-shell/runtime status APIs now register through `server/register-status-routes.js`, and SSE plus raw-body parser bootstrap now lives in `server/configure-runtime-stream.js`.
