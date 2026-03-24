@@ -177,7 +177,7 @@ Tasks are prioritized using these criteria:
 70. **T067** Settings mutation lane comparison - complete
 
 ### Phase AU - Client-Owned Settings Preferences Baseline
-71. **T068** Client-owned interface preferences settings baseline - ready when settings mutation is explicitly requested
+71. **T068** Client-owned interface preferences settings baseline - complete
 
 ### Phase AV - Parked Optional Future Work
 72. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule/scripts bundle scope
@@ -214,8 +214,9 @@ Recently completed foundation work:
 - `T017` Developer environment and tooling baseline
 
 Ready to start now:
-- No new implementation is currently promoted automatically after `T067`. If settings mutation is explicitly requested later, `T068` is now the bounded first slice and should stay client-owned, presentation-only, and free of new runtime/storage mutation contracts.
-- `T067` is landed: the remaining `/settings` follow-up space is now compared directly, with client-owned interface preferences winning over runtime defaults and storage/admin actions as the strongest future-first lane.
+- No new implementation is currently promoted automatically after `T068`. Future settings work should stay additive inside client-owned interface preferences first and should not reopen runtime-defaults or storage-admin scope without a new narrowing pass.
+- `T068` is landed: `/settings` now exposes one bounded client-owned interface preference, the default navigation-rail state, with local persistence and immediate shell reactivity.
+- `T067` is landed: the remaining broader `/settings` follow-up space is now compared directly, with runtime defaults and storage/admin actions still parked behind the client-preferences-first baseline.
 - `T065` is landed: the request-stage Scripts tab can open `/scripts` with stage-aware context, `/scripts` can prefilter and preselect the requested saved script, and users can return to `/workspace` without changing reusable-script persistence semantics
 - `T064` is landed: the request builder can now copy one compatible saved script into the active stage editor, show a lightweight provenance hint, and keep request save payloads source-only without introducing linked reusable-script references or new request-stage linkage ids
 - `T061B` is landed: workspace authored-resource bundle export/import preview/import now carries standalone saved scripts alongside collections, request groups, saved requests, and mock rules, while older bundles without `scripts` remain read-compatible

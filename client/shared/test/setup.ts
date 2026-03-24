@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { vi } from 'vitest';
-import { resetShellStore } from '@client/app/providers/shell-store';
+import { resetShellStore, shellNavRailPreferenceStorageKey } from '@client/app/providers/shell-store';
 import { defaultCaptureFixtureRecords } from '@client/features/captures/data/capture-fixtures';
 import { resetCapturesStore } from '@client/features/captures/state/captures-store';
 import { defaultHistoryFixtureScenario } from '@client/features/history/data/history-fixtures';
@@ -514,6 +514,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  window.localStorage.removeItem(shellNavRailPreferenceStorageKey);
   resetShellStore();
   resetCapturesStore();
   resetHistoryStore();

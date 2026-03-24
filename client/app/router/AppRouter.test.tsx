@@ -2,6 +2,7 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { AppRouter } from '@client/app/router/AppRouter';
+import { resetShellStore, shellNavRailPreferenceStorageKey } from '@client/app/providers/shell-store';
 import { renderApp } from '@client/shared/test/render-app';
 
 function createRect(height: number): DOMRect {
@@ -155,6 +156,17 @@ describe('AppRouter shell bootstrap', () => {
 
     fireEvent.click(within(navigationRail).getByRole('button', { name: 'Expand navigation' }));
     expect(navigationRail).toHaveAttribute('data-collapsed', 'false');
+  });
+
+  it('rehydrates the navigation rail from the stored client preference on first render', () => {
+    window.localStorage.setItem(shellNavRailPreferenceStorageKey, 'true');
+    resetShellStore();
+
+    renderApp(<AppRouter />);
+
+    const navigationRail = screen.getByLabelText('Navigation rail');
+    expect(navigationRail).toHaveAttribute('data-collapsed', 'true');
+    expect(within(navigationRail).getByRole('button', { name: 'Expand navigation' })).toBeInTheDocument();
   });
 
   it('lets workspace explorer selection surface content immediately and allows explorer collapse', async () => {

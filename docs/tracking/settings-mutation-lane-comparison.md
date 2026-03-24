@@ -11,7 +11,8 @@
 ### Lane 1 - Client-owned interface preferences
 - Focuses on low-risk preferences that affect shell and management presentation only.
 - Stays inside client-owned state and local persistence rather than reopening server-owned runtime or storage policy.
-- Example future concerns: locale default alignment, density or compactness preference, route-panel presentation defaults.
+- Landed through `T068` with a default navigation-rail preference baseline.
+- Future additive concerns could still include locale default alignment, density or compactness preference, or route-panel presentation defaults.
 
 ### Lane 2 - Runtime defaults and execution preferences
 - Focuses on mutable defaults that affect request execution or runtime behavior.
@@ -24,9 +25,9 @@
 ## 2. Repo-Grounded Baseline
 - `T027` intentionally shipped `/settings` as a diagnostics-first read-only surface backed by `GET /api/settings/runtime-status`.
 - `T037` already added one bounded client-owned preference flow, locale persistence, without turning `/settings` into a broader mutation surface or introducing a settings resource contract.
-- The current Settings route already exposes runtime diagnostics, command hints, and data-path visibility, so users have read access to status without mutation scope.
+- `T068` now adds one bounded client-owned interface preference for the default navigation-rail state, persisted locally and reflected immediately in shell presentation.
 - Runtime behavior, request execution defaults, environment resolution, and storage bootstrap already have bounded ownership elsewhere in the repo; `/settings` does not currently own those contracts.
-- Current docs still mention broad future settings ideas such as runtime defaults and preferences, but no narrower mutation lane has been explicitly compared since `T027` landed.
+- Current docs still mention broader future settings ideas such as runtime defaults and preferences, but the only landed mutation baseline remains client-owned presentation state.
 
 ## 3. Direct Comparison
 | Criteria | Lane 1 - Client-owned interface preferences | Lane 2 - Runtime defaults and execution preferences | Lane 3 - Storage and maintenance actions |
@@ -53,10 +54,10 @@
 - The current command catalog and path hints already cover bounded diagnostics needs without UI-side mutation.
 
 ## 5. Decision
-- Lane 1, `client-owned interface preferences`, is the strongest future settings follow-up lane if one later settings-mutation task is needed.
+- Lane 1, `client-owned interface preferences`, is now the landed settings-mutation baseline through `T068`.
 - Lane 2, `runtime defaults and execution preferences`, remains parked because it would reopen request execution and policy ownership.
 - Lane 3, `storage and maintenance actions`, remains parked because it would reopen destructive maintenance semantics and backup/recovery flows.
-- This comparison does **not** promote a new implementation automatically by itself.
+- No new settings implementation is auto-promoted beyond the landed client-preferences baseline.
 
 ## 6. What Would Change This Decision Later
 - Promote Lane 1 only if the first slice stays client-owned, presentation-only, and explicitly avoids new server settings contracts.

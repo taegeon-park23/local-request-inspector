@@ -24,6 +24,8 @@ function getErrorMessage(error: unknown, fallbackMessage: string) {
 
 export function SettingsRoute() {
   const runtimeConnectionHealth = useShellStore((state) => state.runtimeConnectionHealth);
+  const navRailCollapsed = useShellStore((state) => state.navRailCollapsed);
+  const setNavRailCollapsed = useShellStore((state) => state.setNavRailCollapsed);
   const { locale, locales, setLocale, t } = useI18n();
   const [copiedMessage, setCopiedMessage] = useState<string | null>(null);
   const runtimeStatusQuery = useQuery({ queryKey: runtimeStatusQueryKey, queryFn: readRuntimeStatus });
@@ -31,6 +33,11 @@ export function SettingsRoute() {
 
   const describeLocale = (localeCode: LocaleCode) => (
     localeCode === 'ko' ? t('common.locales.ko') : t('common.locales.en')
+  );
+  const describeNavRailState = (collapsed: boolean) => (
+    collapsed
+      ? t('settings.cards.navigationRailPreference.values.collapsed')
+      : t('settings.cards.navigationRailPreference.values.expanded')
   );
 
   return (
@@ -178,6 +185,43 @@ export function SettingsRoute() {
                     {describeLocale(localeOption)}
                   </button>
                 ))}
+              </div>
+            </DetailViewerSection>
+            <DetailViewerSection
+              icon="settings"
+              title={t('settings.cards.navigationRailPreference.title')}
+              description={t('settings.cards.navigationRailPreference.description')}
+              className="workspace-surface-card"
+            >
+              <KeyValueMetaList
+                items={[
+                  { label: t('settings.cards.navigationRailPreference.labels.currentState'), value: describeNavRailState(navRailCollapsed) },
+                  { label: t('settings.cards.navigationRailPreference.labels.persistence'), value: t('settings.cards.navigationRailPreference.values.persistence') },
+                  { label: t('settings.cards.navigationRailPreference.labels.scope'), value: t('settings.cards.navigationRailPreference.values.scope') },
+                ]}
+              />
+              <p className="shared-readiness-note">{t('settings.cards.navigationRailPreference.helper')}</p>
+              <div
+                className="request-work-surface__future-actions"
+                role="group"
+                aria-label={t('settings.cards.navigationRailPreference.actions.groupLabel')}
+              >
+                <button
+                  type="button"
+                  className={!navRailCollapsed ? 'workspace-button workspace-button--secondary' : 'workspace-button workspace-button--ghost'}
+                  aria-pressed={!navRailCollapsed}
+                  onClick={() => setNavRailCollapsed(false)}
+                >
+                  {t('settings.cards.navigationRailPreference.actions.expanded')}
+                </button>
+                <button
+                  type="button"
+                  className={navRailCollapsed ? 'workspace-button workspace-button--secondary' : 'workspace-button workspace-button--ghost'}
+                  aria-pressed={navRailCollapsed}
+                  onClick={() => setNavRailCollapsed(true)}
+                >
+                  {t('settings.cards.navigationRailPreference.actions.collapsed')}
+                </button>
               </div>
             </DetailViewerSection>
             <DetailViewerSection

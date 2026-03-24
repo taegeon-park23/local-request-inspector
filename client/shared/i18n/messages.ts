@@ -99,7 +99,7 @@ const enCatalog = {
     settings: {
       label: 'Settings',
       breadcrumb: 'Settings',
-      summary: 'Read-only diagnostics hub for app shell, storage, and local command guidance.',
+      summary: 'Diagnostics hub plus bounded client-owned interface preferences for this device.',
     },
   },
   routes: {
@@ -140,7 +140,7 @@ const enCatalog = {
     settings: {
       title: 'Settings',
       summary:
-        'Settings is intentionally read-only in this MVP. It surfaces diagnostics and route hints instead of introducing persisted preferences before ownership is clear.',
+        'Settings stays bounded in this MVP. It surfaces diagnostics, route hints, and client-owned interface preferences without introducing server-owned runtime or storage settings.',
     },
   },
   settings: {
@@ -148,7 +148,7 @@ const enCatalog = {
       eyebrow: 'Diagnostics-first settings',
       title: 'Runtime status',
       summary:
-        'Settings stays read-only in this MVP and acts as a diagnostics hub for shell availability, storage readiness, and local command guidance.',
+        'Settings stays bounded in this MVP and acts as a diagnostics hub for shell availability, storage readiness, local command guidance, and client-owned interface preferences.',
     },
     loadingRuntimeDiagnostics: {
       title: 'Loading runtime diagnostics',
@@ -161,7 +161,7 @@ const enCatalog = {
     page: {
       title: 'Settings',
       summary:
-        'Settings is intentionally read-only in this MVP. It surfaces diagnostics and route hints instead of introducing persisted preferences before ownership is clear.',
+        'Settings stays bounded in this MVP. It surfaces diagnostics, route hints, and client-owned interface preferences without introducing server-owned runtime or storage settings.',
     },
     cards: {
       connectionHealth: {
@@ -231,6 +231,29 @@ const enCatalog = {
         helper:
           'English remains the fallback catalog. Korean is the first translated locale and should be used as the pattern for later surface-by-surface rollout.',
       },
+      navigationRailPreference: {
+        title: 'Navigation rail preference',
+        description:
+          'Choose how the left navigation rail opens on this device. This preference changes presentation only and does not affect runtime behavior.',
+        labels: {
+          currentState: 'Current state',
+          persistence: 'Persistence',
+          scope: 'Scope',
+        },
+        values: {
+          persistence: 'Browser local storage',
+          scope: 'Presentation only',
+          expanded: 'Expanded',
+          collapsed: 'Collapsed',
+        },
+        actions: {
+          groupLabel: 'Navigation rail preference',
+          expanded: 'Expanded by default',
+          collapsed: 'Collapsed by default',
+        },
+        helper:
+          'Use the shell toggle for a temporary change. This preference controls the default state used when the app opens again on this device.',
+      },
       storagePaths: {
         title: 'Storage paths',
         description: 'These paths help operators confirm bootstrap state without adding mutation controls here.',
@@ -244,7 +267,7 @@ const enCatalog = {
       scopeBoundary: {
         title: 'Scope boundary',
         description:
-          'This route deliberately avoids persisted settings mutation until ownership and preference shape are clearer.',
+          'This route now allows client-owned interface preferences only. Runtime defaults, storage administration, and backup flows remain outside the current settings boundary.',
       },
     },
     empty: {
@@ -257,9 +280,9 @@ const enCatalog = {
         fallbackDescription: 'Runtime diagnostics could not be loaded cleanly.',
       },
       readOnlyByDesign: {
-        title: 'Read-only by design',
+        title: 'Bounded by design',
         description:
-          'Use {environmentsLabel} for variable management and {scriptsLabel} for standalone script management. Settings currently aggregates diagnostics, command guidance, and route hints only.',
+          'Use {environmentsLabel} for variable management and {scriptsLabel} for standalone script management. Settings now allows client-owned interface preferences only; runtime defaults and storage administration still stay out of scope.',
       },
       noDiagnosticsLoadedYet: {
         title: 'No diagnostics loaded yet',
@@ -365,7 +388,7 @@ const koCatalog: CatalogShape<typeof enCatalog> = {
     settings: {
       label: '설정',
       breadcrumb: '설정',
-      summary: '앱 shell, storage, 로컬 명령 가이드를 위한 읽기 전용 진단 허브입니다.',
+      summary: '이 기기용 client-owned interface preference와 진단 정보를 함께 보여주는 허브입니다.',
     },
   },
   routes: {
@@ -406,7 +429,7 @@ const koCatalog: CatalogShape<typeof enCatalog> = {
     settings: {
       title: '설정',
       summary:
-        '설정은 이 MVP에서 의도적으로 읽기 전용입니다. ownership이 명확해지기 전까지 persisted preference 대신 diagnostics와 route hint를 보여줍니다.',
+        '설정은 이 MVP에서 범위를 제한합니다. server-owned runtime/storage 설정은 추가하지 않고, diagnostics·route hint·client-owned interface preference만 제공합니다.',
     },
   },
   settings: {
@@ -414,7 +437,7 @@ const koCatalog: CatalogShape<typeof enCatalog> = {
       eyebrow: '진단 중심 설정',
       title: '런타임 상태',
       summary:
-        '설정은 이 MVP에서 읽기 전용으로 유지되며, shell 가용성, storage 준비 상태, 로컬 명령 가이드를 위한 진단 허브 역할을 합니다.',
+        '설정은 이 MVP에서 범위를 제한하며, shell 가용성, storage 준비 상태, 로컬 명령 가이드, client-owned interface preference를 위한 허브 역할을 합니다.',
     },
     loadingRuntimeDiagnostics: {
       title: '런타임 진단을 불러오는 중',
@@ -427,7 +450,7 @@ const koCatalog: CatalogShape<typeof enCatalog> = {
     page: {
       title: '설정',
       summary:
-        '설정은 이 MVP에서 의도적으로 읽기 전용입니다. ownership이 명확해지기 전까지 persisted preference 대신 diagnostics와 route hint를 보여줍니다.',
+        '설정은 이 MVP에서 범위를 제한합니다. server-owned runtime/storage 설정은 추가하지 않고, diagnostics·route hint·client-owned interface preference만 제공합니다.',
     },
     cards: {
       connectionHealth: {
@@ -497,6 +520,29 @@ const koCatalog: CatalogShape<typeof enCatalog> = {
         helper:
           'English 카탈로그는 fallback으로 유지됩니다. 한국어는 첫 번째 번역 로케일이며, 이후 surface-by-surface 확장의 기준 패턴으로 사용해야 합니다.',
       },
+      navigationRailPreference: {
+        title: '내비게이션 레일 기본 상태',
+        description:
+          '이 기기에서 왼쪽 내비게이션 레일이 기본적으로 어떻게 열릴지 선택합니다. 이 preference는 표시 방식만 바꾸며 runtime 동작에는 영향을 주지 않습니다.',
+        labels: {
+          currentState: '현재 상태',
+          persistence: '저장 위치',
+          scope: '적용 범위',
+        },
+        values: {
+          persistence: '브라우저 로컬 스토리지',
+          scope: '표시 전용',
+          expanded: '펼침',
+          collapsed: '접힘',
+        },
+        actions: {
+          groupLabel: '내비게이션 레일 기본 상태',
+          expanded: '기본값을 펼침으로',
+          collapsed: '기본값을 접힘으로',
+        },
+        helper:
+          '임시 변경은 shell 토글로 처리하고, 여기서는 앱을 다시 열었을 때 사용할 기본 상태를 지정합니다.',
+      },
       storagePaths: {
         title: '스토리지 경로',
         description: '이 경로들은 여기서 mutation control을 추가하지 않고도 bootstrap 상태를 점검하는 데 도움을 줍니다.',
@@ -510,7 +556,7 @@ const koCatalog: CatalogShape<typeof enCatalog> = {
       scopeBoundary: {
         title: '범위 경계',
         description:
-          '이 route는 ownership과 preference shape가 더 명확해질 때까지 persisted settings mutation을 의도적으로 보류합니다.',
+          '이 route는 이제 client-owned interface preference만 허용합니다. runtime 기본값, storage 관리, backup 흐름은 현재 범위 밖에 남겨 둡니다.',
       },
     },
     empty: {
@@ -523,9 +569,9 @@ const koCatalog: CatalogShape<typeof enCatalog> = {
         fallbackDescription: '런타임 진단을 정상적으로 불러오지 못했습니다.',
       },
       readOnlyByDesign: {
-        title: '의도된 읽기 전용',
+        title: '의도적으로 제한된 범위',
         description:
-          '{environmentsLabel}에서는 변수 관리를, {scriptsLabel}에서는 독립 스크립트 관리를 수행하세요. 현재 설정은 diagnostics, 명령 가이드, route hint만 집계합니다.',
+          '{environmentsLabel}에서는 변수 관리를, {scriptsLabel}에서는 독립 스크립트 관리를 수행하세요. 현재 설정은 client-owned interface preference까지만 허용하며, runtime 기본값과 storage 관리는 계속 범위 밖에 둡니다.',
       },
       noDiagnosticsLoadedYet: {
         title: '아직 진단이 없습니다',

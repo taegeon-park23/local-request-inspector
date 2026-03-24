@@ -1,7 +1,7 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AppRouter } from '@client/app/router/AppRouter';
-import { useShellStore } from '@client/app/providers/shell-store';
+import { useShellStore, shellNavRailPreferenceStorageKey } from '@client/app/providers/shell-store';
 import { renderApp } from '@client/shared/test/render-app';
 import { localeStorageKey } from '@client/shared/i18n/messages';
 
@@ -38,5 +38,25 @@ describe('Settings MVP route', () => {
     expect(screen.getByRole('heading', { name: '인터페이스 언어' })).toBeInTheDocument();
     expect(screen.getByLabelText('Current section breadcrumb')).toHaveTextContent('설정');
     expect(window.localStorage.getItem(localeStorageKey)).toBe('ko');
+  });
+
+  it('lets the user change the default navigation rail preference and persists it locally', async () => {
+    const user = userEvent.setup();
+    useShellStore.getState().setRuntimeConnectionHealth('connected');
+    renderApp(<AppRouter />, { initialEntries: ['/settings'] });
+
+    await screen.findByRole('heading', { name: 'Navigation rail preference' });
+
+    const preferenceGroup = screen.getByRole('group', { name: 'Navigation rail preference' });
+    const navigationRail = screen.getByLabelText('Navigation rail');
+
+    expect(navigationRail).toHaveAttribute('data-collapsed', 'false');
+    expect(within(preferenceGroup).getByRole('button', { name: 'Expanded by default' })).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(within(preferenceGroup).getByRole('button', { name: 'Collapsed by default' }));
+
+    expect(navigationRail).toHaveAttribute('data-collapsed', 'true');
+    expect(window.localStorage.getItem(shellNavRailPreferenceStorageKey)).toBe('true');
+    expect(within(preferenceGroup).getByRole('button', { name: 'Collapsed by default' })).toHaveAttribute('aria-pressed', 'true');
   });
 });
