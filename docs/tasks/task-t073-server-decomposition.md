@@ -34,6 +34,7 @@
 - Codex-side UI verification must use the Playwright skill workflow rather than rerunning `npm.cmd run test:ui`.
 
 ## Progress
+- Moved request placement, saved-request normalization, request-tree building, and bundle helper logic into `server/request-resource-service.js`, so `server.js` now wires those helpers through a bounded service seam instead of defining them inline.
 - Extracted the execution run entrypoint into `server/register-execution-routes.js`, leaving `server.js` with registration and helper orchestration instead of a direct `/api/executions/run` route body.
 - Extracted request list/tree, collection CRUD, request-group CRUD, and saved-request CRUD routes into `server/register-request-resource-routes.js`.
 - Extracted authored resource bundle export/import routes into `server/register-resource-bundle-routes.js`.
