@@ -34,6 +34,7 @@
 - Codex-side UI verification must use the Playwright skill workflow rather than rerunning `npm.cmd run test:ui`.
 
 ## Progress
+- Extracted persisted execution log, test-result, error-summary, and history presentation helpers into `server/execution-observation-service.js`, so execution routes and runtime history routes now share a bounded observation service instead of another large inline `server.js` block.
 - Extracted inbound capture persistence, presentation, and replay helpers into `server/capture-observation-service.js`, so legacy inspector and runtime routes now share a bounded observation service instead of another large inline `server.js` block.
 - Renamed misleading implemented `Placeholder` route/surface artifacts to `Route`, `RequestWorkSurface`, and `RequestResultPanel`, and removed thin placeholder alias wrappers that no longer matched the shipped UI.
 - Updated live PRD/architecture docs so already-landed stack, persistence, routing, and child-process runner decisions are no longer described as still-open by default.

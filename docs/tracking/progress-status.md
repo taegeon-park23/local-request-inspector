@@ -9,6 +9,7 @@
 ## Current Snapshot
 - `T073` is actively in progress.
 - The task currently owns server decomposition, child-process script-runner hardening, replay completion, linked-script transfer follow-up, and live-doc cleanup.
+- Persisted execution log, test-result, error-summary, and history presentation helpers now live in `server/execution-observation-service.js`, reducing another shared execution/history block from `server.js`.
 - Inbound capture persistence, presentation, and replay helpers now live in `server/capture-observation-service.js`, reducing another shared observation block from `server.js`.
 - Implemented route/workspace UI surfaces no longer use misleading `Placeholder` component/file names for the shipped Captures, History, Mocks, Workspace, and request-builder surfaces.
 - Live PRD/architecture docs now reflect the landed React + Vite shell baseline, hybrid JSON/SQLite persistence baseline, and child-process execution baseline instead of keeping those decisions open by default.
