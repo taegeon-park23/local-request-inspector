@@ -2,7 +2,11 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { AppRouter } from '@client/app/router/AppRouter';
-import { resetShellStore, shellNavRailPreferenceStorageKey } from '@client/app/providers/shell-store';
+import {
+  resetShellStore,
+  shellFloatingExplorerDefaultOpenStorageKey,
+  shellNavRailPreferenceStorageKey,
+} from '@client/app/providers/shell-store';
 import { renderApp } from '@client/shared/test/render-app';
 
 function createRect(height: number): DOMRect {
@@ -167,6 +171,20 @@ describe('AppRouter shell bootstrap', () => {
     const navigationRail = screen.getByLabelText('Navigation rail');
     expect(navigationRail).toHaveAttribute('data-collapsed', 'true');
     expect(within(navigationRail).getByRole('button', { name: 'Expand navigation' })).toBeInTheDocument();
+  });
+
+  it('rehydrates the floating explorer default from the stored client preference on first render', () => {
+    window.localStorage.setItem(shellFloatingExplorerDefaultOpenStorageKey, 'false');
+    resetShellStore();
+
+    renderApp(<AppRouter />, { initialEntries: ['/history'] });
+
+    const floatingRoot = document.querySelector('.shell-route-panels--floating');
+    const floatingDetail = document.querySelector('.shell-route-panels__floating-detail');
+
+    expect(floatingRoot).toHaveAttribute('data-floating-explorer-open', 'false');
+    expect(floatingDetail).toHaveAttribute('data-detail-visibility', 'visible');
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('lets workspace explorer selection surface content immediately and allows explorer collapse', async () => {

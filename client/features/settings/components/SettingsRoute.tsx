@@ -25,7 +25,9 @@ function getErrorMessage(error: unknown, fallbackMessage: string) {
 export function SettingsRoute() {
   const runtimeConnectionHealth = useShellStore((state) => state.runtimeConnectionHealth);
   const navRailCollapsed = useShellStore((state) => state.navRailCollapsed);
+  const floatingExplorerDefaultOpen = useShellStore((state) => state.floatingExplorerDefaultOpen);
   const setNavRailCollapsed = useShellStore((state) => state.setNavRailCollapsed);
+  const setFloatingExplorerDefaultOpen = useShellStore((state) => state.setFloatingExplorerDefaultOpen);
   const { locale, locales, setLocale, t } = useI18n();
   const [copiedMessage, setCopiedMessage] = useState<string | null>(null);
   const runtimeStatusQuery = useQuery({ queryKey: runtimeStatusQueryKey, queryFn: readRuntimeStatus });
@@ -39,6 +41,19 @@ export function SettingsRoute() {
       ? t('settings.cards.navigationRailPreference.values.collapsed')
       : t('settings.cards.navigationRailPreference.values.expanded')
   );
+  const describeFloatingExplorerState = (open: boolean) => (
+    open
+      ? t('settings.cards.routeExplorerPreference.values.expanded')
+      : t('settings.cards.routeExplorerPreference.values.collapsed')
+  );
+  const affectedRoutesLabel = [
+    t('sections.workspace.label'),
+    t('sections.captures.label'),
+    t('sections.history.label'),
+    t('sections.mocks.label'),
+    t('sections.environments.label'),
+    t('sections.scripts.label'),
+  ].join(', ');
 
   return (
     <RoutePanelTabsLayout
@@ -221,6 +236,44 @@ export function SettingsRoute() {
                   onClick={() => setNavRailCollapsed(true)}
                 >
                   {t('settings.cards.navigationRailPreference.actions.collapsed')}
+                </button>
+              </div>
+            </DetailViewerSection>
+            <DetailViewerSection
+              icon="overview"
+              title={t('settings.cards.routeExplorerPreference.title')}
+              description={t('settings.cards.routeExplorerPreference.description')}
+              className="workspace-surface-card"
+            >
+              <KeyValueMetaList
+                items={[
+                  { label: t('settings.cards.routeExplorerPreference.labels.currentState'), value: describeFloatingExplorerState(floatingExplorerDefaultOpen) },
+                  { label: t('settings.cards.routeExplorerPreference.labels.affectedRoutes'), value: affectedRoutesLabel },
+                  { label: t('settings.cards.routeExplorerPreference.labels.persistence'), value: t('settings.cards.routeExplorerPreference.values.persistence') },
+                  { label: t('settings.cards.routeExplorerPreference.labels.scope'), value: t('settings.cards.routeExplorerPreference.values.scope') },
+                ]}
+              />
+              <p className="shared-readiness-note">{t('settings.cards.routeExplorerPreference.helper')}</p>
+              <div
+                className="request-work-surface__future-actions"
+                role="group"
+                aria-label={t('settings.cards.routeExplorerPreference.actions.groupLabel')}
+              >
+                <button
+                  type="button"
+                  className={floatingExplorerDefaultOpen ? 'workspace-button workspace-button--secondary' : 'workspace-button workspace-button--ghost'}
+                  aria-pressed={floatingExplorerDefaultOpen}
+                  onClick={() => setFloatingExplorerDefaultOpen(true)}
+                >
+                  {t('settings.cards.routeExplorerPreference.actions.expanded')}
+                </button>
+                <button
+                  type="button"
+                  className={!floatingExplorerDefaultOpen ? 'workspace-button workspace-button--secondary' : 'workspace-button workspace-button--ghost'}
+                  aria-pressed={!floatingExplorerDefaultOpen}
+                  onClick={() => setFloatingExplorerDefaultOpen(false)}
+                >
+                  {t('settings.cards.routeExplorerPreference.actions.collapsed')}
                 </button>
               </div>
             </DetailViewerSection>

@@ -254,6 +254,30 @@ const enCatalog = {
         helper:
           'Use the shell toggle for a temporary change. This preference controls the default state used when the app opens again on this device.',
       },
+      routeExplorerPreference: {
+        title: 'Route explorer preference',
+        description:
+          'Choose how floating explorers open on this device for workspace and observation routes. This preference changes presentation only and does not affect runtime behavior.',
+        labels: {
+          currentState: 'Current state',
+          affectedRoutes: 'Affected routes',
+          persistence: 'Persistence',
+          scope: 'Scope',
+        },
+        values: {
+          persistence: 'Browser local storage',
+          scope: 'Presentation only',
+          expanded: 'Expanded',
+          collapsed: 'Collapsed',
+        },
+        actions: {
+          groupLabel: 'Route explorer preference',
+          expanded: 'Expanded by default',
+          collapsed: 'Collapsed by default',
+        },
+        helper:
+          'Use each route explorer toggle for temporary changes. This preference controls the default floating explorer state used when supported routes open on this device.',
+      },
       storagePaths: {
         title: 'Storage paths',
         description: 'These paths help operators confirm bootstrap state without adding mutation controls here.',
@@ -542,6 +566,30 @@ const koCatalog: CatalogShape<typeof enCatalog> = {
         },
         helper:
           '임시 변경은 shell 토글로 처리하고, 여기서는 앱을 다시 열었을 때 사용할 기본 상태를 지정합니다.',
+      },
+      routeExplorerPreference: {
+        title: '라우트 탐색기 기본 상태',
+        description:
+          '작업공간과 관측 라우트에서 floating explorer가 이 기기에서 기본적으로 어떻게 열릴지 선택합니다. 이 preference는 표시 방식만 바꾸며 runtime 동작에는 영향을 주지 않습니다.',
+        labels: {
+          currentState: '현재 상태',
+          affectedRoutes: '적용 라우트',
+          persistence: '저장 위치',
+          scope: '적용 범위',
+        },
+        values: {
+          persistence: '브라우저 로컬 스토리지',
+          scope: '표시 전용',
+          expanded: '펼침',
+          collapsed: '접힘',
+        },
+        actions: {
+          groupLabel: '라우트 탐색기 기본 상태',
+          expanded: '기본값을 펼침으로',
+          collapsed: '기본값을 접힘으로',
+        },
+        helper:
+          '임시 변경은 각 라우트의 탐색기 토글로 처리하고, 여기서는 지원되는 라우트가 열릴 때 사용할 기본 floating explorer 상태를 지정합니다.',
       },
       storagePaths: {
         title: '스토리지 경로',

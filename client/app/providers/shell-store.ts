@@ -12,26 +12,29 @@ export type FloatingExplorerRouteKey =
 type FloatingExplorerOpenByRoute = Record<FloatingExplorerRouteKey, boolean>;
 
 export const shellNavRailPreferenceStorageKey = 'local-request-inspector.shell.navRailCollapsed';
+export const shellFloatingExplorerDefaultOpenStorageKey = 'local-request-inspector.shell.floatingExplorerDefaultOpen';
+
+const floatingExplorerRouteKeys: FloatingExplorerRouteKey[] = [
+  'workspace',
+  'captures',
+  'history',
+  'mocks',
+  'environments',
+  'scripts',
+];
 
 interface ShellState {
   runtimeConnectionHealth: RuntimeConnectionHealth;
   navRailCollapsed: boolean;
+  floatingExplorerDefaultOpen: boolean;
   floatingExplorerOpenByRoute: FloatingExplorerOpenByRoute;
   setRuntimeConnectionHealth: (health: RuntimeConnectionHealth) => void;
   setNavRailCollapsed: (collapsed: boolean) => void;
+  setFloatingExplorerDefaultOpen: (open: boolean) => void;
   toggleNavRailCollapsed: () => void;
   setFloatingExplorerOpen: (route: FloatingExplorerRouteKey, open: boolean) => void;
   toggleFloatingExplorer: (route: FloatingExplorerRouteKey) => void;
 }
-
-const initialFloatingExplorerOpenByRoute: FloatingExplorerOpenByRoute = {
-  workspace: true,
-  captures: true,
-  history: true,
-  mocks: true,
-  environments: true,
-  scripts: true,
-};
 
 function readNavRailPreference() {
   if (typeof window === 'undefined') {
@@ -42,6 +45,18 @@ function readNavRailPreference() {
     return window.localStorage.getItem(shellNavRailPreferenceStorageKey) === 'true';
   } catch {
     return false;
+  }
+}
+
+function readFloatingExplorerDefaultOpenPreference() {
+  if (typeof window === 'undefined') {
+    return true;
+  }
+
+  try {
+    return window.localStorage.getItem(shellFloatingExplorerDefaultOpenStorageKey) !== 'false';
+  } catch {
+    return true;
   }
 }
 
@@ -57,11 +72,32 @@ function writeNavRailPreference(collapsed: boolean) {
   }
 }
 
-function createInitialShellState(): Pick<ShellState, 'runtimeConnectionHealth' | 'navRailCollapsed' | 'floatingExplorerOpenByRoute'> {
+function writeFloatingExplorerDefaultOpenPreference(open: boolean) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(shellFloatingExplorerDefaultOpenStorageKey, String(open));
+  } catch {
+    // Ignore storage write failures.
+  }
+}
+
+function createFloatingExplorerOpenByRoute(open: boolean): FloatingExplorerOpenByRoute {
+  return floatingExplorerRouteKeys.reduce<FloatingExplorerOpenByRoute>((accumulator, routeKey) => {
+    accumulator[routeKey] = open;
+    return accumulator;
+  }, {} as FloatingExplorerOpenByRoute);
+}
+
+function createInitialShellState(): Pick<ShellState, 'runtimeConnectionHealth' | 'navRailCollapsed' | 'floatingExplorerDefaultOpen' | 'floatingExplorerOpenByRoute'> {
+  const floatingExplorerDefaultOpen = readFloatingExplorerDefaultOpenPreference();
   return {
     runtimeConnectionHealth: 'idle',
     navRailCollapsed: readNavRailPreference(),
-    floatingExplorerOpenByRoute: { ...initialFloatingExplorerOpenByRoute },
+    floatingExplorerDefaultOpen,
+    floatingExplorerOpenByRoute: createFloatingExplorerOpenByRoute(floatingExplorerDefaultOpen),
   };
 }
 
@@ -71,6 +107,13 @@ export const useShellStore = create<ShellState>((set) => ({
   setNavRailCollapsed: (navRailCollapsed) => {
     writeNavRailPreference(navRailCollapsed);
     set({ navRailCollapsed });
+  },
+  setFloatingExplorerDefaultOpen: (floatingExplorerDefaultOpen) => {
+    writeFloatingExplorerDefaultOpenPreference(floatingExplorerDefaultOpen);
+    set({
+      floatingExplorerDefaultOpen,
+      floatingExplorerOpenByRoute: createFloatingExplorerOpenByRoute(floatingExplorerDefaultOpen),
+    });
   },
   toggleNavRailCollapsed: () => set((state) => {
     const navRailCollapsed = !state.navRailCollapsed;
@@ -95,6 +138,5 @@ export function resetShellStore() {
   const initialShellState = createInitialShellState();
   useShellStore.setState({
     ...initialShellState,
-    floatingExplorerOpenByRoute: { ...initialFloatingExplorerOpenByRoute },
   });
 }
