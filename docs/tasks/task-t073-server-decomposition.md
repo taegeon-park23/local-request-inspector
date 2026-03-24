@@ -34,6 +34,7 @@
 - Codex-side UI verification must use the Playwright skill workflow rather than rerunning `npm.cmd run test:ui`.
 
 ## Progress
+- Extracted request list/tree, collection CRUD, request-group CRUD, and saved-request CRUD routes into `server/register-request-resource-routes.js`.
 - Extracted authored resource bundle export/import routes into `server/register-resource-bundle-routes.js`.
 - Extracted environment CRUD, saved-script CRUD, and script-template read routes into `server/register-environment-script-routes.js`.
 - Extracted mock-rule CRUD, enable/disable, and single-rule bundle export routes into `server/register-mock-rule-routes.js`.

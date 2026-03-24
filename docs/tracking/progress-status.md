@@ -9,6 +9,7 @@
 ## Current Snapshot
 - `T073` is actively in progress.
 - The task currently owns server decomposition, child-process script-runner hardening, replay completion, linked-script transfer follow-up, and live-doc cleanup.
+- Request list/tree, collection CRUD, request-group CRUD, and saved-request CRUD routes now register through `server/register-request-resource-routes.js`.
 - Authored resource bundle export/import routes now register through `server/register-resource-bundle-routes.js`.
 - Environment CRUD, saved-script CRUD, and script-template read routes now register through `server/register-environment-script-routes.js`.
 - Mock-rule CRUD, enable/disable, and single-rule bundle export now register through `server/register-mock-rule-routes.js`.
