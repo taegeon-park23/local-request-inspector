@@ -52,6 +52,9 @@
 - Landed bounded execution follow-up APIs for cancellation, replay, persisted result reads, and persisted test-result reads while preserving the existing route payload shape.
 - Replaced the legacy in-server VM execution path with bounded runner modules, including worker-thread fallback for spawn-restricted sandbox environments and redaction-safe freeform console handling.
 - Rewired request-resource, environment/script, mock-rule, execution, resource-bundle, and legacy capture routes to use `repositories.resources.*` and `repositories.runtime.queries` instead of direct raw storage calls inside the route modules.
+- Extracted repository-backed environment/script helpers into `server/environment-script-resource-service.js` and mock-rule normalization/list helpers into `server/mock-rule-resource-service.js`, so `server.js` no longer carries those authored-resource bootstrap blocks inline.
+- Extracted authored resource-bundle import parsing, normalization, and plan preparation into `server/resource-bundle-import-service.js`, reducing `server.js` from 1686 lines to 1256 lines while preserving the existing route payload shape.
+- Added Node HTTP seam coverage for environment default reconciliation and script listing via `server/register-environment-script-routes.test.js`.
 - Removed production fallback-to-empty behavior from the workspace request tree/request list loader, so saved-resource route failures now surface as explicit degraded state instead of looking like an empty workspace.
 - Removed production fixture-backed draft/mock defaults from `client/features/request-builder/state/request-draft-store.ts` and `client/features/mocks/components/MocksRoute.tsx` so shipped authoring state no longer depends on seed fixture modules.
 - Added Node HTTP seam coverage for request-resource mutation, blocked execution failure paths, and resource-bundle preview/import under `server/*.test.js`, and extended `scripts/run-node-seam-tests.mjs` to include `server/`.
@@ -59,13 +62,13 @@
 - Removed linked saved-script export blocking by serializing/remapping linked request-stage bindings during resource bundle export/import.
 
 ## Current Verification Status
-- `npm.cmd run check` passed on 2026-03-24.
+- `npm.cmd run check` passed on 2026-03-25.
 - Codex-side Playwright smoke succeeded on the Vite dev route for workspace run, history replay-now, capture replay-now, and settings route load on 2026-03-24.
 - The Playwright skill CLI path was attempted first, but sandboxed `npx` package fetch failed in this environment, so browser validation continued with the built-in Playwright MCP against the same local app.
 
 ## Remaining Work
-- Continue reducing `server.js` so the remaining execution, import, and environment helpers move behind bounded services instead of staying in the bootstrap file.
-- Remove the remaining production false-success defaults and fixture-derived fallbacks that can still mask degraded runtime/resource state outside the newly updated workspace and mock/request-draft paths.
+- Continue reducing `server.js` so the remaining execution helpers move behind bounded services instead of staying in the bootstrap file.
+- Remove the remaining production false-success defaults and fixture-derived fallbacks that can still mask degraded runtime/resource state outside the newly updated workspace and mock/request-draft paths, including the runtime-events synthetic fallback path.
 - Finish the live-doc cleanup slice that upgrades already-decided PRD/architecture uncertainty markers and renames remaining implementation-only `Placeholder` artifacts where they are now misleading.
 
 
