@@ -35,6 +35,7 @@
 
 ## Progress
 - Added explicit repository seams for resource storage and runtime queries, and moved history/capture reads onto `repositories.runtime.queries`.
+- Extracted runtime cancellation/history/capture route registration out of `server.js` into `server/register-runtime-routes.js` so the execution entrypoint and runtime observation routes are no longer defined in one monolithic block.
 - Landed bounded execution follow-up APIs for cancellation, replay, persisted result reads, and persisted test-result reads while preserving the existing route payload shape.
 - Replaced the legacy in-server VM execution path with bounded runner modules, including worker-thread fallback for spawn-restricted sandbox environments and redaction-safe freeform console handling.
 - Completed history/capture replay-now flows so both routes open a replay draft, queue an immediate run, and return focus to the Workspace result panel.
