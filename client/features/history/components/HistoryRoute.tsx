@@ -195,7 +195,7 @@ function HistoryExplorerSummaryCard({
   );
 }
 
-export function HistoryPlaceholder() {
+export function HistoryRoute() {
   const navigate = useNavigate();
   const { t } = useI18n();
   const setFloatingExplorerOpen = useShellStore((state) => state.setFloatingExplorerOpen);

@@ -1,8 +1,8 @@
-﻿# T010 Frontend Workspace Shell Implementation Plan
+# T010 Frontend Workspace Shell Implementation Plan
 
 - **Purpose:** Define an implementation-ready, review-friendly plan for replacing the legacy single-page frontend with a React + Vite + TypeScript workspace shell using small, testable slices.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-23
+- **Last Updated:** 2026-03-24
 - **Related Documents:** `frontend-stack-and-shell.md`, `request-builder-mvp.md`, `script-editor-and-automation-ux.md`, `mock-engine-rules-spec.md`, `history-and-inspector-behavior.md`, `testing-and-qa-strategy.md`, `developer-environment-and-tooling-baseline.md`
 - **Status:** done
 - **Update Rule:** Update when shell boundaries, route strategy, slice sequencing, or shared primitive assumptions materially change.
@@ -255,7 +255,7 @@ The orchestration layer must not own:
 Interaction policy:
 1. Explorer selection in `Workspace` should move the user back to the main authoring surface so the newly selected request opens in the work area immediately.
 2. Request run completion in `Workspace` should move the user to the result panel and default the active result sub-tab to `response`.
-3. `RequestResultPanelPlaceholder` should consume the shared orchestration state for its active tab instead of maintaining isolated local tab state.
+3. `RequestResultPanel` should consume the shared orchestration state for its active tab instead of maintaining isolated local tab state.
 4. `Environments` and `Scripts` should reuse the same route-panel/open-state pattern so explorer-first management routes behave consistently with each other.
 
 ## 7.4 Anti-pattern to avoid

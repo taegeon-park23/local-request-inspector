@@ -405,7 +405,7 @@ function MocksExplorerSummaryCard({
   );
 }
 
-export function MocksPlaceholder() {
+export function MocksRoute() {
   const queryClient = useQueryClient();
   const { t } = useI18n();
   const setFloatingExplorerOpen = useShellStore((state) => state.setFloatingExplorerOpen);

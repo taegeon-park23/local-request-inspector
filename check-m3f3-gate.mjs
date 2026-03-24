@@ -27,13 +27,13 @@ const transformTargets = [
     expectedKind: 'module',
   },
   {
-    label: 'RequestWorkSurfacePlaceholder.tsx',
-    path: '/features/request-builder/components/RequestWorkSurfacePlaceholder.tsx',
+    label: 'RequestWorkSurface.tsx',
+    path: '/features/request-builder/components/RequestWorkSurface.tsx',
     expectedKind: 'module',
   },
   {
-    label: 'RequestResultPanelPlaceholder.tsx',
-    path: '/features/request-builder/components/RequestResultPanelPlaceholder.tsx',
+    label: 'RequestResultPanel.tsx',
+    path: '/features/request-builder/components/RequestResultPanel.tsx',
     expectedKind: 'module',
   },
 ];

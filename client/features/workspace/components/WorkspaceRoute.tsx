@@ -11,10 +11,10 @@ import {
   workspaceSavedRequestsQueryKey,
 } from '@client/features/request-builder/request-builder.api';
 import { useRequestBuilderCommands } from '@client/features/request-builder/hooks/useRequestBuilderCommands';
-import { RequestResultPanelPlaceholder } from '@client/features/request-builder/components/RequestResultPanelPlaceholder';
+import { RequestResultPanel } from '@client/features/request-builder/components/RequestResultPanel';
 import { useI18n } from '@client/app/providers/useI18n';
 import { RequestTabShell } from '@client/features/request-builder/components/RequestTabShell';
-import { RequestWorkSurfacePlaceholder } from '@client/features/request-builder/components/RequestWorkSurfacePlaceholder';
+import { RequestWorkSurface } from '@client/features/request-builder/components/RequestWorkSurface';
 import {
   createRequestPlacementFields,
   DEFAULT_REQUEST_GROUP_NAME,
@@ -291,7 +291,7 @@ function findWorkspaceRequestById(
   return null;
 }
 
-export function WorkspacePlaceholder() {
+export function WorkspaceRoute() {
   const queryClient = useQueryClient();
   const { locale, t } = useI18n();
   const [managerStatuses, setManagerStatuses] = useState<WorkspaceResourceManagerStatuses>({});
@@ -988,7 +988,7 @@ export function WorkspacePlaceholder() {
           isDeletingRequestGroup={deleteRequestGroupMutation.isPending}
         />
 
-        <RequestWorkSurfacePlaceholder
+        <RequestWorkSurface
           key={`work-${activeTabKey}`}
           activeTab={activeTab}
           onCreateRequest={handleCreateRequest}
@@ -998,13 +998,12 @@ export function WorkspacePlaceholder() {
       )}
       detail={(
         <aside className="shell-panel shell-panel--detail" aria-label={t('shell.routePanels.detailRegion')}>
-        <RequestResultPanelPlaceholder key={`detail-${activeTabKey}`} activeTab={activeTab} />
+        <RequestResultPanel key={`detail-${activeTabKey}`} activeTab={activeTab} />
         </aside>
       )}
     />
   );
 }
-
 
 
 

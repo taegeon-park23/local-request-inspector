@@ -34,6 +34,7 @@
 - Codex-side UI verification must use the Playwright skill workflow rather than rerunning `npm.cmd run test:ui`.
 
 ## Progress
+- Renamed misleading implemented `Placeholder` route/surface artifacts to `Route`, `RequestWorkSurface`, and `RequestResultPanel`, and removed thin placeholder alias wrappers that no longer matched the shipped UI.
 - Updated live PRD/architecture docs so already-landed stack, persistence, routing, and child-process runner decisions are no longer described as still-open by default.
 - Moved request placement, saved-request normalization, request-tree building, and bundle helper logic into `server/request-resource-service.js`, so `server.js` now wires those helpers through a bounded service seam instead of defining them inline.
 - Extracted the execution run entrypoint into `server/register-execution-routes.js`, leaving `server.js` with registration and helper orchestration instead of a direct `/api/executions/run` route body.

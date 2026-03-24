@@ -74,7 +74,7 @@ const authTypeOptions: Array<{ value: RequestDraftState['auth']['type']; label: 
   { value: 'api-key', label: 'API key' },
 ];
 
-interface RequestWorkSurfacePlaceholderProps {
+interface RequestWorkSurfaceProps {
   activeTab: RequestTabRecord | null;
   onCreateRequest: () => void;
   placementOptions: RequestPlacementCollectionOption[];
@@ -93,11 +93,11 @@ function formatSavedAt(
   return savedAtMessage(formatDateTime(savedAt, { timeStyle: 'short' }));
 }
 
-export function RequestWorkSurfacePlaceholder({
+export function RequestWorkSurface({
   activeTab,
   onCreateRequest,
   placementOptions,
-}: RequestWorkSurfacePlaceholderProps) {
+}: RequestWorkSurfaceProps) {
   const { t, formatDateTime } = useI18n();
   const [copiedScriptNamesByTabId, setCopiedScriptNamesByTabId] = useState<
     Record<string, Partial<Record<RequestScriptStageId, string>>>

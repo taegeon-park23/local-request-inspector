@@ -143,7 +143,7 @@ function CapturesExplorerSummaryCard({
   );
 }
 
-export function CapturesPlaceholder() {
+export function CapturesRoute() {
   const navigate = useNavigate();
   const { t } = useI18n();
   const setFloatingExplorerOpen = useShellStore((state) => state.setFloatingExplorerOpen);

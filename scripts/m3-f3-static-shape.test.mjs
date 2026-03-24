@@ -29,7 +29,7 @@ function extractSection(source, startMarker, endMarker) {
 }
 
 const requestWorkSurfaceSource = readRepoFile(
-  'client/features/request-builder/components/RequestWorkSurfacePlaceholder.tsx',
+  'client/features/request-builder/components/RequestWorkSurface.tsx',
 );
 
 assertContainsInOrder(
@@ -48,7 +48,7 @@ assertContainsInOrder(
 );
 
 const resultPanelSource = readRepoFile(
-  'client/features/request-builder/components/RequestResultPanelPlaceholder.tsx',
+  'client/features/request-builder/components/RequestResultPanel.tsx',
 );
 
 assertContainsInOrder(
