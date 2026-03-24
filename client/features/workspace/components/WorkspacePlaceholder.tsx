@@ -10,6 +10,7 @@ import {
   type SavedRequestResourceRecord,
   workspaceSavedRequestsQueryKey,
 } from '@client/features/request-builder/request-builder.api';
+import { useRequestBuilderCommands } from '@client/features/request-builder/hooks/useRequestBuilderCommands';
 import { RequestResultPanelPlaceholder } from '@client/features/request-builder/components/RequestResultPanelPlaceholder';
 import { useI18n } from '@client/app/providers/useI18n';
 import { RequestTabShell } from '@client/features/request-builder/components/RequestTabShell';
@@ -63,6 +64,7 @@ import { useWorkspaceShellStore } from '@client/features/workspace/state/workspa
 import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
 import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
 import { useShellStore } from '@client/app/providers/shell-store';
+import { useReplayRunStore } from '@client/shared/replay-run-store';
 
 type WorkspaceResourceManagerStatuses = Partial<Record<WorkspaceResourceManagerStatusScope, WorkspaceResourceManagerStatus>>;
 
@@ -692,6 +694,37 @@ export function WorkspacePlaceholder() {
   const activeDraft = activeTab ? draftsByTabId[activeTab.id]?.draft ?? null : null;
   const activeSavedRequest = findWorkspaceRequestById(explorerTree, activeTab?.requestId);
   const activeTabKey = activeTab?.id ?? 'empty';
+  const pendingReplayRunTabId = useReplayRunStore((state) => state.pendingReplayRunTabId);
+  const consumeReplayRun = useReplayRunStore((state) => state.consumeReplayRun);
+  const {
+    handleRun: handleReplayAutoRun,
+    runDisabledReason: replayRunDisabledReason,
+    runStatus: replayRunStatus,
+  } = useRequestBuilderCommands(activeTab, activeDraft);
+
+  useEffect(() => {
+    if (!activeTab || !activeDraft || pendingReplayRunTabId !== activeTab.id) {
+      return;
+    }
+
+    if (replayRunDisabledReason || replayRunStatus.status === 'pending') {
+      return;
+    }
+
+    if (!consumeReplayRun(activeTab.id)) {
+      return;
+    }
+
+    handleReplayAutoRun();
+  }, [
+    activeDraft,
+    activeTab,
+    consumeReplayRun,
+    handleReplayAutoRun,
+    pendingReplayRunTabId,
+    replayRunDisabledReason,
+    replayRunStatus.status,
+  ]);
 
   const openDraftFromSeed = async (draftSeed?: RequestDraftSeed) => {
     focusWorkspaceWorkSurface();
@@ -971,9 +1004,6 @@ export function WorkspacePlaceholder() {
     />
   );
 }
-
-
-
 
 
 

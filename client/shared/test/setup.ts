@@ -20,6 +20,7 @@ import { defaultScriptTemplateFixtureRecords, defaultSavedScriptFixtureRecords }
 import { defaultRuntimeStatusFixture } from '@client/features/settings/data/runtime-status-fixtures';
 import { resetWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
 import { resetWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
+import { resetReplayRunStore } from '@client/shared/replay-run-store';
 
 let objectUrlSequence = 0;
 
@@ -485,16 +486,110 @@ beforeEach(() => {
         : createApiError(`Captured request ${capturedRequestId} was not found.`);
     }
 
+    if (url.startsWith('/api/captured-requests/') && url.endsWith('/replay') && init?.method === 'POST') {
+      const capturedRequestId = url.split('/')[3] ?? '';
+      const capture = defaultCaptureFixtureRecords.find((item) => item.id === capturedRequestId);
+
+      return capture
+        ? createApiResponse({
+          request: {
+            name: `Replay of ${capture.method} ${capture.path}`,
+            workspaceId: 'local-workspace',
+            method: capture.method,
+            url: capture.url,
+            selectedEnvironmentId: null,
+            params: [],
+            headers: capture.requestHeaders.map((header, index) => ({
+              id: `capture-header-${index + 1}`,
+              key: header.key,
+              value: header.value,
+              enabled: true,
+            })),
+            bodyMode: capture.bodyModeHint,
+            bodyText: capture.bodyModeHint === 'none' ? '' : capture.bodyPreview,
+            formBody: [],
+            multipartBody: [],
+            auth: {
+              type: 'none',
+              bearerToken: '',
+              basicUsername: '',
+              basicPassword: '',
+              apiKeyName: '',
+              apiKeyValue: '',
+              apiKeyPlacement: 'header',
+            },
+            scripts: {
+              activeStage: 'pre-request',
+              preRequest: '',
+              postResponse: '',
+              tests: '',
+            },
+          },
+        })
+        : createApiError(`Captured request ${capturedRequestId} was not found.`);
+    }
+
     if (url === '/api/execution-histories' && (!init || !init.method || init.method === 'GET')) {
       return createApiResponse({ items: defaultHistoryFixtureScenario.listItems });
     }
 
-    if (url.startsWith('/api/execution-histories/') && (!init || !init.method || init.method === 'GET')) {
+    if (
+      url.startsWith('/api/execution-histories/')
+      && !url.endsWith('/result')
+      && !url.endsWith('/test-results')
+      && (!init || !init.method || init.method === 'GET')
+    ) {
       const executionId = url.split('/').pop() ?? '';
       const history = defaultHistoryFixtureScenario.listItems.find((item) => item.id === executionId || item.executionId === executionId);
 
       return history
         ? createApiResponse({ history })
+        : createApiError(`Execution history ${executionId} was not found.`);
+    }
+
+    if (url.startsWith('/api/execution-histories/') && url.endsWith('/result') && (!init || !init.method || init.method === 'GET')) {
+      const executionId = url.split('/')[3] ?? '';
+      const history = defaultHistoryFixtureScenario.listItems.find((item) => item.id === executionId || item.executionId === executionId);
+
+      return history
+        ? createApiResponse({
+          result: {
+            executionId: history.executionId,
+            responseStatus: history.transportStatusCode,
+            responseHeaders: [{ name: 'content-type', value: 'application/json' }],
+            responseBodyPreview: history.bodyPreview,
+            responseBodyRedacted: true,
+            stageStatus: {
+              transport: history.stageSummaries?.find((entry) => entry.stageId === 'transport'),
+            },
+            logSummary: {
+              consoleEntries: history.consoleLogCount,
+              consoleWarnings: history.consoleWarningCount,
+              consolePreview: history.consolePreview,
+            },
+            requestSnapshot: {},
+            redactionApplied: true,
+          },
+        })
+        : createApiError(`Execution history ${executionId} was not found.`);
+    }
+
+    if (url.startsWith('/api/execution-histories/') && url.endsWith('/test-results') && (!init || !init.method || init.method === 'GET')) {
+      const executionId = url.split('/')[3] ?? '';
+      const history = defaultHistoryFixtureScenario.listItems.find((item) => item.id === executionId || item.executionId === executionId);
+
+      return history
+        ? createApiResponse({
+          items: history.testsPreview.map((entry, index) => ({
+            id: `${executionId}-test-${index + 1}`,
+            executionId: history.executionId,
+            testName: entry,
+            status: entry.toLowerCase().includes('failed') ? 'failed' : 'passed',
+            message: entry,
+            details: { stage: 'tests' },
+            recordedAt: '2026-03-24T00:00:00.000Z',
+          })),
+        })
         : createApiError(`Execution history ${executionId} was not found.`);
     }
 
@@ -528,6 +623,7 @@ afterEach(() => {
   resetMocksStore();
   resetWorkspaceShellStore();
   resetWorkspaceUiStore();
+  resetReplayRunStore();
   resetRequestDraftStore();
   resetRequestCommandStore();
   vi.restoreAllMocks();

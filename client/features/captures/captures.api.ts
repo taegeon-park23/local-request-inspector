@@ -1,4 +1,5 @@
 import { RequestBuilderApiError } from '@client/features/request-builder/request-builder.api';
+import type { RequestDefinitionInput } from '@client/features/request-builder/request-builder.api';
 import type { CaptureRecord } from '@client/features/captures/capture.types';
 
 interface ApiEnvelope<TData> {
@@ -17,6 +18,7 @@ interface ApiErrorEnvelope {
 export const capturedRequestsQueryKey = ['captured-requests'] as const;
 export const capturedRequestDetailQueryKey = (capturedRequestId: string | null) =>
   ['captured-requests', capturedRequestId] as const;
+
 
 async function parseJsonResponse<TData>(response: Response): Promise<TData> {
   const responseText = await response.text();
@@ -49,4 +51,11 @@ export async function listCapturedRequests() {
 export async function readCapturedRequest(capturedRequestId: string) {
   const response = await fetch(`/api/captured-requests/${capturedRequestId}`);
   return parseJsonResponse<{ capture: CaptureRecord }>(response).then((payload) => payload.capture);
+}
+
+export async function createCapturedRequestReplay(capturedRequestId: string) {
+  const response = await fetch(`/api/captured-requests/${capturedRequestId}/replay`, {
+    method: 'POST',
+  });
+  return parseJsonResponse<{ request: RequestDefinitionInput }>(response).then((payload) => payload.request);
 }

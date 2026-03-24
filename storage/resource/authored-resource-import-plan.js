@@ -149,6 +149,24 @@ function prepareAuthoredResourceImport({
     }
   }
 
+  for (const scriptResource of Array.isArray(bundle.scripts) ? bundle.scripts : []) {
+    const importResult = createImportedScript(scriptResource, workspaceId, usedScriptNames);
+
+    if (importResult?.rejection) {
+      rejected.push(importResult.rejection);
+      continue;
+    }
+
+    if (!importResult?.record) {
+      throw new TypeError('Script import callback must return a record or a rejection.');
+    }
+
+    acceptedScripts.push(importResult.record);
+    if (importResult.renamed) {
+      renamedCount += 1;
+    }
+  }
+
   for (const requestResource of Array.isArray(bundle.requests) ? bundle.requests : []) {
     const importResult = createImportedRequest(requestResource, workspaceId, usedRequestNames);
 
@@ -180,24 +198,6 @@ function prepareAuthoredResourceImport({
     }
 
     acceptedMockRules.push(importResult.record);
-    if (importResult.renamed) {
-      renamedCount += 1;
-    }
-  }
-
-  for (const scriptResource of Array.isArray(bundle.scripts) ? bundle.scripts : []) {
-    const importResult = createImportedScript(scriptResource, workspaceId, usedScriptNames);
-
-    if (importResult?.rejection) {
-      rejected.push(importResult.rejection);
-      continue;
-    }
-
-    if (!importResult?.record) {
-      throw new TypeError('Script import callback must return a record or a rejection.');
-    }
-
-    acceptedScripts.push(importResult.record);
     if (importResult.renamed) {
       renamedCount += 1;
     }

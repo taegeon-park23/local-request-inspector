@@ -297,7 +297,7 @@ describe('AppRouter shell bootstrap', () => {
 
     fireEvent.click(screen.getByRole('link', { name: /history/i }));
     expect(await screen.findByRole('heading', { name: 'History' })).toBeInTheDocument();
-    expect(await screen.findByText(/Run Replay Now stays disabled in this slice because replay remains edit-first/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Run Replay Now opens a replay draft, immediately runs it, and moves focus to the Workspace result panel/i)).toBeInTheDocument();
 
     await user.click(await screen.findByRole('button', { name: 'Open Replay Draft' }));
     expect(await screen.findByRole('heading', { name: 'Workspace' })).toBeInTheDocument();

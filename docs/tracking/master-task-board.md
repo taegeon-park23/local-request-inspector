@@ -14,18 +14,20 @@
 ## Active Register
 | ID | Title | Status | Notes |
 | --- | --- | --- | --- |
-| None | No active bounded task | n/a | All previously completed work has been archived into `completed-work-summary.md`. |
+| T073 | Server Decomposition, Runtime Hardening, and Replay/Transfer Follow-Up | doing | Active bounded task doc: `../tasks/task-t073-server-decomposition.md`. This task owns the server split, child-process runner, observation follow-up, replay completion, linked-script transfer follow-up, and live-doc cleanup. |
 
 ## Current State
-- **Current active implementation:** none.
+- **Current active implementation:** `T073` server decomposition, runtime hardening, replay/transfer follow-up, and documentation cleanup.
 - **Most recent archived implementation:** `T072` request-stage linked reusable-script reference baseline.
-- **Highest-priority next step:** create one new bounded task before resuming implementation.
+- **Highest-priority next step:** continue `T073` by shrinking `server.js` further and finishing the remaining live-doc cleanup after the newly landed runtime/replay/transfer slice.
 - **Verification baseline:** `npm.cmd run check` and `npm.cmd run test:node` passed on 2026-03-24.
+- **Codex smoke baseline:** Playwright smoke passed on 2026-03-24 for workspace run, history replay-now, capture replay-now, and settings route load.
 - **Closed UI-test rerun policy:** agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
-- **User-managed local verification:** if UI verification is needed, instruct the user to run `npm.cmd run test:ui` locally and treat that result as authoritative.
+- **Codex UI verification lane:** use the Playwright skill workflow against the dev route or built shell when available.
+- **User-managed local verification:** if UI verification still needs the full UI suite, instruct the user to run `npm.cmd run test:ui` locally and treat that result as authoritative.
 
 ## Operational Notes
 - Completed task history now lives only in `completed-work-summary.md`.
 - `docs/tasks/` is reserved for active or incomplete task docs only.
 - Future work must start from a newly defined bounded task, not from reopening archived task files.
-- Saved-request export and workspace authored-resource export still reject linked request-stage bindings until a future task explicitly owns linked-request transfer semantics.
+- `T073` explicitly owns the linked request-stage transfer follow-up, replay completion, and runtime API expansion that were previously deferred.

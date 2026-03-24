@@ -1,6 +1,5 @@
 const express = require('express');
 const path = require('path');
-const vm = require('vm');
 const fs = require('fs');
 const { randomUUID } = require('node:crypto');
 const {
@@ -58,6 +57,7 @@ const {
   REQUEST_SCRIPT_STAGE_IDS,
   listLinkedRequestScriptStages,
   normalizeRequestScriptsState,
+  remapRequestScriptsForImport,
   resolveRequestScriptsForExecution,
   serializeRequestScriptsForBundle,
 } = require('./storage/resource/request-script-binding');
@@ -71,12 +71,40 @@ const {
   RUNTIME_REQUEST_SNAPSHOT_SCHEMA_VERSION,
 } = require('./storage/shared/constants');
 const { createRuntimeStatusSnapshot } = require('./storage/shared/runtime-status');
+const { runScriptStageInChildProcess } = require('./server/execution-script-runner');
+const { runLegacyCallbackInChildProcess } = require('./server/legacy-callback-runner');
 
 const app = express();
 const PORT = 5671;
 const persistence = bootstrapPersistence();
 const resourceStorage = persistence.resourceStorage;
 const runtimeStorage = persistence.runtimeStorage;
+const repositories = persistence.repositories;
+const activeExecutions = new Map();
+
+function registerActiveExecution(executionId) {
+  const controller = new AbortController();
+  activeExecutions.set(executionId, {
+    controller,
+    startedAt: new Date().toISOString(),
+  });
+  return controller;
+}
+
+function clearActiveExecution(executionId) {
+  activeExecutions.delete(executionId);
+}
+
+function cancelActiveExecution(executionId) {
+  const activeExecution = activeExecutions.get(executionId);
+
+  if (!activeExecution) {
+    return false;
+  }
+
+  activeExecution.controller.abort('Execution was cancelled by API request.');
+  return true;
+}
 
 const clientDistPath = path.join(__dirname, 'client', 'dist');
 const clientIndexPath = path.join(clientDistPath, 'index.html');
@@ -653,31 +681,38 @@ function normalizePersistedRequestRecord(record) {
   };
 }
 
-function createRequestScriptsExportBlockedError(code, message, details = {}) {
-  const error = new Error(message);
-  error.code = code;
-  error.details = details;
-  return error;
+function serializeRequestRecordForBundle(record) {
+  return {
+    ...record,
+    scripts: serializeRequestScriptsForBundle(record.scripts),
+  };
 }
 
-function serializeRequestRecordForBundle(record, options = {}) {
-  try {
-    return {
-      ...record,
-      scripts: serializeRequestScriptsForBundle(record.scripts),
-    };
-  } catch {
-    throw createRequestScriptsExportBlockedError(
-      options.code || 'request_linked_script_export_blocked',
-      options.message || 'Linked saved scripts must be detached to inline copies before authored-resource export.',
-      {
-        requestId: record.id,
-        requestName: record.name,
-        linkedStages: listLinkedRequestScriptStages(record.scripts),
-        ...(options.details || {}),
-      },
-    );
+function collectRequestBundleSavedScripts(requestRecord, workspaceId) {
+  const linkedStages = listLinkedRequestScriptStages(requestRecord?.scripts);
+
+  if (linkedStages.length === 0) {
+    return [];
   }
+
+  const workspaceScriptsById = new Map(
+    listWorkspaceSavedScriptRecords(workspaceId).map((record) => [record.id, record]),
+  );
+  const referencedScripts = [];
+  const seenScriptIds = new Set();
+
+  for (const linkedStage of linkedStages) {
+    const savedScript = workspaceScriptsById.get(linkedStage.savedScriptId);
+
+    if (!savedScript || seenScriptIds.has(savedScript.id)) {
+      continue;
+    }
+
+    seenScriptIds.add(savedScript.id);
+    referencedScripts.push(savedScript);
+  }
+
+  return referencedScripts.sort(compareSavedScriptRecords);
 }
 
 function createLinkedScriptRunStageResult(error) {
@@ -1166,18 +1201,7 @@ function createResponsePreviewPolicy({
 
 const SCRIPT_TIMEOUT_MS = 250;
 const SCRIPT_CONSOLE_PREVIEW_LIMIT = 8;
-const SCRIPT_TEST_PREVIEW_LIMIT = 8;
 const SCRIPT_MESSAGE_LIMIT = 240;
-const FORBIDDEN_SCRIPT_TOKEN_PATTERN = /\b(?:process|require|module|exports|__dirname|__filename|globalThis|global|fs|path|child_process)\b/;
-
-class ScriptStageExecutionError extends Error {
-  constructor(code, message, status = 'failed') {
-    super(message);
-    this.name = 'ScriptStageExecutionError';
-    this.code = code;
-    this.stageStatus = status;
-  }
-}
 
 function redactFreeformText(value) {
   const normalizedValue = typeof value === 'string' ? value : String(value ?? '');
@@ -1360,463 +1384,97 @@ function createScriptStageFailureResult(stageId, message, errorCode = 'script_st
   };
 }
 
-function createMutableRowCollection(rows) {
-  const findRowIndex = (key) =>
-    rows.findIndex((row) => row.enabled !== false && typeof row.key === 'string' && row.key.toLowerCase() === String(key).toLowerCase());
+async function executeScriptStage(stageId, scriptSource, options) {
+  const childResult = await runScriptStageInChildProcess({
+    stageId,
+    scriptSource,
+    executionRequest: options.executionRequest,
+    target: options.target,
+    responseStatus: options.responseStatus,
+    responseHeaders: options.responseHeaders,
+    responseBodyText: options.responseBodyText,
+    signal: options.signal,
+  });
 
-  return {
-    get(name) {
-      const index = findRowIndex(name);
-      return index >= 0 ? rows[index].value : undefined;
-    },
-    set(name, value) {
-      const normalizedName = String(name ?? '').trim();
-      if (normalizedName.length === 0) {
-        throw new ScriptStageExecutionError('script_mutation_blocked', 'Empty keys are not supported in request mutations.', 'blocked');
-      }
-
-      const index = findRowIndex(normalizedName);
-      if (index >= 0) {
-        rows[index].value = String(value ?? '');
-        rows[index].enabled = true;
-        return;
-      }
-
-      rows.push({
-        id: randomUUID(),
-        key: normalizedName,
-        value: String(value ?? ''),
-        enabled: true,
-      });
-    },
-    delete(name) {
-      const index = findRowIndex(name);
-      if (index >= 0) {
-        rows.splice(index, 1);
-      }
-    },
-    entries() {
-      return rows
-        .filter((row) => row.enabled !== false && typeof row.key === 'string' && row.key.trim().length > 0)
-        .map((row) => [row.key, row.value]);
-    },
-  };
-}
-
-function createMutableRequestContext(executionRequest) {
-  const headers = createMutableRowCollection(executionRequest.headers);
-  const params = createMutableRowCollection(executionRequest.params);
-
-  return {
-    get method() {
-      return executionRequest.method;
-    },
-    set method(nextMethod) {
-      executionRequest.method = String(nextMethod || executionRequest.method || 'GET').toUpperCase();
-    },
-    get url() {
-      return executionRequest.url;
-    },
-    set url(nextUrl) {
-      executionRequest.url = String(nextUrl || '');
-    },
-    headers,
-    params,
-    body: {
-      get mode() {
-        return executionRequest.bodyMode;
-      },
-      get text() {
-        return executionRequest.bodyText || '';
-      },
-      setText(nextBodyText) {
-        if (executionRequest.bodyMode === 'form-urlencoded' || executionRequest.bodyMode === 'multipart-form-data') {
-          throw new ScriptStageExecutionError(
-            'script_mutation_blocked',
-            'Pre-request body text mutation is limited to none, text, or json modes in this slice.',
-            'blocked',
-          );
-        }
-
-        executionRequest.bodyMode = executionRequest.bodyMode === 'none' ? 'text' : executionRequest.bodyMode;
-        executionRequest.bodyText = String(nextBodyText ?? '');
-      },
-      clear() {
-        executionRequest.bodyMode = 'none';
-        executionRequest.bodyText = '';
-        executionRequest.formBody = [];
-        executionRequest.multipartBody = [];
-      },
-    },
-    auth: {
-      get type() {
-        return executionRequest.auth.type;
-      },
-      setBearerToken(token) {
-        executionRequest.auth = {
-          ...cloneAuth(executionRequest.auth),
-          type: 'bearer',
-          bearerToken: String(token ?? ''),
-        };
-      },
-      clear() {
-        executionRequest.auth = cloneAuth({ type: 'none' });
-      },
-      setBasic() {
-        throw new ScriptStageExecutionError(
-          'script_mutation_blocked',
-          'Basic auth mutation is not available in this bounded script slice.',
-          'blocked',
-        );
-      },
-      setApiKey() {
-        throw new ScriptStageExecutionError(
-          'script_mutation_blocked',
-          'API key auth mutation is not available in this bounded script slice.',
-          'blocked',
-        );
-      },
-    },
-  };
-}
-
-function createReadonlyHeadersContext(headerEntries) {
-  const headersMap = new Map(
-    (headerEntries || []).map((header) => [String(header.name || header.key).toLowerCase(), String(header.value || '')]),
-  );
-
-  return {
-    get(name) {
-      return headersMap.get(String(name).toLowerCase());
-    },
-    entries() {
-      return Array.from(headersMap.entries());
-    },
-  };
-}
-
-function createReadonlyRequestContext(executionRequest, target) {
-  const normalizedTarget = target ? new URL(target.toString()) : new URL(executionRequest.url);
-  const headers = createExecutionHeaders(executionRequest.headers, executionRequest.auth);
-
-  return {
-    method: executionRequest.method,
-    url: normalizedTarget.toString(),
-    headers: createReadonlyHeadersContext(
-      Array.from(headers.entries()).map(([name, value]) => ({ name, value })),
-    ),
-    params: Array.from(normalizedTarget.searchParams.entries()).map(([key, value]) => ({ key, value })),
-    bodyMode: executionRequest.bodyMode,
-    bodyText: executionRequest.bodyText || '',
-    authSummary: createAuthSummary(executionRequest.auth),
-  };
-}
-
-function createReadonlyResponseContext(responseStatus, responseHeaders, responseBodyText) {
-  let parsedJson;
-  let parsedJsonReady = false;
-
-  return {
-    status: responseStatus,
-    ok: typeof responseStatus === 'number' && responseStatus >= 200 && responseStatus < 300,
-    headers: createReadonlyHeadersContext(responseHeaders),
-    body: {
-      text: responseBodyText,
-      preview: truncatePreview(responseBodyText, 4000),
-      json() {
-        if (!parsedJsonReady) {
-          parsedJson = JSON.parse(responseBodyText);
-          parsedJsonReady = true;
-        }
-
-        return redactStructuredJson(parsedJson);
-      },
-    },
-  };
-}
-
-function formatConsoleArgument(value) {
-  if (typeof value === 'string') {
-    return redactFreeformText(value);
-  }
-
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value);
-  }
-
-  if (value === null || value === undefined) {
-    return String(value);
-  }
-
-  try {
-    return truncatePreview(JSON.stringify(redactStructuredJson(value), null, 2), SCRIPT_MESSAGE_LIMIT);
-  } catch {
-    return redactFreeformText(String(value));
-  }
-}
-
-function createConsoleSink(stageId) {
-  const stageLabel = createStageLabel(stageId);
-  const previewEntries = [];
-  let entryCount = 0;
-  let warningCount = 0;
-
-  const pushEntry = (level, args) => {
-    const message = args.map((value) => formatConsoleArgument(value)).join(' ');
-    const prefixedMessage = `[${stageLabel}] ${message}`;
-
-    entryCount += 1;
-    if (level !== 'log') {
-      warningCount += 1;
-    }
-
-    if (previewEntries.length < SCRIPT_CONSOLE_PREVIEW_LIMIT) {
-      previewEntries.push(prefixedMessage);
-    }
-  };
-
-  return {
-    previewEntries,
-    get entryCount() {
-      return entryCount;
-    },
-    get warningCount() {
-      return warningCount;
-    },
-    consoleApi: {
-      log(...args) {
-        pushEntry('log', args);
-      },
-      warn(...args) {
-        pushEntry('warn', args);
-      },
-      error(...args) {
-        pushEntry('error', args);
-      },
-    },
-  };
-}
-
-function createStageSummaryController() {
-  let currentSummary = '';
-
-  return {
-    stageSummaryApi: {
-      set(nextSummary) {
-        currentSummary = redactFreeformText(nextSummary);
-      },
-      clear() {
-        currentSummary = '';
-      },
-    },
-    readSummary() {
-      return currentSummary;
-    },
-  };
-}
-
-function createTestsApi() {
-  const testResults = [];
-  let currentTestName = null;
-  let assertionSequence = 1;
-
-  const pushResult = (name, status, message) => {
-    testResults.push({
-      id: randomUUID(),
-      name,
-      status,
-      message: redactFreeformText(message),
-    });
-  };
-
-  const assertionApi = {
-    assert(condition, message = 'Assertion failed.') {
-      const testName = currentTestName || `Assertion ${assertionSequence++}`;
-      if (condition) {
-        pushResult(testName, 'passed', message);
-        return true;
-      }
-
-      pushResult(testName, 'failed', message);
-      throw new ScriptStageExecutionError('script_assertion_failed', message, 'failed');
-    },
-    test(name, callback) {
-      const normalizedName = redactFreeformText(name || `Assertion ${assertionSequence}`);
-      const previousTestName = currentTestName;
-      currentTestName = normalizedName;
-      const beforeCount = testResults.length;
-
-      try {
-        callback();
-
-        if (testResults.length === beforeCount) {
-          pushResult(normalizedName, 'passed', `${normalizedName} passed.`);
-        }
-      } catch (error) {
-        if (testResults.length === beforeCount) {
-          pushResult(
-            normalizedName,
-            'failed',
-            error instanceof Error ? error.message : `${normalizedName} failed.`,
-          );
-        }
-      } finally {
-        currentTestName = previousTestName;
-      }
-    },
-    readResults() {
-      return testResults.slice(0, SCRIPT_TEST_PREVIEW_LIMIT);
-    },
-  };
-
-  return assertionApi;
-}
-
-function createScriptContext(stageId, options) {
-  const consoleSink = createConsoleSink(stageId);
-  const summaryController = createStageSummaryController();
-  const baseContext = {
-    console: consoleSink.consoleApi,
-    summary: summaryController.stageSummaryApi,
-  };
-
-  if (stageId === 'pre-request') {
+  if (childResult.outcome === 'skipped') {
     return {
-      context: {
-        ...baseContext,
-        request: createMutableRequestContext(options.executionRequest),
-      },
-      consoleSink,
-      summaryController,
-      testsApi: null,
-    };
-  }
-
-  const sharedContext = {
-    ...baseContext,
-    request: createReadonlyRequestContext(options.executionRequest, options.target),
-    response: createReadonlyResponseContext(
-      options.responseStatus,
-      options.responseHeaders,
-      options.responseBodyText,
-    ),
-  };
-
-  if (stageId === 'tests') {
-    const testsApi = createTestsApi();
-    return {
-      context: {
-        ...sharedContext,
-        assert: testsApi.assert,
-        test: testsApi.test,
-      },
-      consoleSink,
-      summaryController,
-      testsApi,
-    };
-  }
-
-  return {
-    context: sharedContext,
-    consoleSink,
-    summaryController,
-    testsApi: null,
-  };
-}
-
-function executeScriptStage(stageId, scriptSource, options) {
-  const normalizedSource = typeof scriptSource === 'string' ? scriptSource.trim() : '';
-
-  if (normalizedSource.length === 0) {
-    return createEmptyScriptStageResult(stageId, `No ${createStageLabel(stageId)} script was saved for this request.`);
-  }
-
-  if (FORBIDDEN_SCRIPT_TOKEN_PATTERN.test(normalizedSource)) {
-    return createScriptStageBlockedResult(
-      stageId,
-      `${createStageLabel(stageId)} attempted to use a blocked runtime capability. Only bounded request, response, console, summary, and test helpers are available in this slice.`,
-    );
-  }
-
-  const { context, consoleSink, summaryController, testsApi } = createScriptContext(stageId, options);
-
-  try {
-    const script = new vm.Script(normalizedSource, {
-      displayErrors: true,
-      filename: `${stageId}-script.js`,
-    });
-
-    script.runInNewContext(context, { timeout: SCRIPT_TIMEOUT_MS });
-  } catch (error) {
-    if (error?.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT' || /timed out/i.test(error?.message || '')) {
-      return createScriptStageTimeoutResult(stageId);
-    }
-
-    if (error instanceof ScriptStageExecutionError && error.stageStatus === 'blocked') {
-      return {
-        ...createScriptStageBlockedResult(stageId, error.message, error.code),
-        consoleEntries: consoleSink.previewEntries,
-        consoleLogCount: consoleSink.entryCount,
-        consoleWarningCount: consoleSink.warningCount,
-      };
-    }
-
-    const message = error instanceof Error ? error.message : `${createStageLabel(stageId)} failed.`;
-    return {
-      ...createScriptStageFailureResult(
+      stageResult: createEmptyScriptStageResult(
         stageId,
-        message,
-        error?.code || 'script_stage_failed',
-        consoleSink.previewEntries,
-        consoleSink.warningCount,
+        childResult.summary || `No ${createStageLabel(stageId)} script was saved for this request.`,
       ),
-      testResults: testsApi ? testsApi.readResults() : [],
+      ...(childResult.mutatedExecutionRequest ? { executionRequest: childResult.mutatedExecutionRequest } : {}),
     };
   }
 
-  if (stageId === 'pre-request') {
-    const summary = summaryController.readSummary() || 'Pre-request script completed before transport.';
+  if (childResult.outcome === 'timed_out') {
     return {
-      ...createStageStatusRecord(stageId, 'succeeded', summary),
-      consoleEntries: consoleSink.previewEntries,
-      consoleLogCount: consoleSink.entryCount,
-      consoleWarningCount: consoleSink.warningCount,
-      testResults: [],
+      stageResult: createScriptStageTimeoutResult(stageId),
     };
   }
 
-  if (stageId === 'post-response') {
-    const summary = summaryController.readSummary()
-      || (consoleSink.entryCount > 0
-        ? 'Post-response script completed and emitted bounded console diagnostics.'
-        : 'Post-response script completed without derived diagnostics.');
-
+  if (childResult.outcome === 'blocked' || childResult.outcome === 'cancelled') {
     return {
-      ...createStageStatusRecord(stageId, 'succeeded', summary),
-      consoleEntries: consoleSink.previewEntries,
-      consoleLogCount: consoleSink.entryCount,
-      consoleWarningCount: consoleSink.warningCount,
-      testResults: [],
+      stageResult: {
+        ...createScriptStageBlockedResult(
+          stageId,
+          childResult.errorSummary
+            || childResult.summary
+            || `${createStageLabel(stageId)} was blocked before completion.`,
+          childResult.errorCode || (childResult.outcome === 'cancelled' ? 'execution_cancelled' : 'script_capability_blocked'),
+        ),
+        consoleEntries: Array.isArray(childResult.consoleEntries) ? childResult.consoleEntries : [],
+        consoleLogCount: Number(childResult.consoleLogCount || 0),
+        consoleWarningCount: Number(childResult.consoleWarningCount || 0),
+        testResults: Array.isArray(childResult.testResults) ? childResult.testResults : [],
+      },
+      ...(childResult.mutatedExecutionRequest ? { executionRequest: childResult.mutatedExecutionRequest } : {}),
     };
   }
 
-  const testResults = testsApi ? testsApi.readResults() : [];
-  const failedAssertions = testResults.filter((result) => result.status === 'failed').length;
-  const passedAssertions = testResults.filter((result) => result.status === 'passed').length;
-  const testsSummary = failedAssertions > 0
-    ? `${failedAssertions} assertion(s) failed in Tests.`
-    : testResults.length > 0
-      ? `${passedAssertions} assertion(s) passed in Tests.`
-      : 'Tests script completed without recording assertions.';
+  if (childResult.outcome === 'failed') {
+    return {
+      stageResult: {
+        ...createScriptStageFailureResult(
+          stageId,
+          childResult.errorSummary || childResult.summary || `${createStageLabel(stageId)} failed.`,
+          childResult.errorCode || 'script_stage_failed',
+          Array.isArray(childResult.consoleEntries) ? childResult.consoleEntries : [],
+          Number(childResult.consoleWarningCount || 0),
+        ),
+        consoleLogCount: Number(childResult.consoleLogCount || 0),
+        testResults: Array.isArray(childResult.testResults) ? childResult.testResults : [],
+      },
+      ...(childResult.mutatedExecutionRequest ? { executionRequest: childResult.mutatedExecutionRequest } : {}),
+    };
+  }
+
+  const baseStageResult = {
+    ...createStageStatusRecord(
+      stageId,
+      stageId === 'tests'
+        && Array.isArray(childResult.testResults)
+        && childResult.testResults.some((result) => result.status === 'failed')
+        ? 'failed'
+        : 'succeeded',
+      childResult.summary || `${createStageLabel(stageId)} completed.`,
+      ...(stageId === 'tests'
+        && Array.isArray(childResult.testResults)
+        && childResult.testResults.some((result) => result.status === 'failed')
+        ? {
+          errorCode: childResult.errorCode || 'script_assertion_failed',
+          errorSummary: childResult.errorSummary || childResult.summary,
+        }
+        : {}),
+    ),
+    consoleEntries: Array.isArray(childResult.consoleEntries) ? childResult.consoleEntries : [],
+    consoleLogCount: Number(childResult.consoleLogCount || 0),
+    consoleWarningCount: Number(childResult.consoleWarningCount || 0),
+    testResults: Array.isArray(childResult.testResults) ? childResult.testResults : [],
+  };
 
   return {
-    ...createStageStatusRecord(stageId, failedAssertions > 0 ? 'failed' : 'succeeded', summaryController.readSummary() || testsSummary, {
-      ...(failedAssertions > 0 ? { errorCode: 'script_assertion_failed', errorSummary: testsSummary } : {}),
-    }),
-    consoleEntries: consoleSink.previewEntries,
-    consoleLogCount: consoleSink.entryCount,
-    consoleWarningCount: consoleSink.warningCount,
-    testResults,
+    stageResult: baseStageResult,
+    ...(childResult.mutatedExecutionRequest ? { executionRequest: childResult.mutatedExecutionRequest } : {}),
   };
 }
 
@@ -1832,6 +1490,13 @@ function createTransportFailureStageResult(error) {
   return createStageStatusRecord('transport', 'failed', 'Transport failed before a response was received.', {
     errorCode: error?.code || error?.cause?.code || 'transport_failed',
     errorSummary: error?.message || 'Transport failed before a response was received.',
+  });
+}
+
+function createTransportCancelledStageResult(reason = 'Transport was cancelled before a response was received.') {
+  return createStageStatusRecord('transport', 'blocked', reason, {
+    errorCode: 'execution_cancelled',
+    errorSummary: reason,
   });
 }
 
@@ -1875,6 +1540,10 @@ function createResolvedEnvironmentLabel(environmentRecord) {
 
 function deriveExecutionOutcome(stageResults) {
   const normalizedResults = Object.values(stageResults || {}).filter(Boolean);
+
+  if (normalizedResults.some((result) => result.errorCode === 'execution_cancelled')) {
+    return 'Cancelled';
+  }
 
   if (normalizedResults.some((result) => result.status === 'blocked')) {
     return 'Blocked';
@@ -2002,6 +1671,8 @@ function createPersistedExecutionStatus(executionOutcome) {
   switch (executionOutcome) {
     case 'Succeeded':
       return 'succeeded';
+    case 'Cancelled':
+      return 'cancelled';
     case 'Blocked':
       return 'blocked';
     case 'Timed out':
@@ -2059,6 +1730,10 @@ function createTransportOutcomeLabel(responseStatus, executionOutcome) {
 
   if (typeof responseStatus === 'number') {
     return `HTTP ${responseStatus}`;
+  }
+
+  if (executionOutcome === 'Cancelled') {
+    return 'Cancelled before transport completion';
   }
 
   return executionOutcome === 'Blocked' ? 'Blocked before transport' : 'No response';
@@ -2677,6 +2352,61 @@ function createCaptureEventPayload(captureRecord) {
   };
 }
 
+function createCaptureReplayRequestSeed(runtimeRecord) {
+  const captureUrl = new URL(runtimeRecord.url);
+  const params = Array.from(captureUrl.searchParams.entries()).map(([key, value], index) => ({
+    id: `capture-param-${index + 1}`,
+    key,
+    value,
+    enabled: true,
+  }));
+  const headerRows = [];
+  let auth = cloneAuth({ type: 'none' });
+
+  for (const [key, value] of Object.entries(runtimeRecord.requestHeaders || {})) {
+    const normalizedKey = String(key);
+    const normalizedValue = String(value ?? '');
+
+    if (normalizedKey.toLowerCase() === 'authorization' && normalizedValue.startsWith('Bearer ')) {
+      auth = {
+        ...cloneAuth({ type: 'none' }),
+        type: 'bearer',
+        bearerToken: normalizedValue.slice('Bearer '.length).trim(),
+      };
+      continue;
+    }
+
+    headerRows.push({
+      id: `capture-header-${headerRows.length + 1}`,
+      key: normalizedKey,
+      value: normalizedValue,
+      enabled: true,
+    });
+  }
+
+  captureUrl.search = '';
+  captureUrl.hash = '';
+
+  return createExecutionRequestSeed({
+    workspaceId: runtimeRecord.workspaceId || DEFAULT_WORKSPACE_ID,
+    name: `Replay of ${runtimeRecord.method} ${runtimeRecord.path || captureUrl.pathname}`,
+    method: runtimeRecord.method,
+    url: captureUrl.toString(),
+    params,
+    headers: headerRows,
+    bodyMode: runtimeRecord.requestBodyMode === 'json'
+      ? 'json'
+      : runtimeRecord.requestBodyMode === 'text'
+        ? 'text'
+        : 'none',
+    bodyText: runtimeRecord.requestBodyMode === 'none' ? '' : (runtimeRecord.requestBodyPreview || ''),
+    formBody: [],
+    multipartBody: [],
+    auth,
+    scripts: {},
+  });
+}
+
 function createExecutionRequestTarget(url, params, auth) {
   const target = new URL(url);
 
@@ -3249,7 +2979,7 @@ function createImportedRequestGroupResource(input, workspaceId, state) {
   };
 }
 
-function createImportedRequestRecord(input, workspaceId, usedNames) {
+function createImportedRequestRecord(input, workspaceId, usedNames, state) {
   const compatibilityError = validateImportedResourceCompatibility(
     input,
     RESOURCE_RECORD_KINDS.REQUEST,
@@ -3271,6 +3001,28 @@ function createImportedRequestRecord(input, workspaceId, usedNames) {
   }
 
   const importedName = createImportedResourceName(input.name, usedNames);
+  const remappedScripts = remapRequestScriptsForImport(
+    input.scripts,
+    (sourceSavedScriptId, linkedStage) =>
+      state.importedScriptBySourceId.get(normalizeText(sourceSavedScriptId))
+      || state.importedScriptBySourceName.get(normalizeText(linkedStage?.savedScriptNameSnapshot).toLowerCase())
+      || null,
+  );
+
+  if (remappedScripts.unresolvedLinks.length > 0) {
+    const unresolvedLink = remappedScripts.unresolvedLinks[0];
+    const unresolvedScriptName = normalizeText(unresolvedLink.savedScriptNameSnapshot)
+      || normalizeText(unresolvedLink.savedScriptId)
+      || 'linked saved script';
+
+    return {
+      rejection: createImportedResourceRejection(
+        'request',
+        `Request references linked saved script "${unresolvedScriptName}" in the ${unresolvedLink.stageId} stage, but that script is not available in this bundle.`,
+        input?.name,
+      ),
+    };
+  }
 
   return {
     record: normalizeSavedRequest(
@@ -3279,6 +3031,7 @@ function createImportedRequestRecord(input, workspaceId, usedNames) {
         id: randomUUID(),
         workspaceId,
         name: importedName,
+        scripts: remappedScripts.scripts,
       },
       null,
       workspaceId,
@@ -3324,7 +3077,7 @@ function createImportedMockRuleResource(input, workspaceId, usedNames) {
   };
 }
 
-function createImportedScriptResource(input, workspaceId, usedNames) {
+function createImportedScriptResource(input, workspaceId, usedNames, state) {
   const compatibilityError = validateImportedResourceCompatibility(
     input,
     RESOURCE_RECORD_KINDS.SCRIPT,
@@ -3346,17 +3099,23 @@ function createImportedScriptResource(input, workspaceId, usedNames) {
   }
 
   const importedName = createImportedResourceName(input.name, usedNames);
+  const record = createSavedScriptRecord(
+    {
+      ...input,
+      id: randomUUID(),
+      name: importedName,
+    },
+    null,
+    workspaceId,
+  );
+
+  if (normalizeText(input?.id)) {
+    state.importedScriptBySourceId.set(normalizeText(input.id), record);
+  }
+  state.importedScriptBySourceName.set(normalizeText(input?.name).toLowerCase(), record);
 
   return {
-    record: createSavedScriptRecord(
-      {
-        ...input,
-        id: randomUUID(),
-        name: importedName,
-      },
-      null,
-      workspaceId,
-    ),
+    record,
     renamed: importedName !== String(input.name || '').trim(),
   };
 }
@@ -3407,6 +3166,8 @@ function prepareWorkspaceResourceBundleImport(bundle, workspaceId) {
     usedRequestGroupKeys: new Set(
       existingRequestGroups.map((record) => `${record.collectionId}::${normalizeText(record.name).toLowerCase()}`),
     ),
+    importedScriptBySourceId: new Map(),
+    importedScriptBySourceName: new Map(),
   };
 
   return prepareAuthoredResourceImport({
@@ -3459,10 +3220,12 @@ function prepareWorkspaceResourceBundleImport(bundle, workspaceId) {
         },
         nextWorkspaceId,
         usedNames,
+        importState,
       );
     },
     createImportedMockRule: createImportedMockRuleResource,
-    createImportedScript: createImportedScriptResource,
+    createImportedScript: (input, nextWorkspaceId, usedNames) =>
+      createImportedScriptResource(input, nextWorkspaceId, usedNames, importState),
     sortAcceptedCollections: (records) => [...records].sort(compareRequestPlacementRecords),
     sortAcceptedRequestGroups: (records) => sortRequestGroups(records),
     sortAcceptedRequests: (records) => [...records].sort(compareSavedRequestRecords),
@@ -4237,23 +4000,13 @@ app.get('/api/workspaces/:workspaceId/resource-bundle', (req, res) => {
       workspaceId: req.params.workspaceId,
       collections,
       requestGroups,
-      requests: requests.map((requestRecord) => serializeRequestRecordForBundle(requestRecord, {
-        code: 'workspace_linked_script_export_blocked',
-        message: 'Workspace export is blocked because one or more saved requests still use linked saved scripts. Detach them to inline copies before exporting.',
-        details: {
-          workspaceId: req.params.workspaceId,
-        },
-      })),
+      requests: requests.map((requestRecord) => serializeRequestRecordForBundle(requestRecord)),
       mockRules: listWorkspaceMockRuleRecords(req.params.workspaceId),
       scripts: listWorkspaceSavedScriptRecords(req.params.workspaceId),
     });
 
     return sendData(res, { bundle });
   } catch (error) {
-    if (error.code === 'workspace_linked_script_export_blocked') {
-      return sendError(res, 409, error.code, error.message, error.details || {});
-    }
-
     return sendError(res, 500, 'resource_bundle_export_failed', error.message, {
       workspaceId: req.params.workspaceId,
     });
@@ -4274,28 +4027,22 @@ app.get('/api/requests/:requestId/resource-bundle', (req, res) => {
     const reconciledRequest = reconciledState.requests.find((record) => record.id === req.params.requestId) ?? requestRecord;
     const collectionRecord = reconciledState.collections.find((record) => record.id === reconciledRequest.collectionId) ?? null;
     const requestGroupRecord = reconciledState.requestGroups.find((record) => record.id === reconciledRequest.requestGroupId) ?? null;
+    const linkedScripts = collectRequestBundleSavedScripts(
+      reconciledRequest,
+      requestRecord.workspaceId || DEFAULT_WORKSPACE_ID,
+    );
 
     const bundle = buildAuthoredResourceBundle({
       workspaceId: requestRecord.workspaceId || DEFAULT_WORKSPACE_ID,
       collections: collectionRecord ? [collectionRecord] : [],
       requestGroups: requestGroupRecord ? [requestGroupRecord] : [],
-      requests: [serializeRequestRecordForBundle(reconciledRequest, {
-        code: 'request_linked_script_export_blocked',
-        message: 'Saved request export is blocked because this request still uses linked saved scripts. Detach them to inline copies before exporting.',
-        details: {
-          requestId: req.params.requestId,
-        },
-      })],
+      requests: [serializeRequestRecordForBundle(reconciledRequest)],
       mockRules: [],
-      scripts: [],
+      scripts: linkedScripts,
     });
 
     return sendData(res, { bundle });
   } catch (error) {
-    if (error.code === 'request_linked_script_export_blocked') {
-      return sendError(res, 409, error.code, error.message, error.details || {});
-    }
-
     return sendError(res, 500, 'resource_bundle_export_failed', error.message, {
       requestId: req.params.requestId,
     });
@@ -4566,6 +4313,7 @@ app.post('/api/executions/run', async (req, res) => {
   const executionId = randomUUID();
   const startedAt = new Date().toISOString();
   const startedAtMs = Date.now();
+  const executionSignal = registerActiveExecution(executionId).signal;
 
   try {
     let executionRequest = createExecutionRequestSeed(input);
@@ -4598,9 +4346,14 @@ app.post('/api/executions/run', async (req, res) => {
     let resolvedEnvironmentRecord = null;
 
     if (!stageResults['pre-request']) {
-      stageResults['pre-request'] = executeScriptStage('pre-request', executionRequest.scripts.preRequest, {
+      const preRequestStage = await executeScriptStage('pre-request', executionRequest.scripts.preRequest, {
         executionRequest,
+        signal: executionSignal,
       });
+      stageResults['pre-request'] = preRequestStage.stageResult;
+      if (preRequestStage.executionRequest) {
+        executionRequest = preRequestStage.executionRequest;
+      }
     }
 
     if (stageResults.transport?.status === 'blocked') {
@@ -4731,6 +4484,7 @@ app.post('/api/executions/run', async (req, res) => {
           const response = await fetch(target.toString(), {
             method: resolvedExecutionRequest.method,
             headers,
+            signal: executionSignal,
             ...(body !== undefined ? { body } : {}),
           });
 
@@ -4744,7 +4498,7 @@ app.post('/api/executions/run', async (req, res) => {
             response.status,
             createHostPathHint(target.toString()),
           );
-          stageResults['post-response'] = executeScriptStage(
+          const postResponseStage = await executeScriptStage(
             'post-response',
             resolvedExecutionRequest.scripts.postResponse,
             {
@@ -4753,17 +4507,23 @@ app.post('/api/executions/run', async (req, res) => {
               responseStatus,
               responseHeaders,
               responseBodyText,
+              signal: executionSignal,
             },
           );
-          stageResults.tests = executeScriptStage('tests', resolvedExecutionRequest.scripts.tests, {
+          stageResults['post-response'] = postResponseStage.stageResult;
+          const testsStage = await executeScriptStage('tests', resolvedExecutionRequest.scripts.tests, {
             executionRequest: resolvedExecutionRequest,
             target,
             responseStatus,
             responseHeaders,
             responseBodyText,
+            signal: executionSignal,
           });
+          stageResults.tests = testsStage.stageResult;
         } catch (error) {
-          stageResults.transport = createTransportFailureStageResult(error);
+          stageResults.transport = executionSignal.aborted || error?.name === 'AbortError'
+            ? createTransportCancelledStageResult('Transport was cancelled before a response snapshot was available.')
+            : createTransportFailureStageResult(error);
           stageResults['post-response'] = createSkippedScriptStageAfterTransport(
             'post-response',
             'Post-response did not run because transport failed before a response snapshot was available.',
@@ -4856,9 +4616,13 @@ app.post('/api/executions/run', async (req, res) => {
         }),
     }, null);
 
+    const executionOutcome = executionSignal.aborted ? 'Cancelled' : 'Failed';
+    const transportStageResult = executionSignal.aborted
+      ? createTransportCancelledStageResult('Run lane was cancelled before execution could complete.')
+      : createTransportFailureStageResult(error);
     const execution = createExecutionObservation({
       executionId,
-      executionOutcome: 'Failed',
+      executionOutcome,
       responseStatus: null,
       responseHeaders: [],
       responseBodyPreview: '',
@@ -4875,10 +4639,10 @@ app.post('/api/executions/run', async (req, res) => {
       testsSummary: 'No tests were recorded because the run lane failed before execution could complete.',
       testEntries: [],
       stageSummaries: [
-        createFriendlyStageSummary('transport', createTransportFailureStageResult(error)),
+        createFriendlyStageSummary('transport', transportStageResult),
       ],
-      errorCode: error?.code || error?.cause?.code || 'execution_failed',
-      errorSummary: error.message,
+      errorCode: transportStageResult.errorCode || error?.code || error?.cause?.code || 'execution_failed',
+      errorSummary: transportStageResult.errorSummary || error.message,
     });
 
     try {
@@ -4889,13 +4653,13 @@ app.post('/api/executions/run', async (req, res) => {
         environmentId: typeof input?.selectedEnvironmentId === 'string' && input.selectedEnvironmentId.trim().length > 0
           ? input.selectedEnvironmentId.trim()
           : null,
-        status: 'failed',
-        cancellationOutcome: null,
+        status: executionOutcome === 'Cancelled' ? 'cancelled' : 'failed',
+        cancellationOutcome: executionOutcome === 'Cancelled' ? 'api_request' : null,
         startedAt,
         completedAt,
         durationMs,
-        errorCode: error?.code || error?.cause?.code || 'execution_failed',
-        errorMessage: error.message,
+        errorCode: transportStageResult.errorCode || error?.code || error?.cause?.code || 'execution_failed',
+        errorMessage: transportStageResult.errorSummary || error.message,
       });
       runtimeStorage.insertExecutionResult({
         executionId,
@@ -4904,7 +4668,7 @@ app.post('/api/executions/run', async (req, res) => {
         responseBodyPreview: '',
         responseBodyRedacted: true,
         stageStatusJson: JSON.stringify({
-          transport: createTransportFailureStageResult(error),
+          transport: transportStageResult,
         }),
         logSummaryJson: JSON.stringify({ consoleEntries: 0, consoleWarnings: 0, consolePreview: [] }),
         requestSnapshotJson: JSON.stringify(requestSnapshot),
@@ -4915,12 +4679,67 @@ app.post('/api/executions/run', async (req, res) => {
     }
 
     return sendData(res, { execution });
+  } finally {
+    clearActiveExecution(executionId);
+  }
+});
+
+app.post('/api/executions/:executionId/cancel', (req, res) => {
+  const cancelled = cancelActiveExecution(req.params.executionId);
+
+  if (!cancelled) {
+    return sendError(res, 404, 'execution_not_active', 'Execution is not active or was already completed.', {
+      executionId: req.params.executionId,
+    });
+  }
+
+  return sendData(res, {
+    executionId: req.params.executionId,
+    status: 'cancel_requested',
+  });
+});
+
+app.get('/api/execution-histories/:executionId/result', (req, res) => {
+  try {
+    const result = repositories.runtime.queries.readExecutionResult(req.params.executionId);
+
+    if (!result) {
+      return sendError(res, 404, 'execution_result_not_found', 'Execution result was not found.', {
+        executionId: req.params.executionId,
+      });
+    }
+
+    return sendData(res, { result });
+  } catch (error) {
+    return sendError(res, 500, 'execution_result_detail_failed', error.message, {
+      executionId: req.params.executionId,
+    });
+  }
+});
+
+app.get('/api/execution-histories/:executionId/test-results', (req, res) => {
+  try {
+    const history = repositories.runtime.queries.readExecutionHistory(req.params.executionId);
+
+    if (!history) {
+      return sendError(res, 404, 'execution_history_not_found', 'Execution history was not found.', {
+        executionId: req.params.executionId,
+      });
+    }
+
+    return sendData(res, {
+      items: repositories.runtime.queries.listExecutionTestResults(req.params.executionId),
+    });
+  } catch (error) {
+    return sendError(res, 500, 'execution_test_results_failed', error.message, {
+      executionId: req.params.executionId,
+    });
   }
 });
 
 app.get('/api/execution-histories', (req, res) => {
   try {
-    const items = runtimeStorage.listExecutionHistories().map(createHistoryRecord);
+    const items = repositories.runtime.queries.listExecutionHistories().map(createHistoryRecord);
     return sendData(res, { items });
   } catch (error) {
     return sendError(res, 500, 'execution_history_list_failed', error.message);
@@ -4929,7 +4748,7 @@ app.get('/api/execution-histories', (req, res) => {
 
 app.get('/api/execution-histories/:executionId', (req, res) => {
   try {
-    const history = runtimeStorage.readExecutionHistory(req.params.executionId);
+    const history = repositories.runtime.queries.readExecutionHistory(req.params.executionId);
 
     if (!history) {
       return sendError(res, 404, 'execution_history_not_found', 'Execution history was not found.', {
@@ -4947,16 +4766,36 @@ app.get('/api/execution-histories/:executionId', (req, res) => {
 
 app.get('/api/captured-requests', (req, res) => {
   try {
-    const items = runtimeStorage.listCapturedRequests().map(createCapturedRequestRecord);
+    const items = repositories.runtime.queries.listCapturedRequests().map(createCapturedRequestRecord);
     return sendData(res, { items });
   } catch (error) {
     return sendError(res, 500, 'captured_request_list_failed', error.message);
   }
 });
 
+app.post('/api/captured-requests/:capturedRequestId/replay', (req, res) => {
+  try {
+    const capture = repositories.runtime.queries.readCapturedRequest(req.params.capturedRequestId);
+
+    if (!capture) {
+      return sendError(res, 404, 'captured_request_not_found', 'Captured request was not found.', {
+        capturedRequestId: req.params.capturedRequestId,
+      });
+    }
+
+    return sendData(res, {
+      request: createCaptureReplayRequestSeed(capture),
+    });
+  } catch (error) {
+    return sendError(res, 500, 'captured_request_replay_failed', error.message, {
+      capturedRequestId: req.params.capturedRequestId,
+    });
+  }
+});
+
 app.get('/api/captured-requests/:capturedRequestId', (req, res) => {
   try {
-    const capture = runtimeStorage.readCapturedRequest(req.params.capturedRequestId);
+    const capture = repositories.runtime.queries.readCapturedRequest(req.params.capturedRequestId);
 
     if (!capture) {
       return sendError(res, 404, 'captured_request_not_found', 'Captured request was not found.', {
@@ -5044,83 +4883,30 @@ app.get('/__inspector/assets', async (req, res) => {
 });
 
 app.post('/__inspector/execute', async (req, res) => {
-  const { requestConfig, callbackCode } = req.body;
-  const logs = [];
+  const legacyResult = await runLegacyCallbackInChildProcess({
+    requestConfig: req.body?.requestConfig,
+    callbackCode: req.body?.callbackCode,
+  });
 
-  try {
-    logs.push(`[System] 1차 API 요청 시작: ${requestConfig.method} ${requestConfig.url}`);
-
-    const fetchOptions = {
-      method: requestConfig.method,
-      headers: requestConfig.headers || { 'Content-Type': 'application/json' },
-    };
-
-    if (requestConfig.method !== 'GET' && requestConfig.body) {
-      if (requestConfig.bodyType === 'application/x-www-form-urlencoded') {
-        const formParams = new URLSearchParams();
-        if (typeof requestConfig.body === 'object') {
-          for (const key in requestConfig.body) {
-            formParams.append(key, requestConfig.body[key]);
-          }
-        } else {
-          formParams.append('data', requestConfig.body);
-        }
-        fetchOptions.body = formParams;
-      } else if (requestConfig.bodyType === 'application/json') {
-        fetchOptions.body =
-          typeof requestConfig.body === 'string'
-            ? requestConfig.body
-            : JSON.stringify(requestConfig.body);
-      } else {
-        fetchOptions.body = String(requestConfig.body);
-      }
-    }
-
-    if (typeof global.fetch === 'undefined') {
-      throw new Error(
-        '시스템에 fetch API가 내장되어 있지 않습니다. Node.js 18 이상 버전이 필요합니다.',
-      );
-    }
-    const initialRes = await global.fetch(requestConfig.url, fetchOptions);
-
-    let responseData;
-    const resText = await initialRes.text();
-    try {
-      responseData = JSON.parse(resText);
-    } catch {
-      responseData = resText;
-    }
-    logs.push(`[System] 1차 응답 수신 완료 (Status: ${initialRes.status})`);
-
-    const sandbox = {
-      fetch: global.fetch,
-      URLSearchParams: global.URLSearchParams,
-      FormData: global.FormData,
-      Blob: global.Blob,
-      fs: fs.promises,
-      path: path,
-      __dirname: __dirname,
-      response: responseData,
-      console: {
-        log: (...args) => logs.push(`[Log] ${args.join(' ')}`),
-        error: (...args) => logs.push(`[Error] ${args.join(' ')}`),
-        warn: (...args) => logs.push(`[Warn] ${args.join(' ')}`),
-        info: (...args) => logs.push(`[Info] ${args.join(' ')}`),
-      },
-    };
-    vm.createContext(sandbox);
-
-    const wrappedCode = `(async () => { \n${callbackCode}\n })()`;
-    logs.push('[System] 콜백 코드 실행 시작...');
-
-    const executionResult = await vm.runInContext(wrappedCode, sandbox);
-
-    logs.push('[System] 실행 완료');
-    res.json({ success: true, logs, result: executionResult });
-  } catch (err) {
-    logs.push(`[Error] 시스템/문법 오류: ${err.message}`);
-    res.status(500).json({ success: false, error: err.message, logs });
+  if (legacyResult.outcome === 'succeeded') {
+    return res.json({
+      success: true,
+      logs: Array.isArray(legacyResult.logs) ? legacyResult.logs : [],
+      result: legacyResult.result,
+    });
   }
+
+  const status = legacyResult.outcome === 'blocked'
+    ? 400
+    : legacyResult.outcome === 'timed_out'
+      ? 408
+      : 500;
+
+  return res.status(status).json({
+    success: false,
+    error: legacyResult.errorSummary || 'Legacy callback execution failed.',
+    logs: Array.isArray(legacyResult.logs) ? legacyResult.logs : [],
+  });
 });
 
 app.all(/.*/, async (req, res) => {

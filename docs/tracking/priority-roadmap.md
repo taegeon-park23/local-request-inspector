@@ -8,13 +8,16 @@
 
 ## Roadmap Snapshot
 1. Foundation, architecture, UX, QA, tooling, and shipped implementation history are archived in `completed-work-summary.md`.
-2. No bounded task is currently active.
-3. The next implementation step must begin with one newly defined task in `docs/tasks/` plus matching live-tracker updates.
+2. `T073` is the active bounded task and owns the current implementation lane.
+3. Follow-up work stays inside `T073` until the server/runtime split, replay/transfer follow-up, and live-doc cleanup are complete.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.
 - Define one bounded task at a time and keep the live tracking surface small.
-- Keep Codex-side UI reruns closed; if UI verification is needed, instruct the user to run `npm.cmd run test:ui` locally.
+- Keep Codex-side UI reruns closed; use the Playwright skill for Codex-side UI smoke and reserve `npm.cmd run test:ui` for user-managed local verification.
 
 ## Immediate Next Step
-- If implementation resumes, create one new bounded task doc, add it to `master-task-board.md`, and only then start coding.
+- Execute `T073`:
+- Decompose `server.js` into route/service seams.
+- Introduce explicit storage repositories.
+- Land the runtime API, replay, transfer, and doc follow-up owned by this task.

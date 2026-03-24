@@ -364,7 +364,7 @@ describe('Captures S18 fidelity refinement', () => {
 
     expect(await screen.findByRole('button', { name: 'Open Replay Draft' })).toBeInTheDocument();
     expect(Object.keys(useRequestDraftStore.getState().draftsByTabId)).toHaveLength(0);
-    expect(screen.getByRole('button', { name: 'Run Replay Now' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Run Replay Now' })).toBeEnabled();
 
     await user.click(screen.getByRole('button', { name: 'Open Replay Draft' }));
 

@@ -94,24 +94,78 @@ function hasLinkedRequestScriptBindings(scripts) {
   return listLinkedRequestScriptStages(scripts).length > 0;
 }
 
-function serializeRequestScriptsForBundle(scripts) {
-  const normalizedScripts = normalizeRequestScriptsState(scripts);
-
-  if (hasLinkedRequestScriptBindings(normalizedScripts)) {
-    throw createRequestScriptBindingError(
-      'request_linked_script_export_blocked',
-      'Linked saved scripts must be detached to inline copies before authored-resource export.',
-      {
-        linkedStages: listLinkedRequestScriptStages(normalizedScripts),
-      },
-    );
+function serializeRequestScriptStageBindingForBundle(binding) {
+  if (!isLinkedRequestScriptBinding(binding)) {
+    return binding.sourceCode;
   }
 
   return {
+    mode: 'linked',
+    savedScriptId: binding.savedScriptId,
+    savedScriptNameSnapshot: binding.savedScriptNameSnapshot,
+    linkedAt: binding.linkedAt,
+  };
+}
+
+function serializeRequestScriptsForBundle(scripts) {
+  const normalizedScripts = normalizeRequestScriptsState(scripts);
+
+  return {
     activeStage: normalizedScripts.activeStage,
-    preRequest: normalizedScripts.preRequest.sourceCode,
-    postResponse: normalizedScripts.postResponse.sourceCode,
-    tests: normalizedScripts.tests.sourceCode,
+    preRequest: serializeRequestScriptStageBindingForBundle(normalizedScripts.preRequest),
+    postResponse: serializeRequestScriptStageBindingForBundle(normalizedScripts.postResponse),
+    tests: serializeRequestScriptStageBindingForBundle(normalizedScripts.tests),
+  };
+}
+
+function remapRequestScriptsForImport(scripts, resolveSavedScript) {
+  const normalizedScripts = normalizeRequestScriptsState(scripts);
+  const remappedScripts = {
+    activeStage: normalizedScripts.activeStage,
+    preRequest: normalizedScripts.preRequest,
+    postResponse: normalizedScripts.postResponse,
+    tests: normalizedScripts.tests,
+  };
+  const unresolvedLinks = [];
+
+  for (const stageId of REQUEST_SCRIPT_STAGE_IDS) {
+    const field = REQUEST_SCRIPT_STAGE_FIELD_MAP[stageId];
+    const binding = normalizedScripts[field];
+
+    if (!isLinkedRequestScriptBinding(binding)) {
+      continue;
+    }
+
+    const resolvedScript = typeof resolveSavedScript === 'function'
+      ? resolveSavedScript(binding.savedScriptId, {
+        stageId,
+        savedScriptId: binding.savedScriptId,
+        savedScriptNameSnapshot: binding.savedScriptNameSnapshot,
+        linkedAt: binding.linkedAt,
+      })
+      : null;
+
+    if (!resolvedScript || typeof resolvedScript.id !== 'string' || resolvedScript.id.trim().length === 0) {
+      unresolvedLinks.push({
+        stageId,
+        savedScriptId: binding.savedScriptId,
+        savedScriptNameSnapshot: binding.savedScriptNameSnapshot,
+      });
+      continue;
+    }
+
+    remappedScripts[field] = createLinkedRequestScriptBinding({
+      savedScriptId: resolvedScript.id,
+      savedScriptNameSnapshot: typeof resolvedScript.name === 'string' && resolvedScript.name.trim().length > 0
+        ? resolvedScript.name
+        : binding.savedScriptNameSnapshot,
+      linkedAt: binding.linkedAt,
+    });
+  }
+
+  return {
+    scripts: remappedScripts,
+    unresolvedLinks,
   };
 }
 
@@ -190,5 +244,6 @@ module.exports = {
   listLinkedRequestScriptStages,
   hasLinkedRequestScriptBindings,
   serializeRequestScriptsForBundle,
+  remapRequestScriptsForImport,
   resolveRequestScriptsForExecution,
 };
