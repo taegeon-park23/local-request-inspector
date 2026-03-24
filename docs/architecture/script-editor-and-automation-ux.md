@@ -179,7 +179,7 @@ The exact persistence/reference semantics remain **확실하지 않음**, but th
 
 Until final persistence semantics are chosen, the UI copy must avoid implying transparent shared-live-edit behavior across many requests.
 
-After `T061B`, the next bounded follow-up is narrowed further by `T063`: if request-stage reusable-script work is later promoted, **attach by copy** is the preferred first implementation lane, while linked reusable references remain deferred behind explicit rename/delete/versioning semantics.
+After `T061B`, `T063` narrowed the next reusable-script follow-up to **attach by copy**, and `T064` has now landed that baseline through an inline stage-aware saved-script picker inside the request builder. `T065` then added the bounded library-assist route bridge into `/scripts`, so request-stage scripts can now copy compatible saved scripts into request-owned source and jump to the standalone library for deeper review without introducing linked reusable references. Linked reusable references remain deferred behind explicit rename/delete/versioning semantics.
 
 ## 9. Stage Context and Capability Messaging
 ### 9.1 Principle
@@ -426,3 +426,5 @@ If no saved reusable scripts exist, show:
 - load editor code only after script intent is clear
 - ensure templates/snippets and diagnostics are stage-filtered
 - avoid IntelliSense claims that exceed injected runtime capabilities
+
+

@@ -1,4 +1,4 @@
-﻿export const workspaceRouteMessagesEn = {
+export const workspaceRouteMessagesEn = {
   workspaceRoute: {
     explorer: {
       header: {
@@ -438,6 +438,20 @@
         tabListAriaLabel: 'Script stages',
         loadedOnDemand:
           'This editor path is loaded on demand so the rest of the request builder stays responsive when Scripts is not active, even after stage execution wiring landed.',
+      },
+      attach: {
+        title: 'Copy from saved script',
+        description: 'Choose one compatible saved script and copy it into the active request stage. The copied source becomes request-owned immediately.',
+        selectLabel: 'Saved script',
+        copyAction: 'Copy into stage',
+        replaceAction: 'Replace with saved script',
+        openLibraryAction: 'Open Scripts library',
+        previewLabel: 'Saved script preview',
+        loading: 'Loading compatible saved scripts for this stage.',
+        degraded: 'Saved script library is unavailable right now. Try again after the Scripts route responds.',
+        empty: 'No saved scripts are compatible with this stage yet.',
+        copiedBadge: 'Copied',
+        copiedHint: 'Copied from saved script: {name}',
       },
       footer: {
         title: 'Deferred in later slices',
@@ -1088,6 +1102,20 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         loadedOnDemand:
           '이 편집기 경로는 필요할 때만 로드되므로, Scripts가 비활성일 때는 단계 실행 연결이 들어온 이후에도 나머지 요청 빌더가 반응성을 유지합니다.',
       },
+      attach: {
+        title: '저장 스크립트에서 복사',
+        description: '호환되는 저장 스크립트 하나를 골라 현재 요청 단계로 복사합니다. 복사된 소스는 즉시 요청 소유 상태가 됩니다.',
+        selectLabel: '저장 스크립트',
+        copyAction: '단계로 복사',
+        replaceAction: '저장 스크립트로 교체',
+        openLibraryAction: 'Scripts 라이브러리 열기',
+        previewLabel: '저장 스크립트 미리보기',
+        loading: '이 단계와 호환되는 저장 스크립트를 불러오는 중입니다.',
+        degraded: '지금은 저장 스크립트 라이브러리를 불러올 수 없습니다. Scripts 경로가 다시 응답하면 다시 시도하세요.',
+        empty: '아직 이 단계와 호환되는 저장 스크립트가 없습니다.',
+        copiedBadge: '복사됨',
+        copiedHint: '저장 스크립트에서 복사됨: {name}',
+      },
       footer: {
         title: '나중 slice에서 처리',
         description:
@@ -1290,6 +1318,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
     },
   },
 };
+
 
 
 

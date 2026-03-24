@@ -282,6 +282,14 @@ export const managementRouteMessagesEn = {
       useTemplateAction: 'Use {name}',
       templatesListAriaLabel: 'Script templates list',
     },
+    libraryAssist: {
+      title: 'Opened from request stage',
+      description: 'This Scripts view was opened from the request-stage editor. Review the saved script here, then return to the request builder to keep editing the same working draft.',
+      backAction: 'Back to request builder',
+      genericContext: 'This library session came from the request-stage editor.',
+      stageContext: 'Requested stage: {stage}',
+      scriptContext: 'Requested saved script: {name}',
+    },
     detail: {
       draftEyebrow: 'New script draft',
       persistedEyebrow: 'Persisted script detail',
@@ -639,6 +647,14 @@ export const managementRouteMessagesKo: RouteCatalogShape<typeof managementRoute
       templateCopySuffix: '복사본',
       useTemplateAction: '{name} 사용',
       templatesListAriaLabel: '스크립트 템플릿 목록',
+    },
+    libraryAssist: {
+      title: '요청 단계에서 열림',
+      description: '이 Scripts 화면은 요청 단계 편집기에서 열렸습니다. 여기서 저장 스크립트를 확인한 뒤 요청 빌더로 돌아가 같은 working draft를 계속 편집하세요.',
+      backAction: '요청 빌더로 돌아가기',
+      genericContext: '이 라이브러리 세션은 요청 단계 편집기에서 왔습니다.',
+      stageContext: '요청된 단계: {stage}',
+      scriptContext: '요청된 저장 스크립트: {name}',
     },
     detail: {
       draftEyebrow: '새 스크립트 draft',

@@ -121,6 +121,18 @@ describe('Scripts MVP route', () => {
 
 
 
+
+  it('applies request-stage route-bridge context in the scripts library', async () => {
+    vi.stubGlobal('fetch', createScriptsFetch());
+    renderApp(<AppRouter />, { initialEntries: ['/scripts?from=request-stage&stage=tests&scriptId=saved-script-tests-health'] });
+
+    expect(await screen.findByText('Opened from request stage')).toBeInTheDocument();
+    expect(screen.getByLabelText('Stage filter')).toHaveValue('tests');
+    expect(screen.getByText('Requested stage: Tests')).toBeInTheDocument();
+    expect(screen.getByText('Requested saved script: Health status assertions')).toBeInTheDocument();
+    expect(screen.getByLabelText('Script name')).toHaveValue('Health status assertions');
+    expect(screen.getByRole('button', { name: 'Back to request builder' })).toBeInTheDocument();
+  });
   it('auto-collapses the explorer after script selection and shows the selected summary when reopened', async () => {
     const user = userEvent.setup();
     vi.stubGlobal('fetch', createScriptsFetch());

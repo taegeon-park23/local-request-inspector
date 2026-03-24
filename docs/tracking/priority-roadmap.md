@@ -168,12 +168,15 @@ Tasks are prioritized using these criteria:
 67. **T063** Post-T062 request-stage script linkage lane comparison - complete
 
 ### Phase AR - Request-Stage Saved-Script Attach By Copy
-68. **T064** Request-stage saved-script attach by copy - ready next implementation
+68. **T064** Request-stage saved-script attach by copy - complete
 
-### Phase AS - Parked Optional Future Work
-69. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule/scripts bundle scope
-70. Later write-time migration-engine work if compatibility pressure justifies it
-71. Bounded packaging polish only if a delivery milestone identifies a concrete readiness gap
+### Phase AS - Request-Stage Saved-Script Library-Assist Route Bridge
+69. **T065** Request-stage saved-script library-assist route bridge - complete
+
+### Phase AT - Parked Optional Future Work
+70. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule/scripts bundle scope
+71. Later write-time migration-engine work if compatibility pressure justifies it
+72. Bounded packaging polish only if a delivery milestone identifies a concrete readiness gap
 ## Why T001 Is First
 T001 is the first execution task because it has the highest leverage:
 - It clarifies the product’s target architecture before coding begins.
@@ -205,9 +208,9 @@ Recently completed foundation work:
 - `T017` Developer environment and tooling baseline
 
 Ready to start now:
-- `T064` is the strongest implementation-ready next slice: it should let the request builder copy one compatible saved script into the active stage editor without introducing linked reusable-script references or new request-stage linkage ids
-- `T063` is landed: it narrows the next request-stage reusable-script follow-up to attach-by-copy and keeps linked reusable references plus library-polish-only follow-up parked
-- `T062` is landed: active request result observation and persisted history now render one shared server-authored `EnvironmentResolutionSummary` in `Execution Info`, while the runtime request snapshot schema stays additive-only and the slice does not widen into raw resolved-request preview
+- No new implementation is currently promoted automatically after `T065`. Linked reusable-script references remain parked until their rename/delete/version/remap semantics are explicitly owned in a separate contract.
+- `T065` is landed: the request-stage Scripts tab can open `/scripts` with stage-aware context, `/scripts` can prefilter and preselect the requested saved script, and users can return to `/workspace` without changing reusable-script persistence semantics
+- `T064` is landed: the request builder can now copy one compatible saved script into the active stage editor, show a lightweight provenance hint, and keep request save payloads source-only without introducing linked reusable-script references or new request-stage linkage ids
 - `T061B` is landed: workspace authored-resource bundle export/import preview/import now carries standalone saved scripts alongside collections, request groups, saved requests, and mock rules, while older bundles without `scripts` remain read-compatible
 - `T061A` is landed: it fixed the next authored-resource expansion lane to standalone saved scripts first rather than to a broad environment-plus-scripts transfer theme
 - `T060` is landed: the main-surface saved-resource manager now uses explicit transfer, collection, request-group, and saved-request cards with scoped status callouts, so later Workspace follow-up should not reopen another mixed explorer/manager responsibility pass
@@ -246,6 +249,11 @@ Ready to start now:
 - Use `request-stage-script-linkage-lane-comparison.md` before proposing request-stage reusable-script work so future scope starts from the copy-versus-reference comparison rather than from a broad “saved scripts in requests” theme.
 - Use `resolved-preview-sub-lane-comparison.md` after `environment-follow-up-lane-comparison.md` before proposing further environment-observation work so future scope starts from the current strongest sub-lane rather than from a broad “better resolved preview” theme.
 - Use `request-environment-resolution-summary-contract.md` after `resolved-preview-sub-lane-comparison.md` before proposing future environment-observation implementation so result/history scope starts from one bounded shared DTO contract.
+
+
+
+
+
 
 
 

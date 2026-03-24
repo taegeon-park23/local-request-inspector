@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
 import {
   listWorkspaceEnvironments,
   workspaceEnvironmentsQueryKey,
 } from '@client/features/environments/environment.api';
 import { useRequestBuilderCommands } from '@client/features/request-builder/hooks/useRequestBuilderCommands';
-import type { RequestDraftState } from '@client/features/request-builder/request-draft.types';
+import type { RequestDraftState, RequestScriptStageId } from '@client/features/request-builder/request-draft.types';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
 import { isDetachedRequestTab } from '@client/features/request-builder/request-tab-state';
 import { RequestKeyValueEditor } from '@client/features/request-builder/components/RequestKeyValueEditor';
@@ -98,6 +98,9 @@ export function RequestWorkSurfacePlaceholder({
   placementOptions,
 }: RequestWorkSurfacePlaceholderProps) {
   const { t, formatDateTime } = useI18n();
+  const [copiedScriptNamesByTabId, setCopiedScriptNamesByTabId] = useState<
+    Record<string, Partial<Record<RequestScriptStageId, string>>>
+  >({});
   const draft = useRequestDraftStore((state) =>
     activeTab ? state.draftsByTabId[activeTab.id]?.draft ?? null : null,
   );
@@ -188,6 +191,7 @@ export function RequestWorkSurfacePlaceholder({
     ? formatRequestPlacementPath(createRequestPlacementFromSelection(selectedCollection, selectedRequestGroup))
     : null;
   const selectedRequestGroupPendingCreate = isPendingRequestPlacementGroup(selectedRequestGroup);
+  const copiedScriptNames = copiedScriptNamesByTabId[draft.tabId] ?? {};
   const placementSupportCopy = selectedPlacementPath
     ? selectedRequestGroupPendingCreate
       ? t('workspaceRoute.requestBuilder.placement.pendingCreate', {
@@ -545,7 +549,7 @@ export function RequestWorkSurfacePlaceholder({
               <p className="request-editor-card__empty">{t('workspaceRoute.requestBuilder.authEditor.empty')}</p>
             ) : null}
 
-                        {draft.auth.type === 'bearer' ? (
+            {draft.auth.type === 'bearer' ? (
               <label className="request-field">
                 <span>{t('workspaceRoute.requestBuilder.authEditor.bearerToken')}</span>
                 <input
@@ -643,6 +647,17 @@ export function RequestWorkSurfacePlaceholder({
               draft={draft}
               onStageChange={(stage) => setActiveScriptStage(draft.tabId, stage)}
               onContentChange={(stage, content) => updateScriptContent(draft.tabId, stage, content)}
+              copiedFromScriptNames={copiedScriptNames}
+              onAttachSavedScript={(stage, scriptName, content) => {
+                updateScriptContent(draft.tabId, stage, content);
+                setCopiedScriptNamesByTabId((current) => ({
+                  ...current,
+                  [draft.tabId]: {
+                    ...(current[draft.tabId] ?? {}),
+                    [stage]: scriptName,
+                  },
+                }));
+              }}
             />
           </Suspense>
         ) : null}
@@ -650,5 +665,8 @@ export function RequestWorkSurfacePlaceholder({
     </div>
   );
 }
+
+
+
 
 

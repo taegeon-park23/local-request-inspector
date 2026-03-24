@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { AppRouter } from '@client/app/router/AppRouter';
 import { defaultHistoryFixtureScenario } from '@client/features/history/data/history-fixtures';
+import { defaultSavedScriptFixtureRecords, defaultScriptTemplateFixtureRecords } from '@client/features/scripts/data/script-fixtures';
 import { renderApp } from '@client/shared/test/render-app';
 
 function createApiResponse(data: unknown, status = 200) {
@@ -100,6 +101,10 @@ describe('Request builder save/run wiring', () => {
         });
       }
 
+      if (url === '/api/workspaces/local-workspace/scripts' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: defaultSavedScriptFixtureRecords });
+      }
+
       if (url === '/api/workspaces/local-workspace/requests' && init?.method === 'POST') {
         return createApiResponse({
           request: {
@@ -157,7 +162,12 @@ describe('Request builder save/run wiring', () => {
 
     await user.click(within(mainSurface).getByRole('button', { name: 'Scripts' }));
     await screen.findByLabelText('Pre-request script');
-    await user.type(screen.getByLabelText('Pre-request script'), "request.headers.set('x-trace-id', 'checkout-1');");
+    const savedScriptSelect = await screen.findByLabelText('Saved script');
+    expect(within(savedScriptSelect).getByRole('option', { name: 'Pre-request trace seed' })).toBeInTheDocument();
+    expect(within(savedScriptSelect).queryByRole('option', { name: 'Health status assertions' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Copy into stage' }));
+    expect(screen.getByLabelText('Pre-request script')).toHaveValue("request.headers.set('x-trace-id', 'local-dev-trace');");
+    expect(screen.getByText('Copied from saved script: Pre-request trace seed')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
@@ -183,10 +193,100 @@ describe('Request builder save/run wiring', () => {
     };
 
     expect(savePayload.request.selectedEnvironmentId).toBe('environment-local');
-    expect(savePayload.request.scripts.preRequest).toContain('checkout-1');
+    expect(savePayload.request.scripts.preRequest).toContain('local-dev-trace');
     expect(savePayload.request.bodyText).toContain('sku');
   }, 10000);
 
+  it('copies only stage-compatible saved scripts into the active script editor stage', async () => {
+    const user = userEvent.setup();
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/scripts' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: defaultSavedScriptFixtureRecords });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    await openNewRequest(user);
+    const mainSurface = screen.getByLabelText('Main work surface');
+    await user.click(within(mainSurface).getByRole('button', { name: 'Scripts' }));
+
+    const savedScriptSelect = await screen.findByLabelText('Saved script');
+    expect(within(savedScriptSelect).getByRole('option', { name: 'Pre-request trace seed' })).toBeInTheDocument();
+    expect(within(savedScriptSelect).queryByRole('option', { name: 'Health status assertions' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Copy into stage' }));
+    expect(screen.getByLabelText('Pre-request script')).toHaveValue("request.headers.set('x-trace-id', 'local-dev-trace');");
+
+    const scriptStages = screen.getByRole('tablist', { name: 'Script stages' });
+    await user.click(within(scriptStages).getByRole('tab', { name: 'Tests' }));
+
+    const testsSavedScriptSelect = await screen.findByLabelText('Saved script');
+    expect(within(testsSavedScriptSelect).getByRole('option', { name: 'Health status assertions' })).toBeInTheDocument();
+    expect(within(testsSavedScriptSelect).queryByRole('option', { name: 'Pre-request trace seed' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Copy into stage' }));
+    expect(screen.getByLabelText('Tests script')).toHaveValue("assert(response.status === 200);\nassert(response.body.includes('ok'));");
+    expect(screen.getByText('Copied from saved script: Health status assertions')).toBeInTheDocument();
+  });
+
+
+  it('opens the scripts library with request-stage context and returns to the same workspace draft', async () => {
+    const user = userEvent.setup();
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/scripts' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: defaultSavedScriptFixtureRecords });
+      }
+
+      if (url === '/api/script-templates' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: defaultScriptTemplateFixtureRecords });
+      }
+
+      if (url.startsWith('/api/scripts/') && (!init || !init.method || init.method === 'GET')) {
+        const scriptId = url.split('/').pop() ?? '';
+        return createApiResponse({ script: defaultSavedScriptFixtureRecords.find((script) => script.id === scriptId) ?? null });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    await openNewRequest(user);
+    const mainSurface = screen.getByLabelText('Main work surface');
+    await user.click(within(mainSurface).getByRole('button', { name: 'Scripts' }));
+
+    await screen.findByLabelText('Saved script');
+    await user.click(screen.getByRole('button', { name: 'Open Scripts library' }));
+
+    expect(await screen.findByText('Opened from request stage')).toBeInTheDocument();
+    expect(screen.getByLabelText('Stage filter')).toHaveValue('pre-request');
+    expect(screen.getByText('Requested stage: Pre-request')).toBeInTheDocument();
+    expect(screen.getByText('Requested saved script: Pre-request trace seed')).toBeInTheDocument();
+    expect(screen.getByLabelText('Script name')).toHaveValue('Pre-request trace seed');
+
+    await user.click(screen.getByRole('button', { name: 'Back to request builder' }));
+    expect(await screen.findByRole('heading', { name: 'Untitled Request' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Pre-request script')).toBeInTheDocument();
+  });
   it('updates a persisted saved request via the update route and keeps explorer identity stable', async () => {
     const user = userEvent.setup();
 
@@ -267,6 +367,10 @@ describe('Request builder save/run wiring', () => {
             updatedAt: '2026-03-20T10:06:00.000Z',
           },
         });
+      }
+
+      if (url === '/api/workspaces/local-workspace/scripts' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: defaultSavedScriptFixtureRecords });
       }
 
       throw new Error('Unexpected fetch call: ' + url);
@@ -406,6 +510,10 @@ describe('Request builder save/run wiring', () => {
             },
           ],
         }));
+      }
+
+      if (url === '/api/workspaces/local-workspace/scripts' && (!init || !init.method || init.method === 'GET')) {
+        return Promise.resolve(createApiResponse({ items: defaultSavedScriptFixtureRecords }));
       }
 
       if (url === '/api/executions/run' && init?.method === 'POST') {
@@ -581,6 +689,10 @@ describe('Request builder save/run wiring', () => {
         return createApiResponse({ items: [] });
       }
 
+      if (url === '/api/workspaces/local-workspace/scripts' && (!init || !init.method || init.method === 'GET')) {
+        return Promise.resolve(createApiResponse({ items: defaultSavedScriptFixtureRecords }));
+      }
+
       if (url === '/api/executions/run' && init?.method === 'POST') {
         return createApiResponse({
           execution: {
@@ -691,6 +803,10 @@ describe('Request builder save/run wiring', () => {
 
       if (url === `/api/execution-histories/${historyReplayRecord.id}` && (!init || !init.method || init.method === 'GET')) {
         return createApiResponse({ history: historyReplayRecord });
+      }
+
+      if (url === '/api/workspaces/local-workspace/scripts' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: defaultSavedScriptFixtureRecords });
       }
 
       if (url === '/api/workspaces/local-workspace/requests' && init?.method === 'POST') {
@@ -811,5 +927,8 @@ describe('Request builder save/run wiring', () => {
     expect(updatePayload.request.name).toBe('Replay of Create user refined');
   });
 });
+
+
+
 
 

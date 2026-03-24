@@ -787,6 +787,37 @@ body {
 .mocks-row,
 .request-tab,
 .shared-empty-callout,
+.request-script-library-card {
+  display: grid;
+  gap: var(--m3-space-3);
+}
+
+.request-script-library-card__header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--m3-space-3);
+}
+
+.request-script-library-card__body {
+  display: grid;
+  gap: var(--m3-space-3);
+}
+
+.request-script-library-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--m3-space-2);
+}
+
+.request-script-library-card__copied {
+  color: var(--m3-color-primary);
+}
+
+.scripts-route-bridge-card {
+  margin-bottom: var(--m3-space-4);
+}
+
 .request-script-example {
   background: var(--m3-color-surface-container-lowest);
 }
@@ -4718,4 +4749,5 @@ body {
     justify-self: stretch;
   }
 }
+
 
