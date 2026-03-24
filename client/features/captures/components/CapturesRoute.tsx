@@ -20,6 +20,7 @@ import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
+import { useReplayRunStore } from '@client/shared/replay-run-store';
 
 type TranslateFn = ReturnType<typeof useI18n>['t'];
 type CaptureDetailTabId = 'timeline' | 'deferred-detail';
@@ -142,7 +143,7 @@ function CapturesExplorerSummaryCard({
   );
 }
 
-export function CapturesPlaceholder() {
+export function CapturesRoute() {
   const navigate = useNavigate();
   const { t } = useI18n();
   const setFloatingExplorerOpen = useShellStore((state) => state.setFloatingExplorerOpen);
@@ -154,6 +155,7 @@ export function CapturesPlaceholder() {
   const selectCapture = useCapturesStore((state) => state.selectCapture);
   const setSearchText = useCapturesStore((state) => state.setSearchText);
   const setOutcomeFilter = useCapturesStore((state) => state.setOutcomeFilter);
+  const queueReplayRun = useReplayRunStore((state) => state.queueReplayRun);
 
   const outcomeFilterOptions = getOutcomeFilterOptions(t);
   const captureDetailTabs = getCaptureDetailTabs(t);
@@ -208,6 +210,16 @@ export function CapturesPlaceholder() {
     }
 
     openCaptureReplayDraft(selectedCapture);
+    navigate('/workspace');
+  };
+
+  const handleRunReplayNow = () => {
+    if (!selectedCapture) {
+      return;
+    }
+
+    const replayTab = openCaptureReplayDraft(selectedCapture);
+    queueReplayRun(replayTab.id);
     navigate('/workspace');
   };
 
@@ -398,7 +410,7 @@ export function CapturesPlaceholder() {
                   <button type="button" className="workspace-button workspace-button--secondary" onClick={handleOpenReplayDraft}>
                     <IconLabel icon="replay">{t('capturesRoute.detail.bridge.openReplayDraft')}</IconLabel>
                   </button>
-                  <button type="button" className="workspace-button workspace-button--secondary" disabled>
+                  <button type="button" className="workspace-button workspace-button--secondary" onClick={handleRunReplayNow}>
                     <IconLabel icon="run">{t('capturesRoute.detail.bridge.runReplayNow')}</IconLabel>
                   </button>
                 </div>
@@ -532,12 +544,17 @@ export function CapturesPlaceholder() {
                     { label: t('capturesRoute.timelinePanel.deferred.labels.handlingSummary'), value: selectedCapture.responseSummary },
                     { label: t('capturesRoute.timelinePanel.deferred.labels.storedSummary'), value: getCaptureStorageSummary(selectedCapture, t) },
                     { label: t('capturesRoute.timelinePanel.deferred.labels.previewPolicy'), value: getCaptureBodyPreviewPolicy(selectedCapture, t) },
+                    { label: t('capturesRoute.detail.requestSnapshot.labels.headers'), value: selectedCapture.requestHeaderCount ?? selectedCapture.requestHeaders.length },
+                    { label: t('capturesRoute.detail.mockHandling.labels.summary'), value: selectedCapture.mockSummary },
                   ]}
                 />
-                <EmptyStateCallout
-                  title={t('capturesRoute.timelinePanel.deferred.emptyTitle')}
-                  description={t('capturesRoute.timelinePanel.deferred.emptyDescription')}
-                />
+                {selectedCapture.delayLabel ? (
+                  <p className="shared-readiness-note">{selectedCapture.delayLabel}</p>
+                ) : null}
+                {selectedCapture.mockRuleName ? (
+                  <p className="shared-readiness-note">{selectedCapture.mockRuleName}</p>
+                ) : null}
+                <pre>{selectedCapture.bodyPreview}</pre>
               </DetailViewerSection>
             )}
           </div>

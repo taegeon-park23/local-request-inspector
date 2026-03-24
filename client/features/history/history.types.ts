@@ -41,6 +41,37 @@ export interface HistoryStageSummary {
   errorSummary?: string;
 }
 
+export interface HistoryExecutionResultRecord {
+  executionId: string;
+  responseStatus: number | null;
+  responseHeaders: Array<{ name: string; value: string }>;
+  responseBodyPreview: string;
+  responseBodyRedacted: boolean;
+  stageStatus: {
+    preRequest?: HistoryStageSummary;
+    transport?: HistoryStageSummary;
+    postResponse?: HistoryStageSummary;
+    tests?: HistoryStageSummary;
+  };
+  logSummary: {
+    consoleEntries?: number;
+    consoleWarnings?: number;
+    consolePreview?: string[];
+  };
+  requestSnapshot: Record<string, unknown>;
+  redactionApplied: boolean;
+}
+
+export interface HistoryPersistedTestResult {
+  id: string;
+  executionId: string;
+  testName: string;
+  status: 'passed' | 'failed' | 'skipped';
+  message?: string | null;
+  details?: Record<string, unknown>;
+  recordedAt: string;
+}
+
 export interface HistoryRecord {
   id: string;
   executionId: string;

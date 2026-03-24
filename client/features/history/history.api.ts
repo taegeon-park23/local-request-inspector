@@ -1,5 +1,9 @@
 import { RequestBuilderApiError } from '@client/features/request-builder/request-builder.api';
-import type { HistoryRecord } from '@client/features/history/history.types';
+import type {
+  HistoryExecutionResultRecord,
+  HistoryPersistedTestResult,
+  HistoryRecord,
+} from '@client/features/history/history.types';
 
 interface ApiEnvelope<TData> {
   data: TData;
@@ -49,4 +53,14 @@ export async function listExecutionHistories() {
 export async function readExecutionHistory(executionId: string) {
   const response = await fetch(`/api/execution-histories/${executionId}`);
   return parseJsonResponse<{ history: HistoryRecord }>(response).then((payload) => payload.history);
+}
+
+export async function readExecutionResult(executionId: string) {
+  const response = await fetch(`/api/execution-histories/${executionId}/result`);
+  return parseJsonResponse<{ result: HistoryExecutionResultRecord }>(response).then((payload) => payload.result);
+}
+
+export async function listExecutionTestResults(executionId: string) {
+  const response = await fetch(`/api/execution-histories/${executionId}/test-results`);
+  return parseJsonResponse<{ items: HistoryPersistedTestResult[] }>(response).then((payload) => payload.items);
 }

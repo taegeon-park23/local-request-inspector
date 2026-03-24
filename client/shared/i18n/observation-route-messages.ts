@@ -82,7 +82,7 @@
         description: 'Replay stays edit-first. Open Replay Draft creates a new request draft while the captured request remains observation-only.',
         openReplayDraft: 'Open Replay Draft',
         runReplayNow: 'Run Replay Now',
-        readinessNote: 'Run Replay Now stays disabled in this slice. Real capture data now drives this route, but replay still opens a fresh editable draft first.',
+        readinessNote: 'Run Replay Now opens a fresh editable draft, starts an immediate replay run, and shifts focus back to Workspace results.',
       },
       requestSnapshot: {
         title: 'Request snapshot',
@@ -143,8 +143,8 @@
       },
       deferred: {
         title: 'Deferred runtime detail',
-        emptyTitle: 'Deeper capture composition is deferred',
-        emptyDescription: 'Persisted capture detail stops at bounded handling summaries while raw transport views, richer diagnostics, and replay execution remain out of scope.',
+        emptyTitle: 'Persisted capture detail is now available',
+        emptyDescription: 'Bounded storage, mock evaluation, and replay-ready body previews remain available here without leaving the observation route.',
         labels: {
           mockOutcome: 'Mock outcome',
           handlingSummary: 'Handling summary',
@@ -245,7 +245,7 @@
         description: 'History detail stays observation-only. Open Replay Draft creates a new editable request draft instead of turning this persisted execution record into live authoring state.',
         openReplayDraft: 'Open Replay Draft',
         runReplayNow: 'Run Replay Now',
-        readinessNote: 'Run Replay Now stays disabled in this slice because replay remains edit-first, and persisted history keeps only bounded redacted summaries.',
+        readinessNote: 'Run Replay Now opens a replay draft, immediately runs it, and moves focus to the Workspace result panel while keeping persisted history read-only.',
       },
     },
     summaryCards: {
@@ -291,7 +291,7 @@
           headersSummary: 'Headers summary',
           bodyHint: 'Body hint',
         },
-        boundedDetailTitle: 'Persisted response detail stays bounded',
+        boundedDetailTitle: 'Persisted response detail stays bounded and queryable',
         boundedDetailDescription: 'Saved history shows redacted runtime summaries. Rich JSON viewers, diff, and full raw payload inspection stay deferred for a later slice.',
       },
       console: {
@@ -316,7 +316,7 @@
           testsStage: 'Tests stage',
         },
         testsPreviewAriaLabel: 'Tests preview',
-        deferredDetailTitle: 'Per-assertion drilldown is deferred',
+        deferredDetailTitle: 'Per-assertion drilldown is persisted',
         deferredDetailDescription: 'History stops at bounded persisted test summaries and does not add script execution or deep diagnostics composition yet.',
       },
       executionInfo: {
@@ -359,7 +359,7 @@
             none: 'None',
           },
         },
-        deferredDetailTitle: 'Advanced execution diagnostics are deferred',
+        deferredDetailTitle: 'Advanced execution diagnostics are persisted',
         deferredDetailDescription: 'Cancellation controls, live stage streams, and diff viewers remain outside this history observation slice.',
       },
     },
@@ -377,8 +377,8 @@
       },
       deferred: {
         title: 'Deferred runtime detail',
-        description: 'Persisted history detail is intentionally bounded, and replay continues to use an explicit edit-first bridge into Workspace.',
-        emptyTitle: 'Replay defaults to edit-first',
+        description: 'Persisted history detail stays bounded, while replay can reopen the draft or trigger an immediate rerun into Workspace.',
+        emptyTitle: 'Replay remains draft-first but no longer run-blocked',
         emptyDescription: 'Open Replay Draft creates a new request-builder draft without turning history detail into editable state.',
       },
     },
@@ -803,7 +803,7 @@ export const observationRouteMessagesKo: ObservationCatalogShape<typeof observat
         description: 'Replay는 edit-first 흐름을 유지합니다. Replay Draft 열기는 새 요청 draft를 만들고, 캡처된 요청은 observation-only 상태로 남습니다.',
         openReplayDraft: 'Replay Draft 열기',
         runReplayNow: '지금 Replay 실행',
-        readinessNote: '이번 slice에서는 지금 Replay 실행이 비활성화됩니다. 이 route는 이제 실제 캡처 데이터를 사용하지만, replay는 여전히 먼저 새 편집 draft를 엽니다.',
+        readinessNote: '지금 Replay 실행은 새 편집 draft를 열고 즉시 replay run을 시작한 뒤 Workspace 결과 패널로 포커스를 이동합니다.',
       },
       requestSnapshot: {
         title: '요청 스냅샷',
@@ -864,8 +864,8 @@ export const observationRouteMessagesKo: ObservationCatalogShape<typeof observat
       },
       deferred: {
         title: '유예된 런타임 상세',
-        emptyTitle: '더 깊은 캡처 구성이 유예되었습니다',
-        emptyDescription: '저장된 캡처 상세는 제한된 처리 요약까지만 제공하며, raw transport 뷰, richer diagnostics, replay execution은 범위 밖에 둡니다.',
+        emptyTitle: '저장된 캡처 상세를 바로 확인할 수 있습니다',
+        emptyDescription: '제한된 저장 요약, mock 평가, replay용 본문 미리보기를 이 관측 route 안에서 바로 확인할 수 있습니다.',
         labels: {
           mockOutcome: 'Mock 결과',
           handlingSummary: '처리 요약',
@@ -966,7 +966,7 @@ export const observationRouteMessagesKo: ObservationCatalogShape<typeof observat
         description: '히스토리 상세는 observation-only 상태를 유지합니다. Replay Draft 열기는 이 저장된 실행 레코드를 live authoring state로 바꾸지 않고 새 편집 요청 draft를 만듭니다.',
         openReplayDraft: 'Replay Draft 열기',
         runReplayNow: '지금 Replay 실행',
-        readinessNote: '이 slice에서는 지금 Replay 실행이 비활성화됩니다. Replay는 여전히 edit-first 흐름을 유지하며, 저장된 히스토리에는 제한되고 redacted된 요약만 남습니다.',
+        readinessNote: '지금 Replay 실행은 새 편집 draft를 열고 즉시 replay run을 시작한 뒤 Workspace 결과 패널로 포커스를 이동합니다.',
       },
     },
     summaryCards: {
@@ -1012,7 +1012,7 @@ export const observationRouteMessagesKo: ObservationCatalogShape<typeof observat
           headersSummary: '헤더 요약',
           bodyHint: '본문 힌트',
         },
-        boundedDetailTitle: '저장된 응답 상세는 제한된 상태를 유지합니다',
+        boundedDetailTitle: '저장된 응답 상세는 제한되지만 조회 가능합니다',
         boundedDetailDescription: '저장된 히스토리는 redacted된 런타임 요약만 보여줍니다. 풍부한 JSON 뷰어, diff, 전체 raw payload 검사는 이후 slice로 유예됩니다.',
       },
       console: {
@@ -1037,7 +1037,7 @@ export const observationRouteMessagesKo: ObservationCatalogShape<typeof observat
           testsStage: 'Tests 단계',
         },
         testsPreviewAriaLabel: '테스트 미리보기',
-        deferredDetailTitle: 'assertion별 drilldown은 유예되었습니다',
+        deferredDetailTitle: 'assertion별 drilldown이 저장되었습니다',
         deferredDetailDescription: '히스토리는 제한된 저장 테스트 요약까지만 제공하며 아직 script 실행 또는 깊은 diagnostics 구성을 추가하지 않습니다.',
       },
       executionInfo: {
@@ -1080,7 +1080,7 @@ export const observationRouteMessagesKo: ObservationCatalogShape<typeof observat
             none: '없음',
           },
         },
-        deferredDetailTitle: '고급 실행 진단은 유예되었습니다',
+        deferredDetailTitle: '고급 실행 진단이 저장되었습니다',
         deferredDetailDescription: '취소 제어, live stage stream, diff 뷰어는 이 히스토리 관측 slice 범위 밖에 둡니다.',
       },
     },
@@ -1098,8 +1098,8 @@ export const observationRouteMessagesKo: ObservationCatalogShape<typeof observat
       },
       deferred: {
         title: '유예된 런타임 상세',
-        description: '저장된 히스토리 상세는 의도적으로 제한되며, replay는 계속 Workspace로 가는 명시적인 edit-first bridge를 사용합니다.',
-        emptyTitle: 'Replay는 edit-first를 기본으로 유지합니다',
+        description: '저장된 히스토리 상세는 제한된 상태를 유지하고, replay는 draft를 다시 열거나 즉시 rerun을 시작할 수 있습니다.',
+        emptyTitle: 'Replay는 여전히 draft-first지만 더 이상 run-blocked가 아닙니다',
         emptyDescription: 'Replay Draft 열기는 히스토리 상세를 편집 가능한 상태로 바꾸지 않고 새 request-builder draft를 만듭니다.',
       },
     },

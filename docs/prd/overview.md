@@ -2,7 +2,7 @@
 
 - **Purpose:** Reframe the upgrade PRD into an execution-ready summary for planning and task tracking.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-23
+- **Last Updated:** 2026-03-24
 - **Related Documents:** `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`
 - **Update Rule:** Update when product scope, assumptions, or major sequencing decisions change.
 
@@ -17,12 +17,12 @@ Transform the current local request inspector into a **local-first API workbench
 
 ## 2. Current Product Context
 Based on the current repository state:
-- Backend is a single Express server.
-- Frontend is a single HTML page with inline scripts.
-- Captured inbound requests are streamed via SSE.
-- Mock response behavior is globally configured, not endpoint-specific.
-- A server-side JavaScript callback runner executes user code in a VM sandbox.
-- Request templates are hard-coded in the frontend rather than stored as user-managed resources.
+- Backend is still hosted by a single Express server, but server route registration and runtime seams are now being split into bounded modules under `server/`.
+- Frontend now includes a React + Vite + TypeScript app shell served at `/app`, while the legacy `/` route remains as a bounded fallback/prototype lane.
+- Captured inbound requests and execution history are persisted through the runtime storage lane and streamed/invalidated through SSE.
+- Mock response behavior is endpoint-oriented and persisted as user-managed mock rules rather than one global in-memory toggle.
+- Script execution now runs through a bounded child-process runner contract, with worker-thread fallback only for spawn-restricted sandbox environments.
+- Requests, collections, request groups, environments, scripts, and mock rules are stored as user-managed resources rather than hard-coded frontend-only artifacts.
 
 ## 3. Scope Summary
 ### In Scope
@@ -77,25 +77,23 @@ Based on the current repository state:
 - resilience for long-running sessions and captured request streams
 
 ## 6. Constraints and Known Realities
-- Current codebase is extremely small and monolithic.
-- There is no established frontend framework, storage layer, or test framework yet.
-- Current script execution model grants powerful local capabilities but requires security redesign.
+- `server.js` is still too large even after the ongoing decomposition work, so modularization remains an active delivery concern.
+- The codebase now has an established React + Vite + TypeScript client shell and a hybrid persistence baseline, but build/UI verification is still partially sandbox-limited inside Codex.
+- Script execution safety has improved materially, but the final capability breadth and UX policy still require explicit documentation follow-up.
 - The PRD mentions VS Code-like intelligence, but exact acceptable implementation level is **확실하지 않음**.
 
 ## 7. Assumptions
 1. The product remains a locally run developer tool rather than a hosted service.
 2. A significant refactor is acceptable if it improves maintainability and enables the roadmap.
-3. Initial persistence may use local file storage or SQLite; final storage choice is not yet fixed.
+3. The current persistence baseline is hybrid: authored resources live in local JSON storage and runtime observations live in SQLite-backed runtime storage.
 4. Monaco Editor or equivalent is acceptable for the “JS editor like VS Code” requirement.
 5. Team values delivery readiness and architecture clarity before large-scale implementation.
 
 ## 8. Open Questions
-1. Preferred long-term frontend stack is **확실하지 않음**.
-2. Preferred persistence layer (JSON files vs SQLite) is **확실하지 않음**.
-3. Expected operating systems and packaging strategy (plain Node app vs desktop wrapper) are **확실하지 않음**.
-4. Exact security posture for script execution and file system access is **확실하지 않음**.
-5. Whether Postman collection compatibility is MVP or post-MVP is **확실하지 않음**.
-6. Whether inbound and outbound request histories must share a unified timeline in MVP is **확실하지 않음**.
+1. Expected operating systems and packaging strategy beyond the current Node server + browser shell baseline (plain Node app vs desktop wrapper) are **확실하지 않음**.
+2. The final breadth of script-execution capabilities beyond the current bounded runner contract remains **확실하지 않음**.
+3. Whether Postman/OpenAPI/cURL compatibility is MVP or post-MVP remains **확실하지 않음**; the currently implemented transfer baseline is the proprietary authored-resource bundle flow.
+4. Whether inbound and outbound request histories must share a unified timeline in MVP remains **확실하지 않음**.
 
 ## 9. Planning Implications
 The first implementation work should not start with UI polish or feature expansion. The most leveraged first step is to define the target architecture and domain model boundaries because they influence:

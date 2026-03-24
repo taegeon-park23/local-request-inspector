@@ -15,7 +15,7 @@ describe('Replay bridge S8', () => {
     await user.click(within(capturesList).getByRole('button', { name: /Open capture POST \/webhooks\/stripe\?env=dev/i }));
 
     expect(await screen.findByRole('button', { name: 'Open Replay Draft' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Run Replay Now' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Run Replay Now' })).toBeEnabled();
 
     await user.click(await screen.findByRole('button', { name: 'Open Replay Draft' }));
 
@@ -43,7 +43,7 @@ describe('Replay bridge S8', () => {
     renderApp(<AppRouter />, { initialEntries: ['/history'] });
 
     expect(await screen.findByRole('button', { name: 'Open Replay Draft' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Run Replay Now' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Run Replay Now' })).toBeEnabled();
 
     await user.click(await screen.findByRole('button', { name: 'Open Replay Draft' }));
 

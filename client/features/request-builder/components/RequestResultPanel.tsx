@@ -24,7 +24,7 @@ import { StatusBadge } from '@client/shared/ui/StatusBadge';
 import type { WorkspaceResultPanelTabId } from '@client/features/workspace/state/workspace-ui-store';
 
 type TranslateFn = ReturnType<typeof useI18n>['t'];
-interface RequestResultPanelPlaceholderProps {
+interface RequestResultPanelProps {
   activeTab: RequestTabRecord | null;
 }
 
@@ -203,9 +203,9 @@ function readExecutionEnvironmentResolutionSummary(execution: RequestRunObservat
   }) | null)?.environmentResolutionSummary;
 }
 
-export function RequestResultPanelPlaceholder({
+export function RequestResultPanel({
   activeTab,
-}: RequestResultPanelPlaceholderProps) {
+}: RequestResultPanelProps) {
   const { t } = useI18n();
   const translateEnvironmentResolutionKey = (key: string) => t(key as Parameters<typeof t>[0]);
   const resultPanelTabs = getResultPanelTabs(t);

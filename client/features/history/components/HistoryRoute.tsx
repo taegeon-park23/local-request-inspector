@@ -7,6 +7,8 @@ import {
   executionHistoryDetailQueryKey,
   executionHistoryListQueryKey,
   listExecutionHistories,
+  listExecutionTestResults,
+  readExecutionResult,
   readExecutionHistory,
 } from '@client/features/history/history.api';
 import type { HistoryRecord, HistoryResultTabId } from '@client/features/history/history.types';
@@ -29,6 +31,7 @@ import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
+import { useReplayRunStore } from '@client/shared/replay-run-store';
 
 type Translate = ReturnType<typeof useI18n>['t'];
 
@@ -192,7 +195,7 @@ function HistoryExplorerSummaryCard({
   );
 }
 
-export function HistoryPlaceholder() {
+export function HistoryRoute() {
   const navigate = useNavigate();
   const { t } = useI18n();
   const setFloatingExplorerOpen = useShellStore((state) => state.setFloatingExplorerOpen);
@@ -209,6 +212,7 @@ export function HistoryPlaceholder() {
   const selectHistory = useHistoryStore((state) => state.selectHistory);
   const setSearchText = useHistoryStore((state) => state.setSearchText);
   const setExecutionOutcomeFilter = useHistoryStore((state) => state.setExecutionOutcomeFilter);
+  const queueReplayRun = useReplayRunStore((state) => state.queueReplayRun);
 
   const historyListQuery = useQuery({
     queryKey: executionHistoryListQueryKey,
@@ -235,11 +239,26 @@ export function HistoryPlaceholder() {
     queryFn: () => readExecutionHistory(effectiveSelectedHistoryId!),
     enabled: effectiveSelectedHistoryId !== null,
   });
+  const historyResultQuery = useQuery({
+    queryKey: ['execution-histories', effectiveSelectedHistoryId, 'result'],
+    queryFn: () => readExecutionResult(effectiveSelectedHistoryId!),
+    enabled: effectiveSelectedHistoryId !== null,
+  });
+  const historyTestResultsQuery = useQuery({
+    queryKey: ['execution-histories', effectiveSelectedHistoryId, 'test-results'],
+    queryFn: () => listExecutionTestResults(effectiveSelectedHistoryId!),
+    enabled: effectiveSelectedHistoryId !== null,
+  });
 
   const selectedHistory = historyDetailQuery.data
     ?? filteredHistory.find((history) => history.id === effectiveSelectedHistoryId)
     ?? null;
-  const observationHealth = historyListQuery.isError || historyDetailQuery.isError ? 'degraded' : 'ready';
+  const observationHealth = historyListQuery.isError
+    || historyDetailQuery.isError
+    || historyResultQuery.isError
+    || historyTestResultsQuery.isError
+    ? 'degraded'
+    : 'ready';
   const isListLoading = historyListQuery.isPending && !historyListQuery.data;
   const isDetailLoading = effectiveSelectedHistoryId !== null && historyDetailQuery.isPending && !historyDetailQuery.data;
   const isEmpty = !isListLoading && listItems.length === 0;
@@ -248,8 +267,14 @@ export function HistoryPlaceholder() {
     ? historyListQuery.error.message
     : historyDetailQuery.error instanceof Error
       ? historyDetailQuery.error.message
+      : historyResultQuery.error instanceof Error
+        ? historyResultQuery.error.message
+        : historyTestResultsQuery.error instanceof Error
+          ? historyTestResultsQuery.error.message
       : t('historyRoute.empty.degraded.fallbackDescription');
   const selectedStageSummaries = selectedHistory?.stageSummaries ?? [];
+  const persistedExecutionResult = historyResultQuery.data ?? null;
+  const persistedTestResults = historyTestResultsQuery.data ?? [];
 
   const handleOpenReplayDraft = () => {
     if (!selectedHistory) {
@@ -257,6 +282,16 @@ export function HistoryPlaceholder() {
     }
 
     openHistoryReplayDraft(selectedHistory);
+    navigate('/workspace');
+  };
+
+  const handleRunReplayNow = () => {
+    if (!selectedHistory) {
+      return;
+    }
+
+    const replayTab = openHistoryReplayDraft(selectedHistory);
+    queueReplayRun(replayTab.id);
     navigate('/workspace');
   };
 
@@ -447,7 +482,7 @@ export function HistoryPlaceholder() {
                   <button type="button" className="workspace-button workspace-button--secondary" onClick={handleOpenReplayDraft}>
                     <IconLabel icon="replay">{t('historyRoute.detail.bridge.openReplayDraft')}</IconLabel>
                   </button>
-                  <button type="button" className="workspace-button workspace-button--secondary" disabled>
+                  <button type="button" className="workspace-button workspace-button--secondary" onClick={handleRunReplayNow}>
                     <IconLabel icon="run">{t('historyRoute.detail.bridge.runReplayNow')}</IconLabel>
                   </button>
                 </div>
@@ -524,10 +559,14 @@ export function HistoryPlaceholder() {
                 />
                 <p className="shared-readiness-note">{selectedHistory.responsePreviewPolicy ?? createFallbackResponsePreviewPolicy(selectedHistory, t)}</p>
                 <pre className="history-preview-block">{selectedHistory.bodyPreview}</pre>
-                <EmptyStateCallout
-                  title={t('historyRoute.resultPanels.response.boundedDetailTitle')}
-                  description={t('historyRoute.resultPanels.response.boundedDetailDescription')}
-                />
+                {persistedExecutionResult ? (
+                  <KeyValueMetaList
+                    items={[
+                      { label: t('historyRoute.resultPanels.response.labels.headersSummary'), value: selectedHistory.headersSummary },
+                      { label: t('historyRoute.resultPanels.response.labels.previewPolicy'), value: persistedExecutionResult.redactionApplied ? 'Redaction applied to persisted result snapshots.' : 'Persisted result snapshot stored without extra redaction flag.' },
+                    ]}
+                  />
+                ) : null}
               </DetailViewerSection>
             ) : null}
 
@@ -589,10 +628,15 @@ export function HistoryPlaceholder() {
                     description={selectedHistory.testsSummary}
                   />
                 )}
-                <EmptyStateCallout
-                  title={t('historyRoute.resultPanels.tests.deferredDetailTitle')}
-                  description={t('historyRoute.resultPanels.tests.deferredDetailDescription')}
-                />
+                {persistedTestResults.length > 0 ? (
+                  <ul className="history-preview-list" aria-label="Persisted test result details">
+                    {persistedTestResults.map((result) => (
+                      <li key={result.id}>
+                        <strong>{result.testName}</strong>: {result.status} - {result.message ?? 'No persisted detail message.'}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </DetailViewerSection>
             ) : null}
 
@@ -627,10 +671,14 @@ export function HistoryPlaceholder() {
                     ))}
                   </ul>
                 ) : null}
-                <EmptyStateCallout
-                  title={t('historyRoute.resultPanels.executionInfo.deferredDetailTitle')}
-                  description={t('historyRoute.resultPanels.executionInfo.deferredDetailDescription')}
-                />
+                {persistedExecutionResult ? (
+                  <KeyValueMetaList
+                    items={[
+                      { label: t('historyRoute.resultPanels.executionInfo.labels.errorCode'), value: selectedHistory.errorCode ?? t('historyRoute.resultPanels.executionInfo.noExecutionErrorCode') },
+                      { label: t('historyRoute.resultPanels.response.labels.previewPolicy'), value: persistedExecutionResult.responseBodyRedacted ? 'Response preview stayed redacted in runtime persistence.' : 'Response preview stored without body redaction flag.' },
+                    ]}
+                  />
+                ) : null}
               </DetailViewerSection>
             ) : null}
           </div>
@@ -680,10 +728,16 @@ export function HistoryPlaceholder() {
               className="history-summary-card history-summary-card--deferred"
               tone="muted"
             >
-              <EmptyStateCallout
-                title={t('historyRoute.timelinePanel.deferred.emptyTitle')}
-                description={t('historyRoute.timelinePanel.deferred.emptyDescription')}
+              <KeyValueMetaList
+                items={[
+                  { label: t('historyRoute.resultPanels.tests.labels.assertions'), value: selectedHistory.assertionCount },
+                  { label: t('historyRoute.resultPanels.console.labels.logLines'), value: selectedHistory.consoleLogCount },
+                  { label: t('historyRoute.resultPanels.console.labels.warnings'), value: selectedHistory.consoleWarningCount },
+                ]}
               />
+              {persistedTestResults.length > 0 ? (
+                <p className="shared-readiness-note">{persistedTestResults.length} persisted test result rows remain available for this execution.</p>
+              ) : null}
             </DetailViewerSection>
           </div>
         )}

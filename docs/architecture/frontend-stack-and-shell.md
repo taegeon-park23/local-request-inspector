@@ -2,7 +2,7 @@
 
 - **Purpose:** Compare realistic frontend stack options and define the recommended application shell for the local-first API workbench.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-22
+- **Last Updated:** 2026-03-24
 - **Related Documents:** `overview.md`, `internal-api-contracts.md`, `ux-information-architecture.md`, `workspace-flows.md`, `script-execution-safety-model.md`
 - **Status:** done
 - **Update Rule:** Update when the recommended frontend stack, shell boundaries, or state-management strategy materially change.
@@ -321,7 +321,7 @@ React + Vite + TypeScript gives:
 
 ## 15. Open Questions
 1. Whether the eventual packaged app uses Electron, Tauri, or stays browser-only is **확실하지 않음**.
-2. Whether React Router is necessary in MVP or a smaller shell-state approach is enough is **확실하지 않음**.
+2. React Router is the current top-level shell-routing baseline; the remaining question is how deep route-backed state should go beyond top-level sections and a few key workspace views.
 3. Whether a full component library such as MUI should be used or a lighter/headless mix is **확실하지 않음**.
 4. Whether Monaco should be loaded route-level, panel-level, or editor-instance-level is **확실하지 않음**.
 

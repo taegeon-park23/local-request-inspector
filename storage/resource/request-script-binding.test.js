@@ -3,6 +3,7 @@ const {
   createLinkedRequestScriptBinding,
   hasLinkedRequestScriptBindings,
   normalizeRequestScriptsState,
+  remapRequestScriptsForImport,
   resolveRequestScriptsForExecution,
   serializeRequestScriptsForBundle,
 } = require('./request-script-binding');
@@ -79,23 +80,53 @@ const {
   );
 })();
 
-(function testBlocksBundleSerializationWhenAnyStageRemainsLinked() {
-  assert.throws(
-    () => serializeRequestScriptsForBundle({
-      activeStage: 'pre-request',
-      preRequest: createLinkedRequestScriptBinding({
-        savedScriptId: 'saved-script-pre-trace',
-        savedScriptNameSnapshot: 'Trace seed',
-        linkedAt: '2026-03-24T00:00:00.000Z',
-      }),
-      postResponse: '',
-      tests: '',
+(function testSerializesLinkedBindingsForBundleExport() {
+  const serializedScripts = serializeRequestScriptsForBundle({
+    activeStage: 'pre-request',
+    preRequest: createLinkedRequestScriptBinding({
+      savedScriptId: 'saved-script-pre-trace',
+      savedScriptNameSnapshot: 'Trace seed',
+      linkedAt: '2026-03-24T00:00:00.000Z',
     }),
-    (error) => {
-      assert.equal(error.code, 'request_linked_script_export_blocked');
-      assert.equal(error.details.linkedStages.length, 1);
-      assert.equal(error.details.linkedStages[0].stageId, 'pre-request');
-      return true;
+    postResponse: '',
+    tests: '',
+  });
+
+  assert.deepEqual(serializedScripts, {
+    activeStage: 'pre-request',
+    preRequest: {
+      mode: 'linked',
+      savedScriptId: 'saved-script-pre-trace',
+      savedScriptNameSnapshot: 'Trace seed',
+      linkedAt: '2026-03-24T00:00:00.000Z',
     },
-  );
+    postResponse: '',
+    tests: '',
+  });
+})();
+
+(function testRemapsLinkedBindingsDuringImport() {
+  const remappedScripts = remapRequestScriptsForImport({
+    activeStage: 'tests',
+    preRequest: '',
+    postResponse: '',
+    tests: createLinkedRequestScriptBinding({
+      savedScriptId: 'saved-script-tests-health',
+      savedScriptNameSnapshot: 'Health assertions',
+      linkedAt: '2026-03-24T00:00:00.000Z',
+    }),
+  }, (savedScriptId) => savedScriptId === 'saved-script-tests-health'
+    ? {
+      id: 'imported-script-tests-health',
+      name: 'Health assertions (Imported)',
+    }
+    : null);
+
+  assert.equal(remappedScripts.unresolvedLinks.length, 0);
+  assert.deepEqual(remappedScripts.scripts.tests, {
+    mode: 'linked',
+    savedScriptId: 'imported-script-tests-health',
+    savedScriptNameSnapshot: 'Health assertions (Imported)',
+    linkedAt: '2026-03-24T00:00:00.000Z',
+  });
 })();

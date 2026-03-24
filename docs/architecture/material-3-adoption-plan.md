@@ -1,8 +1,8 @@
-﻿# Material 3 Adoption Plan
+# Material 3 Adoption Plan
 
 - **Purpose:** Define the safe, incremental adoption path for Material 3 foundations in the current shell-first React workbench without changing feature semantics or state ownership.
 - **Created:** 2026-03-22
-- **Last Updated:** 2026-03-23
+- **Last Updated:** 2026-03-24
 - **Related Documents:** `overview.md`, `frontend-stack-and-shell.md`, `request-builder-mvp.md`, `script-editor-and-automation-ux.md`, `mock-engine-rules-spec.md`, `history-and-inspector-behavior.md`, `frontend-workspace-shell-implementation-plan.md`
 - **Status:** done
 - **Update Rule:** Update when the Material 3 foundation strategy, token model, component mapping, or rollout slices materially change.
@@ -182,10 +182,10 @@ Use a **token-first custom implementation**:
 - Scope: request-builder and active request observation wrapper hierarchy only.
 - Gate: the slice is already applied in code; use local verification handoff when sandboxed confirmation cannot run.
 - Fallback: if sandboxed verification is blocked, request exact local commands and compare against expected results instead of reopening the slice as blocked/deferred.
-- Official gate procedure: run `npm run check:m3f3-gate`. The check requires `typecheck`, a real dev-transform probe against `/`, `/app/bootstrap/main.tsx`, `RequestWorkSurfacePlaceholder.tsx`, and `RequestResultPanelPlaceholder.tsx`, plus bounded build/test preflight reporting. Dev-server startup or root HTML alone never clears the gate.
+- Official gate procedure: run `npm run check:m3f3-gate`. The check requires `typecheck`, a real dev-transform probe against `/`, `/app/bootstrap/main.tsx`, `RequestWorkSurface.tsx`, and `RequestResultPanel.tsx`, plus bounded build/test preflight reporting. Dev-server startup or root HTML alone never clears the gate.
 - Follow current tracking docs when requesting extra local confirmation of `M3-F3` or planning later optional visual polish.
-- Re-check note (2026-03-22): the gated TSX surfaces remain `client/features/request-builder/components/RequestWorkSurfacePlaceholder.tsx` and `client/features/request-builder/components/RequestResultPanelPlaceholder.tsx`.
-- Validation note (2026-03-22): `npm.cmd run typecheck` passes after the wrapper/CSS patch, a user-verified non-sandbox local `npm.cmd run test:ui` passed the then-current full UI suite, and sandbox-only reruns of the gate remain environment-blocked because Vite/esbuild worker startup hits `spawn EPERM` on `/app/bootstrap/main.tsx`, `RequestWorkSurfacePlaceholder.tsx`, and `RequestResultPanelPlaceholder.tsx`.
+- Re-check note (2026-03-22): the gated TSX surfaces remain `client/features/request-builder/components/RequestWorkSurface.tsx` and `client/features/request-builder/components/RequestResultPanel.tsx`.
+- Validation note (2026-03-22): `npm.cmd run typecheck` passes after the wrapper/CSS patch, a user-verified non-sandbox local `npm.cmd run test:ui` passed the then-current full UI suite, and sandbox-only reruns of the gate remain environment-blocked because Vite/esbuild worker startup hits `spawn EPERM` on `/app/bootstrap/main.tsx`, `RequestWorkSurface.tsx`, and `RequestResultPanel.tsx`.
 - Status: done in tracking on 2026-03-22. `M3-F3` has the intended request-builder/result-panel wrapper cleanup in code, and future sandbox-blocked confirmation should be handled through local command handoff rather than as an active milestone blocker.
 
 ### T035 — Compact shell header and icon-supported usability refresh
