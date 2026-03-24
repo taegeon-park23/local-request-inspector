@@ -16,6 +16,7 @@ const {
     requestGroups: [{ id: 'request-group-1', collectionId: 'collection-1', name: 'General' }],
     requests: [{ id: 'request-1', name: 'Health check' }],
     mockRules: [{ id: 'mock-rule-1', name: 'Health mock' }],
+    scripts: [{ id: 'script-1', name: 'Health tests' }],
   });
 
   assert.deepEqual(Object.keys(bundle).sort(), [
@@ -26,6 +27,7 @@ const {
     'requests',
     'resourceKind',
     'schemaVersion',
+    'scripts',
     'workspaceId',
   ]);
   assert.equal(bundle.resourceKind, AUTHORED_RESOURCE_BUNDLE_KIND);
@@ -34,6 +36,7 @@ const {
   assert.equal(bundle.requestGroups.length, 1);
   assert.equal(bundle.requests.length, 1);
   assert.equal(bundle.mockRules.length, 1);
+  assert.equal(bundle.scripts.length, 1);
   assert.equal(bundle.executionHistories, undefined);
   assert.equal(bundle.capturedRequests, undefined);
 
@@ -44,11 +47,13 @@ const {
     requestGroups: [],
     requests: [{ id: 'request-only-1', name: 'Single request export' }],
     mockRules: [],
+    scripts: [],
   });
   assert.equal(singleRequestBundle.collections.length, 0);
   assert.equal(singleRequestBundle.requestGroups.length, 0);
   assert.equal(singleRequestBundle.requests.length, 1);
   assert.equal(singleRequestBundle.mockRules.length, 0);
+  assert.equal(singleRequestBundle.scripts.length, 0);
   assert.equal(singleRequestBundle.executionHistories, undefined);
   assert.equal(singleRequestBundle.capturedRequests, undefined);
 
@@ -59,13 +64,30 @@ const {
     requestGroups: [],
     requests: [],
     mockRules: [{ id: 'mock-rule-only-1', name: 'Single mock export' }],
+    scripts: [],
   });
   assert.equal(singleMockRuleBundle.collections.length, 0);
   assert.equal(singleMockRuleBundle.requestGroups.length, 0);
   assert.equal(singleMockRuleBundle.requests.length, 0);
   assert.equal(singleMockRuleBundle.mockRules.length, 1);
+  assert.equal(singleMockRuleBundle.scripts.length, 0);
   assert.equal(singleMockRuleBundle.executionHistories, undefined);
   assert.equal(singleMockRuleBundle.capturedRequests, undefined);
+
+  const singleScriptBundle = buildAuthoredResourceBundle({
+    workspaceId: 'local-workspace',
+    exportedAt: '2026-03-21T00:00:00.000Z',
+    collections: [],
+    requestGroups: [],
+    requests: [],
+    mockRules: [],
+    scripts: [{ id: 'script-only-1', name: 'Single script export' }],
+  });
+  assert.equal(singleScriptBundle.collections.length, 0);
+  assert.equal(singleScriptBundle.requestGroups.length, 0);
+  assert.equal(singleScriptBundle.requests.length, 0);
+  assert.equal(singleScriptBundle.mockRules.length, 0);
+  assert.equal(singleScriptBundle.scripts.length, 1);
 
   assert.throws(
     () => parseAuthoredResourceBundleText('not valid json'),
@@ -74,13 +96,14 @@ const {
 
   assert.throws(
     () => parseAuthoredResourceBundleText(JSON.stringify({
-      schemaVersion: 9,
+      schemaVersion: 99,
       resourceKind: AUTHORED_RESOURCE_BUNDLE_KIND,
       workspaceId: 'local-workspace',
       collections: [],
       requestGroups: [],
       requests: [],
       mockRules: [],
+      scripts: [],
     })),
     (error) => error && error.code === 'resource_bundle_unsupported_schema' && error.details?.compatibilityState === 'unsupported-version',
   );
@@ -95,6 +118,7 @@ const {
       requestGroups: [],
       requests: [],
       mockRules: [],
+      scripts: [],
     })),
     (error) => error && error.code === 'resource_bundle_unsupported_schema' && error.details?.compatibilityState === 'migration-needed',
   );
@@ -109,6 +133,7 @@ const {
       requestGroups: [],
       requests: [],
       mockRules: [],
+      scripts: [],
     })),
     (error) => error && error.code === 'resource_bundle_invalid_exported_at',
   );
@@ -129,6 +154,7 @@ const {
         },
       ],
       mockRules: [],
+      scripts: [],
     })),
     (error) => error && error.code === 'resource_bundle_unsupported_resource_kind',
   );
@@ -150,6 +176,7 @@ const {
           resourceSchemaVersion: 99,
         },
       ],
+      scripts: [],
     })),
     (error) => error && error.code === 'resource_bundle_unsupported_resource_schema',
   );
@@ -163,8 +190,34 @@ const {
     requestGroups: [],
     requests: [],
     mockRules: [],
+    scripts: [],
   });
   assert.equal(compatibility.state, 'read-compatible');
+
+  const legacyCompatibility = inspectAuthoredResourceBundleCompatibility({
+    schemaVersion: 2,
+    resourceKind: AUTHORED_RESOURCE_BUNDLE_KIND,
+    workspaceId: 'local-workspace',
+    exportedAt: '2026-03-21T00:00:00.000Z',
+    collections: [],
+    requestGroups: [],
+    requests: [],
+    mockRules: [],
+  });
+  assert.equal(legacyCompatibility.state, 'migration-needed');
+
+  const parsedLegacyBundle = parseAuthoredResourceBundleText(JSON.stringify({
+    schemaVersion: 2,
+    resourceKind: AUTHORED_RESOURCE_BUNDLE_KIND,
+    workspaceId: 'local-workspace',
+    exportedAt: '2026-03-21T00:00:00.000Z',
+    collections: [],
+    requestGroups: [],
+    requests: [],
+    mockRules: [],
+  }));
+  assert.deepEqual(parsedLegacyBundle.scripts, []);
+  assert.equal(parsedLegacyBundle.schemaCompatibilityState, 'migration-needed');
 
   const usedNames = new Set(['health check']);
   assert.equal(createImportedResourceName('New request', usedNames), 'New request');

@@ -3,7 +3,7 @@
 - **Purpose:** Explain sequencing logic and show which work should happen first, next, and later.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-24
-- **Related Documents:** `master-task-board.md`, `post-m3-reactivation-guide.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `environment-follow-up-lane-comparison.md`, `resolved-preview-sub-lane-comparison.md`, `../architecture/request-environment-resolution-summary-contract.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md`, `../tasks/task-032-post-t030-environment-follow-up-lane-comparison.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../tasks/task-034-post-t033-resolution-summary-contract.md`, `../tasks/task-035-compact-shell-header-and-material-icon-usability-refresh.md`, `../tasks/task-036-button-badge-and-radius-visual-hierarchy-refinement.md`, `../architecture/client-i18n-foundation.md`, `../tasks/task-037-client-i18n-foundation-and-korean-locale-bootstrap.md`, `../tasks/task-038-environments-and-scripts-route-localization-pass.md`, `../tasks/task-039-workspace-authoring-localization-pass.md`, `../tasks/task-040-workspace-result-panel-localization-pass.md`, `../tasks/task-041-captures-observation-route-localization-pass.md`, `../tasks/task-042-history-observation-route-localization-pass.md`, `../tasks/task-043-shell-density-and-collapsible-navigation-refinement.md`, `../tasks/task-044-single-panel-route-tabs-layout.md`, `../tasks/task-045-mocks-route-localization-pass.md`, `../tasks/task-046-shell-and-management-generated-aria-localization-pass.md`, `../tasks/task-048-observation-route-focused-explorer-overlay-and-density-refinement.md`, `../tasks/task-049-observation-route-card-content-preservation-and-badge-rail-alignment.md`, `../tasks/task-050-workspace-management-focused-overlay-and-content-preservation.md`, `../tasks/task-051-workspace-request-flow-and-canonical-request-tree.md`, `../tasks/task-052-workspace-request-group-creation-and-save-placement-controls.md`, `../tasks/task-053-workspace-request-placement-helper-refactor.md`, `../tasks/task-054-workspace-request-group-rename-and-empty-delete-ui.md`, `../tasks/task-055-workspace-collection-crud-ui.md`, `../tasks/task-058-workspace-navigation-only-explorer-and-main-surface-management.md`, `../prd/overview.md`, `../tasks/task-001-foundation-architecture.md`
+- **Related Documents:** `master-task-board.md`, `post-m3-reactivation-guide.md`, `m3-f3-implementation-handoff.md`, `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, `candidate-a-narrow-candidate-comparison.md`, `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, `candidate-b-import-migration-approach-decision.md`, `candidate-c-promotion-readiness.md`, `candidate-c-gap-inventory.md`, `environment-follow-up-lane-comparison.md`, `resolved-preview-sub-lane-comparison.md`, `request-stage-script-linkage-lane-comparison.md`, `../architecture/request-environment-resolution-summary-contract.md`, `../tasks/task-019-server-backed-pre-import-preview.md`, `../tasks/task-020-candidate-b-gap-inventory-and-lane-selection.md`, `../tasks/task-021-candidate-c-gap-inventory-and-seam-selection.md`, `../tasks/task-022-post-t021-priority-review.md`, `../tasks/task-023-candidate-b-import-migration-approach-decision.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`, `../tasks/task-025-post-m3-f3-closure-priority-review.md`, `../tasks/task-026-m3-f3-validation-environment-blocker-triage.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-028-post-t027-candidate-a-readiness-refresh.md`, `../tasks/task-029-request-environment-selection-and-resolution-plan.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-031-post-t030-priority-and-candidate-a-refresh.md`, `../tasks/task-032-post-t030-environment-follow-up-lane-comparison.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../tasks/task-034-post-t033-resolution-summary-contract.md`, `../tasks/task-035-compact-shell-header-and-material-icon-usability-refresh.md`, `../tasks/task-036-button-badge-and-radius-visual-hierarchy-refinement.md`, `../architecture/client-i18n-foundation.md`, `../tasks/task-037-client-i18n-foundation-and-korean-locale-bootstrap.md`, `../tasks/task-038-environments-and-scripts-route-localization-pass.md`, `../tasks/task-039-workspace-authoring-localization-pass.md`, `../tasks/task-040-workspace-result-panel-localization-pass.md`, `../tasks/task-041-captures-observation-route-localization-pass.md`, `../tasks/task-042-history-observation-route-localization-pass.md`, `../tasks/task-043-shell-density-and-collapsible-navigation-refinement.md`, `../tasks/task-044-single-panel-route-tabs-layout.md`, `../tasks/task-045-mocks-route-localization-pass.md`, `../tasks/task-046-shell-and-management-generated-aria-localization-pass.md`, `../tasks/task-048-observation-route-focused-explorer-overlay-and-density-refinement.md`, `../tasks/task-049-observation-route-card-content-preservation-and-badge-rail-alignment.md`, `../tasks/task-050-workspace-management-focused-overlay-and-content-preservation.md`, `../tasks/task-051-workspace-request-flow-and-canonical-request-tree.md`, `../tasks/task-052-workspace-request-group-creation-and-save-placement-controls.md`, `../tasks/task-053-workspace-request-placement-helper-refactor.md`, `../tasks/task-054-workspace-request-group-rename-and-empty-delete-ui.md`, `../tasks/task-055-workspace-collection-crud-ui.md`, `../tasks/task-058-workspace-navigation-only-explorer-and-main-surface-management.md`, `../tasks/task-059-workspace-detached-draft-result-panel-polish.md`, `../tasks/task-060-workspace-saved-resource-manager-ergonomics-refinement.md`, `../tasks/task-061a-authored-resource-bundle-expansion-narrowing.md`, `../tasks/task-061b-standalone-saved-scripts-authored-resource-bundle-expansion.md`, `../tasks/task-062-post-run-environment-resolution-summary-implementation.md`, `../tasks/task-063-post-t062-request-stage-script-linkage-lane-comparison.md`, `../tasks/task-064-request-stage-saved-script-attach-by-copy.md`, `../prd/overview.md`, `../tasks/task-001-foundation-architecture.md`
 - **Update Rule:** Update when priorities, dependencies, or milestone assumptions change.
 
 ## Priority Principles
@@ -149,11 +149,31 @@ Tasks are prioritized using these criteria:
 ### Phase AK - Workspace Navigation-Only Explorer Follow-Up
 61. **T058** Workspace navigation-only explorer and main-surface management - complete
 
-### Phase AL - Parked Optional Future Work
-62. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule bundle scope
-63. Later write-time migration-engine work if compatibility pressure justifies it
-64. Bounded packaging polish only if a delivery milestone identifies a concrete readiness gap
+### Phase AL - Detached Draft Polish
+62. **T059** Workspace detached draft result-panel polish - complete
 
+### Phase AM - Saved-Resource Manager Ergonomics
+63. **T060** Workspace saved-resource manager ergonomics refinement - complete
+
+### Phase AN - Bundle Expansion Narrowing
+64. **T061A** Authored-resource bundle expansion narrowing - complete
+
+### Phase AO - Standalone Saved Scripts Bundle Expansion
+65. **T061B** Standalone saved scripts authored-resource bundle expansion - complete
+
+### Phase AP - Post-Run Environment Resolution Summary
+66. **T062** Post-run environment resolution summary implementation - complete
+
+### Phase AQ - Request-Stage Script Linkage Narrowing
+67. **T063** Post-T062 request-stage script linkage lane comparison - complete
+
+### Phase AR - Request-Stage Saved-Script Attach By Copy
+68. **T064** Request-stage saved-script attach by copy - ready next implementation
+
+### Phase AS - Parked Optional Future Work
+69. Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule/scripts bundle scope
+70. Later write-time migration-engine work if compatibility pressure justifies it
+71. Bounded packaging polish only if a delivery milestone identifies a concrete readiness gap
 ## Why T001 Is First
 T001 is the first execution task because it has the highest leverage:
 - It clarifies the product’s target architecture before coding begins.
@@ -185,6 +205,13 @@ Recently completed foundation work:
 - `T017` Developer environment and tooling baseline
 
 Ready to start now:
+- `T064` is the strongest implementation-ready next slice: it should let the request builder copy one compatible saved script into the active stage editor without introducing linked reusable-script references or new request-stage linkage ids
+- `T063` is landed: it narrows the next request-stage reusable-script follow-up to attach-by-copy and keeps linked reusable references plus library-polish-only follow-up parked
+- `T062` is landed: active request result observation and persisted history now render one shared server-authored `EnvironmentResolutionSummary` in `Execution Info`, while the runtime request snapshot schema stays additive-only and the slice does not widen into raw resolved-request preview
+- `T061B` is landed: workspace authored-resource bundle export/import preview/import now carries standalone saved scripts alongside collections, request groups, saved requests, and mock rules, while older bundles without `scripts` remain read-compatible
+- `T061A` is landed: it fixed the next authored-resource expansion lane to standalone saved scripts first rather than to a broad environment-plus-scripts transfer theme
+- `T060` is landed: the main-surface saved-resource manager now uses explicit transfer, collection, request-group, and saved-request cards with scoped status callouts, so later Workspace follow-up should not reopen another mixed explorer/manager responsibility pass
+- `T059` is landed: explicit saved-request deletion now leaves a clearly labeled detached draft in the builder/result panel/manager, so future detached-tab work should stay bounded to additional polish rather than reopen canonical tree behavior
 - `T058` is landed: Workspace explorer is now navigation-only, while collection/request-group/request management plus authored-resource transfer live in a main-surface saved-resource manager, so later workspace follow-up should focus on one remaining management or detached-draft behavior instead of reopening explorer responsibility drift
 - `T054` is landed: Workspace explorer can now rename request groups and delete empty request groups while keeping active draft/tab placement copy aligned, so the next follow-up should narrow one remaining management concern such as collection CRUD, empty-collection placement handling, alias cleanup, or detached-draft polish instead of reopening the broader canonical-tree rewrite
 - `T053` is landed: request placement normalization now lives in one shared client helper, so future workspace follow-up can focus on request-group behavior and CRUD seams instead of carrying forward more duplicated collection/request-group alias logic
@@ -207,7 +234,7 @@ Ready to start now:
 - `T035` is landed: the shell header is now compact and route-only, nav monograms are replaced with local SVG icons, and shared primitives plus major route headers/actions now use bounded icon support without changing semantics or ownership
 
 ## Deferred / Lower Priority Notes
-- Additional authored-resource tooling beyond `T019` remains parked because the repo already ships saved-request/mock-rule bundle transfer, and the remaining gaps are either already covered, blocked by missing first-class resource types, or still too broad.
+- Additional authored-resource tooling beyond `T019` and the current saved-request/mock-rule/script bundle baseline remains parked because the repo should still avoid reopening bundle scope into environment transfer or broader multi-resource expansion.
 - Use `candidate-a-promotion-readiness.md`, `candidate-a-gap-inventory.md`, and `candidate-a-narrow-candidate-comparison.md` before proposing any Candidate A work beyond `T019`.
 - Candidate 2 remains parked after `T019` because `/mocks` still exports current authored rules locally but import ownership is still workspace-level and mixed-bundle, so a route-local import entrypoint would still risk broadening scope.
 - Broader cURL/OpenAPI/Postman interoperability remains deferred beyond the current authored-resource transfer baseline.
@@ -215,9 +242,15 @@ Ready to start now:
 - Use `candidate-b-promotion-readiness.md`, `candidate-b-gap-inventory.md`, `candidate-b-narrow-lane-comparison.md`, and `candidate-b-import-migration-approach-decision.md` before proposing Candidate B so any future migration-engine task is tied to one blocked compatibility seam and one chosen approach rather than to broad future-proofing. The current stronger future lane is authored-resource import handling for `migration-needed` bundle/resource versions with a future preference for bundle-level normalization before import planning, but it remains parked and still does not justify a new implementation task yet.
 - Packaging polish remains parked because S25/S26 already landed the current repo-native packaging/startup checks, and the remaining esbuild limitation is environment-bound rather than a newly scoped delivery gap.
 - Use `candidate-c-promotion-readiness.md` and `candidate-c-gap-inventory.md` before proposing Candidate C so packaging work starts from the current shipped verification baseline and concrete gap evidence instead of from the already documented environment-bound limitation.
-- Top-bar environment selection, pre-run unresolved-feedback tiering, explorer/readability copy propagation, top-level script attachment/reference semantics, settings mutation, and environment/script import-export expansion remain deferred beyond `T030`; do not treat them as part of placeholder-route cleanup or request-level environment baseline completion anymore.
+- Top-bar environment selection, pre-run unresolved-feedback tiering, explorer/readability copy propagation, top-level script attachment/reference semantics, settings mutation, environment bundle transfer, and environment/script import-export expansion remain deferred beyond `T030`; do not treat them as part of placeholder-route cleanup or request-level environment baseline completion anymore. Use `task-061a-authored-resource-bundle-expansion-narrowing.md` before reopening bundle scope so future transfer work starts from the saved-scripts-first decision instead of from a broad expansion theme.
+- Use `request-stage-script-linkage-lane-comparison.md` before proposing request-stage reusable-script work so future scope starts from the copy-versus-reference comparison rather than from a broad “saved scripts in requests” theme.
 - Use `resolved-preview-sub-lane-comparison.md` after `environment-follow-up-lane-comparison.md` before proposing further environment-observation work so future scope starts from the current strongest sub-lane rather than from a broad “better resolved preview” theme.
 - Use `request-environment-resolution-summary-contract.md` after `resolved-preview-sub-lane-comparison.md` before proposing future environment-observation implementation so result/history scope starts from one bounded shared DTO contract.
+
+
+
+
+
 
 
 

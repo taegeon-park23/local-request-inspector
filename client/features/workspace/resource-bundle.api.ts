@@ -7,6 +7,8 @@ import {
   sortMockRuleRecords,
 } from '@client/features/mocks/mock-rules.api';
 import type { MockRuleRecord } from '@client/features/mocks/mock-rule.types';
+import { sortSavedScripts } from '@client/features/scripts/scripts.api';
+import type { SavedScriptRecord } from '@client/features/scripts/scripts.types';
 
 interface ApiEnvelope<TData> {
   data: TData;
@@ -22,7 +24,7 @@ interface ApiErrorEnvelope {
 }
 
 export const AUTHORED_RESOURCE_BUNDLE_KIND = 'local-request-inspector-authored-resource-bundle';
-export const AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION = 2;
+export const AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION = 3;
 
 export interface AuthoredResourceCollectionRecord {
   id: string;
@@ -48,10 +50,11 @@ export interface AuthoredResourceBundleExport {
   requestGroups: AuthoredResourceRequestGroupRecord[];
   requests: SavedRequestResourceRecord[];
   mockRules: MockRuleRecord[];
+  scripts: SavedScriptRecord[];
 }
 
 export interface AuthoredResourceBundleImportRejection {
-  kind: 'bundle' | 'request' | 'mock-rule';
+  kind: 'bundle' | 'collection' | 'request-group' | 'request' | 'mock-rule' | 'script';
   name?: string;
   reason: string;
 }
@@ -68,6 +71,7 @@ export interface AuthoredResourceBundleImportSummary {
   createdRequestGroupCount: number;
   createdRequestCount: number;
   createdMockRuleCount: number;
+  createdScriptCount: number;
   renamedCount: number;
   importedNamesPreview: string[];
   rejectedReasonSummary: AuthoredResourceBundleImportRejectedReasonSummary[];
@@ -79,6 +83,7 @@ export interface AuthoredResourceBundleImportResult {
   acceptedRequestGroups: AuthoredResourceRequestGroupRecord[];
   acceptedRequests: SavedRequestResourceRecord[];
   acceptedMockRules: MockRuleRecord[];
+  acceptedScripts: SavedScriptRecord[];
   rejected: AuthoredResourceBundleImportRejection[];
   summary: AuthoredResourceBundleImportSummary;
 }
@@ -143,6 +148,7 @@ export async function exportWorkspaceResources() {
     requestGroups: [...(payload.bundle.requestGroups ?? [])],
     requests: [...payload.bundle.requests],
     mockRules: sortMockRuleRecords(payload.bundle.mockRules),
+    scripts: sortSavedScripts(payload.bundle.scripts ?? []),
   }));
 }
 
@@ -154,6 +160,7 @@ export async function exportSavedRequestResource(requestId: string) {
     requestGroups: [...(payload.bundle.requestGroups ?? [])],
     requests: [...payload.bundle.requests],
     mockRules: sortMockRuleRecords(payload.bundle.mockRules),
+    scripts: sortSavedScripts(payload.bundle.scripts ?? []),
   }));
 }
 
@@ -165,6 +172,7 @@ export async function exportMockRuleResource(mockRuleId: string) {
     requestGroups: [...(payload.bundle.requestGroups ?? [])],
     requests: [...payload.bundle.requests],
     mockRules: sortMockRuleRecords(payload.bundle.mockRules),
+    scripts: sortSavedScripts(payload.bundle.scripts ?? []),
   }));
 }
 
@@ -183,6 +191,7 @@ export async function importWorkspaceResources(bundleText: string) {
     acceptedRequestGroups: [...(payload.result.acceptedRequestGroups ?? [])],
     acceptedRequests: [...payload.result.acceptedRequests],
     acceptedMockRules: sortMockRuleRecords(payload.result.acceptedMockRules),
+    acceptedScripts: sortSavedScripts(payload.result.acceptedScripts ?? []),
     rejected: [...payload.result.rejected],
     summary: {
       ...payload.result.summary,
@@ -210,3 +219,4 @@ export async function previewWorkspaceResources(bundleText: string) {
     },
   }));
 }
+

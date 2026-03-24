@@ -2,13 +2,13 @@
 
 - **Purpose:** Define the bounded future contract for exposing environment resolution outcomes in post-run observation surfaces without turning the request builder into a full resolved-request inspector.
 - **Created:** 2026-03-23
-- **Last Updated:** 2026-03-23
-- **Related Documents:** `request-builder-mvp.md`, `request-environment-selection-and-resolution.md`, `internal-api-contracts.md`, `script-execution-safety-model.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../tasks/task-034-post-t033-resolution-summary-contract.md`
-- **Status:** proposed future contract
+- **Last Updated:** 2026-03-24
+- **Related Documents:** `request-builder-mvp.md`, `request-environment-selection-and-resolution.md`, `internal-api-contracts.md`, `script-execution-safety-model.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../tasks/task-034-post-t033-resolution-summary-contract.md`, `../tasks/task-062-post-run-environment-resolution-summary-implementation.md`
+- **Status:** implemented baseline contract
 - **Update Rule:** Update when the execution/history environment summary payload changes materially or when the future implementation narrows or widens this observation slice.
 
 ## 1. Summary
-`T030` implemented request-level environment selection and server-owned runtime resolution, but the active request result panel and persisted history still expose only one bounded `Environment` label. This note defines one future narrow follow-up: a shared post-run environment resolution summary for active execution observation and persisted history. The summary should describe what happened at a bounded metadata level, not expose raw resolved values, secret content, or a full resolved-request diff.
+`T030` implemented request-level environment selection and server-owned runtime resolution. `T062` now lands the bounded follow-up selected by `T033` and contracted by `T034`: a shared post-run environment resolution summary for active execution observation and persisted history. The summary describes what happened at a bounded metadata level and does not expose raw resolved values, secret content, or a full resolved-request diff.
 
 ## 2. Why This Exists
 - The request builder MVP already allows environment-backed execution and calls out that a resolved preview may later exist without exposing secrets.

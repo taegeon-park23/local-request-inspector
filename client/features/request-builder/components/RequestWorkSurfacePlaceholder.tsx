@@ -8,6 +8,7 @@ import {
 import { useRequestBuilderCommands } from '@client/features/request-builder/hooks/useRequestBuilderCommands';
 import type { RequestDraftState } from '@client/features/request-builder/request-draft.types';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
+import { isDetachedRequestTab } from '@client/features/request-builder/request-tab-state';
 import { RequestKeyValueEditor } from '@client/features/request-builder/components/RequestKeyValueEditor';
 import {
   createRequestPlacementFromSelection,
@@ -149,6 +150,7 @@ export function RequestWorkSurfacePlaceholder({
 
   const displayTitle = draft.name.trim() || 'Untitled Request';
   const replaySource = activeTab.source === 'replay' ? activeTab.replaySource ?? null : null;
+  const isDetachedDraft = isDetachedRequestTab(activeTab);
   const requestPlacementPath = formatRequestPlacementPath(draft);
   const locationSummary = replaySource
     ? replaySource.description
@@ -208,7 +210,7 @@ export function RequestWorkSurfacePlaceholder({
           {replaySource ? (
             <span className="workspace-chip workspace-chip--replay">{replaySource.label}</span>
           ) : (
-            <span className="workspace-chip">{activeTab.source === 'saved' ? t('workspaceRoute.requestBuilder.badges.savedRequest') : t('workspaceRoute.requestBuilder.badges.newDraft')}</span>
+            <span className="workspace-chip">{isDetachedDraft ? t('workspaceRoute.requestBuilder.badges.detachedDraft') : activeTab.source === 'saved' ? t('workspaceRoute.requestBuilder.badges.savedRequest') : t('workspaceRoute.requestBuilder.badges.newDraft')}</span>
           )}
           {draft.dirty ? <span className="workspace-chip workspace-chip--accent">{t('workspaceRoute.requestBuilder.badges.dirty')}</span> : null}
         </div>
@@ -355,6 +357,20 @@ export function RequestWorkSurfacePlaceholder({
           </div>
         </div>
       </div>
+
+      {isDetachedDraft ? (
+        <section className="request-builder-core__detached-banner" role="status">
+          <div>
+            <h3>{t('workspaceRoute.requestBuilder.detached.title')}</h3>
+            <p>{t('workspaceRoute.requestBuilder.detached.description')}</p>
+          </div>
+          <p className="shared-readiness-note">
+            {requestPlacementPath
+              ? t('workspaceRoute.requestBuilder.detached.saveTarget', { path: requestPlacementPath })
+              : t('workspaceRoute.requestBuilder.detached.noSaveTarget')}
+          </p>
+        </section>
+      ) : null}
 
       <section className="workspace-surface-card request-editor-card request-editor-card--primary">
         <div className="request-editor-card__grid">

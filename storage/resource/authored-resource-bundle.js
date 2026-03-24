@@ -5,6 +5,7 @@ const {
   MOCK_RULE_RESOURCE_SCHEMA_VERSION,
   REQUEST_RESOURCE_SCHEMA_VERSION,
   REQUEST_GROUP_RESOURCE_SCHEMA_VERSION,
+  SCRIPT_RESOURCE_SCHEMA_VERSION,
   RESOURCE_RECORD_KINDS,
 } = require('../shared/constants');
 const {
@@ -101,6 +102,7 @@ function buildAuthoredResourceBundle({
   requestGroups,
   requests,
   mockRules,
+  scripts,
   exportedAt = new Date().toISOString(),
 }) {
   return {
@@ -112,6 +114,7 @@ function buildAuthoredResourceBundle({
     requestGroups: cloneValue(Array.isArray(requestGroups) ? requestGroups : []),
     requests: cloneValue(Array.isArray(requests) ? requests : []),
     mockRules: cloneValue(Array.isArray(mockRules) ? mockRules : []),
+    scripts: cloneValue(Array.isArray(scripts) ? scripts : []),
   };
 }
 
@@ -123,7 +126,7 @@ function inspectAuthoredResourceBundleCompatibility(payload) {
   if (payload.resourceKind !== AUTHORED_RESOURCE_BUNDLE_KIND) {
     throw createBundleError(
       'resource_bundle_unsupported_kind',
-        'Import file is not an authored resource bundle exported by this app.',
+      'Import file is not an authored resource bundle exported by this app.',
       {
         compatibilityState: 'malformed-data',
         resourceKind: payload.resourceKind,
@@ -143,13 +146,15 @@ function inspectAuthoredResourceBundleCompatibility(payload) {
     }),
   ]);
 
+  const allowLegacyBundleMigration = (
+    bundleSchemaCompatibility.state === 'migration-needed'
+    && Number(payload.schemaVersion) >= 1
+    && Number(payload.schemaVersion) < AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION
+  );
+
   if (
     bundleSchemaCompatibility.state !== 'read-compatible'
-    && !(
-      bundleSchemaCompatibility.state === 'migration-needed'
-      && Number(payload.schemaVersion) === 1
-      && AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION === 2
-    )
+    && !allowLegacyBundleMigration
   ) {
     throw createBundleError(
       'resource_bundle_unsupported_schema',
@@ -185,12 +190,13 @@ function validateAuthoredResourceBundlePayload(payload) {
     throw createBundleError('resource_bundle_invalid_requests', 'Import file must include a requests array.');
   }
 
-  const normalizedCollections = Array.isArray(payload.collections) ? payload.collections : [];
-  const normalizedRequestGroups = Array.isArray(payload.requestGroups) ? payload.requestGroups : [];
-
   if (!Array.isArray(payload.mockRules)) {
     throw createBundleError('resource_bundle_invalid_mock_rules', 'Import file must include a mockRules array.');
   }
+
+  const normalizedCollections = Array.isArray(payload.collections) ? payload.collections : [];
+  const normalizedRequestGroups = Array.isArray(payload.requestGroups) ? payload.requestGroups : [];
+  const normalizedScripts = Array.isArray(payload.scripts) ? payload.scripts : [];
 
   validateBundledResourceArray(normalizedCollections, {
     arrayName: 'collection',
@@ -212,6 +218,11 @@ function validateAuthoredResourceBundlePayload(payload) {
     expectedKind: RESOURCE_RECORD_KINDS.MOCK_RULE,
     supportedSchemaVersion: MOCK_RULE_RESOURCE_SCHEMA_VERSION,
   });
+  validateBundledResourceArray(normalizedScripts, {
+    arrayName: 'script',
+    expectedKind: RESOURCE_RECORD_KINDS.SCRIPT,
+    supportedSchemaVersion: SCRIPT_RESOURCE_SCHEMA_VERSION,
+  });
 
   return {
     ...payload,
@@ -220,6 +231,7 @@ function validateAuthoredResourceBundlePayload(payload) {
     requestGroups: cloneValue(normalizedRequestGroups),
     requests: cloneValue(payload.requests),
     mockRules: cloneValue(payload.mockRules),
+    scripts: cloneValue(normalizedScripts),
   };
 }
 

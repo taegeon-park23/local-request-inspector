@@ -50,6 +50,13 @@ const historyRecords: HistoryRecord[] = [
     startedAtLabel: '2026-03-19 10:14',
     completedAtLabel: '2026-03-19 10:14',
     environmentLabel: 'QA environment',
+    environmentResolutionSummary: {
+      status: 'resolved',
+      summary: 'Resolved 4 environment placeholder(s) in url, headers, body, and auth.',
+      resolvedPlaceholderCount: 4,
+      unresolvedPlaceholderCount: 0,
+      affectedInputAreas: ['url', 'headers', 'body', 'auth'],
+    },
     sourceLabel: 'Saved request snapshot',
     timelineEntries: [
       { id: 'h1-stage-1', title: 'Request prepared', summary: 'Resolved the saved request snapshot with the QA environment.' },
@@ -109,6 +116,13 @@ const historyRecords: HistoryRecord[] = [
     startedAtLabel: '2026-03-19 10:05',
     completedAtLabel: '2026-03-19 10:05',
     environmentLabel: 'Staging environment',
+    environmentResolutionSummary: {
+      status: 'resolved',
+      summary: 'Resolved 2 environment placeholder(s) in params and headers.',
+      resolvedPlaceholderCount: 2,
+      unresolvedPlaceholderCount: 0,
+      affectedInputAreas: ['params', 'headers'],
+    },
     sourceLabel: 'Ad hoc request snapshot',
     timelineEntries: [
       { id: 'h2-stage-1', title: 'Request prepared', summary: 'Draft request snapshot was packaged with staging headers.' },
@@ -165,6 +179,13 @@ const historyRecords: HistoryRecord[] = [
     startedAtLabel: '2026-03-19 09:49',
     completedAtLabel: '2026-03-19 09:49',
     environmentLabel: 'Local environment',
+    environmentResolutionSummary: {
+      status: 'resolved',
+      summary: 'Selected environment contributed no placeholder substitutions to this execution.',
+      resolvedPlaceholderCount: 0,
+      unresolvedPlaceholderCount: 0,
+      affectedInputAreas: [],
+    },
     sourceLabel: 'Saved request snapshot',
     timelineEntries: [
       { id: 'h3-stage-1', title: 'Request prepared', summary: 'Resolved request snapshot against local environment variables.' },
@@ -219,6 +240,13 @@ const historyRecords: HistoryRecord[] = [
     startedAtLabel: '2026-03-19 09:24',
     completedAtLabel: '2026-03-19 09:24',
     environmentLabel: 'Production safety profile',
+    environmentResolutionSummary: {
+      status: 'blocked-unresolved-placeholders',
+      summary: 'Environment resolution left 1 unresolved placeholder(s) in auth.',
+      resolvedPlaceholderCount: 0,
+      unresolvedPlaceholderCount: 1,
+      affectedInputAreas: ['auth'],
+    },
     sourceLabel: 'Saved request snapshot',
     timelineEntries: [
       { id: 'h4-stage-1', title: 'Request prepared', summary: 'Loaded the saved request snapshot with production safety profile metadata.' },
@@ -239,4 +267,6 @@ export const degradedEmptyHistoryFixtureScenario: HistoryFixtureScenario = {
   listItems: [],
   selectedHistoryId: null,
 };
+
+
 

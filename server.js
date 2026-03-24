@@ -41,7 +41,9 @@ const {
   validateEnvironmentInput,
 } = require('./storage/resource/environment-record');
 const {
+  createEnvironmentResolutionSummary,
   resolveExecutionRequestWithEnvironment,
+  sanitizeEnvironmentResolutionSummary,
   summarizeUnresolvedEnvironmentPlaceholders,
 } = require('./storage/resource/environment-resolution');
 const {
@@ -57,6 +59,7 @@ const {
   MOCK_RULE_RESOURCE_SCHEMA_VERSION,
   REQUEST_RESOURCE_SCHEMA_VERSION,
   REQUEST_GROUP_RESOURCE_SCHEMA_VERSION,
+  SCRIPT_RESOURCE_SCHEMA_VERSION,
   RESOURCE_RECORD_KINDS,
   RUNTIME_REQUEST_SNAPSHOT_SCHEMA_VERSION,
 } = require('./storage/shared/constants');
@@ -746,6 +749,10 @@ function compareMockRuleRecords(left, right) {
   return String(left.id || '').localeCompare(String(right.id || ''));
 }
 
+function readPersistedEnvironmentResolutionSummary(summary) {
+  return sanitizeEnvironmentResolutionSummary(summary) || undefined;
+}
+
 function createExecutionObservation({
   executionId,
   executionOutcome,
@@ -770,6 +777,9 @@ function createExecutionObservation({
 }) {
   const requestParamCount = Array.isArray(requestSnapshot?.params) ? requestSnapshot.params.length : 0;
   const requestHeaderCount = Array.isArray(requestSnapshot?.headers) ? requestSnapshot.headers.length : 0;
+  const environmentResolutionSummary = readPersistedEnvironmentResolutionSummary(
+    requestSnapshot?.environmentResolutionSummary,
+  );
 
   return {
     executionId,
@@ -825,6 +835,7 @@ function createExecutionObservation({
     environmentLabel: typeof requestSnapshot?.environmentLabel === 'string' && requestSnapshot.environmentLabel.length > 0
       ? requestSnapshot.environmentLabel
       : 'No environment selected',
+    ...(environmentResolutionSummary ? { environmentResolutionSummary } : {}),
     requestCollectionName: requestSnapshot?.collectionName || undefined,
     requestGroupName: requestSnapshot?.requestGroupName || requestSnapshot?.folderName || undefined,
     requestSourceLabel: requestSnapshot?.sourceLabel || 'Runtime request snapshot',
@@ -975,6 +986,9 @@ function createPersistedRequestSnapshot(request, targetUrl) {
     key,
     value: sanitizeFieldValue(key, value),
   }));
+  const environmentResolutionSummary = readPersistedEnvironmentResolutionSummary(
+    request?.environmentResolutionSummary,
+  );
   const persistedSearch = new URLSearchParams();
 
   for (const row of persistedParams) {
@@ -1011,6 +1025,7 @@ function createPersistedRequestSnapshot(request, targetUrl) {
       ? request.requestGroupName
       : (typeof request.folderName === 'string' ? request.folderName : ''),
     sourceLabel: request.id ? 'Saved request snapshot' : 'Ad hoc request snapshot',
+    ...(environmentResolutionSummary ? { environmentResolutionSummary } : {}),
   };
 }
 
@@ -1121,6 +1136,10 @@ function createPersistedRequestSnapshotSafely(request, targetUrl) {
   try {
     return createPersistedRequestSnapshot(request, targetUrl);
   } catch {
+    const environmentResolutionSummary = readPersistedEnvironmentResolutionSummary(
+      request?.environmentResolutionSummary,
+    );
+
     return {
       snapshotKind: 'execution-request',
       snapshotSchemaVersion: RUNTIME_REQUEST_SNAPSHOT_SCHEMA_VERSION,
@@ -1150,6 +1169,7 @@ function createPersistedRequestSnapshotSafely(request, targetUrl) {
         ? request.requestGroupName
         : (typeof request?.folderName === 'string' ? request.folderName : ''),
       sourceLabel: request?.id ? 'Saved request snapshot' : 'Ad hoc request snapshot',
+      ...(environmentResolutionSummary ? { environmentResolutionSummary } : {}),
     };
   }
 }
@@ -2227,6 +2247,9 @@ function createHistoryRecord(runtimeRecord) {
     : environmentId
       ? 'Selected environment'
       : 'No environment selected';
+  const environmentResolutionSummary = readPersistedEnvironmentResolutionSummary(
+    requestSnapshot.environmentResolutionSummary,
+  );
   const persistedStageResults = createPersistedStageResults(runtimeRecord, executionOutcome, transportOutcome);
   const stageSummaries = createObservationStageSummaries(persistedStageResults);
   const consoleLogCount = Number(runtimeRecord.logSummary?.consoleEntries || 0);
@@ -2314,6 +2337,7 @@ function createHistoryRecord(runtimeRecord) {
     startedAtLabel: runtimeRecord.startedAt,
     completedAtLabel: runtimeRecord.completedAt || runtimeRecord.startedAt,
     environmentLabel,
+    ...(environmentResolutionSummary ? { environmentResolutionSummary } : {}),
     sourceLabel: requestSnapshot.sourceLabel || 'Runtime request snapshot',
     errorCode: runtimeRecord.errorCode || null,
     errorSummary: runtimeRecord.errorMessage || 'No execution error was reported.',
@@ -3242,6 +3266,43 @@ function createImportedMockRuleResource(input, workspaceId, usedNames) {
   };
 }
 
+function createImportedScriptResource(input, workspaceId, usedNames) {
+  const compatibilityError = validateImportedResourceCompatibility(
+    input,
+    RESOURCE_RECORD_KINDS.SCRIPT,
+    SCRIPT_RESOURCE_SCHEMA_VERSION,
+  );
+
+  if (compatibilityError) {
+    return {
+      rejection: createImportedResourceRejection('script', compatibilityError, input?.name),
+    };
+  }
+
+  const validationError = validateSavedScriptInput(input);
+
+  if (validationError) {
+    return {
+      rejection: createImportedResourceRejection('script', validationError, input?.name),
+    };
+  }
+
+  const importedName = createImportedResourceName(input.name, usedNames);
+
+  return {
+    record: createSavedScriptRecord(
+      {
+        ...input,
+        id: randomUUID(),
+        name: importedName,
+      },
+      null,
+      workspaceId,
+    ),
+    renamed: importedName !== String(input.name || '').trim(),
+  };
+}
+
 function parseWorkspaceResourceBundleImportRequest(req, res) {
   const bundleText = req.body?.bundleText;
 
@@ -3277,6 +3338,7 @@ function prepareWorkspaceResourceBundleImport(bundle, workspaceId) {
     requests: existingRequests,
   } = reconcileWorkspaceRequestPlacementState(workspaceId);
   const existingMockRules = listWorkspaceMockRuleRecords(workspaceId);
+  const existingScripts = listWorkspaceSavedScriptRecords(workspaceId);
   const importState = {
     collectionIdMap: new Map(),
     collectionRecordBySourceName: new Map(),
@@ -3296,6 +3358,7 @@ function prepareWorkspaceResourceBundleImport(bundle, workspaceId) {
     existingRequestGroupNames: [],
     existingRequestNames: existingRequests.map((record) => record.name),
     existingMockRuleNames: existingMockRules.map((record) => record.name),
+    existingScriptNames: existingScripts.map((record) => record.name),
     createImportedCollection: (input, nextWorkspaceId, usedNames) => {
       const result = createImportedCollectionResource(input, nextWorkspaceId, usedNames, importState);
 
@@ -3341,10 +3404,12 @@ function prepareWorkspaceResourceBundleImport(bundle, workspaceId) {
       );
     },
     createImportedMockRule: createImportedMockRuleResource,
+    createImportedScript: createImportedScriptResource,
     sortAcceptedCollections: (records) => [...records].sort(compareRequestPlacementRecords),
     sortAcceptedRequestGroups: (records) => sortRequestGroups(records),
     sortAcceptedRequests: (records) => [...records].sort(compareSavedRequestRecords),
     sortAcceptedMockRules: (records) => [...records].sort(compareMockRuleRecords),
+    sortAcceptedScripts: (records) => [...records].sort(compareSavedScriptRecords),
   });
 }
 app.get('/api/workspaces/:workspaceId/requests', (req, res) => {
@@ -4116,6 +4181,7 @@ app.get('/api/workspaces/:workspaceId/resource-bundle', (req, res) => {
       requestGroups,
       requests,
       mockRules: listWorkspaceMockRuleRecords(req.params.workspaceId),
+      scripts: listWorkspaceSavedScriptRecords(req.params.workspaceId),
     });
 
     return sendData(res, { bundle });
@@ -4147,6 +4213,7 @@ app.get('/api/requests/:requestId/resource-bundle', (req, res) => {
       requestGroups: requestGroupRecord ? [requestGroupRecord] : [],
       requests: [reconciledRequest],
       mockRules: [],
+      scripts: [],
     });
 
     return sendData(res, { bundle });
@@ -4175,6 +4242,7 @@ app.get('/api/mock-rules/:mockRuleId/resource-bundle', (req, res) => {
       requestGroups: [],
       requests: [],
       mockRules: [mockRule],
+      scripts: [],
     });
 
     return sendData(res, { bundle });
@@ -4211,12 +4279,17 @@ app.post('/api/workspaces/:workspaceId/resource-bundle/import', (req, res) => {
       resourceStorage.save('mock-rule', mockRuleRecord);
     }
 
+    for (const scriptRecord of importPlan.acceptedScripts) {
+      resourceStorage.save('script', scriptRecord);
+    }
+
     return sendData(res, {
       result: {
         acceptedCollections: importPlan.acceptedCollections,
         acceptedRequestGroups: importPlan.acceptedRequestGroups,
         acceptedRequests: importPlan.acceptedRequests,
         acceptedMockRules: importPlan.acceptedMockRules,
+        acceptedScripts: importPlan.acceptedScripts,
         rejected: importPlan.rejected,
         summary: importPlan.summary,
       },
@@ -4426,6 +4499,9 @@ app.post('/api/executions/run', async (req, res) => {
     let resolvedExecutionRequest = {
       ...executionRequest,
       selectedEnvironmentLabel: 'No environment selected',
+      environmentResolutionSummary: createEnvironmentResolutionSummary({
+        selectedEnvironmentId: executionRequest.selectedEnvironmentId || null,
+      }),
     };
     let resolvedEnvironmentRecord = null;
 
@@ -4458,6 +4534,10 @@ app.post('/api/executions/run', async (req, res) => {
           resolvedExecutionRequest = {
             ...executionRequest,
             selectedEnvironmentLabel: 'Missing environment reference',
+            environmentResolutionSummary: createEnvironmentResolutionSummary({
+              selectedEnvironmentId: executionRequest.selectedEnvironmentId || null,
+              missingEnvironmentReference: true,
+            }),
           };
           stageResults.transport = createTransportBlockedStageResult(
             'Transport did not run because the selected environment reference is missing.',
@@ -4480,10 +4560,17 @@ app.post('/api/executions/run', async (req, res) => {
           executionRequest,
           resolvedEnvironmentRecord,
         );
+        const environmentResolutionSummary = createEnvironmentResolutionSummary({
+          selectedEnvironmentId: executionRequest.selectedEnvironmentId || null,
+          resolvedPlaceholderCount: resolution.resolvedPlaceholderCount,
+          unresolved: resolution.unresolved,
+          affectedInputAreas: resolution.affectedInputAreas,
+        });
 
         resolvedExecutionRequest = {
           ...resolution.request,
           selectedEnvironmentLabel: createResolvedEnvironmentLabel(resolvedEnvironmentRecord),
+          environmentResolutionSummary,
         };
 
         if (resolution.unresolved.length > 0) {
@@ -4506,6 +4593,16 @@ app.post('/api/executions/run', async (req, res) => {
           try {
             JSON.parse(resolvedExecutionRequest.bodyText);
           } catch {
+            resolvedExecutionRequest = {
+              ...resolvedExecutionRequest,
+              environmentResolutionSummary: createEnvironmentResolutionSummary({
+                selectedEnvironmentId: executionRequest.selectedEnvironmentId || null,
+                resolvedPlaceholderCount: resolution.resolvedPlaceholderCount,
+                unresolved: resolution.unresolved,
+                affectedInputAreas: resolution.affectedInputAreas,
+                invalidResolvedJson: true,
+              }),
+            };
             stageResults.transport = createTransportBlockedStageResult(
               'Transport did not run because environment resolution produced invalid JSON body content.',
               'environment_resolution_invalid_json',
@@ -4653,7 +4750,14 @@ app.post('/api/executions/run', async (req, res) => {
     const durationMs = Date.now() - startedAtMs;
     const requestSnapshot = createPersistedRequestSnapshotSafely({
       ...input,
-      selectedEnvironmentLabel: 'No environment selected',
+      selectedEnvironmentLabel: input?.selectedEnvironmentId ? 'Selected environment' : 'No environment selected',
+      ...(input?.selectedEnvironmentId
+        ? {}
+        : {
+          environmentResolutionSummary: createEnvironmentResolutionSummary({
+            selectedEnvironmentId: null,
+          }),
+        }),
     }, null);
 
     const execution = createExecutionObservation({

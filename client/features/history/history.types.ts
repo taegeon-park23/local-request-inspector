@@ -1,3 +1,5 @@
+import type { EnvironmentResolutionSummary } from '@client/shared/environment-resolution-summary';
+
 export type HistoryObservationHealth = 'ready' | 'degraded';
 export type HistoryExecutionOutcome = 'Succeeded' | 'Failed' | 'Timed out' | 'Cancelled' | 'Blocked';
 export type HistoryTransportOutcome = string;
@@ -86,6 +88,7 @@ export interface HistoryRecord {
   completedAtLabel: string;
   environmentId?: string | null;
   environmentLabel: string;
+  environmentResolutionSummary?: EnvironmentResolutionSummary;
   sourceLabel: string;
   errorCode?: string | null;
   errorSummary?: string;

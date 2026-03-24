@@ -4,6 +4,7 @@ import {
   listWorkspaceEnvironments,
   workspaceEnvironmentsQueryKey,
 } from '@client/features/environments/environment.api';
+import { workspaceScriptsQueryKey } from '@client/features/scripts/scripts.api';
 import {
   listWorkspaceSavedRequests,
   type SavedRequestResourceRecord,
@@ -26,7 +27,11 @@ import type { RequestDraftSeed } from '@client/features/request-builder/request-
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
 import { workspaceMockRulesQueryKey } from '@client/features/mocks/mock-rules.api';
 import { WorkspaceExplorer } from '@client/features/workspace/components/WorkspaceExplorer';
-import { WorkspaceResourceManagerPanel } from '@client/features/workspace/components/WorkspaceResourceManagerPanel';
+import {
+  WorkspaceResourceManagerPanel,
+  type WorkspaceResourceManagerStatus,
+  type WorkspaceResourceManagerStatusScope,
+} from '@client/features/workspace/components/WorkspaceResourceManagerPanel';
 import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import {
   downloadAuthoredResourceBundle,
@@ -59,11 +64,7 @@ import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-
 import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
 import { useShellStore } from '@client/app/providers/shell-store';
 
-interface ResourceTransferStatus {
-  tone: 'success' | 'error' | 'info';
-  message: string;
-  details?: string[];
-}
+type WorkspaceResourceManagerStatuses = Partial<Record<WorkspaceResourceManagerStatusScope, WorkspaceResourceManagerStatus>>;
 
 interface PendingImportPreview {
   bundleText: string;
@@ -122,6 +123,7 @@ function createImportSummaryDetails(
     createdRequestGroupCount,
     createdRequestCount,
     createdMockRuleCount,
+    createdScriptCount,
     renamedCount,
     importedNamesPreview,
     rejectedReasonSummary,
@@ -132,6 +134,7 @@ function createImportSummaryDetails(
     t('workspaceRoute.explorer.status.createdRequestGroups', { count: createdRequestGroupCount ?? 0 }),
     t('workspaceRoute.explorer.status.createdRequests', { count: createdRequestCount }),
     t('workspaceRoute.explorer.status.createdMockRules', { count: createdMockRuleCount }),
+    t('workspaceRoute.explorer.status.createdScripts', { count: createdScriptCount ?? 0 }),
     t('workspaceRoute.explorer.status.renamedOnImport', { count: renamedCount }),
     t('workspaceRoute.explorer.status.rejectedDuringValidation', { count: rejectedCount }),
   ];
@@ -212,6 +215,7 @@ function createExportStatusMessage(
       t('workspaceRoute.explorer.status.bundleRequestGroupCount', { count: bundle.requestGroups?.length ?? 0 }),
       t('workspaceRoute.explorer.status.bundleRequestCount', { count: bundle.requests.length }),
       t('workspaceRoute.explorer.status.bundleMockRuleCount', { count: bundle.mockRules.length }),
+      t('workspaceRoute.explorer.status.bundleScriptCount', { count: bundle.scripts.length }),
       t('workspaceRoute.explorer.status.runtimeExcluded'),
     ],
   };
@@ -288,7 +292,7 @@ function findWorkspaceRequestById(
 export function WorkspacePlaceholder() {
   const queryClient = useQueryClient();
   const { locale, t } = useI18n();
-  const [resourceTransferStatus, setResourceTransferStatus] = useState<ResourceTransferStatus | null>(null);
+  const [managerStatuses, setManagerStatuses] = useState<WorkspaceResourceManagerStatuses>({});
   const [pendingImportPreview, setPendingImportPreview] = useState<PendingImportPreview | null>(null);
   const tabs = useWorkspaceShellStore((state) => state.tabs);
   const activeTabId = useWorkspaceShellStore((state) => state.activeTabId);
@@ -356,6 +360,24 @@ export function WorkspacePlaceholder() {
       })
     : null;
 
+  const setManagerStatus = (
+    scope: WorkspaceResourceManagerStatusScope,
+    status: WorkspaceResourceManagerStatus | null,
+  ) => {
+    setManagerStatuses((current) => {
+      if (!status) {
+        const next = { ...current };
+        delete next[scope];
+        return next;
+      }
+
+      return {
+        ...current,
+        [scope]: status,
+      };
+    });
+  };
+
   const exportResourcesMutation = useMutation({
     mutationFn: async () => {
       const bundle = await exportWorkspaceResources();
@@ -363,21 +385,26 @@ export function WorkspacePlaceholder() {
       return bundle;
     },
     onSuccess: (bundle) => {
-      setResourceTransferStatus(
+      setManagerStatus('transfer', 
         createExportStatusMessage(
           bundle,
-          locale === 'ko'
-            ? t('workspaceRoute.explorer.status.exportBundleLabel', {
-                requestCount: bundle.requests.length,
-                mockRuleCount: bundle.mockRules.length,
-              })
-            : `${bundle.requests.length} saved request definition${bundle.requests.length === 1 ? '' : 's'} and ${bundle.mockRules.length} mock rule${bundle.mockRules.length === 1 ? '' : 's'}`,
+          (
+            locale === 'ko'
+              ? t('workspaceRoute.explorer.status.exportBundleLabel', {
+                  requestCount: bundle.requests.length,
+                  mockRuleCount: bundle.mockRules.length,
+                  scriptCount: bundle.scripts.length,
+                })
+              : bundle.scripts.length > 0
+                ? `${bundle.requests.length} saved request definition${bundle.requests.length === 1 ? '' : 's'}, ${bundle.mockRules.length} mock rule${bundle.mockRules.length === 1 ? '' : 's'}, and ${bundle.scripts.length} saved script${bundle.scripts.length === 1 ? '' : 's'}`
+                : `${bundle.requests.length} saved request definition${bundle.requests.length === 1 ? '' : 's'} and ${bundle.mockRules.length} mock rule${bundle.mockRules.length === 1 ? '' : 's'}`
+          ),
           t,
         ),
       );
     },
     onError: (error) => {
-      setResourceTransferStatus({
+      setManagerStatus('transfer', {
         tone: 'error',
         message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.exportFailed'),
       });
@@ -397,7 +424,7 @@ export function WorkspacePlaceholder() {
       };
     },
     onSuccess: ({ request, bundle }) => {
-      setResourceTransferStatus(
+      setManagerStatus('saved-request', 
         createExportStatusMessage(
           bundle,
           locale === 'ko'
@@ -408,7 +435,7 @@ export function WorkspacePlaceholder() {
       );
     },
     onError: (error) => {
-      setResourceTransferStatus({
+      setManagerStatus('saved-request', {
         tone: 'error',
         message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.exportSingleFailed'),
       });
@@ -425,11 +452,11 @@ export function WorkspacePlaceholder() {
         fileName: variables.fileName,
         result,
       });
-      setResourceTransferStatus(createPreviewStatusMessage(variables.fileName, result, t));
+      setManagerStatus('transfer', createPreviewStatusMessage(variables.fileName, result, t));
     },
     onError: (error) => {
       setPendingImportPreview(null);
-      setResourceTransferStatus({
+      setManagerStatus('transfer', {
         tone: 'error',
         message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.fileReadFailed'),
       });
@@ -444,11 +471,12 @@ export function WorkspacePlaceholder() {
         queryClient.invalidateQueries({ queryKey: workspaceRequestTreeQueryKey }),
         queryClient.invalidateQueries({ queryKey: workspaceSavedRequestsQueryKey }),
         queryClient.invalidateQueries({ queryKey: workspaceMockRulesQueryKey }),
+        queryClient.invalidateQueries({ queryKey: workspaceScriptsQueryKey }),
       ]);
-      setResourceTransferStatus(createImportStatusMessage(result, t));
+      setManagerStatus('transfer', createImportStatusMessage(result, t));
     },
     onError: (error) => {
-      setResourceTransferStatus({
+      setManagerStatus('transfer', {
         tone: 'error',
         message: error instanceof Error
           ? error.message
@@ -464,13 +492,13 @@ export function WorkspacePlaceholder() {
         queryClient.invalidateQueries({ queryKey: workspaceRequestTreeQueryKey }),
         queryClient.invalidateQueries({ queryKey: workspaceSavedRequestsQueryKey }),
       ]);
-      setResourceTransferStatus({
+      setManagerStatus('collections', {
         tone: 'success',
         message: t('workspaceRoute.explorer.status.collectionCreated', { name: collection.name }),
       });
     },
     onError: (error) => {
-      setResourceTransferStatus({
+      setManagerStatus('collections', {
         tone: 'error',
         message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.collectionCreateFailed'),
       });
@@ -494,13 +522,13 @@ export function WorkspacePlaceholder() {
         queryClient.invalidateQueries({ queryKey: workspaceRequestTreeQueryKey }),
         queryClient.invalidateQueries({ queryKey: workspaceSavedRequestsQueryKey }),
       ]);
-      setResourceTransferStatus({
+      setManagerStatus('collections', {
         tone: 'success',
         message: t('workspaceRoute.explorer.status.collectionRenamed', { name: collection.name }),
       });
     },
     onError: (error) => {
-      setResourceTransferStatus({
+      setManagerStatus('collections', {
         tone: 'error',
         message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.collectionRenameFailed'),
       });
@@ -518,13 +546,13 @@ export function WorkspacePlaceholder() {
         queryClient.invalidateQueries({ queryKey: workspaceRequestTreeQueryKey }),
         queryClient.invalidateQueries({ queryKey: workspaceSavedRequestsQueryKey }),
       ]);
-      setResourceTransferStatus({
+      setManagerStatus('collections', {
         tone: 'info',
         message: t('workspaceRoute.explorer.status.collectionDeleted', { name: collection.name }),
       });
     },
     onError: (error) => {
-      setResourceTransferStatus({
+      setManagerStatus('collections', {
         tone: 'error',
         message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.collectionDeleteFailed'),
       });
@@ -539,13 +567,13 @@ export function WorkspacePlaceholder() {
         queryClient.invalidateQueries({ queryKey: workspaceRequestTreeQueryKey }),
         queryClient.invalidateQueries({ queryKey: workspaceSavedRequestsQueryKey }),
       ]);
-      setResourceTransferStatus({
+      setManagerStatus('request-groups', {
         tone: 'success',
         message: t('workspaceRoute.explorer.status.requestGroupCreated', { name: requestGroup.name }),
       });
     },
     onError: (error) => {
-      setResourceTransferStatus({
+      setManagerStatus('request-groups', {
         tone: 'error',
         message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.requestGroupCreateFailed'),
       });
@@ -569,13 +597,13 @@ export function WorkspacePlaceholder() {
         queryClient.invalidateQueries({ queryKey: workspaceRequestTreeQueryKey }),
         queryClient.invalidateQueries({ queryKey: workspaceSavedRequestsQueryKey }),
       ]);
-      setResourceTransferStatus({
+      setManagerStatus('request-groups', {
         tone: 'success',
         message: t('workspaceRoute.explorer.status.requestGroupRenamed', { name: requestGroup.name }),
       });
     },
     onError: (error) => {
-      setResourceTransferStatus({
+      setManagerStatus('request-groups', {
         tone: 'error',
         message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.requestGroupRenameFailed'),
       });
@@ -593,13 +621,13 @@ export function WorkspacePlaceholder() {
         queryClient.invalidateQueries({ queryKey: workspaceRequestTreeQueryKey }),
         queryClient.invalidateQueries({ queryKey: workspaceSavedRequestsQueryKey }),
       ]);
-      setResourceTransferStatus({
+      setManagerStatus('request-groups', {
         tone: 'info',
         message: t('workspaceRoute.explorer.status.requestGroupDeleted', { name: requestGroup.name }),
       });
     },
     onError: (error) => {
-      setResourceTransferStatus({
+      setManagerStatus('request-groups', {
         tone: 'error',
         message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.requestGroupDeleteFailed'),
       });
@@ -642,13 +670,13 @@ export function WorkspacePlaceholder() {
         workspaceSavedRequestsQueryKey,
         (current) => (current ?? []).filter((record) => record.id !== deletedRequestId),
       );
-      setResourceTransferStatus({
+      setManagerStatus('saved-request', {
         tone: 'info',
         message: t('workspaceRoute.explorer.status.requestDeleted'),
       });
     },
     onError: (error) => {
-      setResourceTransferStatus({
+      setManagerStatus('saved-request', {
         tone: 'error',
         message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.requestDeleteFailed'),
       });
@@ -819,7 +847,7 @@ export function WorkspacePlaceholder() {
   const handleImportResources = async (file: File) => {
     try {
       setPendingImportPreview(null);
-      setResourceTransferStatus({
+      setManagerStatus('transfer', {
         tone: 'info',
         message: t('workspaceRoute.explorer.status.previewingFile', { fileName: file.name }),
       });
@@ -830,7 +858,7 @@ export function WorkspacePlaceholder() {
       });
     } catch (error) {
       setPendingImportPreview(null);
-      setResourceTransferStatus({
+      setManagerStatus('transfer', {
         tone: 'error',
         message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.fileReadFailed'),
       });
@@ -842,7 +870,7 @@ export function WorkspacePlaceholder() {
       return;
     }
 
-    setResourceTransferStatus({
+    setManagerStatus('transfer', {
       tone: 'info',
       message: t('workspaceRoute.explorer.status.importStarting', { fileName: pendingImportPreview.fileName }),
       details: createImportSummaryDetails(pendingImportPreview.result.summary, t),
@@ -852,7 +880,7 @@ export function WorkspacePlaceholder() {
 
   const handleCancelImportPreview = () => {
     setPendingImportPreview(null);
-    setResourceTransferStatus({
+    setManagerStatus('transfer', {
       tone: 'info',
       message: t('workspaceRoute.explorer.status.importCleared'),
     });
@@ -914,9 +942,7 @@ export function WorkspacePlaceholder() {
           importPreview={pendingImportPreview}
           onConfirmImportPreview={handleConfirmImportPreview}
           onCancelImportPreview={handleCancelImportPreview}
-          transferStatusMessage={resourceTransferStatus?.message ?? null}
-          transferStatusDetails={resourceTransferStatus?.details}
-          transferStatusTone={resourceTransferStatus?.tone}
+          statuses={managerStatuses}
           isExporting={exportResourcesMutation.isPending || exportRequestMutation.isPending}
           isPreviewingImport={previewResourcesMutation.isPending}
           isImporting={importResourcesMutation.isPending}
@@ -945,6 +971,14 @@ export function WorkspacePlaceholder() {
     />
   );
 }
+
+
+
+
+
+
+
+
 
 
 

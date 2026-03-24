@@ -41,6 +41,9 @@ function createImportedRecord(kind, input, workspaceId, usedNames) {
       { name: 'Latency guard' },
       { name: 'Latency guard' },
     ],
+    scripts: [
+      { name: 'Health status assertions' },
+    ],
   };
 
   const plan = prepareAuthoredResourceImport({
@@ -50,24 +53,29 @@ function createImportedRecord(kind, input, workspaceId, usedNames) {
     existingRequestGroupNames: ['collection-core::general'],
     existingRequestNames: ['health check'],
     existingMockRuleNames: ['latency guard'],
-    createImportedCollection: (input, workspaceId, usedNames) =>
-      createImportedRecord('collection', input, workspaceId, usedNames),
-    createImportedRequestGroup: (input, workspaceId, usedNames) =>
-      createImportedRecord('request-group', input, workspaceId, usedNames),
-    createImportedRequest: (input, workspaceId, usedNames) =>
-      createImportedRecord('request', input, workspaceId, usedNames),
-    createImportedMockRule: (input, workspaceId, usedNames) =>
-      createImportedRecord('mock-rule', input, workspaceId, usedNames),
+    existingScriptNames: ['health status assertions'],
+    createImportedCollection: (input, nextWorkspaceId, usedNames) =>
+      createImportedRecord('collection', input, nextWorkspaceId, usedNames),
+    createImportedRequestGroup: (input, nextWorkspaceId, usedNames) =>
+      createImportedRecord('request-group', input, nextWorkspaceId, usedNames),
+    createImportedRequest: (input, nextWorkspaceId, usedNames) =>
+      createImportedRecord('request', input, nextWorkspaceId, usedNames),
+    createImportedMockRule: (input, nextWorkspaceId, usedNames) =>
+      createImportedRecord('mock-rule', input, nextWorkspaceId, usedNames),
+    createImportedScript: (input, nextWorkspaceId, usedNames) =>
+      createImportedRecord('script', input, nextWorkspaceId, usedNames),
     sortAcceptedCollections: (records) => [...records].sort((left, right) => left.name.localeCompare(right.name)),
     sortAcceptedRequestGroups: (records) => [...records].sort((left, right) => left.name.localeCompare(right.name)),
     sortAcceptedRequests: (records) => [...records].sort((left, right) => left.name.localeCompare(right.name)),
     sortAcceptedMockRules: (records) => [...records].sort((left, right) => left.name.localeCompare(right.name)),
+    sortAcceptedScripts: (records) => [...records].sort((left, right) => left.name.localeCompare(right.name)),
   });
 
   assert.equal(plan.acceptedCollections.length, 1);
   assert.equal(plan.acceptedRequestGroups.length, 1);
   assert.equal(plan.acceptedRequests.length, 1);
   assert.equal(plan.acceptedMockRules.length, 2);
+  assert.equal(plan.acceptedScripts.length, 1);
   assert.equal(plan.rejected.length, 1);
   assert.deepEqual(plan.rejected[0], {
     kind: 'request',
@@ -81,14 +89,16 @@ function createImportedRecord(kind, input, workspaceId, usedNames) {
     'Latency guard (Imported 2)',
     'Latency guard (Imported)',
   ]);
+  assert.deepEqual(plan.acceptedScripts.map((record) => record.name), ['Health status assertions (Imported)']);
   assert.deepEqual(plan.summary, {
-    acceptedCount: 5,
+    acceptedCount: 6,
     rejectedCount: 1,
     createdCollectionCount: 1,
     createdRequestGroupCount: 1,
     createdRequestCount: 1,
     createdMockRuleCount: 2,
-    renamedCount: 4,
+    createdScriptCount: 1,
+    renamedCount: 5,
     importedNamesPreview: [
       'Core APIs (Imported)',
       'General',

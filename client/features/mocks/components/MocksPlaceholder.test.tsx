@@ -167,12 +167,15 @@ function createMockRulesFetch(initialRules = defaultMockRuleFixtureRecords) {
       return rule
         ? createApiResponse({
           bundle: {
-            schemaVersion: 1,
+            schemaVersion: 3,
             resourceKind: 'local-request-inspector-authored-resource-bundle',
             exportedAt: '2026-03-21T12:00:00.000Z',
             workspaceId: 'local-workspace',
+            collections: [],
+            requestGroups: [],
             requests: [],
             mockRules: [rule],
+            scripts: [],
           },
         })
         : createApiError(`Mock rule ${mockRuleId} was not found.`, 404);

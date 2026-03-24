@@ -228,6 +228,9 @@ describe('History S18 fidelity refinement', () => {
     expect(screen.getByRole('heading', { name: 'Execution info' })).toBeInTheDocument();
     expect(screen.getByText('upstream_503')).toBeInTheDocument();
     expect(screen.getByText('Transport returned a retryable 503 summary.')).toBeInTheDocument();
+    expect(screen.getByText('Environment resolution')).toBeInTheDocument();
+    expect(screen.getByText('Resolved 2 environment placeholder(s) in params and headers.')).toBeInTheDocument();
+    expect(screen.getByText('Params, Headers')).toBeInTheDocument();
     expect(screen.getByLabelText('Execution stage summary')).toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([input]) => getUrl(input as RequestInfo | URL) === '/api/execution-histories')).toBe(true);
     expect(

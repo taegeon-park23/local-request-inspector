@@ -2,7 +2,7 @@
 
 - **Purpose:** Define the MVP script editor surfaces, stage-aware automation workflow, and diagnostic/result UX for request-bound and reusable script authoring.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-18
+- **Last Updated:** 2026-03-24
 - **Related Documents:** `request-builder-mvp.md`, `script-execution-safety-model.md`, `internal-api-contracts.md`, `ux-information-architecture.md`, `workspace-flows.md`, `frontend-stack-and-shell.md`, `persistence-bootstrap.md`, `../tasks/task-012-script-editor-and-automation-ux-spec.md`
 - **Status:** done
 - **Update Rule:** Update when script stages, capability policy, editor loading strategy, or diagnostic panel composition materially changes.
@@ -178,6 +178,8 @@ The exact persistence/reference semantics remain **확실하지 않음**, but th
 2. **Attach saved script reference** with an explicit `Linked reusable script` badge and an `Open library detail` action
 
 Until final persistence semantics are chosen, the UI copy must avoid implying transparent shared-live-edit behavior across many requests.
+
+After `T061B`, the next bounded follow-up is narrowed further by `T063`: if request-stage reusable-script work is later promoted, **attach by copy** is the preferred first implementation lane, while linked reusable references remain deferred behind explicit rename/delete/versioning semantics.
 
 ## 9. Stage Context and Capability Messaging
 ### 9.1 Principle

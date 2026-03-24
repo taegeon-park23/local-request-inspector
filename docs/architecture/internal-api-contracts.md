@@ -1,9 +1,9 @@
-# Internal API Contract Design
+﻿# Internal API Contract Design
 
 - **Purpose:** Define storage-agnostic internal HTTP and event contracts for workspace resources, execution flows, mock rules, and inbound capture features so implementation can proceed with stable DTO and lifecycle expectations.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-23
-- **Related Documents:** `overview.md`, `shared-schema.md`, `naming-conventions.md`, `persistence-strategy.md`, `script-execution-safety-model.md`, `../tasks/task-008-internal-api-contract-design.md`
+- **Last Updated:** 2026-03-24
+- **Related Documents:** `overview.md`, `shared-schema.md`, `naming-conventions.md`, `persistence-strategy.md`, `script-execution-safety-model.md`, `request-environment-resolution-summary-contract.md`, `../tasks/task-008-internal-api-contract-design.md`, `../tasks/task-062-post-run-environment-resolution-summary-implementation.md`
 - **Status:** done
 - **Update Rule:** Update when resource boundaries, transport choices, or canonical DTO semantics materially change.
 
@@ -147,6 +147,17 @@
 | PATCH | `/api/requests/:requestId` | update request | `RequestDetailDto` |
 | DELETE | `/api/requests/:requestId` | delete request | success envelope |
 
+### 7.2A Authored-Resource Bundle Transfer
+The current authored-resource transfer lane is intentionally bounded to persisted authored resources only. Workspace bundle export/import preview/import includes collections, request groups, saved requests, mock rules, and standalone saved scripts. Runtime history, captures, execution artifacts, environments, and request-stage shared-script references remain out of scope.
+
+| Method | Path | Purpose | Response DTO |
+| --- | --- | --- | --- |
+| GET | `/api/workspaces/:workspaceId/resource-bundle` | export the full workspace authored-resource bundle, including standalone saved scripts | `AuthoredResourceBundleDto` |
+| GET | `/api/requests/:requestId/resource-bundle` | export one saved request plus its canonical placement metadata in bundle format | `AuthoredResourceBundleDto` |
+| GET | `/api/mock-rules/:mockRuleId/resource-bundle` | export one mock rule in bundle format | `AuthoredResourceBundleDto` |
+| POST | `/api/workspaces/:workspaceId/resource-bundle/import-preview` | validate and summarize bundle import consequences without writing resources | `AuthoredResourceBundleImportPreviewDto` |
+| POST | `/api/workspaces/:workspaceId/resource-bundle/import` | import supported authored resources with new identities and collision-safe renaming | `AuthoredResourceBundleImportResultDto` |
+
 ### 7.3 Environments and Variables
 | Method | Path | Purpose | Response DTO |
 | --- | --- | --- | --- |
@@ -189,6 +200,8 @@ Secret values must never be returned in plain text unless an explicit future pol
 | GET | `/api/execution-histories/:executionId` | fetch execution history detail | `ExecutionHistoryDetailDto` |
 | GET | `/api/execution-histories/:executionId/result` | fetch normalized execution result | `ExecutionResultDetailDto` |
 | GET | `/api/execution-histories/:executionId/test-results` | fetch test assertions | `TestResultSummaryDto[]` |
+
+Active execution observation and persisted history detail now carry an optional bounded `environmentResolutionSummary` object. The server owns its classification and summary copy, and the payload stays limited to status, counts, and affected input areas rather than raw resolved values.
 
 ### 7.7 Captured Requests
 | Method | Path | Purpose | Response DTO |
@@ -365,6 +378,7 @@ This stream is optional for MVP and may be added after core capture/execution st
 ### For T016 Testing and QA Strategy
 - validate envelope consistency, event naming, timeout/cancellation error codes, and redaction behavior
 - add contract checks covering both resource endpoints and execution lifecycle streams
+
 
 
 

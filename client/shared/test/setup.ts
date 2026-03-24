@@ -315,7 +315,7 @@ beforeEach(() => {
     if (url === '/api/workspaces/local-workspace/resource-bundle' && (!init || !init.method || init.method === 'GET')) {
       return createApiResponse({
         bundle: {
-          schemaVersion: 2,
+          schemaVersion: 3,
           resourceKind: 'local-request-inspector-authored-resource-bundle',
           exportedAt: '2026-03-21T00:00:00.000Z',
           workspaceId: 'local-workspace',
@@ -334,6 +334,7 @@ beforeEach(() => {
           }],
           requests: [defaultWorkspaceSavedRequest],
           mockRules: defaultMockRuleFixtureRecords,
+          scripts: defaultSavedScriptFixtureRecords,
         },
       });
     }
@@ -345,6 +346,7 @@ beforeEach(() => {
           acceptedRequestGroups: [],
           acceptedRequests: [],
           acceptedMockRules: [],
+          acceptedScripts: [],
           rejected: [],
           summary: {
             acceptedCount: 0,
@@ -353,6 +355,7 @@ beforeEach(() => {
             createdRequestGroupCount: 0,
             createdRequestCount: 0,
             createdMockRuleCount: 0,
+            createdScriptCount: 0,
             renamedCount: 0,
             importedNamesPreview: [],
             rejectedReasonSummary: [],
@@ -373,6 +376,7 @@ beforeEach(() => {
             createdRequestGroupCount: 0,
             createdRequestCount: 0,
             createdMockRuleCount: 0,
+            createdScriptCount: 0,
             renamedCount: 0,
             importedNamesPreview: [],
             rejectedReasonSummary: [],
@@ -386,7 +390,7 @@ beforeEach(() => {
       const requestId = url.split('/')[3] ?? '';
       return createApiResponse({
         bundle: {
-          schemaVersion: 2,
+          schemaVersion: 3,
           resourceKind: 'local-request-inspector-authored-resource-bundle',
           exportedAt: '2026-03-21T00:00:00.000Z',
           workspaceId: 'local-workspace',
@@ -440,6 +444,7 @@ beforeEach(() => {
             updatedAt: '2026-03-21T00:00:00.000Z',
           }],
           mockRules: [],
+          scripts: [],
         },
       });
     }
@@ -449,7 +454,7 @@ beforeEach(() => {
       const rule = defaultMockRuleFixtureRecords.find((item) => item.id === mockRuleId) ?? defaultMockRuleFixtureRecords[0];
       return createApiResponse({
         bundle: {
-          schemaVersion: 2,
+          schemaVersion: 3,
           resourceKind: 'local-request-inspector-authored-resource-bundle',
           exportedAt: '2026-03-21T00:00:00.000Z',
           workspaceId: 'local-workspace',
@@ -457,6 +462,7 @@ beforeEach(() => {
           requestGroups: [],
           requests: [],
           mockRules: rule ? [rule] : [],
+          scripts: [],
         },
       });
     }

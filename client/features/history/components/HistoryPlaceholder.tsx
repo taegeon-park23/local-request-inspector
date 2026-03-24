@@ -16,6 +16,10 @@ import {
   historyMatchesSearch,
   useHistoryStore,
 } from '@client/features/history/state/history-store';
+import {
+  formatEnvironmentResolutionAffectedAreas,
+  formatEnvironmentResolutionStatusLabel,
+} from '@client/shared/environment-resolution-summary-view';
 import { openHistoryReplayDraft } from '@client/features/request-builder/replay/replay-bridge';
 import { DetailViewerSection } from '@client/shared/ui/DetailViewerSection';
 import { EmptyStateCallout } from '@client/shared/ui/EmptyStateCallout';
@@ -107,6 +111,53 @@ function createFallbackResponsePreviewPolicy(history: HistoryRecord, t: Translat
   }
 
   return t('historyRoute.helpers.responsePreviewPolicyBounded');
+}
+
+function renderEnvironmentResolutionSummary(history: HistoryRecord, t: Translate) {
+  if (!history.environmentResolutionSummary) {
+    return null;
+  }
+
+  const translateEnvironmentResolutionKey = (key: string) => t(key as Parameters<typeof t>[0]);
+
+  return (
+    <DetailViewerSection
+      title={t('historyRoute.resultPanels.executionInfo.environmentResolution.title')}
+      description={history.environmentResolutionSummary.summary}
+      tone="muted"
+    >
+      <KeyValueMetaList
+        items={[
+          {
+            label: t('historyRoute.resultPanels.executionInfo.environmentResolution.labels.status'),
+            value: formatEnvironmentResolutionStatusLabel(
+              history.environmentResolutionSummary.status,
+              translateEnvironmentResolutionKey,
+              'historyRoute.resultPanels.executionInfo.environmentResolution',
+            ),
+          },
+          {
+            label: t('historyRoute.resultPanels.executionInfo.environmentResolution.labels.resolvedPlaceholders'),
+            value: history.environmentResolutionSummary.resolvedPlaceholderCount,
+          },
+          ...(history.environmentResolutionSummary.unresolvedPlaceholderCount > 0
+            ? [{
+              label: t('historyRoute.resultPanels.executionInfo.environmentResolution.labels.unresolvedPlaceholders'),
+              value: history.environmentResolutionSummary.unresolvedPlaceholderCount,
+            }]
+            : []),
+          {
+            label: t('historyRoute.resultPanels.executionInfo.environmentResolution.labels.affectedInputAreas'),
+            value: formatEnvironmentResolutionAffectedAreas(
+              history.environmentResolutionSummary.affectedInputAreas,
+              translateEnvironmentResolutionKey,
+              'historyRoute.resultPanels.executionInfo.environmentResolution',
+            ),
+          },
+        ]}
+      />
+    </DetailViewerSection>
+  );
 }
 
 function HistoryExplorerSummaryCard({
@@ -566,6 +617,7 @@ export function HistoryPlaceholder() {
                     { label: t('historyRoute.resultPanels.executionInfo.labels.requestInput'), value: selectedHistory.requestInputSummary ?? createFallbackRequestInputSummary(selectedHistory, t) },
                   ]}
                 />
+                {renderEnvironmentResolutionSummary(selectedHistory, t)}
                 {selectedStageSummaries.length > 0 ? (
                   <ul className="history-preview-list" aria-label={t('historyRoute.resultPanels.executionInfo.stageSummaryAriaLabel')}>
                     {selectedStageSummaries.map((summary) => (

@@ -3,10 +3,15 @@ function createImportResultSummary({
   acceptedRequestGroups,
   acceptedRequests,
   acceptedMockRules,
+  acceptedScripts,
   rejected,
   renamedCount,
 }) {
-  const acceptedCount = acceptedCollections.length + acceptedRequestGroups.length + acceptedRequests.length + acceptedMockRules.length;
+  const acceptedCount = acceptedCollections.length
+    + acceptedRequestGroups.length
+    + acceptedRequests.length
+    + acceptedMockRules.length
+    + acceptedScripts.length;
   const rejectedCount = rejected.length;
   const rejectedReasonCounts = new Map();
 
@@ -24,8 +29,15 @@ function createImportResultSummary({
     createdRequestGroupCount: acceptedRequestGroups.length,
     createdRequestCount: acceptedRequests.length,
     createdMockRuleCount: acceptedMockRules.length,
+    createdScriptCount: acceptedScripts.length,
     renamedCount,
-    importedNamesPreview: [...acceptedCollections, ...acceptedRequestGroups, ...acceptedRequests, ...acceptedMockRules]
+    importedNamesPreview: [
+      ...acceptedCollections,
+      ...acceptedRequestGroups,
+      ...acceptedRequests,
+      ...acceptedMockRules,
+      ...acceptedScripts,
+    ]
       .map((resource) => resource.name)
       .filter((name) => typeof name === 'string' && name.trim().length > 0)
       .slice(0, 5),
@@ -62,14 +74,17 @@ function prepareAuthoredResourceImport({
   existingRequestGroupNames = [],
   existingRequestNames = [],
   existingMockRuleNames = [],
+  existingScriptNames = [],
   createImportedCollection,
   createImportedRequestGroup,
   createImportedRequest,
   createImportedMockRule,
+  createImportedScript,
   sortAcceptedCollections = identitySort,
   sortAcceptedRequestGroups = identitySort,
   sortAcceptedRequests = identitySort,
   sortAcceptedMockRules = identitySort,
+  sortAcceptedScripts = identitySort,
 }) {
   if (!bundle || typeof bundle !== 'object') {
     throw new TypeError('Bundle payload is required to prepare authored-resource import.');
@@ -80,18 +95,21 @@ function prepareAuthoredResourceImport({
     || typeof createImportedRequestGroup !== 'function'
     || typeof createImportedRequest !== 'function'
     || typeof createImportedMockRule !== 'function'
+    || typeof createImportedScript !== 'function'
   ) {
-    throw new TypeError('Import preparation requires collection, request-group, request, and mock-rule import callbacks.');
+    throw new TypeError('Import preparation requires collection, request-group, request, mock-rule, and script import callbacks.');
   }
 
   const usedCollectionNames = normalizeNameSet(existingCollectionNames);
   const usedRequestGroupNames = normalizeNameSet(existingRequestGroupNames);
   const usedRequestNames = normalizeNameSet(existingRequestNames);
   const usedMockRuleNames = normalizeNameSet(existingMockRuleNames);
+  const usedScriptNames = normalizeNameSet(existingScriptNames);
   const acceptedCollections = [];
   const acceptedRequestGroups = [];
   const acceptedRequests = [];
   const acceptedMockRules = [];
+  const acceptedScripts = [];
   const rejected = [];
   let renamedCount = 0;
 
@@ -167,22 +185,43 @@ function prepareAuthoredResourceImport({
     }
   }
 
+  for (const scriptResource of Array.isArray(bundle.scripts) ? bundle.scripts : []) {
+    const importResult = createImportedScript(scriptResource, workspaceId, usedScriptNames);
+
+    if (importResult?.rejection) {
+      rejected.push(importResult.rejection);
+      continue;
+    }
+
+    if (!importResult?.record) {
+      throw new TypeError('Script import callback must return a record or a rejection.');
+    }
+
+    acceptedScripts.push(importResult.record);
+    if (importResult.renamed) {
+      renamedCount += 1;
+    }
+  }
+
   const sortedAcceptedCollections = sortAcceptedCollections(acceptedCollections);
   const sortedAcceptedRequestGroups = sortAcceptedRequestGroups(acceptedRequestGroups);
   const sortedAcceptedRequests = sortAcceptedRequests(acceptedRequests);
   const sortedAcceptedMockRules = sortAcceptedMockRules(acceptedMockRules);
+  const sortedAcceptedScripts = sortAcceptedScripts(acceptedScripts);
 
   return {
     acceptedCollections: sortedAcceptedCollections,
     acceptedRequestGroups: sortedAcceptedRequestGroups,
     acceptedRequests: sortedAcceptedRequests,
     acceptedMockRules: sortedAcceptedMockRules,
+    acceptedScripts: sortedAcceptedScripts,
     rejected,
     summary: createImportResultSummary({
       acceptedCollections: sortedAcceptedCollections,
       acceptedRequestGroups: sortedAcceptedRequestGroups,
       acceptedRequests: sortedAcceptedRequests,
       acceptedMockRules: sortedAcceptedMockRules,
+      acceptedScripts: sortedAcceptedScripts,
       rejected,
       renamedCount,
     }),

@@ -1413,10 +1413,12 @@ describe('Workspace request builder authoring shell', () => {
       if (url === '/api/workspaces/local-workspace/resource-bundle' && method === 'GET') {
         return createApiResponse({
           bundle: {
-            schemaVersion: 1,
+            schemaVersion: 3,
             resourceKind: 'local-request-inspector-authored-resource-bundle',
             exportedAt: '2026-03-21T12:00:00.000Z',
             workspaceId: 'local-workspace',
+            collections: [],
+            requestGroups: [],
             requests: [
               {
                 id: 'request-exported-1',
@@ -1489,6 +1491,23 @@ describe('Workspace request builder authoring shell', () => {
                 sourceLabel: 'Persisted workspace rule',
               },
             ],
+            scripts: [
+              {
+                id: 'saved-script-exported-trace-id',
+                workspaceId: 'local-workspace',
+                name: 'Trace ID helper',
+                description: 'Adds a trace header before transport starts.',
+                scriptType: 'pre-request',
+                sourceCode: 'request.setHeader("x-trace-id", "abc-123");',
+                createdAt: '2026-03-21T10:00:00.000Z',
+                updatedAt: '2026-03-21T11:00:00.000Z',
+                sourcePreview: 'request.setHeader("x-trace-id", "abc-123");',
+                capabilitySummary: 'Pre-request scripts can use bounded request mutation helpers before transport is sent.',
+                deferredSummary: 'Request-stage attachment, live shared references, and Monaco-class editor expansion remain deferred.',
+                templateSummary: 'Created directly in the scripts library.',
+                sourceLabel: 'Persisted workspace script',
+              },
+            ],
           },
         });
       }
@@ -1502,9 +1521,10 @@ describe('Workspace request builder authoring shell', () => {
     const manager = getSavedResourceManager();
     await user.click(within(manager).getByRole('button', { name: 'Export Resources' }));
 
-    expect(await within(manager).findByText(/Exported 1 saved request definition and 1 mock rule from the authored resource lane/i)).toBeInTheDocument();
+    expect(await within(manager).findByText(/Exported 1 saved request definition, 1 mock rule, and 1 saved script from the authored resource lane/i)).toBeInTheDocument();
     expect(await within(manager).findByText('Saved requests in bundle: 1')).toBeInTheDocument();
     expect(within(manager).getByText('Mock rules in bundle: 1')).toBeInTheDocument();
+    expect(within(manager).getByText('Saved scripts in bundle: 1')).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith('/api/workspaces/local-workspace/resource-bundle');
     expect(createObjectURLSpy).toHaveBeenCalledTimes(1);
     expect(linkClickSpy).toHaveBeenCalledTimes(1);
@@ -1520,6 +1540,8 @@ describe('Workspace request builder authoring shell', () => {
     const exportedText = await exportedBlob.text();
     expect(exportedText).toContain('"requests"');
     expect(exportedText).toContain('"mockRules"');
+    expect(exportedText).toContain('"scripts"');
+    expect(exportedText).toContain('"Trace ID helper"');
     expect(exportedText).not.toContain('executionHistories');
     expect(exportedText).not.toContain('capturedRequests');
   });
@@ -1598,6 +1620,23 @@ describe('Workspace request builder authoring shell', () => {
         sourceLabel: 'Persisted workspace rule',
       },
     ];
+    const persistedScripts = [
+      {
+        id: 'saved-script-existing-trace-id',
+        workspaceId: 'local-workspace',
+        name: 'Trace ID helper',
+        description: 'Adds a trace header before transport starts.',
+        scriptType: 'pre-request',
+        sourceCode: 'request.setHeader("x-trace-id", "existing-trace");',
+        createdAt: '2026-03-20T09:00:00.000Z',
+        updatedAt: '2026-03-20T09:30:00.000Z',
+        sourcePreview: 'request.setHeader("x-trace-id", "existing-trace");',
+        capabilitySummary: 'Pre-request scripts can use bounded request mutation helpers before transport is sent.',
+        deferredSummary: 'Request-stage attachment, live shared references, and Monaco-class editor expansion remain deferred.',
+        templateSummary: 'Created directly in the scripts library.',
+        sourceLabel: 'Persisted workspace script',
+      },
+    ];
     let previewRequestCount = 0;
     let importRequestCount = 0;
 
@@ -1613,6 +1652,14 @@ describe('Workspace request builder authoring shell', () => {
         return createApiResponse({ items: persistedMockRules });
       }
 
+      if (url === '/api/workspaces/local-workspace/scripts' && method === 'GET') {
+        return createApiResponse({ items: persistedScripts });
+      }
+
+      if (url === '/api/script-templates' && method === 'GET') {
+        return createApiResponse({ items: [] });
+      }
+
       if (url === '/api/workspaces/local-workspace/resource-bundle/import-preview' && method === 'POST') {
         previewRequestCount += 1;
 
@@ -1620,12 +1667,19 @@ describe('Workspace request builder authoring shell', () => {
           preview: {
             rejected: [],
             summary: {
-              acceptedCount: 2,
+              acceptedCount: 3,
               rejectedCount: 0,
+              createdCollectionCount: 0,
+              createdRequestGroupCount: 0,
               createdRequestCount: 1,
               createdMockRuleCount: 1,
-              renamedCount: 2,
-              importedNamesPreview: ['Health check (Imported)', 'Latency guard (Imported)'],
+              createdScriptCount: 1,
+              renamedCount: 3,
+              importedNamesPreview: [
+                'Health check (Imported)',
+                'Latency guard (Imported)',
+                'Trace ID helper (Imported)',
+              ],
               rejectedReasonSummary: [],
               duplicateIdentityPolicy: 'new_identity',
             },
@@ -1639,6 +1693,7 @@ describe('Workspace request builder authoring shell', () => {
         const bundle = JSON.parse(payload.bundleText) as {
           requests: Array<{ id: string; name: string; method: string; url: string }>;
           mockRules: Array<{ id: string; name: string; priority: number }>;
+          scripts: Array<{ id: string; name: string; scriptType: string; sourceCode: string }>;
         };
 
         const importedRequest: (typeof persistedRequests)[number] = {
@@ -1658,22 +1713,42 @@ describe('Workspace request builder authoring shell', () => {
           createdAt: '2026-03-21T12:00:00.000Z',
           updatedAt: '2026-03-21T12:00:00.000Z',
         };
+        const importedScript: (typeof persistedScripts)[number] = {
+          ...persistedScripts[0]!,
+          ...bundle.scripts[0]!,
+          id: 'saved-script-imported-trace-id',
+          name: 'Trace ID helper (Imported)',
+          createdAt: '2026-03-21T12:00:00.000Z',
+          updatedAt: '2026-03-21T12:00:00.000Z',
+          sourcePreview: 'request.setHeader("x-trace-id", "imported-trace");',
+        };
 
         persistedRequests.push(importedRequest);
         persistedMockRules.push(importedRule);
+        persistedScripts.push(importedScript);
 
         return createApiResponse({
           result: {
+            acceptedCollections: [],
+            acceptedRequestGroups: [],
             acceptedRequests: [importedRequest],
             acceptedMockRules: [importedRule],
+            acceptedScripts: [importedScript],
             rejected: [],
             summary: {
-              acceptedCount: 2,
+              acceptedCount: 3,
               rejectedCount: 0,
+              createdCollectionCount: 0,
+              createdRequestGroupCount: 0,
               createdRequestCount: 1,
               createdMockRuleCount: 1,
-              renamedCount: 2,
-              importedNamesPreview: ['Health check (Imported)', 'Latency guard (Imported)'],
+              createdScriptCount: 1,
+              renamedCount: 3,
+              importedNamesPreview: [
+                'Health check (Imported)',
+                'Latency guard (Imported)',
+                'Trace ID helper (Imported)',
+              ],
               rejectedReasonSummary: [],
               duplicateIdentityPolicy: 'new_identity',
             },
@@ -1693,10 +1768,12 @@ describe('Workspace request builder authoring shell', () => {
 
     const importFile = new File([
       JSON.stringify({
-        schemaVersion: 1,
+        schemaVersion: 3,
         resourceKind: 'local-request-inspector-authored-resource-bundle',
         exportedAt: '2026-03-21T11:59:00.000Z',
         workspaceId: 'other-workspace',
+        collections: [],
+        requestGroups: [],
         requests: [
           {
             id: 'request-original-health',
@@ -1769,6 +1846,23 @@ describe('Workspace request builder authoring shell', () => {
             sourceLabel: 'Persisted workspace rule',
           },
         ],
+        scripts: [
+          {
+            id: 'saved-script-original-trace-id',
+            workspaceId: 'other-workspace',
+            name: 'Trace ID helper',
+            description: 'Adds a trace header before transport starts.',
+            scriptType: 'pre-request',
+            sourceCode: 'request.setHeader("x-trace-id", "imported-trace");',
+            createdAt: '2026-03-21T11:00:00.000Z',
+            updatedAt: '2026-03-21T11:00:00.000Z',
+            sourcePreview: 'request.setHeader("x-trace-id", "imported-trace");',
+            capabilitySummary: 'Pre-request scripts can use bounded request mutation helpers before transport is sent.',
+            deferredSummary: 'Request-stage attachment, live shared references, and Monaco-class editor expansion remain deferred.',
+            templateSummary: 'Created directly in the scripts library.',
+            sourceLabel: 'Persisted workspace script',
+          },
+        ],
       }),
     ], 'authored-resources.json', { type: 'application/json' });
 
@@ -1777,8 +1871,9 @@ describe('Workspace request builder authoring shell', () => {
     expect(await within(manager).findByText(/Preview ready for authored-resources\.json/i)).toBeInTheDocument();
     expect(within(manager).getByText('Created requests: 1')).toBeInTheDocument();
     expect(within(manager).getByText('Created mock rules: 1')).toBeInTheDocument();
-    expect(within(manager).getByText('Renamed on import: 2')).toBeInTheDocument();
-    expect(within(manager).getByText(/Imported preview: Health check \(Imported\), Latency guard \(Imported\)/i)).toBeInTheDocument();
+    expect(within(manager).getByText('Created saved scripts: 1')).toBeInTheDocument();
+    expect(within(manager).getByText('Renamed on import: 3')).toBeInTheDocument();
+    expect(within(manager).getByText(/Imported preview: Health check \(Imported\), Latency guard \(Imported\), Trace ID helper \(Imported\)/i)).toBeInTheDocument();
     expect(within(manager).getByRole('button', { name: 'Confirm Import' })).toBeInTheDocument();
     expect(previewRequestCount).toBe(1);
     expect(importRequestCount).toBe(0);
@@ -1794,6 +1889,10 @@ describe('Workspace request builder authoring shell', () => {
     await user.click(screen.getByRole('link', { name: /mocks/i }));
     expect(await screen.findByRole('button', { name: 'Open mock rule Latency guard (Imported)' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Open mock rule Latency guard' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('link', { name: /scripts/i }));
+    expect(await screen.findByRole('button', { name: 'Open script Trace ID helper (Imported)' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open script Trace ID helper' })).toBeInTheDocument();
   });
 
   it('cancels an authored-resource import preview without writing any resources', async () => {
@@ -1870,6 +1969,23 @@ describe('Workspace request builder authoring shell', () => {
         sourceLabel: 'Persisted workspace rule',
       },
     ];
+    const persistedScripts = [
+      {
+        id: 'saved-script-existing-trace-id',
+        workspaceId: 'local-workspace',
+        name: 'Trace ID helper',
+        description: 'Adds a trace header before transport starts.',
+        scriptType: 'pre-request',
+        sourceCode: 'request.setHeader("x-trace-id", "existing-trace");',
+        createdAt: '2026-03-20T09:00:00.000Z',
+        updatedAt: '2026-03-20T09:30:00.000Z',
+        sourcePreview: 'request.setHeader("x-trace-id", "existing-trace");',
+        capabilitySummary: 'Pre-request scripts can use bounded request mutation helpers before transport is sent.',
+        deferredSummary: 'Request-stage attachment, live shared references, and Monaco-class editor expansion remain deferred.',
+        templateSummary: 'Created directly in the scripts library.',
+        sourceLabel: 'Persisted workspace script',
+      },
+    ];
     let importRequestCount = 0;
 
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -1884,17 +2000,28 @@ describe('Workspace request builder authoring shell', () => {
         return createApiResponse({ items: persistedMockRules });
       }
 
+      if (url === '/api/workspaces/local-workspace/scripts' && method === 'GET') {
+        return createApiResponse({ items: persistedScripts });
+      }
+
       if (url === '/api/workspaces/local-workspace/resource-bundle/import-preview' && method === 'POST') {
         return createApiResponse({
           preview: {
             rejected: [],
             summary: {
-              acceptedCount: 2,
+              acceptedCount: 3,
               rejectedCount: 0,
+              createdCollectionCount: 0,
+              createdRequestGroupCount: 0,
               createdRequestCount: 1,
               createdMockRuleCount: 1,
-              renamedCount: 2,
-              importedNamesPreview: ['Health check (Imported)', 'Latency guard (Imported)'],
+              createdScriptCount: 1,
+              renamedCount: 3,
+              importedNamesPreview: [
+                'Health check (Imported)',
+                'Latency guard (Imported)',
+                'Trace ID helper (Imported)',
+              ],
               rejectedReasonSummary: [],
               duplicateIdentityPolicy: 'new_identity',
             },
@@ -1918,12 +2045,13 @@ describe('Workspace request builder authoring shell', () => {
     expect(await within(explorer).findByRole('button', { name: 'Open Health check' })).toBeInTheDocument();
 
     const importFile = new File([JSON.stringify({
-      schemaVersion: 1,
+      schemaVersion: 3,
       resourceKind: 'local-request-inspector-authored-resource-bundle',
       exportedAt: '2026-03-21T11:59:00.000Z',
       workspaceId: 'other-workspace',
       requests: [{ id: 'request-original-health', name: 'Health check' }],
       mockRules: [{ id: 'mock-rule-original-latency', name: 'Latency guard' }],
+      scripts: [{ id: 'saved-script-original-trace-id', name: 'Trace ID helper' }],
     })], 'authored-resources.json', { type: 'application/json' });
 
     await user.upload(screen.getByLabelText('Import authored resources'), importFile);
@@ -1989,10 +2117,12 @@ describe('Workspace request builder authoring shell', () => {
       if (url === '/api/requests/request-health-persisted/resource-bundle' && method === 'GET') {
         return createApiResponse({
           bundle: {
-            schemaVersion: 1,
+            schemaVersion: 3,
             resourceKind: 'local-request-inspector-authored-resource-bundle',
             exportedAt: '2026-03-21T12:00:00.000Z',
             workspaceId: 'local-workspace',
+            collections: [],
+            requestGroups: [],
             requests: [
               {
                 id: 'request-health-persisted',
@@ -2028,6 +2158,7 @@ describe('Workspace request builder authoring shell', () => {
               },
             ],
             mockRules: [],
+            scripts: [],
           },
         });
       }
@@ -2063,6 +2194,160 @@ describe('Workspace request builder authoring shell', () => {
     expect(exportedText).not.toContain('executionHistories');
     expect(exportedText).not.toContain('capturedRequests');
   });
+  it('keeps deleted saved-request tabs open as detached drafts and limits manager actions to resave guidance', async () => {
+    const user = userEvent.setup();
+    const persistedRequests = [
+      {
+        id: 'request-health-persisted',
+        workspaceId: 'local-workspace',
+        name: 'Health check',
+        method: 'GET',
+        url: 'http://localhost:5671/health',
+        params: [],
+        headers: [],
+        bodyMode: 'none',
+        bodyText: '',
+        formBody: [],
+        multipartBody: [],
+        auth: {
+          type: 'none',
+          bearerToken: '',
+          basicUsername: '',
+          basicPassword: '',
+          apiKeyName: '',
+          apiKeyValue: '',
+          apiKeyPlacement: 'header',
+        },
+        scripts: {
+          activeStage: 'pre-request',
+          preRequest: '',
+          postResponse: '',
+          tests: '',
+        },
+        summary: 'Saved health request',
+        collectionId: 'collection-saved-requests',
+        collectionName: 'Saved Requests',
+        requestGroupId: 'request-group-general',
+        requestGroupName: 'General',
+        createdAt: '2026-03-20T09:00:00.000Z',
+        updatedAt: '2026-03-20T09:30:00.000Z',
+      },
+    ];
+
+    const requestTreeResponse = {
+      defaults: {
+        collectionId: 'collection-saved-requests',
+        requestGroupId: 'request-group-general',
+        collectionName: 'Saved Requests',
+        requestGroupName: 'General',
+      },
+      collections: [
+        {
+          id: 'collection-saved-requests',
+          workspaceId: 'local-workspace',
+          name: 'Saved Requests',
+          description: '',
+        },
+      ],
+      requestGroups: [
+        {
+          id: 'request-group-general',
+          workspaceId: 'local-workspace',
+          collectionId: 'collection-saved-requests',
+          name: 'General',
+          description: '',
+        },
+      ],
+      tree: [
+        {
+          id: 'collection-node-collection-saved-requests',
+          kind: 'collection',
+          collectionId: 'collection-saved-requests',
+          name: 'Saved Requests',
+          description: '',
+          children: [
+            {
+              id: 'request-group-node-request-group-general',
+              kind: 'request-group',
+              collectionId: 'collection-saved-requests',
+              requestGroupId: 'request-group-general',
+              name: 'General',
+              description: '',
+              children: [
+                {
+                  id: 'request-node-request-health-persisted',
+                  kind: 'request',
+                  name: 'Health check',
+                  request: {
+                    id: 'request-health-persisted',
+                    name: 'Health check',
+                    methodLabel: 'GET',
+                    summary: 'Saved health request',
+                    collectionId: 'collection-saved-requests',
+                    collectionName: 'Saved Requests',
+                    requestGroupId: 'request-group-general',
+                    requestGroupName: 'General',
+                    updatedAt: '2026-03-20T09:30:00.000Z',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+      const method = init?.method ?? 'GET';
+
+      if (url === '/api/workspaces/local-workspace/requests' && method === 'GET') {
+        return createApiResponse({ items: persistedRequests });
+      }
+
+      if (url === '/api/workspaces/local-workspace/request-tree' && method === 'GET') {
+        return createApiResponse(requestTreeResponse);
+      }
+
+      if (url === '/api/requests/request-health-persisted' && method === 'GET') {
+        return createApiResponse({ request: persistedRequests[0] });
+      }
+
+      if (url === '/api/requests/request-health-persisted' && method === 'DELETE') {
+        persistedRequests.splice(0, persistedRequests.length);
+        requestTreeResponse.tree[0]!.children[0]!.children = [];
+        return createApiResponse({ deletedRequestId: 'request-health-persisted' });
+      }
+
+      if (url === '/api/workspaces/local-workspace/environments' && method === 'GET') {
+        return createApiResponse({ items: [] });
+      }
+
+      throw new Error(`Unexpected fetch call: ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    const explorer = screen.getByLabelText('Section explorer');
+    await user.click(await within(explorer).findByRole('button', { name: 'Open Health check' }));
+
+    const requestSection = getManagerSection('Saved request actions');
+    expect(requestSection.getByRole('button', { name: 'Export saved request' })).toBeInTheDocument();
+    expect(requestSection.getByRole('button', { name: 'Delete saved request' })).toBeInTheDocument();
+
+    await user.click(requestSection.getByRole('button', { name: 'Delete saved request' }));
+
+    await waitFor(() => expect(within(explorer).queryByRole('button', { name: 'Open Health check' })).not.toBeInTheDocument());
+    expect(screen.getByLabelText('Request name')).toHaveValue('Health check');
+    expect(screen.getByText('The saved request behind this tab was deleted. This draft still keeps your editable request state, but it no longer belongs to the canonical saved tree.')).toBeInTheDocument();
+    expect(screen.getByText('Detached from the canonical saved tree')).toBeInTheDocument();
+    expect(within(getSavedResourceManager()).getByText('Deleted the saved request from the canonical saved tree. Open tabs were kept as detached drafts.')).toBeInTheDocument();
+    expect(within(getSavedResourceManager()).getByText('This tab was detached from the canonical saved tree after the persisted request was deleted. Save it again to create a new canonical request and restore saved-request actions.')).toBeInTheDocument();
+    expect(requestSection.queryByRole('button', { name: 'Export saved request' })).not.toBeInTheDocument();
+    expect(requestSection.queryByRole('button', { name: 'Delete saved request' })).not.toBeInTheDocument();
+    expect(screen.getAllByText('Detached draft').length).toBeGreaterThan(0);
+  });
   it('renders result-panel copy in Korean without changing the English-default contracts', async () => {
     const user = userEvent.setup();
     renderApp(<AppRouter />, { initialLocale: 'ko' });
@@ -2082,6 +2367,9 @@ describe('Workspace request builder authoring shell', () => {
     expect(within(detailPanel).getByText('아직 실행 정보가 없습니다')).toBeInTheDocument();
   });
 });
+
+
+
 
 
 

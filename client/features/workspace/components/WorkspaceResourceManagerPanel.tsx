@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
 import type { RequestDraftState } from '@client/features/request-builder/request-draft.types';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
+import { isDetachedRequestTab } from '@client/features/request-builder/request-tab-state';
 import {
   formatRequestPlacementPath,
 } from '@client/features/request-builder/request-placement';
@@ -11,9 +12,17 @@ import type {
   WorkspaceTreeRequestLeaf,
 } from '@client/features/workspace/workspace-request-tree.api';
 import type { AuthoredResourceBundleImportPreviewResult } from '@client/features/workspace/resource-bundle.api';
+import { KeyValueMetaList } from '@client/shared/ui/KeyValueMetaList';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 
-type ResourceTransferTone = 'success' | 'error' | 'info';
+export type WorkspaceResourceManagerStatusTone = 'success' | 'error' | 'info';
+export type WorkspaceResourceManagerStatusScope = 'transfer' | 'collections' | 'request-groups' | 'saved-request';
+
+export interface WorkspaceResourceManagerStatus {
+  tone: WorkspaceResourceManagerStatusTone;
+  message: string;
+  details?: string[];
+}
 
 interface WorkspaceImportPreview {
   fileName: string;
@@ -38,9 +47,7 @@ interface WorkspaceResourceManagerPanelProps {
   importPreview: WorkspaceImportPreview | null;
   onConfirmImportPreview: () => void;
   onCancelImportPreview: () => void;
-  transferStatusMessage: string | null;
-  transferStatusDetails?: string[] | undefined;
-  transferStatusTone?: ResourceTransferTone | undefined;
+  statuses?: Partial<Record<WorkspaceResourceManagerStatusScope, WorkspaceResourceManagerStatus>>;
   isExporting: boolean;
   isPreviewingImport: boolean;
   isImporting: boolean;
@@ -90,9 +97,7 @@ export function WorkspaceResourceManagerPanel({
   importPreview,
   onConfirmImportPreview,
   onCancelImportPreview,
-  transferStatusMessage,
-  transferStatusDetails = [],
-  transferStatusTone = 'info',
+  statuses = {},
   isExporting,
   isPreviewingImport,
   isImporting,
@@ -117,6 +122,7 @@ export function WorkspaceResourceManagerPanel({
   });
 
   const activePlacementPath = formatRequestPlacementPath(activeDraft ?? activeTab);
+  const isDetachedDraft = isDetachedRequestTab(activeTab);
   const defaultCollectionId = activeDraft?.collectionId
     ?? activeTab?.collectionId
     ?? tree[0]?.collectionId
@@ -179,6 +185,19 @@ export function WorkspaceResourceManagerPanel({
   const canDeleteRequestGroup = Boolean(selectedRequestGroup && selectedRequestGroup.children.length === 0);
   const requestGroupCount = selectedCollection?.children.length ?? 0;
   const requestCount = selectedRequestGroup?.children.length ?? 0;
+  const transferStatus = statuses.transfer ?? null;
+  const collectionStatus = statuses.collections ?? null;
+  const requestGroupStatus = statuses['request-groups'] ?? null;
+  const savedRequestStatus = statuses['saved-request'] ?? null;
+  const activeTabState = activeSavedRequest
+    ? t('workspaceRoute.management.context.values.savedRequest')
+    : isDetachedDraft
+      ? t('workspaceRoute.management.context.values.detachedDraft')
+      : activeTab?.source === 'replay'
+        ? t('workspaceRoute.management.context.values.replayDraft')
+        : activeTab
+          ? t('workspaceRoute.management.context.values.workingDraft')
+          : t('workspaceRoute.management.context.values.noActiveTab');
 
   return (
     <section className="workspace-resource-manager workspace-surface-card" aria-label={t('workspaceRoute.management.ariaLabel')}>
@@ -200,12 +219,12 @@ export function WorkspaceResourceManagerPanel({
       </header>
 
       <div className="workspace-resource-manager__grid">
-        <section className="workspace-resource-manager__section">
+        <section className="workspace-resource-manager__section workspace-resource-manager__section--transfer">
           <div className="workspace-resource-manager__section-copy">
             <h3>{t('workspaceRoute.management.sections.transferTitle')}</h3>
             <p>{t('workspaceRoute.management.sections.transferDescription')}</p>
           </div>
-          <div className="request-work-surface__future-actions">
+          <div className="request-work-surface__future-actions workspace-resource-manager__actions">
             <button
               type="button"
               className="workspace-button workspace-button--secondary"
@@ -244,15 +263,15 @@ export function WorkspaceResourceManagerPanel({
             </label>
           </div>
           <p className="shared-readiness-note">{t('workspaceRoute.management.state.transferBoundary')}</p>
-          {transferStatusMessage ? (
+          {transferStatus ? (
             <div
-              className={`workspace-explorer__status workspace-explorer__status--${transferStatusTone} workspace-resource-manager__status`}
-              role={transferStatusTone === 'error' ? 'alert' : 'status'}
+              className={`workspace-explorer__status workspace-explorer__status--${transferStatus.tone} workspace-resource-manager__status`}
+              role={transferStatus.tone === 'error' ? 'alert' : 'status'}
             >
-              <p>{transferStatusMessage}</p>
-              {transferStatusDetails.length > 0 ? (
+              <p>{transferStatus.message}</p>
+              {(transferStatus.details ?? []).length > 0 ? (
                 <ul className="workspace-explorer__status-details">
-                  {transferStatusDetails.map((detail) => (
+                  {(transferStatus.details ?? []).map((detail) => (
                     <li key={detail}>{detail}</li>
                   ))}
                 </ul>
@@ -293,6 +312,20 @@ export function WorkspaceResourceManagerPanel({
             <h3>{t('workspaceRoute.management.sections.collectionTitle')}</h3>
             <p>{t('workspaceRoute.management.sections.collectionDescription')}</p>
           </div>
+          <KeyValueMetaList
+            items={[
+              {
+                label: t('workspaceRoute.management.context.labels.selectedCollection'),
+                value: selectedCollection?.name ?? t('workspaceRoute.management.context.values.noneSelected'),
+              },
+              {
+                label: t('workspaceRoute.management.context.labels.requestGroupCount'),
+                value: selectedCollection
+                  ? t('workspaceRoute.management.state.collectionCount', { count: requestGroupCount })
+                  : t('workspaceRoute.management.state.collectionUnavailable'),
+              },
+            ]}
+          />
           <label className="request-field request-field--compact">
             <span>{t('workspaceRoute.management.fields.manageCollection')}</span>
             <select
@@ -320,7 +353,7 @@ export function WorkspaceResourceManagerPanel({
               })}
             />
           </label>
-          <div className="request-work-surface__future-actions">
+          <div className="request-work-surface__future-actions workspace-resource-manager__actions">
             <button
               type="button"
               className="workspace-button"
@@ -329,6 +362,7 @@ export function WorkspaceResourceManagerPanel({
 
                 if (result && 'id' in result) {
                   setSelectedCollectionId(result.id);
+                  setCollectionEditorState({ targetId: result.id, value: result.name });
                 }
               }}
               disabled={isMutatingCollections || collectionNameDraft.trim().length === 0}
@@ -344,6 +378,7 @@ export function WorkspaceResourceManagerPanel({
                 }
 
                 await onRenameCollection(selectedCollection, collectionNameDraft.trim());
+                setCollectionEditorState({ targetId: selectedCollection.collectionId, value: collectionNameDraft.trim() });
               }}
               disabled={isMutatingCollections || !selectedCollection || collectionNameDraft.trim().length === 0 || collectionNameDraft.trim() === selectedCollection.name}
             >
@@ -358,6 +393,7 @@ export function WorkspaceResourceManagerPanel({
                 }
 
                 await onDeleteCollection(selectedCollection);
+                setSelectedCollectionId('');
               }}
               disabled={isMutatingCollections || !canDeleteCollection}
               title={!canDeleteCollection ? t('workspaceRoute.explorer.tree.deleteCollectionRequiresEmpty') : undefined}
@@ -365,13 +401,21 @@ export function WorkspaceResourceManagerPanel({
               <IconLabel icon="delete">{t('workspaceRoute.explorer.actions.deleteCollectionShort')}</IconLabel>
             </button>
           </div>
-          <p className="shared-readiness-note">
-            {selectedCollection
-              ? (requestGroupCount > 0
-                ? t('workspaceRoute.management.state.collectionCount', { count: requestGroupCount })
-                : t('workspaceRoute.explorer.tree.noRequestGroups'))
-              : t('workspaceRoute.management.state.collectionUnavailable')}
-          </p>
+          {collectionStatus ? (
+            <div
+              className={`workspace-explorer__status workspace-explorer__status--${collectionStatus.tone} workspace-resource-manager__status`}
+              role={collectionStatus.tone === 'error' ? 'alert' : 'status'}
+            >
+              <p>{collectionStatus.message}</p>
+              {(collectionStatus.details ?? []).length > 0 ? (
+                <ul className="workspace-explorer__status-details">
+                  {(collectionStatus.details ?? []).map((detail) => (
+                    <li key={detail}>{detail}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
         </section>
 
         <section className="workspace-resource-manager__section">
@@ -379,6 +423,26 @@ export function WorkspaceResourceManagerPanel({
             <h3>{t('workspaceRoute.management.sections.requestGroupTitle')}</h3>
             <p>{t('workspaceRoute.management.sections.requestGroupDescription')}</p>
           </div>
+          <KeyValueMetaList
+            items={[
+              {
+                label: t('workspaceRoute.management.context.labels.selectedCollection'),
+                value: selectedCollection?.name ?? t('workspaceRoute.management.context.values.noneSelected'),
+              },
+              {
+                label: t('workspaceRoute.management.context.labels.selectedRequestGroup'),
+                value: selectedRequestGroup?.name ?? t('workspaceRoute.management.context.values.noneSelected'),
+              },
+              {
+                label: t('workspaceRoute.management.context.labels.requestCount'),
+                value: selectedRequestGroup
+                  ? t('workspaceRoute.management.state.requestCount', { count: requestCount })
+                  : selectedCollection
+                    ? t('workspaceRoute.explorer.tree.noRequestGroups')
+                    : t('workspaceRoute.management.state.requestGroupUnavailable'),
+              },
+            ]}
+          />
           <label className="request-field request-field--compact">
             <span>{t('workspaceRoute.management.fields.manageRequestGroup')}</span>
             <select
@@ -408,7 +472,7 @@ export function WorkspaceResourceManagerPanel({
               })}
             />
           </label>
-          <div className="request-work-surface__future-actions">
+          <div className="request-work-surface__future-actions workspace-resource-manager__actions">
             <button
               type="button"
               className="workspace-button"
@@ -421,6 +485,7 @@ export function WorkspaceResourceManagerPanel({
 
                 if (result && 'id' in result) {
                   setSelectedRequestGroupId(result.id);
+                  setRequestGroupEditorState({ targetId: result.id, value: result.name });
                 }
               }}
               disabled={isMutatingRequestGroups || !selectedCollection || requestGroupNameDraft.trim().length === 0}
@@ -436,6 +501,7 @@ export function WorkspaceResourceManagerPanel({
                 }
 
                 await onRenameRequestGroup(selectedRequestGroup, requestGroupNameDraft.trim());
+                setRequestGroupEditorState({ targetId: selectedRequestGroup.requestGroupId, value: requestGroupNameDraft.trim() });
               }}
               disabled={isMutatingRequestGroups || !selectedRequestGroup || requestGroupNameDraft.trim().length === 0 || requestGroupNameDraft.trim() === selectedRequestGroup.name}
             >
@@ -450,6 +516,7 @@ export function WorkspaceResourceManagerPanel({
                 }
 
                 await onDeleteRequestGroup(selectedRequestGroup);
+                setSelectedRequestGroupId('');
               }}
               disabled={isMutatingRequestGroups || !canDeleteRequestGroup}
               title={!canDeleteRequestGroup ? t('workspaceRoute.explorer.tree.deleteRequiresEmpty') : undefined}
@@ -457,13 +524,21 @@ export function WorkspaceResourceManagerPanel({
               <IconLabel icon="delete">{t('workspaceRoute.explorer.actions.deleteRequestGroupShort')}</IconLabel>
             </button>
           </div>
-          <p className="shared-readiness-note">
-            {selectedRequestGroup
-              ? t('workspaceRoute.management.state.requestCount', { count: requestCount })
-              : selectedCollection
-                ? t('workspaceRoute.explorer.tree.noRequestGroups')
-                : t('workspaceRoute.management.state.requestGroupUnavailable')}
-          </p>
+          {requestGroupStatus ? (
+            <div
+              className={`workspace-explorer__status workspace-explorer__status--${requestGroupStatus.tone} workspace-resource-manager__status`}
+              role={requestGroupStatus.tone === 'error' ? 'alert' : 'status'}
+            >
+              <p>{requestGroupStatus.message}</p>
+              {(requestGroupStatus.details ?? []).length > 0 ? (
+                <ul className="workspace-explorer__status-details">
+                  {(requestGroupStatus.details ?? []).map((detail) => (
+                    <li key={detail}>{detail}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
         </section>
 
         <section className="workspace-resource-manager__section">
@@ -471,39 +546,66 @@ export function WorkspaceResourceManagerPanel({
             <h3>{t('workspaceRoute.management.sections.requestTitle')}</h3>
             <p>{t('workspaceRoute.management.sections.requestDescription')}</p>
           </div>
-          <div className="request-work-surface__future-actions">
-            <button
-              type="button"
-              className="workspace-button workspace-button--secondary"
-              onClick={() => {
-                if (activeSavedRequest) {
-                  onExportRequest(activeSavedRequest);
-                }
-              }}
-              disabled={!activeSavedRequest || isDeletingRequest || isExporting}
-            >
-              <IconLabel icon="export">{t('workspaceRoute.management.actions.exportSavedRequest')}</IconLabel>
-            </button>
-            <button
-              type="button"
-              className="workspace-button workspace-button--ghost"
-              onClick={() => {
-                if (activeSavedRequest) {
-                  onDeleteRequest(activeSavedRequest);
-                }
-              }}
-              disabled={!activeSavedRequest || isDeletingRequest}
-            >
-              <IconLabel icon="delete">{t('workspaceRoute.management.actions.deleteSavedRequest')}</IconLabel>
-            </button>
-          </div>
+          <KeyValueMetaList
+            items={[
+              {
+                label: t('workspaceRoute.management.context.labels.activeTab'),
+                value: activeTab?.title ?? t('workspaceRoute.management.context.values.noActiveTab'),
+              },
+              {
+                label: t('workspaceRoute.management.context.labels.tabState'),
+                value: activeTabState,
+              },
+              {
+                label: t('workspaceRoute.management.context.labels.savePlacement'),
+                value: activePlacementPath ?? t('workspaceRoute.management.state.noActivePlacement'),
+              },
+            ]}
+          />
+          {activeSavedRequest ? (
+            <div className="request-work-surface__future-actions workspace-resource-manager__actions">
+              <button
+                type="button"
+                className="workspace-button workspace-button--secondary"
+                onClick={() => onExportRequest(activeSavedRequest)}
+                disabled={isDeletingRequest || isExporting}
+              >
+                <IconLabel icon="export">{t('workspaceRoute.management.actions.exportSavedRequest')}</IconLabel>
+              </button>
+              <button
+                type="button"
+                className="workspace-button workspace-button--ghost"
+                onClick={() => onDeleteRequest(activeSavedRequest)}
+                disabled={isDeletingRequest}
+              >
+                <IconLabel icon="delete">{t('workspaceRoute.management.actions.deleteSavedRequest')}</IconLabel>
+              </button>
+            </div>
+          ) : null}
           <p className="shared-readiness-note">
             {activeSavedRequest
               ? t('workspaceRoute.management.state.requestSelected', { name: activeSavedRequest.name })
-              : activeTab
+              : isDetachedDraft
                 ? t('workspaceRoute.management.state.requestDetached')
-                : t('workspaceRoute.management.state.requestUnavailable')}
+                : activeTab
+                  ? t('workspaceRoute.management.state.requestDraft')
+                  : t('workspaceRoute.management.state.requestUnavailable')}
           </p>
+          {savedRequestStatus ? (
+            <div
+              className={`workspace-explorer__status workspace-explorer__status--${savedRequestStatus.tone} workspace-resource-manager__status`}
+              role={savedRequestStatus.tone === 'error' ? 'alert' : 'status'}
+            >
+              <p>{savedRequestStatus.message}</p>
+              {(savedRequestStatus.details ?? []).length > 0 ? (
+                <ul className="workspace-explorer__status-details">
+                  {(savedRequestStatus.details ?? []).map((detail) => (
+                    <li key={detail}>{detail}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
         </section>
       </div>
     </section>

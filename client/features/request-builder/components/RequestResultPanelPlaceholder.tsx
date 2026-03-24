@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
 import type { RequestRunObservation } from '@client/features/request-builder/request-builder.api';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
+import { isDetachedRequestTab } from '@client/features/request-builder/request-tab-state';
 import {
   formatRequestPlacementPath,
   readRequestGroupName,
@@ -12,6 +13,11 @@ import {
 import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
 import { DetailViewerSection } from '@client/shared/ui/DetailViewerSection';
 import { EmptyStateCallout } from '@client/shared/ui/EmptyStateCallout';
+import type { EnvironmentResolutionSummary } from '@client/shared/environment-resolution-summary';
+import {
+  formatEnvironmentResolutionAffectedAreas,
+  formatEnvironmentResolutionStatusLabel,
+} from '@client/shared/environment-resolution-summary-view';
 import { KeyValueMetaList } from '@client/shared/ui/KeyValueMetaList';
 import { PanelTabs } from '@client/shared/ui/PanelTabs';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
@@ -45,6 +51,10 @@ function getResultPanelIcon(tabId: WorkspaceResultPanelTabId) {
 }
 
 function getTabSourceCopy(activeTab: RequestTabRecord, t: TranslateFn) {
+  if (isDetachedRequestTab(activeTab)) {
+    return t('workspaceRoute.resultPanel.source.detachedDraft');
+  }
+
   if (activeTab.source === 'replay') {
     return activeTab.replaySource?.label ?? t('workspaceRoute.resultPanel.source.replayDraft');
   }
@@ -187,10 +197,17 @@ function createPreviewItems(items: string[], emptyMessage: string, limit = 3) {
   return items.length > 0 ? items.slice(0, limit) : [emptyMessage];
 }
 
+function readExecutionEnvironmentResolutionSummary(execution: RequestRunObservation | null) {
+  return (execution as (RequestRunObservation & {
+    environmentResolutionSummary?: EnvironmentResolutionSummary;
+  }) | null)?.environmentResolutionSummary;
+}
+
 export function RequestResultPanelPlaceholder({
   activeTab,
 }: RequestResultPanelPlaceholderProps) {
   const { t } = useI18n();
+  const translateEnvironmentResolutionKey = (key: string) => t(key as Parameters<typeof t>[0]);
   const resultPanelTabs = getResultPanelTabs(t);
   const commandEntry = useRequestCommandStore((state) =>
     activeTab ? state.byTabId[activeTab.id] : undefined,
@@ -206,6 +223,8 @@ export function RequestResultPanelPlaceholder({
   const execution = runStatus.latestExecution;
   const executionStageSummaries = execution?.stageSummaries ?? [];
   const activeResultTab = runStatus.activeResultTab;
+  const isDetachedDraft = isDetachedRequestTab(activeTab);
+  const environmentResolutionSummary = readExecutionEnvironmentResolutionSummary(execution);
 
   useEffect(() => {
     if (runStatus.status === 'success' || runStatus.status === 'error') {
@@ -220,7 +239,7 @@ export function RequestResultPanelPlaceholder({
           title={t('workspaceRoute.resultPanel.empty.waitingTitle')}
           description={t('workspaceRoute.resultPanel.empty.waitingDescription')}
         />
-      </div>
+              </div>
     );
   }
 
@@ -257,6 +276,15 @@ export function RequestResultPanelPlaceholder({
           ) : null}
         </div>
       </header>
+
+      {isDetachedDraft ? (
+        <section className="workspace-detail-panel__detached-banner" role="status">
+          <div>
+            <h3>{t('workspaceRoute.resultPanel.detached.title')}</h3>
+            <p>{t('workspaceRoute.resultPanel.detached.description')}</p>
+          </div>
+        </section>
+      ) : null}
 
       <PanelTabs
         ariaLabel={t('workspaceRoute.resultPanel.tabs.ariaLabel')}
@@ -339,7 +367,7 @@ export function RequestResultPanelPlaceholder({
                 <div className="request-run-outcome-row">
                   <StatusBadge kind="executionOutcome" value={execution.executionOutcome} />
                   <StatusBadge kind="transportOutcome" value={getTransportOutcomeLabel(execution.responseStatus)} />
-                </div>
+              </div>
                 <KeyValueMetaList
                   items={[
                     { label: t('workspaceRoute.resultPanel.response.labels.httpStatus'), value: execution.responseStatusLabel },
@@ -475,7 +503,7 @@ export function RequestResultPanelPlaceholder({
                 <div className="request-run-outcome-row">
                   <StatusBadge kind="executionOutcome" value={execution.executionOutcome} />
                   <StatusBadge kind="transportOutcome" value={getTransportOutcomeLabel(execution.responseStatus)} />
-                </div>
+              </div>
                 <KeyValueMetaList
                   items={[
                     { label: t('workspaceRoute.resultPanel.executionInfo.labels.executionId'), value: execution.executionId },
@@ -507,7 +535,46 @@ export function RequestResultPanelPlaceholder({
                     { label: t('workspaceRoute.resultPanel.executionInfo.labels.requestInput'), value: execution.requestInputSummary ?? t('workspaceRoute.resultPanel.executionInfo.values.requestSnapshotSummaryMissing') },
                   ]}
                 />
-              </div>
+                {environmentResolutionSummary ? (
+                  <DetailViewerSection
+                    icon="info"
+                    title={t('workspaceRoute.resultPanel.executionInfo.environmentResolution.title')}
+                    description={environmentResolutionSummary.summary}
+                    tone="muted"
+                  >
+                    <KeyValueMetaList
+                      items={[
+                        {
+                          label: t('workspaceRoute.resultPanel.executionInfo.environmentResolution.labels.status'),
+                          value: formatEnvironmentResolutionStatusLabel(
+                            environmentResolutionSummary.status,
+                            translateEnvironmentResolutionKey,
+                            'workspaceRoute.resultPanel.executionInfo.environmentResolution',
+                          ),
+                        },
+                        {
+                          label: t('workspaceRoute.resultPanel.executionInfo.environmentResolution.labels.resolvedPlaceholders'),
+                          value: environmentResolutionSummary.resolvedPlaceholderCount,
+                        },
+                        ...(environmentResolutionSummary.unresolvedPlaceholderCount > 0
+                          ? [{
+                            label: t('workspaceRoute.resultPanel.executionInfo.environmentResolution.labels.unresolvedPlaceholders'),
+                            value: environmentResolutionSummary.unresolvedPlaceholderCount,
+                          }]
+                          : []),
+                        {
+                          label: t('workspaceRoute.resultPanel.executionInfo.environmentResolution.labels.affectedInputAreas'),
+                          value: formatEnvironmentResolutionAffectedAreas(
+                            environmentResolutionSummary.affectedInputAreas,
+                            translateEnvironmentResolutionKey,
+                            'workspaceRoute.resultPanel.executionInfo.environmentResolution',
+                          ),
+                        },
+                      ]}
+                    />
+                  </DetailViewerSection>
+                ) : null}
+                              </div>
               <div className="workspace-detail-panel__result-support">
                 {executionStageSummaries.length > 0 ? (
                   <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.executionInfo.executionStageSummaryAriaLabel')}>
@@ -533,5 +600,16 @@ export function RequestResultPanelPlaceholder({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
 
 

@@ -471,6 +471,13 @@ describe('Request builder save/run wiring', () => {
           authSummary: 'No auth',
           environmentId: 'environment-local',
           environmentLabel: 'Local API',
+          environmentResolutionSummary: {
+            status: 'resolved',
+            summary: 'Resolved 3 environment placeholder(s) in url, headers, and auth.',
+            resolvedPlaceholderCount: 3,
+            unresolvedPlaceholderCount: 0,
+            affectedInputAreas: ['url', 'headers', 'auth'],
+          },
           stageSummaries: [
             {
               stageId: 'pre-request',
@@ -535,6 +542,10 @@ describe('Request builder save/run wiring', () => {
     expect(screen.getByText('No linked saved request')).toBeInTheDocument();
     expect(screen.getByText('No saved placement recorded')).toBeInTheDocument();
     expect(screen.getByText('Local API', { selector: 'dd' })).toBeInTheDocument();
+    expect(screen.getByText('Environment resolution')).toBeInTheDocument();
+    expect(screen.getByText('Resolved 3 environment placeholder(s) in url, headers, and auth.')).toBeInTheDocument();
+    expect(screen.getByText('Resolved')).toBeInTheDocument();
+    expect(screen.getByText('URL, Headers, Auth')).toBeInTheDocument();
     expect(screen.getByText('0 params · 1 headers · No body · No auth')).toBeInTheDocument();
 
     const runCall = fetchMock.mock.calls.find(
@@ -800,4 +811,5 @@ describe('Request builder save/run wiring', () => {
     expect(updatePayload.request.name).toBe('Replay of Create user refined');
   });
 });
+
 

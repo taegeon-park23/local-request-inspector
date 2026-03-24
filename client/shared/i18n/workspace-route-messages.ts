@@ -1,4 +1,4 @@
-export const workspaceRouteMessagesEn = {
+﻿export const workspaceRouteMessagesEn = {
   workspaceRoute: {
     explorer: {
       header: {
@@ -44,7 +44,7 @@ export const workspaceRouteMessagesEn = {
       },
       notes: {
         boundary:
-          'Export and import stay limited to authored request definitions and mock rules. Runtime history, captures, and execution artifacts remain outside this bundle.',
+          'Export and import stay limited to authored request definitions, mock rules, and standalone saved scripts. Runtime history, captures, and execution artifacts remain outside this bundle.',
         navigationOnly:
           'This explorer is navigation-only. Create, rename, delete, import, and export now happen in the main workspace surface.',
         previewAdvisory:
@@ -56,7 +56,7 @@ export const workspaceRouteMessagesEn = {
         fileReadFailed: 'Selected file could not be read for import.',
         exportFailed: 'Resource export failed before a bundle could be downloaded.',
         previewNoResources:
-          'Preview found no saved-request or mock-rule resources in {fileName}. Nothing will be written until you choose a bundle with authored resources.',
+          'Preview found no saved-request, mock-rule, or saved-script resources in {fileName}. Nothing will be written until you choose a bundle with authored resources.',
         previewNoImportable:
           'Preview found no importable authored resources in {fileName}. {rejectedCount} resource(s) would be rejected and nothing will be written until you choose a different bundle.',
         previewReady:
@@ -74,7 +74,7 @@ export const workspaceRouteMessagesEn = {
           '{acceptedSummary}. {rejectedCount} resource(s) were rejected during validation and left unchanged.',
         acceptedSummary: '{count} authored resource(s) imported',
         exportCompleted: 'Exported {label} from the authored resource lane.',
-        exportBundleLabel: '{requestCount} saved request definition(s) and {mockRuleCount} mock rule(s)',
+        exportBundleLabel: '{requestCount} saved request definition(s), {mockRuleCount} mock rule(s), and {scriptCount} saved script(s)',
         exportSavedRequestLabel: 'saved request {name}',
         exportSingleFailed: 'Saved request export failed before a bundle could be downloaded.',
         requestDeleted: 'Deleted the saved request from the canonical saved tree. Open tabs were kept as detached drafts.',
@@ -95,10 +95,12 @@ export const workspaceRouteMessagesEn = {
         bundleRequestGroupCount: 'Request groups in bundle: {count}',
         bundleRequestCount: 'Saved requests in bundle: {count}',
         bundleMockRuleCount: 'Mock rules in bundle: {count}',
+        bundleScriptCount: 'Saved scripts in bundle: {count}',
         createdCollections: 'Created collections: {count}',
         createdRequestGroups: 'Created request groups: {count}',
         createdRequests: 'Created requests: {count}',
         createdMockRules: 'Created mock rules: {count}',
+        createdScripts: 'Created saved scripts: {count}',
         renamedOnImport: 'Renamed on import: {count}',
         rejectedDuringValidation: 'Rejected during validation: {count}',
         importedPreview: 'Imported preview: {names}',
@@ -159,18 +161,38 @@ export const workspaceRouteMessagesEn = {
         exportSavedRequest: 'Export saved request',
         deleteSavedRequest: 'Delete saved request',
       },
+      context: {
+        labels: {
+          selectedCollection: 'Selected collection',
+          requestGroupCount: 'Request group count',
+          selectedRequestGroup: 'Selected request group',
+          requestCount: 'Saved request count',
+          activeTab: 'Active tab',
+          tabState: 'Tab state',
+          savePlacement: 'Save placement',
+        },
+        values: {
+          savedRequest: 'Saved request tab',
+          detachedDraft: 'Detached draft',
+          replayDraft: 'Replay draft',
+          workingDraft: 'Working draft',
+          noActiveTab: 'No active tab',
+          noneSelected: 'None selected',
+        },
+      },
       state: {
         activePlacement: 'Active save placement: {path}',
         noActivePlacement: 'No active save placement is selected yet.',
         transferBoundary:
-          'Import and export remain limited to authored request definitions and mock rules. Runtime history, captures, and execution artifacts remain excluded.',
+          'Import and export remain limited to authored request definitions, mock rules, and standalone saved scripts. Runtime history, captures, and execution artifacts remain excluded.',
         collectionCount: '{count} request group(s) belong to the selected collection.',
         collectionUnavailable: 'No collection is available to manage yet.',
         requestCount: '{count} saved request(s) belong to the selected request group.',
         requestGroupUnavailable: 'Select a collection first to manage request groups.',
         requestSelected: 'Managing saved request {name}.',
         requestDetached:
-          'The active tab is a draft or replay tab. Rename it in the request builder, or open a saved request tab to export or delete persisted state.',
+          'This tab was detached from the canonical saved tree after the persisted request was deleted. Save it again to create a new canonical request and restore saved-request actions.',
+        requestDraft: 'This tab is still a working draft or replay draft. Save it first if you want it to rejoin the canonical saved tree.',
         requestUnavailable: 'Open a saved request tab to export or delete the persisted request definition.',
       },
     },
@@ -199,12 +221,19 @@ export const workspaceRouteMessagesEn = {
       },
       badges: {
         savedRequest: 'Saved request',
+        detachedDraft: 'Detached draft',
         newDraft: 'New draft',
         dirty: 'Dirty',
       },
       location: {
         unsavedDraft: 'Unsaved draft',
         defaultSavePlacement: 'Default save placement: {path}',
+      },
+      detached: {
+        title: 'Detached draft',
+        description: 'The saved request behind this tab was deleted. This draft still keeps your editable request state, but it no longer belongs to the canonical saved tree.',
+        saveTarget: 'Save this draft again to restore a canonical saved request in {path}.',
+        noSaveTarget: 'Choose a save placement and save this draft again to restore a canonical saved request.',
       },
       status: {
         saveUpToDate: 'Saved request definition is up to date.',
@@ -438,9 +467,14 @@ export const workspaceRouteMessagesEn = {
       source: {
         replayDraft: 'Replay draft',
         draftRequestTab: 'Draft request tab',
+        detachedDraft: 'Detached draft',
         savedRequest: 'Saved request',
         savedInCollection: 'Saved in {collectionName}',
         savedInCollectionRequestGroup: 'Saved in {collectionName} / {requestGroupName}',
+      },
+      detached: {
+        title: 'Detached from the canonical saved tree',
+        description: 'Past execution results stay available as historical snapshots, but this tab now behaves like a draft until you save it again.',
       },
       linkage: {
         noSavedPlacementRecorded: 'No saved placement recorded',
@@ -574,6 +608,30 @@ export const workspaceRouteMessagesEn = {
           noExecutionErrorSummary: 'No execution error was reported.',
           requestSnapshotSummaryMissing: 'Request snapshot summary was not returned.',
         },
+        environmentResolution: {
+          title: 'Environment resolution',
+          labels: {
+            status: 'Status',
+            resolvedPlaceholders: 'Resolved placeholders',
+            unresolvedPlaceholders: 'Unresolved placeholders',
+            affectedInputAreas: 'Affected input areas',
+          },
+          status: {
+            notSelected: 'No environment selected',
+            resolved: 'Resolved',
+            missingEnvironment: 'Missing environment',
+            unresolvedPlaceholders: 'Unresolved placeholders',
+            invalidResolvedJson: 'Invalid resolved JSON',
+          },
+          areas: {
+            url: 'URL',
+            params: 'Params',
+            headers: 'Headers',
+            body: 'Body',
+            auth: 'Auth',
+            none: 'None',
+          },
+        },
         empty: {
           title: 'No execution info yet',
           description:
@@ -634,7 +692,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
       },
       notes: {
         boundary:
-          '내보내기와 가져오기는 작성된 요청 정의와 mock rule에만 한정됩니다. 런타임 히스토리, 캡처, 실행 artifact는 이 번들 범위 밖에 있습니다.',
+          '내보내기와 가져오기는 작성된 요청 정의, mock rule, 그리고 독립 저장 스크립트에만 한정됩니다. 런타임 히스토리, 캡처, 실행 artifact는 이 번들 범위 밖에 있습니다.',
         navigationOnly:
           '이 탐색기는 탐색 전용입니다. 생성, 이름 변경, 삭제, 가져오기, 내보내기는 이제 메인 작업공간 surface에서 처리합니다.',
         previewAdvisory:
@@ -646,7 +704,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         fileReadFailed: '가져오기를 위해 선택한 파일을 읽을 수 없습니다.',
         exportFailed: '번들을 다운로드하기 전에 리소스 내보내기에 실패했습니다.',
         previewNoResources:
-          '{fileName}에서 저장 요청 또는 mock rule 리소스를 찾지 못했습니다. 작성 리소스가 포함된 번들을 선택하기 전까지는 아무것도 기록되지 않습니다.',
+          '{fileName}에서 저장 요청, mock rule, 또는 저장 스크립트 리소스를 찾지 못했습니다. 작성 리소스가 포함된 번들을 선택하기 전까지는 아무것도 기록되지 않습니다.',
         previewNoImportable:
           '{fileName}에서 가져올 수 있는 작성 리소스를 찾지 못했습니다. {rejectedCount}개 리소스가 거부될 예정이며 다른 번들을 선택하기 전까지는 아무것도 기록되지 않습니다.',
         previewReady:
@@ -664,7 +722,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
           '{acceptedSummary}. {rejectedCount}개 리소스는 검증 중 거부되어 변경되지 않았습니다.',
         acceptedSummary: '작성 리소스 {count}개를 가져왔습니다',
         exportCompleted: '작성 리소스 레인에서 {label} 항목을 내보냈습니다.',
-        exportBundleLabel: '저장 요청 {requestCount}개와 mock rule {mockRuleCount}개',
+        exportBundleLabel: '저장 요청 {requestCount}개, mock rule {mockRuleCount}개, 저장 스크립트 {scriptCount}개',
         exportSavedRequestLabel: '저장 요청 {name}',
         exportSingleFailed: '번들을 다운로드하기 전에 저장 요청 내보내기에 실패했습니다.',
         requestDeleted: '저장 요청을 기준 저장 트리에서 삭제했습니다. 열려 있던 탭은 분리된 draft로 유지했습니다.',
@@ -685,10 +743,12 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         bundleRequestGroupCount: '번들 안의 요청 그룹: {count}',
         bundleRequestCount: '번들 안의 저장 요청: {count}',
         bundleMockRuleCount: '번들 안의 mock rule: {count}',
+        bundleScriptCount: '번들 안의 저장 스크립트: {count}',
         createdCollections: '생성된 컬렉션: {count}',
         createdRequestGroups: '생성된 요청 그룹: {count}',
         createdRequests: '생성된 요청: {count}',
         createdMockRules: '생성된 mock rule: {count}',
+        createdScripts: '생성된 저장 스크립트: {count}',
         renamedOnImport: '가져오기 중 이름 변경: {count}',
         rejectedDuringValidation: '검증 중 거부: {count}',
         importedPreview: '가져오기 미리보기: {names}',
@@ -749,18 +809,38 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         exportSavedRequest: '저장 요청 내보내기',
         deleteSavedRequest: '저장 요청 삭제',
       },
+      context: {
+        labels: {
+          selectedCollection: '선택된 컬렉션',
+          requestGroupCount: '요청 그룹 수',
+          selectedRequestGroup: '선택된 요청 그룹',
+          requestCount: '저장 요청 수',
+          activeTab: '활성 탭',
+          tabState: '탭 상태',
+          savePlacement: '저장 위치',
+        },
+        values: {
+          savedRequest: '저장 요청 탭',
+          detachedDraft: '분리된 draft',
+          replayDraft: '리플레이 draft',
+          workingDraft: '작업 중 draft',
+          noActiveTab: '활성 탭 없음',
+          noneSelected: '선택 없음',
+        },
+      },
       state: {
         activePlacement: '활성 저장 위치: {path}',
         noActivePlacement: '아직 선택된 활성 저장 위치가 없습니다.',
         transferBoundary:
-          '가져오기와 내보내기는 작성된 요청 정의와 mock rule에만 한정됩니다. 런타임 히스토리, 캡처, 실행 artifact는 계속 제외됩니다.',
+          '가져오기와 내보내기는 작성된 요청 정의, mock rule, 그리고 독립 저장 스크립트에만 한정됩니다. 런타임 히스토리, 캡처, 실행 artifact는 계속 제외됩니다.',
         collectionCount: '선택한 컬렉션에는 요청 그룹이 {count}개 있습니다.',
         collectionUnavailable: '아직 관리할 컬렉션이 없습니다.',
         requestCount: '선택한 요청 그룹에는 저장 요청이 {count}개 있습니다.',
         requestGroupUnavailable: '요청 그룹을 관리하려면 먼저 컬렉션을 선택하세요.',
         requestSelected: '저장 요청 {name}을 관리하는 중입니다.',
         requestDetached:
-          '활성 탭은 draft 또는 replay 탭입니다. 이름 변경은 요청 빌더에서 하고, 저장 상태 내보내기나 삭제는 저장 요청 탭을 열어 수행하세요.',
+          '이 탭은 저장 요청이 삭제되면서 정규 저장 트리에서 분리된 draft입니다. 다시 저장하면 새 정규 요청으로 복귀할 수 있습니다.',
+        requestDraft: '이 탭은 아직 작업 중 draft 또는 replay draft입니다. 정규 저장 트리에 다시 합류하려면 먼저 저장하세요.',
         requestUnavailable: '저장 요청 정의를 내보내거나 삭제하려면 저장 요청 탭을 여세요.',
       },
     },
@@ -789,12 +869,19 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
       },
       badges: {
         savedRequest: '저장된 요청',
+        detachedDraft: '분리된 draft',
         newDraft: '새 draft',
         dirty: '변경됨',
       },
       location: {
         unsavedDraft: '저장되지 않은 draft',
         defaultSavePlacement: '기본 저장 위치: {path}',
+      },
+      detached: {
+        title: '분리된 draft',
+        description: '이 탭 뒤에 있던 저장 요청이 삭제되었습니다. 편집 가능한 요청 상태는 유지되지만, 이제 정규 저장 트리에 속하지 않습니다.',
+        saveTarget: '{path} 위치에 다시 저장하면 정규 저장 요청으로 복귀합니다.',
+        noSaveTarget: '저장 위치를 선택한 뒤 다시 저장하면 정규 저장 요청으로 복귀합니다.',
       },
       status: {
         saveUpToDate: '저장된 요청 정의가 최신 상태입니다.',
@@ -1029,9 +1116,14 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
       source: {
         replayDraft: '리플레이 draft',
         draftRequestTab: 'draft 요청 탭',
+        detachedDraft: '분리된 draft',
         savedRequest: '저장된 요청',
         savedInCollection: '{collectionName}에 저장됨',
         savedInCollectionRequestGroup: '{collectionName} / {requestGroupName}에 저장됨',
+      },
+      detached: {
+        title: '정규 저장 트리에서 분리됨',
+        description: '기존 실행 결과는 과거 스냅샷으로 남아 있지만, 이 탭은 다시 저장할 때까지 draft처럼 동작합니다.',
       },
       linkage: {
         noSavedPlacementRecorded: '저장 위치 기록이 없습니다',
@@ -1165,6 +1257,30 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
           noExecutionErrorSummary: '보고된 실행 오류가 없습니다.',
           requestSnapshotSummaryMissing: '요청 스냅샷 요약이 반환되지 않았습니다.',
         },
+        environmentResolution: {
+          title: '환경 해석',
+          labels: {
+            status: '상태',
+            resolvedPlaceholders: '해석된 placeholder',
+            unresolvedPlaceholders: '미해결 placeholder',
+            affectedInputAreas: '영향받은 입력 영역',
+          },
+          status: {
+            notSelected: '환경 미선택',
+            resolved: '해석 완료',
+            missingEnvironment: '환경 참조 누락',
+            unresolvedPlaceholders: '미해결 placeholder',
+            invalidResolvedJson: '해석 후 JSON 오류',
+          },
+          areas: {
+            url: 'URL',
+            params: '파라미터',
+            headers: '헤더',
+            body: '본문',
+            auth: '인증',
+            none: '없음',
+          },
+        },
         empty: {
           title: '아직 실행 정보가 없습니다',
           description:
@@ -1174,6 +1290,11 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
     },
   },
 };
+
+
+
+
+
 
 
 

@@ -101,6 +101,7 @@ export async function exportMockRuleResource(mockRuleId: string) {
       requestGroups: [];
       requests: [];
       mockRules: MockRuleRecord[];
+      scripts: [];
     };
   }>(response).then((payload) => ({
     ...payload.bundle,

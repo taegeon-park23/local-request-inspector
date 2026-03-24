@@ -5,6 +5,7 @@ import type {
   RequestKeyValueRow,
 } from '@client/features/request-builder/request-draft.types';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
+import type { EnvironmentResolutionSummary } from '@client/shared/environment-resolution-summary';
 import type { WorkspaceSavedRequestSeed } from '@client/features/workspace/data/workspace-explorer-fixtures';
 import {
   createRequestPlacementFields,
@@ -110,6 +111,7 @@ export interface RequestRunObservation {
   requestResourceId?: string | null;
   environmentId?: string | null;
   environmentLabel?: string;
+  environmentResolutionSummary?: EnvironmentResolutionSummary;
   requestCollectionName?: string;
   requestGroupName?: string;
 
@@ -320,6 +322,7 @@ export async function runRequestDefinition(input: RequestDefinitionInput) {
 
   return parseJsonResponse<{ execution: RequestRunObservation }>(response).then((payload) => payload.execution);
 }
+
 
 
 
