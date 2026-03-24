@@ -1,9 +1,9 @@
-# Request Environment Resolution Summary Contract
+﻿# Request Environment Resolution Summary Contract
 
 - **Purpose:** Define the bounded future contract for exposing environment resolution outcomes in post-run observation surfaces without turning the request builder into a full resolved-request inspector.
 - **Created:** 2026-03-23
 - **Last Updated:** 2026-03-24
-- **Related Documents:** `request-builder-mvp.md`, `request-environment-selection-and-resolution.md`, `internal-api-contracts.md`, `script-execution-safety-model.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../tasks/task-034-post-t033-resolution-summary-contract.md`, `../tasks/task-062-post-run-environment-resolution-summary-implementation.md`
+- **Related Documents:** `request-builder-mvp.md`, `request-environment-selection-and-resolution.md`, `internal-api-contracts.md`, `script-execution-safety-model.md`
 - **Status:** implemented baseline contract
 - **Update Rule:** Update when the execution/history environment summary payload changes materially or when the future implementation narrows or widens this observation slice.
 

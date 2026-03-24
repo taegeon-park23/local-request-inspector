@@ -1,9 +1,9 @@
-# T012 Script Editor and Automation UX Spec
+﻿# T012 Script Editor and Automation UX Spec
 
 - **Purpose:** Define the MVP script editor surfaces, stage-aware automation workflow, and diagnostic/result UX for request-bound and reusable script authoring.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-24
-- **Related Documents:** `request-builder-mvp.md`, `script-execution-safety-model.md`, `internal-api-contracts.md`, `ux-information-architecture.md`, `workspace-flows.md`, `frontend-stack-and-shell.md`, `persistence-bootstrap.md`, `../tasks/task-012-script-editor-and-automation-ux-spec.md`
+- **Related Documents:** `request-builder-mvp.md`, `script-execution-safety-model.md`, `internal-api-contracts.md`, `ux-information-architecture.md`, `workspace-flows.md`, `frontend-stack-and-shell.md`, `persistence-bootstrap.md`
 - **Status:** done
 - **Update Rule:** Update when script stages, capability policy, editor loading strategy, or diagnostic panel composition materially changes.
 

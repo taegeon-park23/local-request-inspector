@@ -1,9 +1,9 @@
-# PRD Overview and Delivery Preparation Summary
+﻿# PRD Overview and Delivery Preparation Summary
 
 - **Purpose:** Reframe the upgrade PRD into an execution-ready summary for planning and task tracking.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tasks/task-001-foundation-architecture.md`
+- **Related Documents:** `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`
 - **Update Rule:** Update when product scope, assumptions, or major sequencing decisions change.
 
 ## 1. PRD Purpose

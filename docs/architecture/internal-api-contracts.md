@@ -3,7 +3,7 @@
 - **Purpose:** Define storage-agnostic internal HTTP and event contracts for workspace resources, execution flows, mock rules, and inbound capture features so implementation can proceed with stable DTO and lifecycle expectations.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-24
-- **Related Documents:** `overview.md`, `shared-schema.md`, `naming-conventions.md`, `persistence-strategy.md`, `script-execution-safety-model.md`, `request-environment-resolution-summary-contract.md`, `../tasks/task-008-internal-api-contract-design.md`, `../tasks/task-062-post-run-environment-resolution-summary-implementation.md`
+- **Related Documents:** `overview.md`, `shared-schema.md`, `naming-conventions.md`, `persistence-strategy.md`, `script-execution-safety-model.md`, `request-environment-resolution-summary-contract.md`
 - **Status:** done
 - **Update Rule:** Update when resource boundaries, transport choices, or canonical DTO semantics materially change.
 

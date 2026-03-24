@@ -1,9 +1,9 @@
-# Persistence Strategy Decision
+﻿# Persistence Strategy Decision
 
 - **Purpose:** Compare local persistence options and recommend a storage direction for workspace resources and runtime artifacts in the Local API Workbench.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-22
-- **Related Documents:** `shared-schema.md`, `overview.md`, `migration-plan.md`, `../tasks/task-004-persistence-strategy-decision.md`
+- **Related Documents:** `shared-schema.md`, `overview.md`, `migration-plan.md`
 - **Status:** done
 - **Update Rule:** Update when storage decisions, entity placement, or retention policy assumptions change.
 

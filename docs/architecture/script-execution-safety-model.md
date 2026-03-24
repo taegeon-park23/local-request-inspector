@@ -1,9 +1,9 @@
-# Script Execution Safety Model Draft
+﻿# Script Execution Safety Model Draft
 
 - **Purpose:** Define the script execution safety model for the Local API Workbench, balancing local usability with realistic security and containment expectations.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-18
-- **Related Documents:** `overview.md`, `shared-schema.md`, `persistence-strategy.md`, `internal-api-contracts.md`, `../tasks/task-005-script-execution-safety-model.md`
+- **Related Documents:** `overview.md`, `shared-schema.md`, `persistence-strategy.md`, `internal-api-contracts.md`
 - **Status:** done
 - **Update Rule:** Update when execution capabilities, isolation mechanisms, or artifact redaction rules change.
 

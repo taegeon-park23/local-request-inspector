@@ -1,9 +1,9 @@
-# Material 3 Adoption Plan
+﻿# Material 3 Adoption Plan
 
 - **Purpose:** Define the safe, incremental adoption path for Material 3 foundations in the current shell-first React workbench without changing feature semantics or state ownership.
 - **Created:** 2026-03-22
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `overview.md`, `frontend-stack-and-shell.md`, `request-builder-mvp.md`, `script-editor-and-automation-ux.md`, `mock-engine-rules-spec.md`, `history-and-inspector-behavior.md`, `frontend-workspace-shell-implementation-plan.md`, `../tasks/task-010-frontend-workspace-shell-implementation-plan.md`
+- **Related Documents:** `overview.md`, `frontend-stack-and-shell.md`, `request-builder-mvp.md`, `script-editor-and-automation-ux.md`, `mock-engine-rules-spec.md`, `history-and-inspector-behavior.md`, `frontend-workspace-shell-implementation-plan.md`
 - **Status:** done
 - **Update Rule:** Update when the Material 3 foundation strategy, token model, component mapping, or rollout slices materially change.
 

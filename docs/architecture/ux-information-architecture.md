@@ -1,9 +1,9 @@
-# UX Information Architecture
+﻿# UX Information Architecture
 
 - **Purpose:** Define the high-level workspace shell, navigation model, screen responsibilities, and visibility rules for the local-first API workbench.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-24
-- **Related Documents:** `overview.md`, `shared-schema.md`, `internal-api-contracts.md`, `script-execution-safety-model.md`, `workspace-flows.md`, `../tasks/task-003-ux-information-architecture-and-workspace-flows.md`
+- **Related Documents:** `overview.md`, `shared-schema.md`, `internal-api-contracts.md`, `script-execution-safety-model.md`, `workspace-flows.md`
 - **Status:** done
 - **Update Rule:** Update when workspace shell, navigation, or summary/detail responsibilities materially change.
 

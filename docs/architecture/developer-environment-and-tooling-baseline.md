@@ -1,9 +1,9 @@
-# T017 Developer Environment and Tooling Baseline
+﻿# T017 Developer Environment and Tooling Baseline
 
 - **Purpose:** Define the minimum viable but scalable local development environment, repository layout, scripts, and tooling conventions needed to begin MVP implementation with consistent quality and reproducible workflows.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-18
-- **Related Documents:** `frontend-stack-and-shell.md`, `internal-api-contracts.md`, `persistence-bootstrap.md`, `script-execution-safety-model.md`, `testing-and-qa-strategy.md`, `../tasks/task-017-developer-environment-and-tooling-baseline.md`
+- **Related Documents:** `frontend-stack-and-shell.md`, `internal-api-contracts.md`, `persistence-bootstrap.md`, `script-execution-safety-model.md`, `testing-and-qa-strategy.md`
 - **Status:** done
 - **Update Rule:** Update when the baseline stack, script catalog, fixture strategy, or local bootstrap workflow materially changes.
 

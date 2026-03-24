@@ -1,9 +1,9 @@
-# Client I18n Foundation
+﻿# Client I18n Foundation
 
 - **Purpose:** Define the bounded client-side internationalization model for English and Korean so later localization work can expand surface-by-surface without re-choosing provider, storage, or key conventions.
 - **Created:** 2026-03-23
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `../tasks/task-037-client-i18n-foundation-and-korean-locale-bootstrap.md`, `../tasks/task-038-environments-and-scripts-route-localization-pass.md`, `../tasks/task-039-workspace-authoring-localization-pass.md`, `../tasks/task-040-workspace-result-panel-localization-pass.md`, `../tasks/task-041-captures-observation-route-localization-pass.md`, `../tasks/task-042-history-observation-route-localization-pass.md`, `../tasks/task-045-mocks-route-localization-pass.md`, `../tasks/task-046-shell-and-management-generated-aria-localization-pass.md`, `material-3-adoption-plan.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`
+- **Related Documents:** `material-3-adoption-plan.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`
 - **Update Rule:** Update when locale ownership, message-key shape, supported locales, or first-slice coverage rules change.
 
 ## 1. Scope

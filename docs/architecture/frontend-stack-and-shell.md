@@ -1,9 +1,9 @@
-# Frontend Stack and Application Shell Decision
+﻿# Frontend Stack and Application Shell Decision
 
 - **Purpose:** Compare realistic frontend stack options and define the recommended application shell for the local-first API workbench.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-22
-- **Related Documents:** `overview.md`, `internal-api-contracts.md`, `ux-information-architecture.md`, `workspace-flows.md`, `script-execution-safety-model.md`, `../tasks/task-006-frontend-stack-and-application-shell-decision.md`
+- **Related Documents:** `overview.md`, `internal-api-contracts.md`, `ux-information-architecture.md`, `workspace-flows.md`, `script-execution-safety-model.md`
 - **Status:** done
 - **Update Rule:** Update when the recommended frontend stack, shell boundaries, or state-management strategy materially change.
 

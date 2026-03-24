@@ -1,9 +1,9 @@
-# T001 Migration Plan
+﻿# T001 Migration Plan
 
 - **Purpose:** Describe a phased migration path from the current prototype architecture to the target modular local-first API workbench architecture.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-22
-- **Related Documents:** `overview.md`, `domain-model.md`, `../tasks/task-001-foundation-architecture.md`, `../tracking/master-task-board.md`
+- **Related Documents:** `overview.md`, `domain-model.md`, `../tracking/master-task-board.md`
 - **Status:** done
 - **Update Rule:** Update when sequencing, risks, or transition strategy changes.
 

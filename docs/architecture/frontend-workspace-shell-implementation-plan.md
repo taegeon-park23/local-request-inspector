@@ -1,9 +1,9 @@
-# T010 Frontend Workspace Shell Implementation Plan
+﻿# T010 Frontend Workspace Shell Implementation Plan
 
 - **Purpose:** Define an implementation-ready, review-friendly plan for replacing the legacy single-page frontend with a React + Vite + TypeScript workspace shell using small, testable slices.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `frontend-stack-and-shell.md`, `request-builder-mvp.md`, `script-editor-and-automation-ux.md`, `mock-engine-rules-spec.md`, `history-and-inspector-behavior.md`, `testing-and-qa-strategy.md`, `developer-environment-and-tooling-baseline.md`, `../tasks/task-010-frontend-workspace-shell-implementation-plan.md`
+- **Related Documents:** `frontend-stack-and-shell.md`, `request-builder-mvp.md`, `script-editor-and-automation-ux.md`, `mock-engine-rules-spec.md`, `history-and-inspector-behavior.md`, `testing-and-qa-strategy.md`, `developer-environment-and-tooling-baseline.md`
 - **Status:** done
 - **Update Rule:** Update when shell boundaries, route strategy, slice sequencing, or shared primitive assumptions materially change.
 

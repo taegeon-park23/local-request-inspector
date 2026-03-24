@@ -1,9 +1,9 @@
-# T014 History and Inspector Behavior Spec
+﻿# T014 History and Inspector Behavior Spec
 
 - **Purpose:** Define the MVP behavior, UX, and information model for Captures, History, detail/timeline surfaces, replay, diff, and runtime diagnostics.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-18
-- **Related Documents:** `overview.md`, `domain-model.md`, `shared-schema.md`, `internal-api-contracts.md`, `persistence-strategy.md`, `persistence-bootstrap.md`, `request-builder-mvp.md`, `script-editor-and-automation-ux.md`, `mock-engine-rules-spec.md`, `ux-information-architecture.md`, `workspace-flows.md`, `../tasks/task-014-history-inspector-behavior-spec.md`
+- **Related Documents:** `overview.md`, `domain-model.md`, `shared-schema.md`, `internal-api-contracts.md`, `persistence-strategy.md`, `persistence-bootstrap.md`, `request-builder-mvp.md`, `script-editor-and-automation-ux.md`, `mock-engine-rules-spec.md`, `ux-information-architecture.md`, `workspace-flows.md`
 - **Status:** done
 - **Update Rule:** Update when observation surfaces, replay behavior, diff scope, or runtime detail redaction rules materially change.
 

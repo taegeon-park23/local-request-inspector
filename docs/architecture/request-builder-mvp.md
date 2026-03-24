@@ -1,9 +1,9 @@
-# Request Builder MVP
+﻿# Request Builder MVP
 
 - **Purpose:** Define the MVP product behavior for creating, editing, saving, running, and inspecting requests inside the local-first API workbench.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `ux-information-architecture.md`, `workspace-flows.md`, `frontend-stack-and-shell.md`, `internal-api-contracts.md`, `persistence-bootstrap.md`, `../tasks/task-011-request-builder-mvp-design.md`
+- **Related Documents:** `ux-information-architecture.md`, `workspace-flows.md`, `frontend-stack-and-shell.md`, `internal-api-contracts.md`, `persistence-bootstrap.md`
 - **Status:** done
 - **Update Rule:** Update when MVP scope, request field coverage, or save/run/result boundaries materially change.
 

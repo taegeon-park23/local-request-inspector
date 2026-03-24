@@ -1,9 +1,9 @@
-# T016 Testing and QA Strategy
+﻿# T016 Testing and QA Strategy
 
 - **Purpose:** Define a realistic MVP testing strategy, QA ownership model, and regression guard set for the Local API Workbench implementation.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-18
-- **Related Documents:** `overview.md`, `script-execution-safety-model.md`, `internal-api-contracts.md`, `persistence-bootstrap.md`, `request-builder-mvp.md`, `script-editor-and-automation-ux.md`, `mock-engine-rules-spec.md`, `history-and-inspector-behavior.md`, `frontend-stack-and-shell.md`, `../tasks/task-016-testing-and-qa-strategy.md`
+- **Related Documents:** `overview.md`, `script-execution-safety-model.md`, `internal-api-contracts.md`, `persistence-bootstrap.md`, `request-builder-mvp.md`, `script-editor-and-automation-ux.md`, `mock-engine-rules-spec.md`, `history-and-inspector-behavior.md`, `frontend-stack-and-shell.md`
 - **Status:** done
 - **Update Rule:** Update when verification scope, risk priorities, or accepted MVP regression guards materially change.
 

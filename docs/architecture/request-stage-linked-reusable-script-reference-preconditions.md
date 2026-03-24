@@ -1,9 +1,9 @@
-# Request-Stage Linked Reusable-Script Reference Preconditions
+﻿# Request-Stage Linked Reusable-Script Reference Preconditions
 
 - **Purpose:** Define the minimum future contract boundary for request-stage linked reusable-script references so later work does not reopen copy-based attachment, discovery polish, and live linkage semantics as one blended scope.
 - **Created:** 2026-03-24
 - **Last Updated:** 2026-03-24
-- **Related Documents:** `script-editor-and-automation-ux.md`, `request-builder-mvp.md`, `internal-api-contracts.md`, `../tasks/task-066-request-stage-linked-reusable-script-reference-contract-narrowing.md`, `../tasks/task-071-post-t070-priority-review-and-linked-script-promotion.md`, `../tasks/task-072-request-stage-linked-reusable-script-reference-baseline.md`, `../tracking/request-stage-script-linkage-lane-comparison.md`
+- **Related Documents:** `script-editor-and-automation-ux.md`, `request-builder-mvp.md`, `internal-api-contracts.md`
 - **Status:** active reference
 - **Update Rule:** Update when linked reusable-script references are promoted, when request-stage script binding shapes change, or when bundle/transfer behavior begins to include linked request-stage references.
 

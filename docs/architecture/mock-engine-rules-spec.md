@@ -1,9 +1,9 @@
-# T013 Mock Engine Rules Spec
+﻿# T013 Mock Engine Rules Spec
 
 - **Purpose:** Define the MVP product, UX, and behavior rules for workspace-scoped mock rule authoring, evaluation, response generation, and diagnostics.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-18
-- **Related Documents:** `overview.md`, `domain-model.md`, `shared-schema.md`, `internal-api-contracts.md`, `persistence-strategy.md`, `persistence-bootstrap.md`, `ux-information-architecture.md`, `workspace-flows.md`, `request-builder-mvp.md`, `script-editor-and-automation-ux.md`, `../tasks/task-013-mock-engine-rules-spec.md`
+- **Related Documents:** `overview.md`, `domain-model.md`, `shared-schema.md`, `internal-api-contracts.md`, `persistence-strategy.md`, `persistence-bootstrap.md`, `ux-information-architecture.md`, `workspace-flows.md`, `request-builder-mvp.md`, `script-editor-and-automation-ux.md`
 - **Status:** done
 - **Update Rule:** Update when matcher scope, rule priority semantics, diagnostics vocabulary, or response-generation boundaries materially change.
 
