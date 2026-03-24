@@ -74,8 +74,10 @@ const { createRuntimeStatusSnapshot } = require('./storage/shared/runtime-status
 const { runScriptStageInChildProcess } = require('./server/execution-script-runner');
 const { runLegacyCallbackInChildProcess } = require('./server/legacy-callback-runner');
 const { registerAppShellRoutes } = require('./server/register-app-shell-routes');
+const { configureRuntimeStream } = require('./server/configure-runtime-stream');
 const { registerLegacyInspectorRoutes } = require('./server/register-legacy-inspector-routes');
 const { registerRuntimeRoutes } = require('./server/register-runtime-routes');
+const { registerStatusRoutes } = require('./server/register-status-routes');
 
 const app = express();
 const PORT = 5671;
@@ -114,6 +116,7 @@ const { getClientShellStatus } = registerAppShellRoutes(app, {
   fs,
   rootDir: __dirname,
 });
+const { getEventClients } = configureRuntimeStream(app, express);
 
 function sendData(res, data, status = 200) {
   res.status(status).json({
@@ -1388,23 +1391,12 @@ function createTransportCancelledStageResult(reason = 'Transport was cancelled b
   });
 }
 
-app.get('/api/app-shell-status', (req, res) => {
-  return sendData(res, {
-    appShell: getClientShellStatus(),
-  });
-});
-
-app.get('/api/settings/runtime-status', (req, res) => {
-  try {
-    return sendData(res, {
-      status: createRuntimeStatusSnapshot({
-        appShell: getClientShellStatus(),
-        layout: persistence.layout,
-      }),
-    });
-  } catch (error) {
-    return sendError(res, 500, 'runtime_status_failed', error.message);
-  }
+registerStatusRoutes(app, {
+  sendData,
+  sendError,
+  getClientShellStatus,
+  createRuntimeStatusSnapshot,
+  layout: persistence.layout,
 });
 
 function createTransportSkippedStageResult(reason) {
@@ -2392,25 +2384,6 @@ function createExecutionBody(request, headers) {
 
   return undefined;
 }
-
-let clients = [];
-app.get('/events', (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.flushHeaders();
-  clients.push(res);
-  req.on('close', () => {
-    clients = clients.filter((c) => c !== res);
-  });
-});
-
-const captureRawBody = (req, res, buf) => {
-  req.rawBody = buf.toString();
-};
-app.use(express.json({ verify: captureRawBody }));
-app.use(express.urlencoded({ extended: true, verify: captureRawBody }));
-app.use(express.text({ type: '*/*' }));
 
 function listWorkspaceSavedRequestRecords(workspaceId) {
   return reconcileWorkspaceRequestPlacementState(workspaceId).requests;
@@ -4594,7 +4567,7 @@ registerLegacyInspectorRoutes(app, {
   createPersistedCapturedRequestRecord,
   createCapturedRequestRecord,
   createCaptureEventPayload,
-  getEventClients: () => clients,
+  getEventClients,
 });
 
 app.listen(PORT, () => {

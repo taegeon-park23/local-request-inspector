@@ -10,6 +10,7 @@
 - `T073` is actively in progress.
 - The task currently owns server decomposition, child-process script-runner hardening, replay completion, linked-script transfer follow-up, and live-doc cleanup.
 - Built-shell status, `/app` static serving, and fallback rendering now register through `server/register-app-shell-routes.js`.
+- App-shell/runtime status APIs now register through `server/register-status-routes.js`, and SSE plus raw-body parser bootstrap now lives in `server/configure-runtime-stream.js`.
 - The current implementation slice already landed runtime query repositories, execution cancellation/result APIs, replay-now flows for history/captures, and linked saved-script transfer remapping.
 - Runtime cancellation/history/capture routes are now registered through `server/register-runtime-routes.js`, reducing the size of the remaining monolithic route block in `server.js`.
 - Legacy inspector mock/assets/execute routes plus the inbound capture catch-all now register through `server/register-legacy-inspector-routes.js`, and inbound mock evaluation reads saved rules through the repository seam.
