@@ -17,6 +17,10 @@ interface ServerSentRuntimeEventsAdapterOptions {
   url?: string;
 }
 
+interface UnavailableRuntimeEventsAdapterOptions {
+  connectionHealth?: Extract<RuntimeConnectionHealth, 'degraded' | 'offline'>;
+}
+
 function parseTransportEvent(rawData: string) {
   try {
     return JSON.parse(rawData) as RuntimeCaptureTransportEvent;
@@ -59,6 +63,17 @@ export function createSyntheticRuntimeEventsAdapter({
 
       timerIds = [];
     },
+  };
+}
+
+export function createUnavailableRuntimeEventsAdapter({
+  connectionHealth = 'offline',
+}: UnavailableRuntimeEventsAdapterOptions = {}): RuntimeEventsAdapter {
+  return {
+    start: (handler: RuntimeEventsMessageHandler) => {
+      handler({ kind: 'connection', health: connectionHealth });
+    },
+    stop: () => {},
   };
 }
 
@@ -108,7 +123,5 @@ export function createServerSentRuntimeEventsAdapter({
 
 export const createDefaultRuntimeEventsAdapter: RuntimeEventsAdapterFactory = () =>
   (typeof EventSource === 'undefined'
-    ? createSyntheticRuntimeEventsAdapter()
+    ? createUnavailableRuntimeEventsAdapter()
     : createServerSentRuntimeEventsAdapter());
-
-

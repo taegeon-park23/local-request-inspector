@@ -55,6 +55,7 @@
 - Extracted repository-backed environment/script helpers into `server/environment-script-resource-service.js` and mock-rule normalization/list helpers into `server/mock-rule-resource-service.js`, so `server.js` no longer carries those authored-resource bootstrap blocks inline.
 - Extracted authored resource-bundle import parsing, normalization, and plan preparation into `server/resource-bundle-import-service.js`, reducing `server.js` from 1686 lines to 1256 lines while preserving the existing route payload shape.
 - Added Node HTTP seam coverage for environment default reconciliation and script listing via `server/register-environment-script-routes.test.js`.
+- Replaced the default runtime-events synthetic fallback with an explicit offline adapter, while the shared test renderer now opts into synthetic runtime events on purpose so production no longer masks missing live EventSource support.
 - Removed production fallback-to-empty behavior from the workspace request tree/request list loader, so saved-resource route failures now surface as explicit degraded state instead of looking like an empty workspace.
 - Removed production fixture-backed draft/mock defaults from `client/features/request-builder/state/request-draft-store.ts` and `client/features/mocks/components/MocksRoute.tsx` so shipped authoring state no longer depends on seed fixture modules.
 - Added Node HTTP seam coverage for request-resource mutation, blocked execution failure paths, and resource-bundle preview/import under `server/*.test.js`, and extended `scripts/run-node-seam-tests.mjs` to include `server/`.
@@ -68,7 +69,7 @@
 
 ## Remaining Work
 - Continue reducing `server.js` so the remaining execution helpers move behind bounded services instead of staying in the bootstrap file.
-- Remove the remaining production false-success defaults and fixture-derived fallbacks that can still mask degraded runtime/resource state outside the newly updated workspace and mock/request-draft paths, including the runtime-events synthetic fallback path.
+- Remove the remaining production false-success defaults and fixture-derived fallbacks that can still mask degraded runtime/resource state outside the newly updated workspace and mock/request-draft paths.
 - Finish the live-doc cleanup slice that upgrades already-decided PRD/architecture uncertainty markers and renames remaining implementation-only `Placeholder` artifacts where they are now misleading.
 
 

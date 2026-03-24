@@ -1,4 +1,5 @@
 import type { RuntimeEventsAdapterFactory } from '@client/features/runtime-events/runtime-events.types';
+import { createSyntheticRuntimeEventsAdapter } from '@client/features/runtime-events/runtime-events-adapter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { render, type RenderOptions } from '@testing-library/react';
 import { type PropsWithChildren, type ReactElement } from 'react';
@@ -19,7 +20,7 @@ export function renderApp(
   {
     initialEntries = ['/workspace'],
     initialLocale = 'en',
-    runtimeEventsAdapterFactory,
+    runtimeEventsAdapterFactory = createSyntheticRuntimeEventsAdapter,
     ...options
   }: RenderAppOptions = {},
 ) {
@@ -30,7 +31,7 @@ export function renderApp(
       <I18nProvider initialLocale={initialLocale}>
         <MemoryRouter initialEntries={initialEntries}>
           <QueryClientProvider client={queryClient}>
-            <RuntimeEventsProvider {...(runtimeEventsAdapterFactory ? { createAdapter: runtimeEventsAdapterFactory } : {})}>
+            <RuntimeEventsProvider createAdapter={runtimeEventsAdapterFactory}>
               {children}
             </RuntimeEventsProvider>
           </QueryClientProvider>

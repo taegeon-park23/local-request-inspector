@@ -19,7 +19,7 @@
 ## Current State
 - **Current active implementation:** `T073` server decomposition, runtime hardening, replay/transfer follow-up, and documentation cleanup.
 - **Most recent archived implementation:** `T072` request-stage linked reusable-script reference baseline.
-- **Highest-priority next step:** continue `T073` by moving the remaining execution helpers out of `server.js` and clearing the last production false-success fallbacks after the new environment/script, mock-rule, and resource-bundle service split.
+- **Highest-priority next step:** continue `T073` by moving the remaining execution helpers out of `server.js`, then finish the last production false-success cleanup and live-doc alignment after the runtime-events fallback hardening.
 - **Verification baseline:** `npm.cmd run check` and `npm.cmd run test:node` passed on 2026-03-25, including the expanded `server/*.test.js` HTTP seam coverage for request-resource, environment/script, execution, and resource-bundle routes.
 - **Codex smoke baseline:** Playwright smoke passed on 2026-03-24 for workspace run, history replay-now, capture replay-now, and settings route load.
 - **Closed UI-test rerun policy:** agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
