@@ -3,7 +3,7 @@
 - **Purpose:** Define the minimum future contract boundary for request-stage linked reusable-script references so later work does not reopen copy-based attachment, discovery polish, and live linkage semantics as one blended scope.
 - **Created:** 2026-03-24
 - **Last Updated:** 2026-03-24
-- **Related Documents:** `script-editor-and-automation-ux.md`, `request-builder-mvp.md`, `internal-api-contracts.md`, `../tasks/task-066-request-stage-linked-reusable-script-reference-contract-narrowing.md`, `../tracking/request-stage-script-linkage-lane-comparison.md`
+- **Related Documents:** `script-editor-and-automation-ux.md`, `request-builder-mvp.md`, `internal-api-contracts.md`, `../tasks/task-066-request-stage-linked-reusable-script-reference-contract-narrowing.md`, `../tasks/task-071-post-t070-priority-review-and-linked-script-promotion.md`, `../tasks/task-072-request-stage-linked-reusable-script-reference-baseline.md`, `../tracking/request-stage-script-linkage-lane-comparison.md`
 - **Status:** active reference
 - **Update Rule:** Update when linked reusable-script references are promoted, when request-stage script binding shapes change, or when bundle/transfer behavior begins to include linked request-stage references.
 
@@ -113,8 +113,19 @@ That decision is out of scope for the first linked-reference slice and should no
 - **확실하지 않음:** whether linked references should expose saved-script updated timestamps or revision counters in request-stage chrome.
 - **확실하지 않음:** whether import/export support for linked request stages should reuse bundle v2 or require a future bundle revision.
 
-## 9. Practical Rule For Future Contributors
-Do not start linked reusable-script implementation from the current copy-based request-stage editor. Start from this contract note first, then promote one bounded implementation task that covers only:
+## 9. First Promoted Slice Decision
+`T071` now promotes one bounded implementation candidate from this note.
+
+That first slice should:
+- allow linked request-stage bindings to be saved and reloaded as part of request definitions
+- keep linked stages read-only in the request-stage editor until the user detaches to copy
+- treat saved-script delete as an explicit broken-reference state
+- block request export and workspace bundle export when linked request-stage bindings are present
+
+This keeps authored-resource transfer semantics out of the first linked-reference implementation while still making the feature useful for ordinary request authoring and execution.
+
+## 10. Practical Rule For Future Contributors
+Do not start linked reusable-script implementation from the current copy-based request-stage editor alone. Start from this contract note first, then use `T072` as the bounded implementation task that covers only:
 - discriminated stage binding shape
 - linked-state read-only request-stage UI
 - rename/delete broken-link rules

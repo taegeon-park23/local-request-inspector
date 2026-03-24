@@ -3,7 +3,7 @@
 - **Purpose:** Keep the request-stage reusable-script follow-up space bounded after `T064` and `T065` so future work does not blur copy, library-assist, and linked-reference semantics into one broad script theme.
 - **Created:** 2026-03-24
 - **Last Updated:** 2026-03-24
-- **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `../architecture/script-editor-and-automation-ux.md`, `../tasks/task-061b-standalone-saved-scripts-authored-resource-bundle-expansion.md`, `../tasks/task-063-post-t062-request-stage-script-linkage-lane-comparison.md`, `../tasks/task-064-request-stage-saved-script-attach-by-copy.md`, `../tasks/task-065-request-stage-saved-script-library-assist-route-bridge.md`
+- **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `../architecture/script-editor-and-automation-ux.md`, `../tasks/task-061b-standalone-saved-scripts-authored-resource-bundle-expansion.md`, `../tasks/task-063-post-t062-request-stage-script-linkage-lane-comparison.md`, `../tasks/task-064-request-stage-saved-script-attach-by-copy.md`, `../tasks/task-065-request-stage-saved-script-library-assist-route-bridge.md`, `../tasks/task-066-request-stage-linked-reusable-script-reference-contract-narrowing.md`, `../tasks/task-071-post-t070-priority-review-and-linked-script-promotion.md`, `../tasks/task-072-request-stage-linked-reusable-script-reference-baseline.md`
 - **Status:** active reference
 - **Update Rule:** Update when one request-stage reusable-script lane is implemented, when the saved-script baseline materially changes, or when a narrower linked-reference candidate is explicitly promoted.
 
@@ -17,7 +17,7 @@
 - Focuses on attaching a reusable saved script as a live reference from one request stage.
 - Would require the request model to distinguish local script source from linked reusable source.
 - Would need explicit behavior for rename, delete, collision, detachment, and stale-version cases.
-- Still parked.
+- Now promoted as the strongest next implementation candidate after `T071`, but still not implemented.
 
 ### Lane 3 - Library-assist polish only
 - Focuses on easier navigation between request-stage editors and the top-level Scripts library without changing request-stage persistence semantics.
@@ -47,11 +47,12 @@
 ## 4. Decision
 - Lane 1, **attach saved script by copy**, is landed and now forms the bounded request-stage reusable-script baseline.
 - Lane 3, **library-assist polish only**, is also landed and now provides the bounded discovery bridge between request-stage authoring and the standalone Scripts library.
-- Lane 2, **linked reusable reference**, remains parked because it would reopen persistence/reference semantics that the repo still treats as unresolved.
-- No new request-stage reusable-script implementation is auto-promoted after `T065`.
+- Lane 2, **linked reusable reference**, is now the strongest next implementation candidate because `T066` froze the minimum contract frame and `T071` fixed a bounded first-slice stop line.
+- The promoted first slice should still avoid bundle-support expansion by allowing save/load plus run semantics while blocking export for linked requests.
+- `T072` is now the concrete implementation task for this lane.
 
 ## 5. What Would Change This Decision Later
-- Revisit Lane 2 only if the product explicitly needs live reusable-script linkage and can own rename/delete/version/remap rules in one contract.
+- Start Lane 2 from `T072` if the repo wants the next substantive request-stage script slice.
 - If future script work resumes without live linkage, it should stay additive-only and avoid changing request save contracts, bundle/reference contracts, or result/history semantics.
 
 ## 6. Explicit Uncertainties / 확실하지 않음
