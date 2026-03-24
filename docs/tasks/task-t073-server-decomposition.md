@@ -34,6 +34,7 @@
 - Codex-side UI verification must use the Playwright skill workflow rather than rerunning `npm.cmd run test:ui`.
 
 ## Progress
+- Extracted authored resource bundle export/import routes into `server/register-resource-bundle-routes.js`.
 - Extracted environment CRUD, saved-script CRUD, and script-template read routes into `server/register-environment-script-routes.js`.
 - Extracted mock-rule CRUD, enable/disable, and single-rule bundle export routes into `server/register-mock-rule-routes.js`.
 - Extracted built-shell status/static `/app` route registration and fallback rendering into `server/register-app-shell-routes.js`, so `server.js` keeps only the returned `getClientShellStatus()` hook used by runtime status responses and startup logging.
