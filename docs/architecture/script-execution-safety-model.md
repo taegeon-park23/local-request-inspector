@@ -2,7 +2,7 @@
 
 - **Purpose:** Define the script execution safety model for the Local API Workbench, balancing local usability with realistic security and containment expectations.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-18
+- **Last Updated:** 2026-03-24
 - **Related Documents:** `overview.md`, `shared-schema.md`, `persistence-strategy.md`, `internal-api-contracts.md`
 - **Status:** done
 - **Update Rule:** Update when execution capabilities, isolation mechanisms, or artifact redaction rules change.
@@ -357,4 +357,4 @@ The current model is convenient but too implicit. It blurs trust boundaries, mak
 1. default network policy breadth remains **확실하지 않음**.
 2. default file-read enablement remains **확실하지 않음**.
 3. exact timeout defaults remain **확실하지 않음**.
-4. whether a worker-based interim runner is acceptable before child-process isolation lands is **확실하지 않음**.
+4. Child-process isolation is now the primary runner baseline; the remaining question is how long the worker-thread fallback should stay available for spawn-restricted sandbox environments.

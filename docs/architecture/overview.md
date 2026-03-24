@@ -2,7 +2,7 @@
 
 - **Purpose:** Define the target architecture, module boundaries, responsibilities, data flow, and security boundaries for evolving Local Request Inspector into a local-first API workbench.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-23
+- **Last Updated:** 2026-03-24
 - **Related Documents:** `../prd/overview.md`, `domain-model.md`, `migration-plan.md`
 - **Status:** done
 - **Update Rule:** Update when architecture decisions, open questions, or module boundaries materially change.
@@ -211,7 +211,7 @@ Current gap:
 ### 6.2 Boundary B — Application API vs Sandbox Runtime
 - User scripts should not execute inside general route/controller context long-term.
 - Sandbox runner should be isolated with explicit capabilities and timeout.
-- File system and outbound network access policies remain **확실하지 않음** and require follow-up in T005.
+- Direct in-script file-system access is no longer granted by default, and request transport remains server-owned. Any broader future file/network capability policy still requires explicit follow-up.
 
 ### 6.3 Boundary C — Domain Services vs Persistence
 - Repository interfaces should hide file/DB implementation details.
@@ -242,14 +242,12 @@ Current gap:
 2. Saved resources must survive restarts.
 3. Workspace resources and execution history should be queryable independently.
 4. The architecture should allow phased migration instead of a big-bang rewrite.
-5. Frontend framework choice is deferred to T006.
+5. The current shell baseline is React + Vite + TypeScript, even though future packaging and deeper shell behavior can still evolve.
 
 ## 9. Open Questions
-1. Persistence implementation (JSON, SQLite, hybrid) is **확실하지 않음**.
-2. Whether the UI stays browser-only or becomes desktop-packaged is **확실하지 않음**.
-3. Exact sandbox isolation mechanism (worker, child process, vm2-like alternative, etc.) is **확실하지 않음**.
-4. Whether execution history and captured requests share one physical store is **확실하지 않음**.
-5. Whether SSE remains sufficient once richer bi-directional execution telemetry is added is **확실하지 않음**.
+1. Whether the UI stays browser-only or becomes desktop-packaged is **확실하지 않음**.
+2. Whether SSE remains sufficient once richer bi-directional execution telemetry is added is **확실하지 않음**.
+3. Whether the current hybrid persistence split should remain final or converge further after more runtime/resource experience is **확실하지 않음**.
 
 ## 10. T001 Outputs That Feed Later Tasks
 - **T003:** use module boundaries and flows to define information architecture and workspace layout.

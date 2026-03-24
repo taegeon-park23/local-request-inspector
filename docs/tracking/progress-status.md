@@ -9,6 +9,7 @@
 ## Current Snapshot
 - `T073` is actively in progress.
 - The task currently owns server decomposition, child-process script-runner hardening, replay completion, linked-script transfer follow-up, and live-doc cleanup.
+- Live PRD/architecture docs now reflect the landed React + Vite shell baseline, hybrid JSON/SQLite persistence baseline, and child-process execution baseline instead of keeping those decisions open by default.
 - Request placement, saved-request normalization, request-tree building, and bundle helper logic now live in `server/request-resource-service.js` instead of inline inside `server.js`.
 - The execution run entrypoint now registers through `server/register-execution-routes.js`, so `server.js` no longer defines `/api/executions/run` inline.
 - Request list/tree, collection CRUD, request-group CRUD, and saved-request CRUD routes now register through `server/register-request-resource-routes.js`.
