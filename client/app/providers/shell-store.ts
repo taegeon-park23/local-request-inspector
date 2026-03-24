@@ -10,9 +10,11 @@ export type FloatingExplorerRouteKey =
   | 'scripts';
 
 type FloatingExplorerOpenByRoute = Record<FloatingExplorerRouteKey, boolean>;
+export type ShellDensityMode = 'compact' | 'comfortable';
 
 export const shellNavRailPreferenceStorageKey = 'local-request-inspector.shell.navRailCollapsed';
 export const shellFloatingExplorerDefaultOpenStorageKey = 'local-request-inspector.shell.floatingExplorerDefaultOpen';
+export const shellDensityPreferenceStorageKey = 'local-request-inspector.shell.densityMode';
 
 const floatingExplorerRouteKeys: FloatingExplorerRouteKey[] = [
   'workspace',
@@ -27,10 +29,12 @@ interface ShellState {
   runtimeConnectionHealth: RuntimeConnectionHealth;
   navRailCollapsed: boolean;
   floatingExplorerDefaultOpen: boolean;
+  shellDensityMode: ShellDensityMode;
   floatingExplorerOpenByRoute: FloatingExplorerOpenByRoute;
   setRuntimeConnectionHealth: (health: RuntimeConnectionHealth) => void;
   setNavRailCollapsed: (collapsed: boolean) => void;
   setFloatingExplorerDefaultOpen: (open: boolean) => void;
+  setShellDensityMode: (mode: ShellDensityMode) => void;
   toggleNavRailCollapsed: () => void;
   setFloatingExplorerOpen: (route: FloatingExplorerRouteKey, open: boolean) => void;
   toggleFloatingExplorer: (route: FloatingExplorerRouteKey) => void;
@@ -60,6 +64,20 @@ function readFloatingExplorerDefaultOpenPreference() {
   }
 }
 
+function readShellDensityPreference(): ShellDensityMode {
+  if (typeof window === 'undefined') {
+    return 'compact';
+  }
+
+  try {
+    return window.localStorage.getItem(shellDensityPreferenceStorageKey) === 'comfortable'
+      ? 'comfortable'
+      : 'compact';
+  } catch {
+    return 'compact';
+  }
+}
+
 function writeNavRailPreference(collapsed: boolean) {
   if (typeof window === 'undefined') {
     return;
@@ -84,6 +102,18 @@ function writeFloatingExplorerDefaultOpenPreference(open: boolean) {
   }
 }
 
+function writeShellDensityPreference(mode: ShellDensityMode) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(shellDensityPreferenceStorageKey, mode);
+  } catch {
+    // Ignore storage write failures.
+  }
+}
+
 function createFloatingExplorerOpenByRoute(open: boolean): FloatingExplorerOpenByRoute {
   return floatingExplorerRouteKeys.reduce<FloatingExplorerOpenByRoute>((accumulator, routeKey) => {
     accumulator[routeKey] = open;
@@ -91,12 +121,13 @@ function createFloatingExplorerOpenByRoute(open: boolean): FloatingExplorerOpenB
   }, {} as FloatingExplorerOpenByRoute);
 }
 
-function createInitialShellState(): Pick<ShellState, 'runtimeConnectionHealth' | 'navRailCollapsed' | 'floatingExplorerDefaultOpen' | 'floatingExplorerOpenByRoute'> {
+function createInitialShellState(): Pick<ShellState, 'runtimeConnectionHealth' | 'navRailCollapsed' | 'floatingExplorerDefaultOpen' | 'shellDensityMode' | 'floatingExplorerOpenByRoute'> {
   const floatingExplorerDefaultOpen = readFloatingExplorerDefaultOpenPreference();
   return {
     runtimeConnectionHealth: 'idle',
     navRailCollapsed: readNavRailPreference(),
     floatingExplorerDefaultOpen,
+    shellDensityMode: readShellDensityPreference(),
     floatingExplorerOpenByRoute: createFloatingExplorerOpenByRoute(floatingExplorerDefaultOpen),
   };
 }
@@ -114,6 +145,10 @@ export const useShellStore = create<ShellState>((set) => ({
       floatingExplorerDefaultOpen,
       floatingExplorerOpenByRoute: createFloatingExplorerOpenByRoute(floatingExplorerDefaultOpen),
     });
+  },
+  setShellDensityMode: (shellDensityMode) => {
+    writeShellDensityPreference(shellDensityMode);
+    set({ shellDensityMode });
   },
   toggleNavRailCollapsed: () => set((state) => {
     const navRailCollapsed = !state.navRailCollapsed;

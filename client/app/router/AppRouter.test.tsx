@@ -4,6 +4,7 @@ import { vi } from 'vitest';
 import { AppRouter } from '@client/app/router/AppRouter';
 import {
   resetShellStore,
+  shellDensityPreferenceStorageKey,
   shellFloatingExplorerDefaultOpenStorageKey,
   shellNavRailPreferenceStorageKey,
 } from '@client/app/providers/shell-store';
@@ -185,6 +186,16 @@ describe('AppRouter shell bootstrap', () => {
     expect(floatingRoot).toHaveAttribute('data-floating-explorer-open', 'false');
     expect(floatingDetail).toHaveAttribute('data-detail-visibility', 'visible');
     expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('rehydrates the shell density from the stored client preference on first render', () => {
+    window.localStorage.setItem(shellDensityPreferenceStorageKey, 'comfortable');
+    resetShellStore();
+
+    renderApp(<AppRouter />);
+
+    const appShell = screen.getByTestId('app-shell');
+    expect(appShell).toHaveAttribute('data-density', 'comfortable');
   });
 
   it('lets workspace explorer selection surface content immediately and allows explorer collapse', async () => {

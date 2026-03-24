@@ -26,8 +26,10 @@ export function SettingsRoute() {
   const runtimeConnectionHealth = useShellStore((state) => state.runtimeConnectionHealth);
   const navRailCollapsed = useShellStore((state) => state.navRailCollapsed);
   const floatingExplorerDefaultOpen = useShellStore((state) => state.floatingExplorerDefaultOpen);
+  const shellDensityMode = useShellStore((state) => state.shellDensityMode);
   const setNavRailCollapsed = useShellStore((state) => state.setNavRailCollapsed);
   const setFloatingExplorerDefaultOpen = useShellStore((state) => state.setFloatingExplorerDefaultOpen);
+  const setShellDensityMode = useShellStore((state) => state.setShellDensityMode);
   const { locale, locales, setLocale, t } = useI18n();
   const [copiedMessage, setCopiedMessage] = useState<string | null>(null);
   const runtimeStatusQuery = useQuery({ queryKey: runtimeStatusQueryKey, queryFn: readRuntimeStatus });
@@ -45,6 +47,11 @@ export function SettingsRoute() {
     open
       ? t('settings.cards.routeExplorerPreference.values.expanded')
       : t('settings.cards.routeExplorerPreference.values.collapsed')
+  );
+  const describeShellDensity = (mode: 'compact' | 'comfortable') => (
+    mode === 'comfortable'
+      ? t('settings.cards.shellDensityPreference.values.comfortable')
+      : t('settings.cards.shellDensityPreference.values.compact')
   );
   const affectedRoutesLabel = [
     t('sections.workspace.label'),
@@ -274,6 +281,44 @@ export function SettingsRoute() {
                   onClick={() => setFloatingExplorerDefaultOpen(false)}
                 >
                   {t('settings.cards.routeExplorerPreference.actions.collapsed')}
+                </button>
+              </div>
+            </DetailViewerSection>
+            <DetailViewerSection
+              icon="workspace"
+              title={t('settings.cards.shellDensityPreference.title')}
+              description={t('settings.cards.shellDensityPreference.description')}
+              className="workspace-surface-card"
+            >
+              <KeyValueMetaList
+                items={[
+                  { label: t('settings.cards.shellDensityPreference.labels.currentState'), value: describeShellDensity(shellDensityMode) },
+                  { label: t('settings.cards.shellDensityPreference.labels.affectedSurfaces'), value: t('settings.cards.shellDensityPreference.values.affectedSurfaces') },
+                  { label: t('settings.cards.shellDensityPreference.labels.persistence'), value: t('settings.cards.shellDensityPreference.values.persistence') },
+                  { label: t('settings.cards.shellDensityPreference.labels.scope'), value: t('settings.cards.shellDensityPreference.values.scope') },
+                ]}
+              />
+              <p className="shared-readiness-note">{t('settings.cards.shellDensityPreference.helper')}</p>
+              <div
+                className="request-work-surface__future-actions"
+                role="group"
+                aria-label={t('settings.cards.shellDensityPreference.actions.groupLabel')}
+              >
+                <button
+                  type="button"
+                  className={shellDensityMode === 'compact' ? 'workspace-button workspace-button--secondary' : 'workspace-button workspace-button--ghost'}
+                  aria-pressed={shellDensityMode === 'compact'}
+                  onClick={() => setShellDensityMode('compact')}
+                >
+                  {t('settings.cards.shellDensityPreference.actions.compact')}
+                </button>
+                <button
+                  type="button"
+                  className={shellDensityMode === 'comfortable' ? 'workspace-button workspace-button--secondary' : 'workspace-button workspace-button--ghost'}
+                  aria-pressed={shellDensityMode === 'comfortable'}
+                  onClick={() => setShellDensityMode('comfortable')}
+                >
+                  {t('settings.cards.shellDensityPreference.actions.comfortable')}
                 </button>
               </div>
             </DetailViewerSection>

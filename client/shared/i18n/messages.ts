@@ -278,6 +278,31 @@ const enCatalog = {
         helper:
           'Use each route explorer toggle for temporary changes. This preference controls the default floating explorer state used when supported routes open on this device.',
       },
+      shellDensityPreference: {
+        title: 'Shell density preference',
+        description:
+          'Choose how spacious the shell chrome feels on this device. This preference changes shell presentation only and does not affect route content, runtime behavior, or stored resources.',
+        labels: {
+          currentState: 'Current state',
+          affectedSurfaces: 'Affected surfaces',
+          persistence: 'Persistence',
+          scope: 'Scope',
+        },
+        values: {
+          persistence: 'Browser local storage',
+          scope: 'Shell chrome only',
+          compact: 'Compact',
+          comfortable: 'Comfortable',
+          affectedSurfaces: 'Top bar, navigation rail, and shell framing',
+        },
+        actions: {
+          groupLabel: 'Shell density preference',
+          compact: 'Compact',
+          comfortable: 'Comfortable',
+        },
+        helper:
+          'Compact keeps the current tight shell baseline. Comfortable adds breathing room to the top bar, navigation rail, and outer shell spacing without changing route-level card density.',
+      },
       storagePaths: {
         title: 'Storage paths',
         description: 'These paths help operators confirm bootstrap state without adding mutation controls here.',
@@ -590,6 +615,31 @@ const koCatalog: CatalogShape<typeof enCatalog> = {
         },
         helper:
           '임시 변경은 각 라우트의 탐색기 토글로 처리하고, 여기서는 지원되는 라우트가 열릴 때 사용할 기본 floating explorer 상태를 지정합니다.',
+      },
+      shellDensityPreference: {
+        title: '쉘 밀도 기본값',
+        description:
+          '이 기기에서 shell chrome이 얼마나 여유 있게 보일지 선택합니다. 이 preference는 shell 표시 방식만 바꾸며 route 내부 콘텐츠, runtime 동작, 저장 리소스에는 영향을 주지 않습니다.',
+        labels: {
+          currentState: '현재 상태',
+          affectedSurfaces: '적용 영역',
+          persistence: '저장 위치',
+          scope: '적용 범위',
+        },
+        values: {
+          persistence: '브라우저 로컬 스토리지',
+          scope: 'shell chrome 전용',
+          compact: '컴팩트',
+          comfortable: '여유 있음',
+          affectedSurfaces: '상단 바, 내비게이션 레일, 쉘 외곽 간격',
+        },
+        actions: {
+          groupLabel: '쉘 밀도 기본값',
+          compact: '컴팩트',
+          comfortable: '여유 있음',
+        },
+        helper:
+          '컴팩트는 현재의 조밀한 shell 기준을 유지합니다. 여유 있음은 route 카드 밀도는 바꾸지 않고 상단 바, 내비게이션 레일, 바깥 shell 간격만 넓힙니다.',
       },
       storagePaths: {
         title: '스토리지 경로',

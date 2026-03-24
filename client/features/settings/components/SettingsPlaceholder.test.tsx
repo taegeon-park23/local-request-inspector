@@ -2,6 +2,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AppRouter } from '@client/app/router/AppRouter';
 import {
+  shellDensityPreferenceStorageKey,
   shellFloatingExplorerDefaultOpenStorageKey,
   shellNavRailPreferenceStorageKey,
   useShellStore,
@@ -20,6 +21,7 @@ describe('Settings MVP route', () => {
     expect(screen.getByRole('heading', { name: 'Runtime connection health' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Interface language' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Route explorer preference' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Shell density preference' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Local command catalog' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Data path and route hints' })).toBeInTheDocument();
     expect(screen.getAllByText('connected', { selector: '[data-kind="connection"]' }).length).toBeGreaterThan(0);
@@ -87,5 +89,25 @@ describe('Settings MVP route', () => {
     expect(floatingRoot).toHaveAttribute('data-floating-explorer-open', 'false');
     expect(floatingDetail).toHaveAttribute('data-detail-visibility', 'visible');
     expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('lets the user change the shell density preference and persists it locally', async () => {
+    const user = userEvent.setup();
+    useShellStore.getState().setRuntimeConnectionHealth('connected');
+    renderApp(<AppRouter />, { initialEntries: ['/settings'] });
+
+    await screen.findByRole('heading', { name: 'Shell density preference' });
+
+    const preferenceGroup = screen.getByRole('group', { name: 'Shell density preference' });
+    const appShell = screen.getByTestId('app-shell');
+
+    expect(appShell).toHaveAttribute('data-density', 'compact');
+    expect(within(preferenceGroup).getByRole('button', { name: 'Compact' })).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(within(preferenceGroup).getByRole('button', { name: 'Comfortable' }));
+
+    expect(appShell).toHaveAttribute('data-density', 'comfortable');
+    expect(window.localStorage.getItem(shellDensityPreferenceStorageKey)).toBe('comfortable');
+    expect(within(preferenceGroup).getByRole('button', { name: 'Comfortable' })).toHaveAttribute('aria-pressed', 'true');
   });
 });

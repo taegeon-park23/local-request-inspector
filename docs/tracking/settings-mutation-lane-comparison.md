@@ -3,7 +3,7 @@
 - **Purpose:** Compare the remaining settings-mutation follow-up lanes directly so future contributors can narrow one safe next settings task without reopening runtime defaults, storage administration, and broader preferences as one blended scope.
 - **Created:** 2026-03-24
 - **Last Updated:** 2026-03-24
-- **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `../architecture/ux-information-architecture.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-067-settings-mutation-lane-comparison.md`, `../tasks/task-068-client-owned-interface-preferences-settings-baseline.md`, `../tasks/task-069-route-panel-default-presentation-settings-preference.md`
+- **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `../architecture/ux-information-architecture.md`, `../tasks/task-027-placeholder-route-mvp.md`, `../tasks/task-067-settings-mutation-lane-comparison.md`, `../tasks/task-068-client-owned-interface-preferences-settings-baseline.md`, `../tasks/task-069-route-panel-default-presentation-settings-preference.md`, `../tasks/task-070-shell-density-settings-preference.md`
 - **Status:** active reference
 - **Update Rule:** Update when one deferred settings lane is promoted, when the `/settings` baseline materially changes, or when a narrower settings-mutation candidate replaces one of the current lanes.
 
@@ -11,8 +11,8 @@
 ### Lane 1 - Client-owned interface preferences
 - Focuses on low-risk preferences that affect shell and management presentation only.
 - Stays inside client-owned state and local persistence rather than reopening server-owned runtime or storage policy.
-- Landed through `T068` and `T069` with a default navigation-rail preference plus a default floating route-explorer presentation preference.
-- Future additive concerns could still include density or compactness preference, or later alignment polish around existing locale/presentation controls.
+- Landed through `T068`, `T069`, and `T070` with a default navigation-rail preference, a default floating route-explorer presentation preference, and a shell-density preference.
+- Future additive concerns could still include later alignment polish around existing locale/presentation controls.
 
 ### Lane 2 - Runtime defaults and execution preferences
 - Focuses on mutable defaults that affect request execution or runtime behavior.
@@ -27,6 +27,7 @@
 - `T037` already added one bounded client-owned preference flow, locale persistence, without turning `/settings` into a broader mutation surface or introducing a settings resource contract.
 - `T068` now adds one bounded client-owned interface preference for the default navigation-rail state, persisted locally and reflected immediately in shell presentation.
 - `T069` now adds one bounded client-owned interface preference for the default floating-explorer state used by supported route explorers, persisted locally and reflected on first render plus in-session preference updates.
+- `T070` now adds one bounded client-owned interface preference for shell-density mode, persisted locally and reflected through shell-only spacing changes without altering route-level content density.
 - Runtime behavior, request execution defaults, environment resolution, and storage bootstrap already have bounded ownership elsewhere in the repo; `/settings` does not currently own those contracts.
 - Current docs still mention broader future settings ideas such as runtime defaults and preferences, but the only landed mutation baseline remains client-owned presentation state.
 
@@ -55,7 +56,7 @@
 - The current command catalog and path hints already cover bounded diagnostics needs without UI-side mutation.
 
 ## 5. Decision
-- Lane 1, `client-owned interface preferences`, is now the landed settings-mutation baseline through `T068` and `T069`.
+- Lane 1, `client-owned interface preferences`, is now the landed settings-mutation baseline through `T068`, `T069`, and `T070`.
 - Lane 2, `runtime defaults and execution preferences`, remains parked because it would reopen request execution and policy ownership.
 - Lane 3, `storage and maintenance actions`, remains parked because it would reopen destructive maintenance semantics and backup/recovery flows.
 - No new settings implementation is auto-promoted beyond the landed client-preferences baseline.

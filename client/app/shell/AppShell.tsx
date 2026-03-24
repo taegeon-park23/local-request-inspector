@@ -13,17 +13,26 @@ export function AppShell() {
   const location = useLocation();
   const runtimeConnectionHealth = useShellStore((state) => state.runtimeConnectionHealth);
   const navRailCollapsed = useShellStore((state) => state.navRailCollapsed);
+  const shellDensityMode = useShellStore((state) => state.shellDensityMode);
   const toggleNavRailCollapsed = useShellStore((state) => state.toggleNavRailCollapsed);
   const { t } = useI18n();
   const brandIconUrl = `${import.meta.env.BASE_URL}favicon.svg`;
   const currentSection = resolveCurrentSection(location.pathname);
   const navToggleLabel = navRailCollapsed ? t('shell.navigation.expand') : t('shell.navigation.collapse');
+  const shellLayoutClassName = [
+    'shell-layout',
+    navRailCollapsed ? 'shell-layout--nav-collapsed' : null,
+    shellDensityMode === 'comfortable' ? 'shell-layout--density-comfortable' : null,
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div
-      className={navRailCollapsed ? 'shell-layout shell-layout--nav-collapsed' : 'shell-layout'}
+      className={shellLayoutClassName}
       data-testid="app-shell"
       data-nav-collapsed={navRailCollapsed ? 'true' : 'false'}
+      data-density={shellDensityMode}
     >
       <header className="shell-topbar" aria-label="Top bar">
         <div className="shell-topbar__brand-mark">

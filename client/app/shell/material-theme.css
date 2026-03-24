@@ -3377,6 +3377,12 @@ body {
   --app-shell-nav-width: var(--app-shell-nav-width-collapsed);
 }
 
+.shell-layout--density-comfortable {
+  --app-shell-gap: 0.95rem;
+  --app-shell-nav-width-expanded: 15.75rem;
+  --app-shell-nav-width-collapsed: 4.85rem;
+}
+
 .shell-topbar {
   position: sticky;
   top: 0;
@@ -3632,6 +3638,74 @@ body {
     inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
+.shell-layout--density-comfortable .shell-topbar {
+  min-height: 46px;
+  height: 46px;
+  gap: 0.75rem;
+  padding: 0 0.95rem;
+}
+
+.shell-layout--density-comfortable .shell-topbar__brand-mark {
+  width: 1.9rem;
+  height: 1.9rem;
+}
+
+.shell-layout--density-comfortable .shell-topbar__breadcrumb {
+  gap: 0.45rem;
+}
+
+.shell-layout--density-comfortable .shell-topbar__breadcrumb-current {
+  min-height: 1.85rem;
+  gap: 0.4rem;
+  padding: 0 0.72rem;
+}
+
+.shell-layout--density-comfortable .shell-topbar__status {
+  gap: 0.55rem;
+}
+
+.shell-layout--density-comfortable .shell-topbar__status .shared-status-badge {
+  min-height: 1.55rem;
+  padding: 0.12rem 0.55rem;
+}
+
+.shell-layout--density-comfortable .shell-nav {
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.shell-layout--density-comfortable .shell-nav__toggle {
+  min-height: 2.45rem;
+  gap: 0.65rem;
+  padding: 0.52rem 0.8rem;
+}
+
+.shell-layout--density-comfortable.shell-layout--nav-collapsed .shell-nav__toggle {
+  padding: 0.52rem;
+}
+
+.shell-layout--density-comfortable .shell-nav ul {
+  gap: 0.45rem;
+}
+
+.shell-layout--density-comfortable .shell-nav__link {
+  min-height: 3.2rem;
+  padding: 0.65rem 0.75rem;
+}
+
+.shell-layout--density-comfortable .shell-nav--collapsed .shell-nav__link {
+  padding: 0.65rem 0.48rem;
+}
+
+.shell-layout--density-comfortable .shell-nav__icon {
+  width: 2.05rem;
+  height: 2.05rem;
+}
+
+.shell-layout--density-comfortable .shell-content {
+  padding: 1rem;
+}
+
 @media (max-width: 1024px) {
   .shell-layout {
     gap: 0.625rem;
@@ -3687,6 +3761,20 @@ body {
 
   .shell-content {
     padding: 0.7rem;
+  }
+
+  .shell-layout--density-comfortable .shell-topbar {
+    min-height: 44px;
+    gap: 0.5rem;
+    padding: 0.55rem 0.8rem;
+  }
+
+  .shell-layout--density-comfortable .shell-nav {
+    padding: 0.65rem;
+  }
+
+  .shell-layout--density-comfortable .shell-nav--collapsed .shell-nav__link {
+    padding: 0.65rem 0.75rem;
   }
 }
 

@@ -3,6 +3,7 @@ import { cleanup } from '@testing-library/react';
 import { vi } from 'vitest';
 import {
   resetShellStore,
+  shellDensityPreferenceStorageKey,
   shellFloatingExplorerDefaultOpenStorageKey,
   shellNavRailPreferenceStorageKey,
 } from '@client/app/providers/shell-store';
@@ -520,6 +521,7 @@ afterEach(() => {
   cleanup();
   window.localStorage.removeItem(shellNavRailPreferenceStorageKey);
   window.localStorage.removeItem(shellFloatingExplorerDefaultOpenStorageKey);
+  window.localStorage.removeItem(shellDensityPreferenceStorageKey);
   resetShellStore();
   resetCapturesStore();
   resetHistoryStore();
