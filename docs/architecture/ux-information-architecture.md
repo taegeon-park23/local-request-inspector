@@ -50,9 +50,9 @@ Recommended top-level navigation for MVP:
    - script templates
    - capability guidance
 7. **Settings**
-   - workspace preferences
-   - runtime defaults
-   - future security/persistence preferences
+   - runtime diagnostics
+   - client-owned interface preferences first
+   - future runtime/security/persistence preferences only after separate narrowing
 
 ### 3.2 Navigation Rules
 - Navigation should preserve the current workspace context whenever possible.
@@ -122,7 +122,7 @@ These may need to exist even when workspace ownership is missing or partial:
 | Mocks | rule list and status indicators | mock rule editor | match diagnostics, scenario state, sample response |
 | Environments | environment list | environment editor | variable preview, secret metadata, resolution warnings |
 | Scripts | script list/template list | script editor detail | capability guide, lint/diagnostic panel, usage references |
-| Settings | settings summary cards | settings detail form | migration/backup status, data location hints |
+| Settings | diagnostics and preference summary cards | bounded settings detail form | runtime-status cards, local interface preferences, data location hints |
 
 ## 7. Summary vs Detail View Rules
 ### 7.1 Summary Views
