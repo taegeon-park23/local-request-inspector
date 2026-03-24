@@ -34,6 +34,7 @@
 - Codex-side UI verification must use the Playwright skill workflow rather than rerunning `npm.cmd run test:ui`.
 
 ## Progress
+- Extracted built-shell status/static `/app` route registration and fallback rendering into `server/register-app-shell-routes.js`, so `server.js` keeps only the returned `getClientShellStatus()` hook used by runtime status responses and startup logging.
 - Added explicit repository seams for resource storage and runtime queries, and moved history/capture reads onto `repositories.runtime.queries`.
 - Extracted runtime cancellation/history/capture route registration out of `server.js` into `server/register-runtime-routes.js` so the execution entrypoint and runtime observation routes are no longer defined in one monolithic block.
 - Extracted legacy inspector mock/assets/execute routes and the inbound capture catch-all into `server/register-legacy-inspector-routes.js`, and switched inbound mock-rule evaluation to the repository seam instead of raw storage scans.
