@@ -3,10 +3,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '@client/app/providers/useI18n';
 import type {
-  RequestDraftScriptsState,
   RequestDraftState,
+  RequestLinkedScriptBinding,
   RequestScriptStageId,
 } from '@client/features/request-builder/request-draft.types';
+import {
+  getInlineRequestScriptStageSourceCode,
+  getRequestScriptStageBinding,
+} from '@client/features/request-builder/request-script-binding';
 import {
   listWorkspaceScripts,
   workspaceScriptsQueryKey,
@@ -29,26 +33,50 @@ interface ScriptStageDefinition {
   exampleSnippet: string;
 }
 
-const scriptContentFieldMap: Record<RequestScriptStageId, keyof Omit<RequestDraftScriptsState, 'activeStage'>> = {
-  'pre-request': 'preRequest',
-  'post-response': 'postResponse',
-  tests: 'tests',
-};
-
-function getStageContent(scripts: RequestDraftScriptsState, stage: RequestScriptStageId) {
-  return scripts[scriptContentFieldMap[stage]];
-}
-
-function isScriptCompatibleWithStage(script: SavedScriptRecord, stage: RequestScriptStageId) {
-  return script.scriptType === stage;
-}
-
 interface RequestScriptsEditorSurfaceProps {
   draft: RequestDraftState;
   onStageChange: (stage: RequestScriptStageId) => void;
   onContentChange: (stage: RequestScriptStageId, content: string) => void;
   copiedFromScriptNames: Partial<Record<RequestScriptStageId, string>>;
   onAttachSavedScript: (stage: RequestScriptStageId, scriptName: string, content: string) => void;
+  onLinkSavedScript: (stage: RequestScriptStageId, script: SavedScriptRecord) => void;
+  onDetachSavedScript: (stage: RequestScriptStageId, scriptName: string, content: string) => void;
+}
+
+interface LinkedStageResolution {
+  status: 'healthy' | 'missing' | 'mismatched';
+  savedScript: SavedScriptRecord | null;
+}
+
+function isScriptCompatibleWithStage(script: SavedScriptRecord, stage: RequestScriptStageId) {
+  return script.scriptType === stage;
+}
+
+function resolveLinkedStage(
+  binding: RequestLinkedScriptBinding,
+  stage: RequestScriptStageId,
+  savedScripts: SavedScriptRecord[],
+): LinkedStageResolution {
+  const savedScript = savedScripts.find((script) => script.id === binding.savedScriptId) ?? null;
+
+  if (!savedScript) {
+    return {
+      status: 'missing',
+      savedScript: null,
+    };
+  }
+
+  if (!isScriptCompatibleWithStage(savedScript, stage)) {
+    return {
+      status: 'mismatched',
+      savedScript,
+    };
+  }
+
+  return {
+    status: 'healthy',
+    savedScript,
+  };
 }
 
 export default function RequestScriptsEditorSurface({
@@ -57,6 +85,8 @@ export default function RequestScriptsEditorSurface({
   onContentChange,
   copiedFromScriptNames,
   onAttachSavedScript,
+  onLinkSavedScript,
+  onDetachSavedScript,
 }: RequestScriptsEditorSurfaceProps) {
   const navigate = useNavigate();
   const { t } = useI18n();
@@ -121,13 +151,30 @@ export default function RequestScriptsEditorSurface({
 
   const activeStage = draft.scripts.activeStage;
   const activeStageDefinition = scriptStageDefinitions.find((definition) => definition.id === activeStage) ?? scriptStageDefinitions[0]!;
-  const activeStageContent = getStageContent(draft.scripts, activeStage);
-  const compatibleSavedScripts = (savedScriptsQuery.data ?? []).filter((script) => isScriptCompatibleWithStage(script, activeStage));
+  const activeStageBinding = getRequestScriptStageBinding(draft.scripts, activeStage);
+  const activeStageContent = getInlineRequestScriptStageSourceCode(draft.scripts, activeStage);
+  const savedScripts = savedScriptsQuery.data ?? [];
+  const compatibleSavedScripts = savedScripts.filter((script) => isScriptCompatibleWithStage(script, activeStage));
   const selectedSavedScript = compatibleSavedScripts.find((script) => script.id === selectedSavedScriptId) ?? compatibleSavedScripts[0] ?? null;
   const selectedSavedScriptValue = selectedSavedScript?.id ?? '';
-  const hasStageContent = activeStageContent.trim().length > 0;
+  const hasStageContent = activeStageBinding.mode === 'linked' || activeStageContent.trim().length > 0;
   const activeStageLabelId = `script-stage-${draft.tabId}-${activeStage}`;
   const activeStagePanelId = `script-stage-panel-${draft.tabId}-${activeStage}`;
+  const copiedFromScriptName = activeStageBinding.mode === 'inline' ? copiedFromScriptNames[activeStage] : null;
+  const linkedResolution = activeStageBinding.mode === 'linked'
+    ? resolveLinkedStage(activeStageBinding, activeStage, savedScripts)
+    : null;
+  const linkedScriptName = activeStageBinding.mode === 'linked'
+    ? ((linkedResolution?.savedScript?.name ?? activeStageBinding.savedScriptNameSnapshot) || activeStageBinding.savedScriptId)
+    : '';
+  const linkedSourcePreview = linkedResolution?.savedScript?.sourceCode ?? '';
+  const canDetachToCopy = activeStageBinding.mode === 'linked' && linkedSourcePreview.length > 0;
+  const linkedStatusTone = linkedResolution?.status === 'healthy' ? 'secondary' : 'replay';
+  const linkedStatusCopy = linkedResolution?.status === 'missing'
+    ? t('workspaceRoute.scriptsEditor.attach.linkedMissingSummary')
+    : linkedResolution?.status === 'mismatched'
+      ? t('workspaceRoute.scriptsEditor.attach.linkedMismatchSummary')
+      : t('workspaceRoute.scriptsEditor.attach.linkedResolvedHint', { name: linkedScriptName });
 
   return (
     <section className="workspace-surface-card request-editor-card request-editor-card--scripts" data-testid="script-editor-surface">
@@ -178,16 +225,48 @@ export default function RequestScriptsEditorSurface({
           aria-labelledby={`script-stage-tab-${draft.tabId}-${activeStage}`}
           className="workspace-surface-card request-script-editor"
         >
-          <label className="request-field">
-            <span>{activeStageDefinition.label}</span>
-            <textarea
-              aria-label={activeStageDefinition.fieldAriaLabel}
-              rows={14}
-              placeholder={activeStageDefinition.exampleSnippet}
-              value={activeStageContent}
-              onChange={(event) => onContentChange(activeStage, event.currentTarget.value)}
-            />
-          </label>
+          {activeStageBinding.mode === 'inline' ? (
+            <label className="request-field">
+              <span>{activeStageDefinition.label}</span>
+              <textarea
+                aria-label={activeStageDefinition.fieldAriaLabel}
+                rows={14}
+                placeholder={activeStageDefinition.exampleSnippet}
+                value={activeStageContent}
+                onChange={(event) => onContentChange(activeStage, event.currentTarget.value)}
+              />
+            </label>
+          ) : (
+            <article className="workspace-surface-card workspace-surface-card--muted request-script-library-card" aria-labelledby={activeStageLabelId}>
+              <div className="request-script-library-card__header">
+                <div>
+                  <h4>{t('workspaceRoute.scriptsEditor.attach.linkedTitle')}</h4>
+                  <p>{t('workspaceRoute.scriptsEditor.attach.linkedDescription')}</p>
+                </div>
+                <span className={`workspace-chip workspace-chip--${linkedStatusTone}`}>
+                  {linkedResolution?.status === 'healthy'
+                    ? t('workspaceRoute.scriptsEditor.attach.linkedBadge')
+                    : t('workspaceRoute.scriptsEditor.attach.linkedBrokenBadge')}
+                </span>
+              </div>
+
+              <div className="request-script-library-card__body">
+                <p><strong>{t('workspaceRoute.scriptsEditor.attach.linkedNameLabel')}:</strong> {linkedScriptName}</p>
+                <p className="shared-readiness-note">{linkedStatusCopy}</p>
+                {activeStageBinding.savedScriptNameSnapshot.length > 0 && activeStageBinding.savedScriptNameSnapshot !== linkedScriptName ? (
+                  <p className="shared-readiness-note">
+                    {t('workspaceRoute.scriptsEditor.attach.linkedSnapshotHint', { name: activeStageBinding.savedScriptNameSnapshot })}
+                  </p>
+                ) : null}
+                {linkedResolution?.savedScript ? (
+                  <div className="request-script-example">
+                    <span>{t('workspaceRoute.scriptsEditor.attach.linkedPreviewLabel')}</span>
+                    <pre>{linkedSourcePreview}</pre>
+                  </div>
+                ) : null}
+              </div>
+            </article>
+          )}
 
           <div className="request-script-editor__meta">
             <article className="request-script-library-card workspace-surface-card workspace-surface-card--muted">
@@ -196,7 +275,7 @@ export default function RequestScriptsEditorSurface({
                   <h4>{t('workspaceRoute.scriptsEditor.attach.title')}</h4>
                   <p>{t('workspaceRoute.scriptsEditor.attach.description')}</p>
                 </div>
-                {copiedFromScriptNames[activeStage] ? (
+                {copiedFromScriptName ? (
                   <span className="workspace-chip workspace-chip--secondary">
                     {t('workspaceRoute.scriptsEditor.attach.copiedBadge')}
                   </span>
@@ -243,12 +322,33 @@ export default function RequestScriptsEditorSurface({
                     </button>
                     <button
                       type="button"
+                      className="workspace-button workspace-button--secondary"
+                      onClick={() => onLinkSavedScript(activeStage, selectedSavedScript)}
+                    >
+                      {activeStageBinding.mode === 'linked'
+                        ? t('workspaceRoute.scriptsEditor.attach.relinkAction')
+                        : t('workspaceRoute.scriptsEditor.attach.linkAction')}
+                    </button>
+                    {canDetachToCopy ? (
+                      <button
+                        type="button"
+                        className="workspace-button workspace-button--ghost"
+                        onClick={() => onDetachSavedScript(activeStage, linkedScriptName, linkedSourcePreview)}
+                      >
+                        {t('workspaceRoute.scriptsEditor.attach.detachAction')}
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
                       className="workspace-button workspace-button--ghost"
                       onClick={() => {
+                        const scriptId = activeStageBinding.mode === 'linked'
+                          ? activeStageBinding.savedScriptId || selectedSavedScript.id
+                          : selectedSavedScript.id;
                         const searchParams = new URLSearchParams({
                           from: 'request-stage',
                           stage: activeStage,
-                          scriptId: selectedSavedScript.id,
+                          scriptId,
                         });
                         navigate(`/scripts?${searchParams.toString()}`);
                       }}
@@ -264,9 +364,9 @@ export default function RequestScriptsEditorSurface({
                 </div>
               ) : null}
 
-              {copiedFromScriptNames[activeStage] ? (
+              {copiedFromScriptName ? (
                 <p className="shared-readiness-note request-script-library-card__copied">
-                  {t('workspaceRoute.scriptsEditor.attach.copiedHint', { name: copiedFromScriptNames[activeStage] })}
+                  {t('workspaceRoute.scriptsEditor.attach.copiedHint', { name: copiedFromScriptName })}
                 </p>
               ) : null}
             </article>
@@ -287,3 +387,5 @@ export default function RequestScriptsEditorSurface({
     </section>
   );
 }
+
+

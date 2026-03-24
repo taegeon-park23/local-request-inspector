@@ -3,7 +3,7 @@
 - **Purpose:** Narrow the next authored-resource bundle expansion candidate into one concrete future lane before any additional implementation work begins.
 - **Created:** 2026-03-24
 - **Last Updated:** 2026-03-24
-- **Related Documents:** `task-015-import-export-strategy.md`, `task-028-post-t027-candidate-a-readiness-refresh.md`, `task-058-workspace-navigation-only-explorer-and-main-surface-management.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../architecture/internal-api-contracts.md`
+- **Related Documents:** `task-015-import-export-strategy.md`, `task-058-workspace-navigation-only-explorer-and-main-surface-management.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../architecture/internal-api-contracts.md`
 - **Status:** done
 - **Priority:** P1
 
@@ -66,4 +66,5 @@ This was a planning/documentation task only.
 ## 7. Recommended Next Step
 - Do not auto-promote bundle implementation just because `T061A` is complete.
 - If another bundle follow-up is explicitly requested, promote **`T061B - standalone saved scripts bundle expansion`** rather than reopening a broad authored-resource expansion theme.
+
 

@@ -17,6 +17,11 @@ import {
   resolveRequestPlacement,
   type RequestPlacementValue,
 } from '@client/features/request-builder/request-placement';
+import {
+  normalizeRequestScriptsState,
+  createLinkedRequestScriptBinding,
+  setRequestScriptStageBinding,
+} from '@client/features/request-builder/request-script-binding';
 
 interface RequestDraftEntry {
   baseline: string;
@@ -25,7 +30,6 @@ interface RequestDraftEntry {
 
 type DraftRowTarget = 'params' | 'headers' | 'formBody' | 'multipartBody';
 type DraftRowField = 'key' | 'value' | 'enabled';
-type ScriptContentField = keyof Omit<RequestDraftScriptsState, 'activeStage'>;
 
 interface RequestDraftStoreState {
   draftsByTabId: Record<string, RequestDraftEntry>;
@@ -53,17 +57,20 @@ interface RequestDraftStoreState {
   updateAuthField: (tabId: string, field: keyof Omit<RequestDraftAuthState, 'type'>, value: string) => void;
   setActiveScriptStage: (tabId: string, stage: RequestScriptStageId) => void;
   updateScriptContent: (tabId: string, stage: RequestScriptStageId, content: string) => void;
+  linkScriptStageToSavedScript: (
+    tabId: string,
+    stage: RequestScriptStageId,
+    binding: {
+      savedScriptId: string;
+      savedScriptNameSnapshot: string;
+      linkedAt?: string | undefined;
+    },
+  ) => void;
 }
 
 const initialRequestDraftStoreState: Pick<RequestDraftStoreState, 'draftsByTabId' | 'nextRowSequence'> = {
   draftsByTabId: {},
   nextRowSequence: 1,
-};
-
-const scriptStageFieldMap: Record<RequestScriptStageId, ScriptContentField> = {
-  'pre-request': 'preRequest',
-  'post-response': 'postResponse',
-  tests: 'tests',
 };
 
 function cloneRows(rows?: RequestKeyValueRow[]) {
@@ -83,12 +90,7 @@ function createDefaultAuthState(seed?: RequestDraftSeed['auth']): RequestDraftAu
 }
 
 function createDefaultScriptsState(seed?: RequestDraftScriptsSeed): RequestDraftScriptsState {
-  return {
-    activeStage: seed?.activeStage ?? 'pre-request',
-    preRequest: seed?.preRequest ?? '',
-    postResponse: seed?.postResponse ?? '',
-    tests: seed?.tests ?? '',
-  };
+  return normalizeRequestScriptsState(seed);
 }
 
 function createDraftSnapshotString(draft: RequestDraftState) {
@@ -425,10 +427,23 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
       updateDraftEntry(state, tabId, (entry) =>
         withDirtyState(entry, {
           ...entry.draft,
-          scripts: {
-            ...entry.draft.scripts,
-            [scriptStageFieldMap[stage]]: content,
-          },
+          scripts: setRequestScriptStageBinding(entry.draft.scripts, stage, {
+            mode: 'inline',
+            sourceCode: content,
+          }),
+        }),
+      ),
+    ),
+  linkScriptStageToSavedScript: (tabId, stage, binding) =>
+    set((state) =>
+      updateDraftEntry(state, tabId, (entry) =>
+        withDirtyState(entry, {
+          ...entry.draft,
+          scripts: setRequestScriptStageBinding(entry.draft.scripts, stage, createLinkedRequestScriptBinding({
+            savedScriptId: binding.savedScriptId,
+            savedScriptNameSnapshot: binding.savedScriptNameSnapshot,
+            ...(binding.linkedAt ? { linkedAt: binding.linkedAt } : {}),
+          })),
         }),
       ),
     ),
@@ -437,6 +452,8 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
 export function resetRequestDraftStore() {
   useRequestDraftStore.setState(initialRequestDraftStoreState);
 }
+
+
 
 
 

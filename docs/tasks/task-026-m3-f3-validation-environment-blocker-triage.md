@@ -3,7 +3,7 @@
 - **Purpose:** Determine whether the remaining `M3-F3` closeout blocker still hides a repo-side mitigation gap or whether it is now best treated as an environment-level validation restriction.
 - **Created:** 2026-03-22
 - **Last Updated:** 2026-03-22
-- **Related Documents:** `task-018-delivery-milestone-plan.md`, `task-024-m3-f3-implementation-handoff.md`, `task-025-post-m3-f3-closure-priority-review.md`, `../tracking/m3-f3-implementation-handoff.md`, `../tracking/post-m3-reactivation-guide.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`, `../tracking/candidate-c-promotion-readiness.md`, `../tracking/candidate-c-gap-inventory.md`
+- **Related Documents:** `task-018-delivery-milestone-plan.md`, `task-024-m3-f3-implementation-handoff.md`, `../tracking/m3-f3-implementation-handoff.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`
 - **Status:** done
 - **Priority:** P2
 
@@ -22,9 +22,6 @@ T026 investigated the remaining `M3-F3` official-closeout blocker after same-day
 - `scripts/run-vitest.mjs`
 - `scripts/check-app-shell.mjs`
 - `package.json`
-- `../tracking/candidate-c-promotion-readiness.md`
-- `../tracking/candidate-c-gap-inventory.md`
-- `../tracking/post-m3-reactivation-guide.md`
 
 ## 4. Definition Of Done
 This task is done when all of the following are true:
@@ -68,3 +65,4 @@ This task is done when all of the following are true:
 
 ## 11. Closure Decision
 T026 is complete as a documentation and blocker-triage task. It closes the question of whether one more repo-side wrapper/config change is still missing for `M3-F3`; the answer is no, not based on current evidence. The repo already applies the bounded mitigation work it can justify today: direct esbuild preflight classification, fail-fast Vite/Vitest wrappers, config-loader runner enforcement, Windows `net use` patching, and packaging/startup status reporting. When the same sandbox restriction appears again, the correct response is to hand off exact local commands and expected results rather than to reopen a new repo-side packaging or toolchain task.
+

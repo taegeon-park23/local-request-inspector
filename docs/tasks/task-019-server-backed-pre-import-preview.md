@@ -3,7 +3,7 @@
 - **Purpose:** Add a bounded, authoritative pre-import preview for the current saved-request/mock-rule authored-resource bundle flow so users can review import consequences before any writes occur.
 - **Created:** 2026-03-22
 - **Last Updated:** 2026-03-22
-- **Related Documents:** `task-015-import-export-strategy.md`, `task-018-delivery-milestone-plan.md`, `task-010-frontend-workspace-shell-implementation-plan.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`, `../tracking/post-m3-reactivation-guide.md`, `../tracking/candidate-a-promotion-readiness.md`, `../tracking/candidate-a-gap-inventory.md`, `../tracking/candidate-a-narrow-candidate-comparison.md`
+- **Related Documents:** `task-015-import-export-strategy.md`, `task-018-delivery-milestone-plan.md`, `task-010-frontend-workspace-shell-implementation-plan.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`
 - **Status:** done
 - **Priority:** P2
 
@@ -105,3 +105,4 @@ T019 is done when all of the following are true:
 - `npm run typecheck`
 - `npm run test:node`
 - `npm run test:ui -- client/features/workspace/components/WorkspacePlaceholder.test.tsx` remains blocked in this sandbox with the existing `sandbox_esbuild_transform_blocked` / `spawn EPERM` signature
+

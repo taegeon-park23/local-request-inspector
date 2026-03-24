@@ -3,7 +3,7 @@
 - **Purpose:** Record the exact M3-F3 wrapper/CSS patch plus the latest validation state so request-builder and active observation cleanup can be resumed or revalidated without rediscovering scope.
 - **Created:** 2026-03-22
 - **Last Updated:** 2026-03-22
-- **Related Documents:** `post-m3-reactivation-guide.md`, `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `../architecture/material-3-adoption-plan.md`, `../tasks/task-018-delivery-milestone-plan.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`
+- **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `../architecture/material-3-adoption-plan.md`, `../tasks/task-018-delivery-milestone-plan.md`, `../tasks/task-024-m3-f3-implementation-handoff.md`
 - **Status:** active reference
 - **Update Rule:** Update only if the exact `M3-F3` wrapper/CSS patch scope changes or once the slice is fully landed.
 
@@ -127,3 +127,4 @@ If a future contributor wants local confirmation outside the sandbox, use:
 - **확실하지 않음:** whether one tiny extra wrapper will be needed after direct local UI inspection, but the current intended patch should start with the classes listed above only.
 - **확실하지 않음:** whether any companion CSS beyond grouping/layout refinements will be needed once the TSX wrappers land.
 - **확실하지 않음:** whether live refresh on these two files is fully healthy because the latest sandbox gate re-check returned env_blocked_transform before direct UI inspection could happen.
+

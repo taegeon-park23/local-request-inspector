@@ -12,6 +12,7 @@ import {
   readRequestGroupName,
   resolveRequestPlacement,
 } from '@client/features/request-builder/request-placement';
+import { normalizeRequestScriptsState } from '@client/features/request-builder/request-script-binding';
 
 export const DEFAULT_WORKSPACE_ID = 'local-workspace';
 export const DEFAULT_REQUEST_COLLECTION_NAME = 'Saved Requests';
@@ -154,8 +155,13 @@ function cloneAuth(auth: RequestDraftAuthState): RequestDraftAuthState {
 }
 
 function cloneScripts(scripts: RequestDraftScriptsState): RequestDraftScriptsState {
+  return normalizeRequestScriptsState(scripts);
+}
+
+function normalizeSavedRequestResourceRecord(record: SavedRequestResourceRecord): SavedRequestResourceRecord {
   return {
-    ...scripts,
+    ...record,
+    scripts: normalizeRequestScriptsState(record.scripts),
   };
 }
 
@@ -292,7 +298,7 @@ export function upsertSavedRequestResource(
 export async function listWorkspaceSavedRequests() {
   const response = await fetch(`/api/workspaces/${DEFAULT_WORKSPACE_ID}/requests`);
   return parseJsonResponse<{ items: SavedRequestResourceRecord[] }>(response)
-    .then((payload) => sortSavedRequestResources(payload.items));
+    .then((payload) => sortSavedRequestResources(payload.items.map(normalizeSavedRequestResourceRecord)));
 }
 
 export async function saveRequestDefinition(input: RequestDefinitionInput) {
@@ -308,7 +314,8 @@ export async function saveRequestDefinition(input: RequestDefinitionInput) {
     },
   );
 
-  return parseJsonResponse<{ request: SavedRequestResourceRecord }>(response).then((payload) => payload.request);
+  return parseJsonResponse<{ request: SavedRequestResourceRecord }>(response)
+    .then((payload) => normalizeSavedRequestResourceRecord(payload.request));
 }
 
 export async function runRequestDefinition(input: RequestDefinitionInput) {
@@ -322,6 +329,7 @@ export async function runRequestDefinition(input: RequestDefinitionInput) {
 
   return parseJsonResponse<{ execution: RequestRunObservation }>(response).then((payload) => payload.execution);
 }
+
 
 
 

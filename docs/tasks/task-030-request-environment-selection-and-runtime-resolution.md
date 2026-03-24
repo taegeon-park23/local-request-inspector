@@ -3,7 +3,7 @@
 - **Purpose:** Implement the bounded request-level environment selector and server-owned runtime resolution contract defined by `T029`.
 - **Created:** 2026-03-22
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `task-011-request-builder-mvp-design.md`, `task-027-placeholder-route-mvp.md`, `task-029-request-environment-selection-and-resolution-plan.md`, `../architecture/request-environment-selection-and-resolution.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`, `../tracking/post-m3-reactivation-guide.md`
+- **Related Documents:** `task-011-request-builder-mvp-design.md`, `task-027-placeholder-route-mvp.md`, `task-029-request-environment-selection-and-resolution-plan.md`, `../architecture/request-environment-selection-and-resolution.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`
 - **Status:** done
 - **Priority:** P1
 
@@ -114,3 +114,4 @@ Local verification handoff:
 
 ## 10. Closure Decision
 T030 is complete as the bounded implementation follow-up to `T029`. Request-level environment selection and server-owned runtime resolution are now implemented. Future environment work should build from this baseline and keep top-bar selector, richer resolution preview, and broader environment tooling as separate deferred tasks.
+

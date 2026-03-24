@@ -3,7 +3,7 @@
 - **Purpose:** Narrow the remaining deferred environment follow-up space after `T030` into directly comparable lanes so future contributors do not reopen top-bar selector, resolved-preview, and transfer work as one blended theme.
 - **Created:** 2026-03-23
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `task-029-request-environment-selection-and-resolution-plan.md`, `task-030-request-environment-selection-and-runtime-resolution.md`, `task-031-post-t030-priority-and-candidate-a-refresh.md`, `../architecture/request-environment-selection-and-resolution.md`, `../tracking/environment-follow-up-lane-comparison.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`, `../tracking/post-m3-reactivation-guide.md`
+- **Related Documents:** `task-029-request-environment-selection-and-resolution-plan.md`, `task-030-request-environment-selection-and-runtime-resolution.md`, `../architecture/request-environment-selection-and-resolution.md`, `../tracking/environment-follow-up-lane-comparison.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`
 - **Status:** done
 - **Priority:** P2
 
@@ -46,3 +46,4 @@ This task is done when all of the following are true:
 
 ## 8. Closure Decision
 T032 is complete as a narrowing pass. The repo now has one canonical comparison for deferred environment follow-up work: richer resolved-preview UX is the strongest future lane if another environment task is ever requested, while top-bar selector and environment transfer stay parked.
+

@@ -3,7 +3,7 @@
 - **Purpose:** Replace the remaining top-level placeholder routes at `/environments`, `/scripts`, and `/settings` with bounded MVP surfaces backed by persisted resources and runtime diagnostics.
 - **Created:** 2026-03-22
 - **Last Updated:** 2026-03-22
-- **Related Documents:** `task-010-frontend-workspace-shell-implementation-plan.md`, `task-012-script-editor-and-automation-ux.md`, `task-017-developer-environment-and-tooling-baseline.md`, `../architecture/internal-api-contracts.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`, `../tracking/post-m3-reactivation-guide.md`
+- **Related Documents:** `task-010-frontend-workspace-shell-implementation-plan.md`, `task-012-script-editor-and-automation-ux.md`, `task-017-developer-environment-and-tooling-baseline.md`, `../architecture/internal-api-contracts.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`
 - **Status:** done
 - **Priority:** P2
 
@@ -122,3 +122,4 @@ Local verification handoff:
 
 ## 10. Closure Decision
 T027 is complete as a bounded implementation task. The remaining follow-up space is no longer "replace placeholder routes"; it is narrower deferred work such as environment selection/run wiring, request-stage script linkage semantics, or settings mutation scope. If full UI confirmation is needed beyond this sandbox, use the local command handoff above instead of reopening T027 as blocked.
+

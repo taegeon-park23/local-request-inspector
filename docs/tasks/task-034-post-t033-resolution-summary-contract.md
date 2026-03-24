@@ -3,7 +3,7 @@
 - **Purpose:** Define the exact bounded contract for the post-run environment resolution summary selected by `T033` so a future implementation task can stay inside one request-result/history observation slice.
 - **Created:** 2026-03-23
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `task-030-request-environment-selection-and-runtime-resolution.md`, `task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../architecture/request-environment-selection-and-resolution.md`, `../architecture/request-environment-resolution-summary-contract.md`, `../tracking/resolved-preview-sub-lane-comparison.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`, `../tracking/post-m3-reactivation-guide.md`
+- **Related Documents:** `task-030-request-environment-selection-and-runtime-resolution.md`, `task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../architecture/request-environment-selection-and-resolution.md`, `../architecture/request-environment-resolution-summary-contract.md`, `../tracking/resolved-preview-sub-lane-comparison.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`
 - **Status:** done
 - **Priority:** P2
 
@@ -46,3 +46,4 @@ This task is done when all of the following are true:
 
 ## 8. Closure Decision
 T034 is complete as the contract-definition pass after `T033`. If a future environment-observation implementation is requested, it should start from the shared post-run resolution summary contract defined here rather than from broad “better resolved preview” language.
+

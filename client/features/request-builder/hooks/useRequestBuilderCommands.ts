@@ -14,7 +14,12 @@ import {
   workspaceSavedRequestsQueryKey,
 } from '@client/features/request-builder/request-builder.api';
 import type { RequestDraftState } from '@client/features/request-builder/request-draft.types';
+import {
+  getRequestScriptStageBinding,
+  REQUEST_SCRIPT_STAGE_IDS,
+} from '@client/features/request-builder/request-script-binding';
 import type { RequestTabRecord, SavedWorkspaceRequestSeed } from '@client/features/request-builder/request-tab.types';
+import { listWorkspaceScripts, workspaceScriptsQueryKey } from '@client/features/scripts/scripts.api';
 import { useRequestCommandStore } from '@client/features/request-builder/state/request-command-store';
 import { useRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
 import {
@@ -79,6 +84,42 @@ function createDraftRequestInputSummary(draft: RequestDraftState) {
   return `${countEnabledRows(draft.params)} params · ${countEnabledRows(draft.headers)} headers · ${createBodyModeSummary(draft.bodyMode)} · ${createAuthSummary(draft)}`;
 }
 
+function formatScriptStageLabel(stageId: 'pre-request' | 'post-response' | 'tests') {
+  switch (stageId) {
+    case 'pre-request':
+      return 'Pre-request';
+    case 'post-response':
+      return 'Post-response';
+    default:
+      return 'Tests';
+  }
+}
+
+function readBrokenLinkedScriptRunBlock(
+  draft: RequestDraftState,
+  savedScripts: Awaited<ReturnType<typeof listWorkspaceScripts>>,
+) {
+  for (const stageId of REQUEST_SCRIPT_STAGE_IDS) {
+    const binding = getRequestScriptStageBinding(draft.scripts, stageId);
+
+    if (binding.mode !== 'linked') {
+      continue;
+    }
+
+    const savedScript = savedScripts.find((script) => script.id === binding.savedScriptId) ?? null;
+    const stageLabel = formatScriptStageLabel(stageId);
+
+    if (!savedScript) {
+      return `Repair or detach the missing linked saved script in the ${stageLabel} stage before running.`;
+    }
+
+    if (savedScript.scriptType !== stageId) {
+      return `Repair or detach the mismatched linked saved script in the ${stageLabel} stage before running.`;
+    }
+  }
+
+  return null;
+}
 function createDraftRequestSnapshotSummary(draft: RequestDraftState) {
   const targetUrl = draft.url.trim().length > 0 ? draft.url.trim() : 'request snapshot unavailable';
   return `${draft.method} ${targetUrl} executed from the active workspace draft with ${createDraftRequestInputSummary(draft)}.`;
@@ -170,6 +211,10 @@ export function useRequestBuilderCommands(
     queryKey: workspaceEnvironmentsQueryKey,
     queryFn: listWorkspaceEnvironments,
   });
+  const savedScriptsQuery = useQuery({
+    queryKey: workspaceScriptsQueryKey,
+    queryFn: listWorkspaceScripts,
+  });
   const commandEntry = useRequestCommandStore((state) =>
     activeTab ? state.byTabId[activeTab.id] : undefined,
   );
@@ -207,6 +252,9 @@ export function useRequestBuilderCommands(
     && !selectedEnvironmentExists;
   const environmentLoadingBlock = selectedEnvironmentId !== null && environmentsQuery.isPending;
   const environmentDegradedBlock = selectedEnvironmentId !== null && environmentsQuery.isError;
+  const brokenLinkedScriptRunBlock = draft && savedScriptsQuery.isSuccess
+    ? readBrokenLinkedScriptRunBlock(draft, savedScriptsQuery.data)
+    : null;
 
   const saveDisabledReason = !draft
     ? 'Open a request tab before saving.'
@@ -234,11 +282,13 @@ export function useRequestBuilderCommands(
           ? 'Request environment details are still loading.'
           : environmentDegradedBlock
             ? 'Environment list is unavailable while this request references a saved environment.'
-            : isJsonBodyMalformed(draft)
-              ? 'Fix malformed JSON body before running.'
-              : runStatus.status === 'pending'
-                ? 'Run is already in progress.'
-                : null;
+            : brokenLinkedScriptRunBlock
+              ? brokenLinkedScriptRunBlock
+              : isJsonBodyMalformed(draft)
+                ? 'Fix malformed JSON body before running.'
+                : runStatus.status === 'pending'
+                  ? 'Run is already in progress.'
+                  : null;
 
   const buildDefinitionInput = () => {
     if (!activeTab || !draft) {
@@ -340,4 +390,6 @@ export function useRequestBuilderCommands(
     },
   };
 }
+
+
 

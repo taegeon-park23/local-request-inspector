@@ -3,7 +3,7 @@
 - **Purpose:** Convert the post-S26 remaining work into phased milestones with readiness gates and review checkpoints so contributors can continue from an accurate, non-shell-reopening sequence.
 - **Created:** 2026-03-22
 - **Last Updated:** 2026-03-22
-- **Related Documents:** `task-010-frontend-workspace-shell-implementation-plan.md`, `task-015-import-export-strategy.md`, `task-019-server-backed-pre-import-preview.md`, `../architecture/material-3-adoption-plan.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/post-m3-reactivation-guide.md`
+- **Related Documents:** `task-010-frontend-workspace-shell-implementation-plan.md`, `task-015-import-export-strategy.md`, `task-019-server-backed-pre-import-preview.md`, `../architecture/material-3-adoption-plan.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`
 - **Status:** done
 - **Priority:** P1
 
@@ -43,7 +43,7 @@ This task is done when all of the following are true:
 - Required shell, Material 3, tracking, and import/export reconciliation documents were re-read before closing T018.
 - T018 now defines a milestone order that starts with documentation reconciliation, then moves to Material 3 visual-only continuation, and keeps optional future work parked until a later promotion gate.
 - The milestone plan explicitly protects shell closure, feature ownership, and state-boundary stability while sequencing `M3-F1`, `M3-F2`, and the final `M3-F3` TSX presentation slice.
-- Implementation follow-up: `M3-F1`, `M3-F2`, and `M3-F3` are now landed in tracking, `../tracking/post-m3-reactivation-guide.md` is now the canonical hold-state and re-entry reference for later post-M3 promotion, Candidate A has since been narrowed and landed as `task-019-server-backed-pre-import-preview.md`, and Candidate B and Candidate C remain parked.
+- Implementation follow-up: `M3-F1`, `M3-F2`, `M3-F3`, and `T019` are now landed in tracking, and later optional backlog work should resume only through the current tracking docs plus a newly defined bounded task.
 
 ## 7. Milestone Sequence
 ### Milestone 1 — Backlog Reconciliation and Task Closure
@@ -87,4 +87,5 @@ This task is done when all of the following are true:
 - Secondary reviewer: Product / Documentation Agent
 
 ## 12. Closure Decision
-T018 remains closed as **done** at the planning/documentation level. `M3-F1`, `M3-F2`, and `M3-F3` are landed in tracking, `T019` is now landed as the bounded Candidate A follow-up, and the remaining optional backlog stays parked unless the current tracking docs plus `../tracking/post-m3-reactivation-guide.md` justify a later reactivation.
+T018 remains closed as **done** at the planning/documentation level. `M3-F1`, `M3-F2`, `M3-F3`, and `T019` are landed, and later optional backlog work should resume only through the current tracking docs and a newly defined bounded task.
+

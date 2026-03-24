@@ -55,6 +55,13 @@ const {
   readSystemScriptTemplate,
 } = require('./storage/resource/script-record');
 const {
+  REQUEST_SCRIPT_STAGE_IDS,
+  listLinkedRequestScriptStages,
+  normalizeRequestScriptsState,
+  resolveRequestScriptsForExecution,
+  serializeRequestScriptsForBundle,
+} = require('./storage/resource/request-script-binding');
+const {
   COLLECTION_RESOURCE_SCHEMA_VERSION,
   MOCK_RULE_RESOURCE_SCHEMA_VERSION,
   REQUEST_RESOURCE_SCHEMA_VERSION,
@@ -237,12 +244,7 @@ function cloneAuth(auth = {}) {
 }
 
 function cloneScripts(scripts = {}) {
-  return {
-    activeStage: scripts.activeStage || 'pre-request',
-    preRequest: scripts.preRequest || '',
-    postResponse: scripts.postResponse || '',
-    tests: scripts.tests || '',
-  };
+  return normalizeRequestScriptsState(scripts);
 }
 
 function createRequestSummary(method, url) {
@@ -642,6 +644,7 @@ function normalizePersistedRequestRecord(record) {
     selectedEnvironmentId: typeof record.selectedEnvironmentId === 'string' && record.selectedEnvironmentId.trim().length > 0
       ? record.selectedEnvironmentId.trim()
       : null,
+    scripts: cloneScripts(record.scripts),
     collectionId: normalizeText(record.collectionId),
     requestGroupId: normalizeText(record.requestGroupId),
     collectionName: normalizeText(record.collectionName) || DEFAULT_REQUEST_COLLECTION_NAME,
@@ -650,6 +653,61 @@ function normalizePersistedRequestRecord(record) {
   };
 }
 
+function createRequestScriptsExportBlockedError(code, message, details = {}) {
+  const error = new Error(message);
+  error.code = code;
+  error.details = details;
+  return error;
+}
+
+function serializeRequestRecordForBundle(record, options = {}) {
+  try {
+    return {
+      ...record,
+      scripts: serializeRequestScriptsForBundle(record.scripts),
+    };
+  } catch {
+    throw createRequestScriptsExportBlockedError(
+      options.code || 'request_linked_script_export_blocked',
+      options.message || 'Linked saved scripts must be detached to inline copies before authored-resource export.',
+      {
+        requestId: record.id,
+        requestName: record.name,
+        linkedStages: listLinkedRequestScriptStages(record.scripts),
+        ...(options.details || {}),
+      },
+    );
+  }
+}
+
+function createLinkedScriptRunStageResult(error) {
+  const stageId = REQUEST_SCRIPT_STAGE_IDS.includes(error?.details?.stageId)
+    ? error.details.stageId
+    : 'pre-request';
+  const stageLabel = createStageLabel(stageId);
+  const scriptName = normalizeText(error?.details?.savedScriptNameSnapshot) || normalizeText(error?.details?.savedScriptId) || 'linked saved script';
+  const stageSummary = error?.code === 'request_linked_script_stage_mismatch'
+    ? `${stageLabel} did not run because linked saved script "${scriptName}" no longer matches this stage type.`
+    : `${stageLabel} did not run because linked saved script "${scriptName}" is missing.`;
+  const skippedSummary = 'Run did not start because linked saved script validation failed before execution.';
+  const stageResults = {
+    'pre-request': createEmptyScriptStageResult('pre-request', stageId === 'pre-request' ? stageSummary : skippedSummary),
+    transport: createTransportBlockedStageResult(
+      'Transport did not run because linked saved script validation failed before execution started.',
+      error?.code || 'request_linked_script_invalid',
+      error?.message || stageSummary,
+    ),
+    'post-response': createSkippedScriptStageAfterTransport('post-response', stageId === 'post-response' ? stageSummary : skippedSummary),
+    tests: createSkippedScriptStageAfterTransport('tests', stageId === 'tests' ? stageSummary : skippedSummary),
+  };
+
+  stageResults[stageId] = createStageStatusRecord(stageId, 'blocked', stageSummary, {
+    errorCode: error?.code || 'request_linked_script_invalid',
+    errorSummary: error?.message || stageSummary,
+  });
+
+  return stageResults;
+}
 function normalizePersistedMockRuleRecord(record) {
   if (!record || typeof record !== 'object') {
     return record;
@@ -4179,13 +4237,23 @@ app.get('/api/workspaces/:workspaceId/resource-bundle', (req, res) => {
       workspaceId: req.params.workspaceId,
       collections,
       requestGroups,
-      requests,
+      requests: requests.map((requestRecord) => serializeRequestRecordForBundle(requestRecord, {
+        code: 'workspace_linked_script_export_blocked',
+        message: 'Workspace export is blocked because one or more saved requests still use linked saved scripts. Detach them to inline copies before exporting.',
+        details: {
+          workspaceId: req.params.workspaceId,
+        },
+      })),
       mockRules: listWorkspaceMockRuleRecords(req.params.workspaceId),
       scripts: listWorkspaceSavedScriptRecords(req.params.workspaceId),
     });
 
     return sendData(res, { bundle });
   } catch (error) {
+    if (error.code === 'workspace_linked_script_export_blocked') {
+      return sendError(res, 409, error.code, error.message, error.details || {});
+    }
+
     return sendError(res, 500, 'resource_bundle_export_failed', error.message, {
       workspaceId: req.params.workspaceId,
     });
@@ -4211,13 +4279,23 @@ app.get('/api/requests/:requestId/resource-bundle', (req, res) => {
       workspaceId: requestRecord.workspaceId || DEFAULT_WORKSPACE_ID,
       collections: collectionRecord ? [collectionRecord] : [],
       requestGroups: requestGroupRecord ? [requestGroupRecord] : [],
-      requests: [reconciledRequest],
+      requests: [serializeRequestRecordForBundle(reconciledRequest, {
+        code: 'request_linked_script_export_blocked',
+        message: 'Saved request export is blocked because this request still uses linked saved scripts. Detach them to inline copies before exporting.',
+        details: {
+          requestId: req.params.requestId,
+        },
+      })],
       mockRules: [],
       scripts: [],
     });
 
     return sendData(res, { bundle });
   } catch (error) {
+    if (error.code === 'request_linked_script_export_blocked') {
+      return sendError(res, 409, error.code, error.message, error.details || {});
+    }
+
     return sendError(res, 500, 'resource_bundle_export_failed', error.message, {
       requestId: req.params.requestId,
     });
@@ -4490,12 +4568,26 @@ app.post('/api/executions/run', async (req, res) => {
   const startedAtMs = Date.now();
 
   try {
-    const executionRequest = createExecutionRequestSeed(input);
+    let executionRequest = createExecutionRequestSeed(input);
     const stageResults = {};
     let target = null;
     let responseStatus = null;
     let responseHeaders = [];
     let responseBodyText = '';
+
+    try {
+      const linkedScriptResolution = resolveRequestScriptsForExecution(
+        executionRequest.scripts,
+        (scriptId) => normalizePersistedSavedScriptRecord(resourceStorage.read('script', scriptId)),
+      );
+      executionRequest = {
+        ...executionRequest,
+        scripts: linkedScriptResolution.resolvedScripts,
+      };
+    } catch (error) {
+      Object.assign(stageResults, createLinkedScriptRunStageResult(error));
+    }
+
     let resolvedExecutionRequest = {
       ...executionRequest,
       selectedEnvironmentLabel: 'No environment selected',
@@ -4505,11 +4597,15 @@ app.post('/api/executions/run', async (req, res) => {
     };
     let resolvedEnvironmentRecord = null;
 
-    stageResults['pre-request'] = executeScriptStage('pre-request', executionRequest.scripts.preRequest, {
-      executionRequest,
-    });
+    if (!stageResults['pre-request']) {
+      stageResults['pre-request'] = executeScriptStage('pre-request', executionRequest.scripts.preRequest, {
+        executionRequest,
+      });
+    }
 
-    if (stageResults['pre-request'].status === 'blocked'
+    if (stageResults.transport?.status === 'blocked') {
+      // Linked saved-script validation already produced a blocked run summary.
+    } else if (stageResults['pre-request'].status === 'blocked'
       || stageResults['pre-request'].status === 'failed'
       || stageResults['pre-request'].status === 'timed_out') {
       stageResults.transport = createTransportSkippedStageResult(
@@ -4650,7 +4746,7 @@ app.post('/api/executions/run', async (req, res) => {
           );
           stageResults['post-response'] = executeScriptStage(
             'post-response',
-            executionRequest.scripts.postResponse,
+            resolvedExecutionRequest.scripts.postResponse,
             {
               executionRequest: resolvedExecutionRequest,
               target,
@@ -4659,7 +4755,7 @@ app.post('/api/executions/run', async (req, res) => {
               responseBodyText,
             },
           );
-          stageResults.tests = executeScriptStage('tests', executionRequest.scripts.tests, {
+          stageResults.tests = executeScriptStage('tests', resolvedExecutionRequest.scripts.tests, {
             executionRequest: resolvedExecutionRequest,
             target,
             responseStatus,
@@ -5134,4 +5230,9 @@ app.listen(PORT, () => {
       : `[Ready] Built app shell unavailable at ${appShellStatus.appRoute}. Run "${appShellStatus.buildCommand}" or use ${appShellStatus.devClientUrl} for development.`,
   );
 });
+
+
+
+
+
 

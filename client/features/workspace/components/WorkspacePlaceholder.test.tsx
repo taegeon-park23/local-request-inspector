@@ -1546,6 +1546,44 @@ describe('Workspace request builder authoring shell', () => {
     expect(exportedText).not.toContain('capturedRequests');
   });
 
+  it('surfaces workspace export blocking when a saved request still uses linked saved scripts', async () => {
+    const user = userEvent.setup();
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+      const method = init?.method ?? 'GET';
+
+      if (url === '/api/workspaces/local-workspace/requests' && method === 'GET') {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/resource-bundle' && method === 'GET') {
+        return new Response(JSON.stringify({
+          error: {
+            code: 'workspace_linked_script_export_blocked',
+            message: 'Workspace export is blocked because one or more saved requests still use linked saved scripts. Detach them to inline copies before exporting.',
+            retryable: false,
+          },
+        }), {
+          status: 409,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    const manager = getSavedResourceManager();
+    await user.click(within(manager).getByRole('button', { name: 'Export Resources' }));
+
+    expect(await within(manager).findByText('Workspace export is blocked because one or more saved requests still use linked saved scripts. Detach them to inline copies before exporting.')).toBeInTheDocument();
+  });
+
   it('previews authored resources before confirm and then refreshes explorer plus mocks lists after import', async () => {
     const user = userEvent.setup();
     const persistedRequests = [
@@ -2194,6 +2232,86 @@ describe('Workspace request builder authoring shell', () => {
     expect(exportedText).not.toContain('executionHistories');
     expect(exportedText).not.toContain('capturedRequests');
   });
+  it('surfaces saved-request export blocking when the request still uses linked saved scripts', async () => {
+    const user = userEvent.setup();
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+      const method = init?.method ?? 'GET';
+
+      if (url === '/api/workspaces/local-workspace/requests' && method === 'GET') {
+        return createApiResponse({
+          items: [
+            {
+              id: 'request-health-linked',
+              workspaceId: 'local-workspace',
+              name: 'Health check linked',
+              method: 'GET',
+              url: 'http://localhost:5671/health',
+              params: [],
+              headers: [],
+              bodyMode: 'none',
+              bodyText: '',
+              formBody: [],
+              multipartBody: [],
+              auth: {
+                type: 'none',
+                bearerToken: '',
+                basicUsername: '',
+                basicPassword: '',
+                apiKeyName: '',
+                apiKeyValue: '',
+                apiKeyPlacement: 'header',
+              },
+              scripts: {
+                activeStage: 'pre-request',
+                preRequest: {
+                  mode: 'linked',
+                  savedScriptId: 'saved-script-pre-trace',
+                  savedScriptNameSnapshot: 'Pre-request trace seed',
+                  linkedAt: '2026-03-24T00:00:00.000Z',
+                },
+                postResponse: '',
+                tests: '',
+              },
+              summary: 'Saved health request',
+              collectionName: 'Saved Requests',
+              createdAt: '2026-03-20T09:00:00.000Z',
+              updatedAt: '2026-03-20T09:30:00.000Z',
+            },
+          ],
+        });
+      }
+
+      if (url === '/api/requests/request-health-linked/resource-bundle' && method === 'GET') {
+        return new Response(JSON.stringify({
+          error: {
+            code: 'request_linked_script_export_blocked',
+            message: 'Saved request export is blocked because this request still uses linked saved scripts. Detach them to inline copies before exporting.',
+            retryable: false,
+          },
+        }), {
+          status: 409,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    const explorer = screen.getByLabelText('Section explorer');
+    const requestSection = getManagerSection('Saved request actions');
+    await user.click(within(explorer).getByRole('button', { name: 'Open Health check linked' }));
+    await user.click(requestSection.getByRole('button', { name: 'Export saved request' }));
+
+    expect(await within(getSavedResourceManager()).findByText('Saved request export is blocked because this request still uses linked saved scripts. Detach them to inline copies before exporting.')).toBeInTheDocument();
+  });
+
   it('keeps deleted saved-request tabs open as detached drafts and limits manager actions to resave guidance', async () => {
     const user = userEvent.setup();
     const persistedRequests = [
@@ -2367,6 +2485,7 @@ describe('Workspace request builder authoring shell', () => {
     expect(within(detailPanel).getByText('아직 실행 정보가 없습니다')).toBeInTheDocument();
   });
 });
+
 
 
 

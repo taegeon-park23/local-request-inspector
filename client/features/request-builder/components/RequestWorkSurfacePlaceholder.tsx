@@ -7,6 +7,7 @@ import {
 } from '@client/features/environments/environment.api';
 import { useRequestBuilderCommands } from '@client/features/request-builder/hooks/useRequestBuilderCommands';
 import type { RequestDraftState, RequestScriptStageId } from '@client/features/request-builder/request-draft.types';
+import type { SavedScriptRecord } from '@client/features/scripts/scripts.types';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
 import { isDetachedRequestTab } from '@client/features/request-builder/request-tab-state';
 import { RequestKeyValueEditor } from '@client/features/request-builder/components/RequestKeyValueEditor';
@@ -117,6 +118,7 @@ export function RequestWorkSurfacePlaceholder({
   const updateAuthField = useRequestDraftStore((state) => state.updateAuthField);
   const setActiveScriptStage = useRequestDraftStore((state) => state.setActiveScriptStage);
   const updateScriptContent = useRequestDraftStore((state) => state.updateScriptContent);
+  const linkScriptStageToSavedScript = useRequestDraftStore((state) => state.linkScriptStageToSavedScript);
   const updateSelectedEnvironmentId = useRequestDraftStore((state) => state.updateSelectedEnvironmentId);
   const updateDraftPlacement = useRequestDraftStore((state) => state.updateDraftPlacement);
   const environmentsQuery = useQuery({
@@ -658,6 +660,29 @@ export function RequestWorkSurfacePlaceholder({
                   },
                 }));
               }}
+              onLinkSavedScript={(stage, script: SavedScriptRecord) => {
+                linkScriptStageToSavedScript(draft.tabId, stage, {
+                  savedScriptId: script.id,
+                  savedScriptNameSnapshot: script.name,
+                });
+                setCopiedScriptNamesByTabId((current) => ({
+                  ...current,
+                  [draft.tabId]: {
+                    ...(current[draft.tabId] ?? {}),
+                    [stage]: '',
+                  },
+                }));
+              }}
+              onDetachSavedScript={(stage, scriptName, content) => {
+                updateScriptContent(draft.tabId, stage, content);
+                setCopiedScriptNamesByTabId((current) => ({
+                  ...current,
+                  [draft.tabId]: {
+                    ...(current[draft.tabId] ?? {}),
+                    [stage]: content.length > 0 ? scriptName : '',
+                  },
+                }));
+              }}
             />
           </Suspense>
         ) : null}
@@ -665,6 +690,8 @@ export function RequestWorkSurfacePlaceholder({
     </div>
   );
 }
+
+
 
 
 

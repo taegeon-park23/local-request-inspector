@@ -57,7 +57,7 @@ assertContainsInOrder(
     'function renderHeaderExecutionStatus(',
     '<div className="workspace-detail-panel__header-copy">',
     '<div className="workspace-detail-panel__header-meta request-work-surface__badges">',
-    '{renderHeaderExecutionStatus(runStatus, execution)}',
+    '{renderHeaderExecutionStatus(t, runStatus, execution)}',
   ],
   'Result panel header should keep the applied M3-F3 execution-status meta cluster',
 );
@@ -91,7 +91,7 @@ assertContainsInOrder(
     '<div className="workspace-detail-panel__result-stack">',
     '<div className="workspace-detail-panel__result-summary">',
     '<div className="workspace-detail-panel__result-support">',
-    'aria-label="Execution stage summary"',
+    "aria-label={t('workspaceRoute.resultPanel.executionInfo.executionStageSummaryAriaLabel')}",
   ],
   'Execution info tab should keep the applied M3-F3 summary/support grouping',
 );
@@ -116,3 +116,4 @@ for (const className of [
     `material-theme.css should keep the applied M3-F3 selector ".${className}"`,
   );
 }
+

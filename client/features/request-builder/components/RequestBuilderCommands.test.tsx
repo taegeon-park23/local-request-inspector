@@ -186,14 +186,18 @@ describe('Request builder save/run wiring', () => {
       request: {
         selectedEnvironmentId?: string | null;
         scripts: {
-          preRequest: string;
+          preRequest: {
+            mode: 'inline';
+            sourceCode: string;
+          };
         };
         bodyText: string;
       };
     };
 
     expect(savePayload.request.selectedEnvironmentId).toBe('environment-local');
-    expect(savePayload.request.scripts.preRequest).toContain('local-dev-trace');
+    expect(savePayload.request.scripts.preRequest.mode).toBe('inline');
+    expect(savePayload.request.scripts.preRequest.sourceCode).toContain('local-dev-trace');
     expect(savePayload.request.bodyText).toContain('sku');
   }, 10000);
 
@@ -240,6 +244,184 @@ describe('Request builder save/run wiring', () => {
     expect(screen.getByText('Copied from saved script: Health status assertions')).toBeInTheDocument();
   });
 
+  it('links a saved script into the active stage, saves the linked binding, and can detach back to inline copy', async () => {
+    const user = userEvent.setup();
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/scripts' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: defaultSavedScriptFixtureRecords });
+      }
+
+      if (url === '/api/workspaces/local-workspace/requests' && init?.method === 'POST') {
+        return createApiResponse({
+          request: {
+            id: 'request-linked-script',
+            workspaceId: 'local-workspace',
+            name: 'Linked script request',
+            method: 'GET',
+            url: 'https://api.example.com/linked-script',
+            selectedEnvironmentId: null,
+            params: [],
+            headers: [],
+            bodyMode: 'none',
+            bodyText: '',
+            formBody: [],
+            multipartBody: [],
+            auth: {
+              type: 'none',
+              bearerToken: '',
+              basicUsername: '',
+              basicPassword: '',
+              apiKeyName: '',
+              apiKeyValue: '',
+              apiKeyPlacement: 'header',
+            },
+            scripts: {
+              activeStage: 'pre-request',
+              preRequest: {
+                mode: 'linked',
+                savedScriptId: 'saved-script-pre-trace',
+                savedScriptNameSnapshot: 'Pre-request trace seed',
+                linkedAt: '2026-03-24T00:00:00.000Z',
+              },
+              postResponse: '',
+              tests: '',
+            },
+            summary: 'GET https://api.example.com/linked-script',
+            collectionName: 'Saved Requests',
+            createdAt: '2026-03-24T00:00:00.000Z',
+            updatedAt: '2026-03-24T00:00:00.000Z',
+          },
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    await openNewRequest(user);
+    await user.type(screen.getByLabelText('Request name'), 'Linked script request');
+    await user.type(screen.getByLabelText('Request URL'), 'https://api.example.com/linked-script');
+
+    const mainSurface = screen.getByLabelText('Main work surface');
+    await user.click(within(mainSurface).getByRole('button', { name: 'Scripts' }));
+    await screen.findByLabelText('Saved script');
+
+    await user.click(screen.getByRole('button', { name: 'Link to stage' }));
+    expect(screen.queryByLabelText('Pre-request script')).not.toBeInTheDocument();
+    expect(screen.getByText('Linked saved script')).toBeInTheDocument();
+    expect(screen.getByText('Currently linked to Pre-request trace seed.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    const saveCall = fetchMock.mock.calls.find(
+      ([input, init]) => getUrl(input as RequestInfo | URL) === '/api/workspaces/local-workspace/requests' && init?.method === 'POST',
+    );
+    expect(saveCall).toBeDefined();
+
+    const savePayload = JSON.parse(String(saveCall?.[1]?.body)) as {
+      request: {
+        scripts: {
+          preRequest: {
+            mode: 'linked';
+            savedScriptId: string;
+            savedScriptNameSnapshot: string;
+            linkedAt: string;
+          };
+        };
+      };
+    };
+
+    expect(savePayload.request.scripts.preRequest.mode).toBe('linked');
+    expect(savePayload.request.scripts.preRequest.savedScriptId).toBe('saved-script-pre-trace');
+    expect(savePayload.request.scripts.preRequest.savedScriptNameSnapshot).toBe('Pre-request trace seed');
+
+    await user.click(screen.getByRole('button', { name: 'Detach to copy' }));
+    expect(await screen.findByLabelText('Pre-request script')).toHaveValue("request.headers.set('x-trace-id', 'local-dev-trace');");
+    expect(screen.getByText('Copied from saved script: Pre-request trace seed')).toBeInTheDocument();
+  });
+
+  it('blocks Run and shows broken-link state when a linked saved script is missing', async () => {
+    const user = userEvent.setup();
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({
+          items: [
+            {
+              id: 'request-linked-missing-script',
+              workspaceId: 'local-workspace',
+              name: 'Linked missing script',
+              method: 'GET',
+              url: 'https://api.example.com/linked-missing',
+              selectedEnvironmentId: null,
+              params: [],
+              headers: [],
+              bodyMode: 'none',
+              bodyText: '',
+              formBody: [],
+              multipartBody: [],
+              auth: {
+                type: 'none',
+                bearerToken: '',
+                basicUsername: '',
+                basicPassword: '',
+                apiKeyName: '',
+                apiKeyValue: '',
+                apiKeyPlacement: 'header',
+              },
+              scripts: {
+                activeStage: 'pre-request',
+                preRequest: {
+                  mode: 'linked',
+                  savedScriptId: 'saved-script-missing',
+                  savedScriptNameSnapshot: 'Missing trace seed',
+                  linkedAt: '2026-03-24T00:00:00.000Z',
+                },
+                postResponse: '',
+                tests: '',
+              },
+              summary: 'GET https://api.example.com/linked-missing',
+              collectionName: 'Saved Requests',
+              createdAt: '2026-03-24T00:00:00.000Z',
+              updatedAt: '2026-03-24T00:00:00.000Z',
+            },
+          ],
+        });
+      }
+
+      if (url === '/api/workspaces/local-workspace/scripts' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [] });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    const explorer = screen.getByLabelText('Section explorer');
+    await user.click(await within(explorer).findByRole('button', { name: 'Open Linked missing script' }));
+
+    expect(await screen.findByText('Repair or detach the missing linked saved script in the Pre-request stage before running.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Run' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+
+    const mainSurface = screen.getByLabelText('Main work surface');
+    await user.click(within(mainSurface).getByRole('button', { name: 'Scripts' }));
+    expect(await screen.findByText('Broken link')).toBeInTheDocument();
+    expect(screen.getByText('The saved script referenced by this stage is no longer available.')).toBeInTheDocument();
+  });
 
   it('opens the scripts library with request-stage context and returns to the same workspace draft', async () => {
     const user = userEvent.setup();
@@ -666,17 +848,17 @@ describe('Request builder save/run wiring', () => {
       request: {
         selectedEnvironmentId?: string | null;
         scripts: {
-          preRequest: string;
-          postResponse: string;
-          tests: string;
+          preRequest: { mode: 'inline'; sourceCode: string };
+          postResponse: { mode: 'inline'; sourceCode: string };
+          tests: { mode: 'inline'; sourceCode: string };
         };
       };
     };
 
     expect(runPayload.request.selectedEnvironmentId).toBe('environment-local');
-    expect(runPayload.request.scripts.preRequest).toContain('x-trace-id');
-    expect(runPayload.request.scripts.postResponse).toContain('captured response');
-    expect(runPayload.request.scripts.tests).toContain('assert');
+    expect(runPayload.request.scripts.preRequest.sourceCode).toContain('x-trace-id');
+    expect(runPayload.request.scripts.postResponse.sourceCode).toContain('captured response');
+    expect(runPayload.request.scripts.tests.sourceCode).toContain('assert');
   }, 20000);
 
   it('shows blocked stage diagnostics when pre-request execution stops the run before transport', async () => {
@@ -927,6 +1109,8 @@ describe('Request builder save/run wiring', () => {
     expect(updatePayload.request.name).toBe('Replay of Create user refined');
   });
 });
+
+
 
 
 

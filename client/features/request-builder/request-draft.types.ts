@@ -2,6 +2,7 @@ import type { HttpMethodLabel } from '@client/features/request-builder/request-t
 
 export type RequestEditorTabId = 'params' | 'headers' | 'body' | 'auth' | 'scripts';
 export type RequestScriptStageId = 'pre-request' | 'post-response' | 'tests';
+export type RequestScriptBindingMode = 'inline' | 'linked';
 
 export type RequestBodyMode =
   | 'none'
@@ -31,18 +32,33 @@ export interface RequestDraftAuthState {
   apiKeyPlacement: ApiKeyPlacement;
 }
 
+export interface RequestInlineScriptBinding {
+  mode: 'inline';
+  sourceCode: string;
+}
+
+export interface RequestLinkedScriptBinding {
+  mode: 'linked';
+  savedScriptId: string;
+  savedScriptNameSnapshot: string;
+  linkedAt: string;
+}
+
+export type RequestScriptStageBinding = RequestInlineScriptBinding | RequestLinkedScriptBinding;
+export type RequestScriptStageSeed = RequestScriptStageBinding | string;
+
 export interface RequestDraftScriptsState {
   activeStage: RequestScriptStageId;
-  preRequest: string;
-  postResponse: string;
-  tests: string;
+  preRequest: RequestScriptStageBinding;
+  postResponse: RequestScriptStageBinding;
+  tests: RequestScriptStageBinding;
 }
 
 export interface RequestDraftScriptsSeed {
   activeStage?: RequestScriptStageId;
-  preRequest?: string;
-  postResponse?: string;
-  tests?: string;
+  preRequest?: RequestScriptStageSeed;
+  postResponse?: RequestScriptStageSeed;
+  tests?: RequestScriptStageSeed;
 }
 
 export interface RequestDraftState {
@@ -85,6 +101,3 @@ export interface RequestDraftSeed {
   requestGroupId?: string;
   requestGroupName?: string;
 }
-
-
-

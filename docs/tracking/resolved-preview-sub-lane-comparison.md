@@ -3,7 +3,7 @@
 - **Purpose:** Compare the narrower follow-up candidates inside the richer resolved-preview UX lane so future contributors can choose one bounded environment-observation task without reopening broad validation or summary-polish scope.
 - **Created:** 2026-03-23
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `environment-follow-up-lane-comparison.md`, `post-m3-reactivation-guide.md`, `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `../architecture/request-builder-mvp.md`, `../architecture/request-environment-selection-and-resolution.md`, `../architecture/request-environment-resolution-summary-contract.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-032-post-t030-environment-follow-up-lane-comparison.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../tasks/task-034-post-t033-resolution-summary-contract.md`
+- **Related Documents:** `environment-follow-up-lane-comparison.md`, `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `../architecture/request-builder-mvp.md`, `../architecture/request-environment-selection-and-resolution.md`, `../architecture/request-environment-resolution-summary-contract.md`, `../tasks/task-030-request-environment-selection-and-runtime-resolution.md`, `../tasks/task-032-post-t030-environment-follow-up-lane-comparison.md`, `../tasks/task-033-post-t032-resolved-preview-sub-lane-comparison.md`, `../tasks/task-034-post-t033-resolution-summary-contract.md`
 - **Status:** active reference
 - **Update Rule:** Update when one narrower resolved-preview sub-lane is promoted, when the implemented environment baseline materially changes, or when a new narrower observation candidate replaces one of the current sub-lanes.
 
@@ -87,3 +87,4 @@
 - **확실하지 않음:** which exact bounded summary fields would deliver the best value first inside Sub-Lane 2.
 - **확실하지 않음:** whether any future Sub-Lane 2 implementation should persist the same bounded summary in both active result state and history or compute one surface-specific variant.
 - **확실하지 않음:** whether default-seeded hinting should stay parked as authored-summary polish or eventually rejoin a future pre-run feedback lane.
+

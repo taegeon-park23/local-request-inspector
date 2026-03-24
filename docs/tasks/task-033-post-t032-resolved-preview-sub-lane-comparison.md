@@ -3,7 +3,7 @@
 - **Purpose:** Narrow the deferred richer resolved-preview UX lane after `T032` into directly comparable sub-lanes so future contributors do not reopen authoring feedback, result/history summaries, and summary-copy polish as one blended environment theme.
 - **Created:** 2026-03-23
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `task-030-request-environment-selection-and-runtime-resolution.md`, `task-031-post-t030-priority-and-candidate-a-refresh.md`, `task-032-post-t030-environment-follow-up-lane-comparison.md`, `../architecture/request-environment-selection-and-resolution.md`, `../architecture/request-builder-mvp.md`, `../tracking/environment-follow-up-lane-comparison.md`, `../tracking/resolved-preview-sub-lane-comparison.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`, `../tracking/post-m3-reactivation-guide.md`
+- **Related Documents:** `task-030-request-environment-selection-and-runtime-resolution.md`, `task-032-post-t030-environment-follow-up-lane-comparison.md`, `../architecture/request-environment-selection-and-resolution.md`, `../architecture/request-builder-mvp.md`, `../tracking/environment-follow-up-lane-comparison.md`, `../tracking/resolved-preview-sub-lane-comparison.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`
 - **Status:** done
 - **Priority:** P2
 
@@ -46,3 +46,4 @@ This task is done when all of the following are true:
 
 ## 8. Closure Decision
 T033 is complete as a narrowing pass. If a future environment follow-up is actually requested, it should start from post-run bounded resolution summary in the request result panel and persisted history rather than from pre-run validation-tier work or saved-request summary polish.
+

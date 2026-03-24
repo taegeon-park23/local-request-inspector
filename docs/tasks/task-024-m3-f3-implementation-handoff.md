@@ -3,7 +3,7 @@
 - **Purpose:** Record the exact M3-F3 TSX/CSS patch and its validation follow-up state so the bounded request-builder/result-panel presentation cleanup can be resumed or revalidated without re-auditing scope.
 - **Created:** 2026-03-22
 - **Last Updated:** 2026-03-22
-- **Related Documents:** `task-010-frontend-workspace-shell-implementation-plan.md`, `task-018-delivery-milestone-plan.md`, `../architecture/material-3-adoption-plan.md`, `../tracking/m3-f3-implementation-handoff.md`, `../tracking/post-m3-reactivation-guide.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`
+- **Related Documents:** `task-010-frontend-workspace-shell-implementation-plan.md`, `task-018-delivery-milestone-plan.md`, `../architecture/material-3-adoption-plan.md`, `../tracking/m3-f3-implementation-handoff.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/progress-status.md`
 - **Status:** done
 - **Priority:** P2
 
@@ -18,7 +18,7 @@ T024 captured the exact `M3-F3` implementation handoff after an earlier official
 ## 3. Input Sufficiency Check
 The current repo truth is sufficient to complete T024 because:
 - `../architecture/material-3-adoption-plan.md` already narrows `M3-F3` to request-builder and active request observation wrapper hierarchy only.
-- `../tracking/post-m3-reactivation-guide.md` already records that `M3-F3` is landed in tracking and uses local-verification handoff when sandboxed confirmation is blocked.
+- `../tracking/master-task-board.md` and `../tracking/progress-status.md` record that `M3-F3` is landed in tracking and use local-verification handoff when sandboxed confirmation is blocked.
 - `client/features/request-builder/components/RequestWorkSurfacePlaceholder.tsx` and `client/features/request-builder/components/RequestResultPanelPlaceholder.tsx` already show the exact applied grouping cleanup that the handoff note describes.
 - `client/app/shell/material-theme.css` already contains the shared request-builder / observation support-container language that the pending wrapper classes should extend.
 
@@ -79,3 +79,4 @@ If one of those commands fails locally, record the failure against the current i
 - 2026-03-22: `npm.cmd run lint:client` and `npm.cmd run typecheck` passed after this follow-up. A fresh `npm.cmd run test:ui` rerun is still required outside the current sandbox because prior in-sandbox Vite/esbuild startup remained environment-blocked.
 - 2026-03-22: A third narrow assertion pass cleaned up the remaining duplicated-tab, duplicated-status, and seeded-input assumptions in `RequestBuilderCommands.test.tsx`, `CapturesPlaceholder.test.tsx`, `MocksPlaceholder.test.tsx`, and `HistoryPlaceholder.test.tsx` after a local rerun reduced the failure set to five.
 - 2026-03-22: A fourth assertion pass replaced the last brittle duplicated-badge checks and aligned the blocked-run dirty-state assertion with the current draft-tab behavior after the local rerun reduced the suite to three failures.
+

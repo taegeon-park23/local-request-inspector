@@ -3,7 +3,7 @@
 - **Purpose:** Redesign the Workspace request flow around a canonical persisted request tree and a separate working-tab set, promote `Collection > Request Group > Request` into the primary saved-resource structure, and align storage, API, import/export, and workspace UI documentation with that model.
 - **Created:** 2026-03-23
 - **Last Updated:** 2026-03-23
-- **Related Documents:** `task-003-ux-information-architecture-and-workspace-flows.md`, `task-007-shared-domain-schema-and-naming-conventions.md`, `task-008-internal-api-contract-design.md`, `task-010-frontend-workspace-shell-implementation-plan.md`, `task-015-import-export-strategy.md`, `task-019-server-backed-pre-import-preview.md`, `task-039-workspace-authoring-localization-pass.md`, `task-040-workspace-result-panel-localization-pass.md`, `task-050-workspace-management-focused-overlay-and-content-preservation.md`, `../architecture/overview.md`, `../architecture/domain-model.md`, `../architecture/shared-schema.md`, `../architecture/internal-api-contracts.md`, `../architecture/ux-information-architecture.md`, `../architecture/workspace-flows.md`, `../architecture/request-builder-mvp.md`, `../tracking/candidate-a-promotion-readiness.md`, `../tracking/candidate-a-gap-inventory.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`
+- **Related Documents:** `task-003-ux-information-architecture-and-workspace-flows.md`, `task-007-shared-domain-schema-and-naming-conventions.md`, `task-008-internal-api-contract-design.md`, `task-010-frontend-workspace-shell-implementation-plan.md`, `task-015-import-export-strategy.md`, `task-019-server-backed-pre-import-preview.md`, `task-039-workspace-authoring-localization-pass.md`, `task-040-workspace-result-panel-localization-pass.md`, `task-050-workspace-management-focused-overlay-and-content-preservation.md`, `../architecture/overview.md`, `../architecture/domain-model.md`, `../architecture/shared-schema.md`, `../architecture/internal-api-contracts.md`, `../architecture/ux-information-architecture.md`, `../architecture/workspace-flows.md`, `../architecture/request-builder-mvp.md`, `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`
 - **Status:** done
 - **Priority:** P1
 
@@ -90,3 +90,4 @@ This task is complete when:
 
 ## 7. Recommended Follow-Up Direction
 - If workspace follow-up continues after T051, keep it bounded to one next concern such as request-group management UI, result-panel card tuning under the new detached-draft semantics, or authored-resource bundle expansion for environments/scripts instead of reopening another broad workspace explorer redesign.
+
