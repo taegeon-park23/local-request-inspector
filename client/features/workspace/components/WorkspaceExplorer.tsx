@@ -116,6 +116,33 @@ function createRequestGroupPlacement(requestGroup: WorkspaceRequestGroupNode): R
   };
 }
 
+function summarizeRequestGroupTree(
+  requestGroups: WorkspaceRequestGroupNode[],
+): { requestGroupCount: number; requestCount: number } {
+  return requestGroups.reduce(
+    (summary, requestGroup) => {
+      const nestedSummary = summarizeRequestGroupTree(requestGroup.childGroups);
+
+      return {
+        requestGroupCount: summary.requestGroupCount + 1 + nestedSummary.requestGroupCount,
+        requestCount: summary.requestCount + requestGroup.requests.length + nestedSummary.requestCount,
+      };
+    },
+    { requestGroupCount: 0, requestCount: 0 },
+  );
+}
+
+function summarizeSingleRequestGroup(
+  requestGroup: WorkspaceRequestGroupNode,
+): { requestGroupCount: number; requestCount: number } {
+  const nestedSummary = summarizeRequestGroupTree(requestGroup.childGroups);
+
+  return {
+    requestGroupCount: nestedSummary.requestGroupCount,
+    requestCount: requestGroup.requests.length + nestedSummary.requestCount,
+  };
+}
+
 function ExplorerActionButton({
   label,
   disabled = false,
@@ -170,6 +197,7 @@ function WorkspaceRequestGroupBranch({
 }) {
   const { t } = useI18n();
   const isSelected = selectedItemKind === 'request-group' && selectedItemId === requestGroup.requestGroupId;
+  const requestGroupSummary = summarizeSingleRequestGroup(requestGroup);
 
   return (
     <li>
@@ -182,20 +210,20 @@ function WorkspaceRequestGroupBranch({
           <span className="workspace-request__header">
             <span className="workspace-request__title">{requestGroup.name}</span>
             <span className="workspace-request__badges">
-              <span className="workspace-chip">Group</span>
+              <span className="workspace-chip">{t('workspaceRoute.explorer.tree.kindRequestGroup')}</span>
             </span>
           </span>
           <span className="workspace-request__meta workspace-request__meta--support">
-            {requestGroup.childGroups.length} nested group{requestGroup.childGroups.length === 1 ? '' : 's'} · {requestGroup.requests.length} request{requestGroup.requests.length === 1 ? '' : 's'}
+            {t('workspaceRoute.explorer.tree.requestGroupCount', { count: requestGroupSummary.requestGroupCount })} · {t('workspaceRoute.explorer.tree.requestCount', { count: requestGroupSummary.requestCount })}
           </span>
         </button>
         <div className="request-work-surface__future-actions">
-          <ExplorerActionButton label="New Request" onClick={(event) => { stopEvent(event); void onCreateRequest(createRequestGroupPlacement(requestGroup)); }} />
-          <ExplorerActionButton label="New Group" onClick={(event) => { stopEvent(event); void onCreateRequestGroup(requestGroup); }} />
-          <ExplorerActionButton label="Run" onClick={(event) => { stopEvent(event); void onRunRequestGroup(requestGroup); }} />
-          <ExplorerActionButton label="Rename" onClick={(event) => { stopEvent(event); void onRenameRequestGroup(requestGroup); }} />
+          <ExplorerActionButton label={t('workspaceRoute.explorer.actions.newRequest')} onClick={(event) => { stopEvent(event); void onCreateRequest(createRequestGroupPlacement(requestGroup)); }} />
+          <ExplorerActionButton label={t('workspaceRoute.explorer.actions.createRequestGroupShort')} onClick={(event) => { stopEvent(event); void onCreateRequestGroup(requestGroup); }} />
+          <ExplorerActionButton label={t('workspaceRoute.explorer.actions.runContainerShort')} onClick={(event) => { stopEvent(event); void onRunRequestGroup(requestGroup); }} />
+          <ExplorerActionButton label={t('workspaceRoute.explorer.actions.renameRequestGroupShort')} onClick={(event) => { stopEvent(event); void onRenameRequestGroup(requestGroup); }} />
           <ExplorerActionButton
-            label="Delete"
+            label={t('workspaceRoute.explorer.actions.deleteRequestGroupShort')}
             disabled={requestGroup.childGroups.length > 0 || requestGroup.requests.length > 0}
             onClick={(event) => { stopEvent(event); void onDeleteRequestGroup(requestGroup); }}
           />
@@ -246,8 +274,8 @@ function WorkspaceRequestGroupBranch({
                   <span className="workspace-request__meta workspace-request__meta--support">{requestNode.request.summary}</span>
                 </button>
                 <div className="request-work-surface__future-actions">
-                  <ExplorerActionButton label="Export" onClick={(event) => { stopEvent(event); onExportRequest(requestNode.request); }} />
-                  <ExplorerActionButton label="Delete" onClick={(event) => { stopEvent(event); onDeleteRequest(requestNode.request); }} />
+                  <ExplorerActionButton label={t('workspaceRoute.explorer.actions.exportSingle')} onClick={(event) => { stopEvent(event); onExportRequest(requestNode.request); }} />
+                  <ExplorerActionButton label={t('workspaceRoute.explorer.actions.deleteRequestShort')} onClick={(event) => { stopEvent(event); onDeleteRequest(requestNode.request); }} />
                 </div>
               </div>
             </li>
@@ -286,7 +314,7 @@ export function WorkspaceExplorer({
         <div className="workspace-explorer__header-copy">
           <p className="section-placeholder__eyebrow">{t('workspaceRoute.explorer.header.eyebrow')}</p>
           <h2>{t('workspaceRoute.explorer.header.title')}</h2>
-          <p className="workspace-explorer__status-line">Recursive saved request tree with preview and pinned authoring tabs.</p>
+          <p className="workspace-explorer__status-line">{t('workspaceRoute.explorer.header.summary')}</p>
         </div>
         <p className="workspace-explorer__selection-line">
           {selectionPathLabel
@@ -297,6 +325,7 @@ export function WorkspaceExplorer({
       <ul className="workspace-explorer__tree" data-depth={0}>
         {tree.map((collection) => {
           const isSelected = selectedItemKind === 'collection' && selectedItemId === collection.collectionId;
+          const collectionSummary = summarizeRequestGroupTree(collection.childGroups);
 
           return (
             <li key={collection.id}>
@@ -309,20 +338,20 @@ export function WorkspaceExplorer({
                   <span className="workspace-request__header">
                     <span className="workspace-request__title">{collection.name}</span>
                     <span className="workspace-request__badges">
-                      <span className="workspace-chip">Collection</span>
+                      <span className="workspace-chip">{t('workspaceRoute.explorer.tree.kindCollection')}</span>
                     </span>
                   </span>
                   <span className="workspace-request__meta workspace-request__meta--support">
-                    {collection.childGroups.length} top-level group{collection.childGroups.length === 1 ? '' : 's'}
+                    {t('workspaceRoute.explorer.tree.requestGroupCount', { count: collectionSummary.requestGroupCount })} · {t('workspaceRoute.explorer.tree.requestCount', { count: collectionSummary.requestCount })}
                   </span>
                 </button>
                 <div className="request-work-surface__future-actions">
-                  <ExplorerActionButton label="New Request" onClick={(event) => { stopEvent(event); void onCreateRequest(createCollectionPlacement(collection)); }} />
-                  <ExplorerActionButton label="New Group" onClick={(event) => { stopEvent(event); void onCreateRequestGroup(collection); }} />
-                  <ExplorerActionButton label="Run" onClick={(event) => { stopEvent(event); void onRunCollection(collection); }} />
-                  <ExplorerActionButton label="Rename" onClick={(event) => { stopEvent(event); void onRenameCollection(collection); }} />
+                  <ExplorerActionButton label={t('workspaceRoute.explorer.actions.newRequest')} onClick={(event) => { stopEvent(event); void onCreateRequest(createCollectionPlacement(collection)); }} />
+                  <ExplorerActionButton label={t('workspaceRoute.explorer.actions.createRequestGroupShort')} onClick={(event) => { stopEvent(event); void onCreateRequestGroup(collection); }} />
+                  <ExplorerActionButton label={t('workspaceRoute.explorer.actions.runContainerShort')} onClick={(event) => { stopEvent(event); void onRunCollection(collection); }} />
+                  <ExplorerActionButton label={t('workspaceRoute.explorer.actions.renameCollectionShort')} onClick={(event) => { stopEvent(event); void onRenameCollection(collection); }} />
                   <ExplorerActionButton
-                    label="Delete"
+                    label={t('workspaceRoute.explorer.actions.deleteCollectionShort')}
                     disabled={collection.childGroups.length > 0}
                     onClick={(event) => { stopEvent(event); void onDeleteCollection(collection); }}
                   />
@@ -331,7 +360,7 @@ export function WorkspaceExplorer({
               <ul className="workspace-explorer__tree" data-depth={1}>
                 {collection.childGroups.length === 0 ? (
                   <li>
-                    <p className="workspace-tree-empty-note">No request groups yet.</p>
+                    <p className="workspace-tree-empty-note">{t('workspaceRoute.explorer.tree.noRequestGroups')}</p>
                   </li>
                 ) : null}
                 {collection.childGroups.map((requestGroup) => (

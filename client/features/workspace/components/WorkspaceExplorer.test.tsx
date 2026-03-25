@@ -109,8 +109,9 @@ describe('WorkspaceExplorer', () => {
     expect(screen.getByText('Auth')).toBeInTheDocument();
     expect(screen.getByText('Login')).toBeInTheDocument();
     expect(screen.getByText('Create session')).toBeInTheDocument();
+    expect(screen.getByText('Persisted collections, nested request groups, and saved requests stay visible here. Explorer actions handle preview, pin, create, run, rename, and delete without leaving the tree.')).toBeInTheDocument();
     expect(screen.getByText('Current selection: Saved Requests / Auth / Login / Create session')).toBeInTheDocument();
-    expect(screen.getByText('1 nested group · 0 requests')).toBeInTheDocument();
+    expect(screen.getByText('1 request group(s) · 1 request(s)')).toBeInTheDocument();
   });
 
   it('uses preview on single click, pin on double click, and seeds nested group placement for new requests', async () => {
