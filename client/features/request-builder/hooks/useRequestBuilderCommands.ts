@@ -54,52 +54,72 @@ function countEnabledRows(rows: RequestDraftState['params']) {
   return rows.filter((row) => row.enabled !== false && row.key.trim().length > 0).length;
 }
 
-function createBodyModeSummary(bodyMode: RequestDraftState['bodyMode']) {
+function createBodyModeSummary(
+  bodyMode: RequestDraftState['bodyMode'],
+  t: ReturnType<typeof useI18n>['t'],
+) {
   switch (bodyMode) {
     case 'json':
-      return 'JSON body';
+      return t('workspaceRoute.requestBuilder.failedRun.bodySummary.json');
     case 'text':
-      return 'Text body';
+      return t('workspaceRoute.requestBuilder.failedRun.bodySummary.text');
     case 'form-urlencoded':
-      return 'Form body';
+      return t('workspaceRoute.requestBuilder.failedRun.bodySummary.formUrlencoded');
     case 'multipart-form-data':
-      return 'Multipart body';
+      return t('workspaceRoute.requestBuilder.failedRun.bodySummary.multipartFormData');
     default:
-      return 'No body';
+      return t('workspaceRoute.requestBuilder.failedRun.bodySummary.none');
   }
 }
 
-function createAuthSummary(draft: RequestDraftState) {
+function createAuthSummary(
+  draft: RequestDraftState,
+  t: ReturnType<typeof useI18n>['t'],
+) {
   switch (draft.auth.type) {
     case 'bearer':
-      return 'Bearer auth';
+      return t('workspaceRoute.requestBuilder.failedRun.authSummary.bearer');
     case 'basic':
-      return 'Basic auth';
+      return t('workspaceRoute.requestBuilder.failedRun.authSummary.basic');
     case 'api-key':
-      return draft.auth.apiKeyPlacement === 'query' ? 'API key in query' : 'API key in header';
+      return draft.auth.apiKeyPlacement === 'query'
+        ? t('workspaceRoute.requestBuilder.failedRun.authSummary.apiKeyQuery')
+        : t('workspaceRoute.requestBuilder.failedRun.authSummary.apiKeyHeader');
     default:
-      return 'No auth';
+      return t('workspaceRoute.requestBuilder.failedRun.authSummary.none');
   }
 }
 
-function createDraftRequestInputSummary(draft: RequestDraftState) {
-  return `${countEnabledRows(draft.params)} params · ${countEnabledRows(draft.headers)} headers · ${createBodyModeSummary(draft.bodyMode)} · ${createAuthSummary(draft)}`;
+function createDraftRequestInputSummary(
+  draft: RequestDraftState,
+  t: ReturnType<typeof useI18n>['t'],
+) {
+  return t('workspaceRoute.requestBuilder.failedRun.inputSummary', {
+    paramCount: countEnabledRows(draft.params),
+    headerCount: countEnabledRows(draft.headers),
+    bodySummary: createBodyModeSummary(draft.bodyMode, t),
+    authSummary: createAuthSummary(draft, t),
+  });
 }
 
-function formatScriptStageLabel(stageId: 'pre-request' | 'post-response' | 'tests') {
+function formatScriptStageLabel(
+  stageId: 'pre-request' | 'post-response' | 'tests',
+  t: ReturnType<typeof useI18n>['t'],
+) {
   switch (stageId) {
     case 'pre-request':
-      return 'Pre-request';
+      return t('workspaceRoute.scriptsEditor.stages.preRequest.label');
     case 'post-response':
-      return 'Post-response';
+      return t('workspaceRoute.scriptsEditor.stages.postResponse.label');
     default:
-      return 'Tests';
+      return t('workspaceRoute.scriptsEditor.stages.tests.label');
   }
 }
 
 function readBrokenLinkedScriptRunBlock(
   draft: RequestDraftState,
   savedScripts: Awaited<ReturnType<typeof listWorkspaceScripts>>,
+  t: ReturnType<typeof useI18n>['t'],
 ) {
   for (const stageId of REQUEST_SCRIPT_STAGE_IDS) {
     const binding = getRequestScriptStageBinding(draft.scripts, stageId);
@@ -109,27 +129,39 @@ function readBrokenLinkedScriptRunBlock(
     }
 
     const savedScript = savedScripts.find((script) => script.id === binding.savedScriptId) ?? null;
-    const stageLabel = formatScriptStageLabel(stageId);
+    const stageLabel = formatScriptStageLabel(stageId, t);
 
     if (!savedScript) {
-      return `Repair or detach the missing linked saved script in the ${stageLabel} stage before running.`;
+      return t('workspaceRoute.requestBuilder.disabledReasons.linkedScriptMissing', { stageLabel });
     }
 
     if (savedScript.scriptType !== stageId) {
-      return `Repair or detach the mismatched linked saved script in the ${stageLabel} stage before running.`;
+      return t('workspaceRoute.requestBuilder.disabledReasons.linkedScriptMismatch', { stageLabel });
     }
   }
 
   return null;
 }
-function createDraftRequestSnapshotSummary(draft: RequestDraftState) {
-  const targetUrl = draft.url.trim().length > 0 ? draft.url.trim() : 'request snapshot unavailable';
-  return `${draft.method} ${targetUrl} executed from the active workspace draft with ${createDraftRequestInputSummary(draft)}.`;
+
+function createDraftRequestSnapshotSummary(
+  draft: RequestDraftState,
+  t: ReturnType<typeof useI18n>['t'],
+) {
+  const targetUrl = draft.url.trim().length > 0
+    ? draft.url.trim()
+    : t('workspaceRoute.requestBuilder.failedRun.requestSnapshotUnavailableTarget');
+
+  return t('workspaceRoute.requestBuilder.failedRun.requestSnapshotSummary', {
+    method: draft.method,
+    targetUrl,
+    inputSummary: createDraftRequestInputSummary(draft, t),
+  });
 }
 
 function createFailedExecutionObservation(
   draft: RequestDraftState,
   error: RequestBuilderApiError | Error,
+  t: ReturnType<typeof useI18n>['t'],
 ): RequestRunObservation {
   const now = new Date().toISOString();
   const details = error instanceof RequestBuilderApiError ? error.details : {};
@@ -139,34 +171,33 @@ function createFailedExecutionObservation(
     executionId: typeof details.executionId === 'string' ? details.executionId : `failed-${draft.tabId}-${Date.now()}`,
     executionOutcome: 'Failed',
     responseStatus: null,
-    responseStatusLabel: 'No response',
+    responseStatusLabel: t('workspaceRoute.resultPanel.common.transportNoResponse'),
     responseHeaders: [],
-    responseHeadersSummary: 'No response headers were captured.',
+    responseHeadersSummary: t('workspaceRoute.requestBuilder.failedRun.responseHeadersSummary'),
     responseBodyPreview: '',
-    responseBodyHint: 'No response payload is available for this failed run.',
-    responsePreviewSizeLabel: 'No preview stored',
-    responsePreviewPolicy: 'No response preview is available because the run lane failed before transport completed.',
+    responseBodyHint: t('workspaceRoute.requestBuilder.failedRun.responseBodyHint'),
+    responsePreviewSizeLabel: t('workspaceRoute.resultPanel.response.values.noPreviewStored'),
+    responsePreviewPolicy: t('workspaceRoute.requestBuilder.failedRun.responsePreviewPolicy'),
     startedAt: typeof details.startedAt === 'string' ? details.startedAt : now,
     completedAt: typeof details.completedAt === 'string' ? details.completedAt : now,
     durationMs: typeof details.durationMs === 'number' ? details.durationMs : 0,
-    consoleSummary: 'No console entries were captured because the run lane failed before bounded script diagnostics could be summarized.',
+    consoleSummary: t('workspaceRoute.requestBuilder.failedRun.consoleSummary'),
     consoleEntries: [],
     consoleLogCount: 0,
     consoleWarningCount: 0,
-    testsSummary: 'No tests were recorded because the run lane failed before the tests stage could complete.',
+    testsSummary: t('workspaceRoute.requestBuilder.failedRun.testsSummary'),
     testEntries: [],
-    requestSnapshotSummary: createDraftRequestSnapshotSummary(draft),
-    requestInputSummary: createDraftRequestInputSummary(draft),
+    requestSnapshotSummary: createDraftRequestSnapshotSummary(draft, t),
+    requestInputSummary: createDraftRequestInputSummary(draft, t),
     requestHeaderCount: countEnabledRows(draft.headers),
     requestParamCount: countEnabledRows(draft.params),
     requestBodyMode: draft.bodyMode,
-    authSummary: createAuthSummary(draft),
+    authSummary: createAuthSummary(draft, t),
     environmentId: draft.selectedEnvironmentId ?? null,
     ...(draft.collectionName ? { requestCollectionName: draft.collectionName } : {}),
     ...(requestGroupName
       ? {
           requestGroupName,
-
         }
       : {}),
     errorCode: error instanceof RequestBuilderApiError ? error.code : 'execution_failed',
@@ -174,9 +205,9 @@ function createFailedExecutionObservation(
     stageSummaries: [
       {
         stageId: 'transport',
-        label: 'Transport',
+        label: t('workspaceRoute.requestBuilder.failedRun.transportStageLabel'),
         status: 'Failed',
-        summary: 'Transport failed before the run endpoint could return bounded diagnostics.',
+        summary: t('workspaceRoute.requestBuilder.failedRun.transportStageSummary'),
         errorCode: error instanceof RequestBuilderApiError ? error.code : 'execution_failed',
         errorSummary: error.message,
       },
@@ -257,41 +288,41 @@ export function useRequestBuilderCommands(
   const environmentLoadingBlock = selectedEnvironmentId !== null && environmentsQuery.isPending;
   const environmentDegradedBlock = selectedEnvironmentId !== null && environmentsQuery.isError;
   const brokenLinkedScriptRunBlock = draft && savedScriptsQuery.isSuccess
-    ? readBrokenLinkedScriptRunBlock(draft, savedScriptsQuery.data)
+    ? readBrokenLinkedScriptRunBlock(draft, savedScriptsQuery.data, t)
     : null;
 
   const saveDisabledReason = !draft
-    ? 'Open a request tab before saving.'
+    ? t('workspaceRoute.requestBuilder.disabledReasons.noDraftSave')
     : draft.name.trim().length === 0
-      ? 'Enter a request name before saving.'
+      ? t('workspaceRoute.requestBuilder.disabledReasons.nameRequiredSave')
       : draft.url.trim().length === 0
-        ? 'Enter a request URL before saving.'
+        ? t('workspaceRoute.requestBuilder.disabledReasons.urlRequiredSave')
         : missingSelectedEnvironment
-          ? 'Choose an available environment or No environment before saving.'
+          ? t('workspaceRoute.requestBuilder.environment.missing')
           : environmentLoadingBlock
-            ? 'Request environment details are still loading.'
+            ? t('workspaceRoute.requestBuilder.environment.loading')
             : environmentDegradedBlock
-              ? 'Environment list is unavailable while this request references a saved environment.'
+              ? t('workspaceRoute.requestBuilder.environment.degraded')
               : saveStatus.status === 'pending'
-                ? 'Save is already in progress.'
+                ? t('workspaceRoute.requestBuilder.disabledReasons.savePending')
                 : null;
 
   const runDisabledReason = !draft
-    ? 'Open a request tab before running.'
+    ? t('workspaceRoute.requestBuilder.disabledReasons.noDraftRun')
     : draft.url.trim().length === 0
-      ? 'Enter a request URL before running.'
+      ? t('workspaceRoute.requestBuilder.disabledReasons.urlRequiredRun')
       : missingSelectedEnvironment
-        ? 'Choose an available environment or No environment before running.'
+        ? t('workspaceRoute.requestBuilder.environment.missing')
         : environmentLoadingBlock
-          ? 'Request environment details are still loading.'
+          ? t('workspaceRoute.requestBuilder.environment.loading')
           : environmentDegradedBlock
-            ? 'Environment list is unavailable while this request references a saved environment.'
+            ? t('workspaceRoute.requestBuilder.environment.degraded')
             : brokenLinkedScriptRunBlock
               ? brokenLinkedScriptRunBlock
               : isJsonBodyMalformed(draft)
-                ? 'Fix malformed JSON body before running.'
+                ? t('workspaceRoute.requestBuilder.disabledReasons.malformedJsonRun')
                 : runStatus.status === 'pending'
-                  ? 'Run is already in progress.'
+                  ? t('workspaceRoute.requestBuilder.disabledReasons.runPending')
                   : null;
 
   const buildDefinitionInput = () => {
@@ -338,7 +369,7 @@ export function useRequestBuilderCommands(
         return;
       }
 
-      finishSaveError(activeTab.id, error instanceof Error ? error.message : 'Failed to save request definition.');
+      finishSaveError(activeTab.id, error instanceof Error ? error.message : t('workspaceRoute.requestBuilder.status.saveError'));
     },
   });
 
@@ -368,10 +399,11 @@ export function useRequestBuilderCommands(
 
       const failedExecution = createFailedExecutionObservation(
         draft,
-        error instanceof Error ? error : new Error('Failed to run request.'),
+        error instanceof Error ? error : new Error(t('workspaceRoute.requestBuilder.status.runError')),
+        t,
       );
 
-      finishRunError(activeTab.id, failedExecution, failedExecution.errorSummary ?? 'Failed to run request.');
+      finishRunError(activeTab.id, failedExecution, failedExecution.errorSummary ?? t('workspaceRoute.requestBuilder.status.runError'));
       focusWorkspaceResultPanel('response');
     },
   });
