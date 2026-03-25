@@ -6,7 +6,6 @@ import {
   type MouseEvent,
 } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
-import type { RequestPlacementValue } from '@client/features/request-builder/request-placement';
 import type {
   WorkspaceCollectionNode,
   WorkspaceRequestGroupNode,
@@ -23,16 +22,9 @@ interface WorkspaceExplorerProps {
   onSelectRequestGroup: (requestGroup: WorkspaceRequestGroupNode) => void;
   onPreviewSavedRequest: (request: WorkspaceTreeRequestLeaf) => void | Promise<void>;
   onPinSavedRequest: (request: WorkspaceTreeRequestLeaf) => void | Promise<void>;
-  onCreateRequest: (placement?: RequestPlacementValue) => void | Promise<void>;
-  onCreateRequestGroup: (target: WorkspaceCollectionNode | WorkspaceRequestGroupNode) => void | Promise<void>;
-  onRunCollection: (collection: WorkspaceCollectionNode) => void | Promise<void>;
-  onRunRequestGroup: (requestGroup: WorkspaceRequestGroupNode) => void | Promise<void>;
-  onRenameCollection: (collection: WorkspaceCollectionNode) => void | Promise<void>;
   onDeleteCollection: (collection: WorkspaceCollectionNode) => void | Promise<void>;
-  onRenameRequestGroup: (requestGroup: WorkspaceRequestGroupNode) => void | Promise<void>;
   onDeleteRequestGroup: (requestGroup: WorkspaceRequestGroupNode) => void | Promise<void>;
-  onExportRequest: (request: WorkspaceTreeRequestLeaf) => void;
-  onDeleteRequest: (request: WorkspaceTreeRequestLeaf) => void;
+  onDeleteRequest: (request: WorkspaceTreeRequestLeaf) => void | Promise<void>;
 }
 
 interface TreeItemKeyboardMeta {
@@ -116,20 +108,6 @@ function walkRequestGroupSelectionPath(
   return null;
 }
 
-function createCollectionPlacement(collection: WorkspaceCollectionNode): RequestPlacementValue {
-  return {
-    collectionId: collection.collectionId,
-    collectionName: collection.name,
-  };
-}
-
-function createRequestGroupPlacement(requestGroup: WorkspaceRequestGroupNode): RequestPlacementValue {
-  return {
-    collectionId: requestGroup.collectionId,
-    requestGroupId: requestGroup.requestGroupId,
-    requestGroupName: requestGroup.name,
-  };
-}
 
 function summarizeRequestGroupTree(
   requestGroups: WorkspaceRequestGroupNode[],
@@ -248,7 +226,7 @@ function readTreeLevel(treeItem: HTMLButtonElement | undefined) {
   return Number.isFinite(parsedLevel) ? parsedLevel : 1;
 }
 
-function ExplorerActionButton({
+function ExplorerDeleteButton({
   label,
   disabled = false,
   onClick,
@@ -260,11 +238,23 @@ function ExplorerActionButton({
   return (
     <button
       type="button"
-      className="workspace-button workspace-button--ghost"
+      className="workspace-tree-node__delete"
+      aria-label={label}
+      title={label}
       disabled={disabled}
       onClick={onClick}
     >
-      {label}
+      <svg
+        className="workspace-tree-node__delete-icon"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <path
+          d="M9 3h6l1 2h4v2H4V5h4l1-2Zm1 7h2v8h-2v-8Zm4 0h2v8h-2v-8ZM7 10h2v8H7v-8Zm-1 10h12l1-13H5l1 13Z"
+          fill="currentColor"
+        />
+      </svg>
     </button>
   );
 }
@@ -299,15 +289,8 @@ export function WorkspaceExplorer({
   onSelectRequestGroup,
   onPreviewSavedRequest,
   onPinSavedRequest,
-  onCreateRequest,
-  onCreateRequestGroup,
-  onRunCollection,
-  onRunRequestGroup,
-  onRenameCollection,
   onDeleteCollection,
-  onRenameRequestGroup,
   onDeleteRequestGroup,
-  onExportRequest,
   onDeleteRequest,
 }: WorkspaceExplorerProps) {
   const { t } = useI18n();
@@ -493,42 +476,35 @@ export function WorkspaceExplorer({
           ) : (
             <span className="workspace-tree-node__toggle-placeholder" aria-hidden="true" />
           )}
-          <button
-            type="button"
-            role="treeitem"
-            className={isSelected ? 'workspace-request workspace-request--selected' : 'workspace-request'}
-            aria-level={treeLevel}
-            aria-selected={isSelected}
-            aria-expanded={hasChildren ? isExpanded : undefined}
-            tabIndex={treeItemIndex === focusedItemIndex ? 0 : -1}
-            data-level={treeLevel}
-            data-node-id={nodeId}
-            onFocus={() => setFocusedItemIndex(treeItemIndex)}
-            onKeyDown={(event) => handleTreeItemKeyDown(event, {
-              treeItemIndex,
-              nodeId,
-              level: treeLevel,
-              expandable: hasChildren,
-              expanded: isExpanded,
-            })}
-            onClick={() => onSelectRequestGroup(requestGroup)}
-          >
-            <span className="workspace-request__header">
+          <div className="workspace-tree-node__item-shell">
+            <button
+              type="button"
+              role="treeitem"
+              className={isSelected
+                ? 'workspace-request workspace-request--compact workspace-request--selected'
+                : 'workspace-request workspace-request--compact'}
+              aria-level={treeLevel}
+              aria-selected={isSelected}
+              aria-expanded={hasChildren ? isExpanded : undefined}
+              tabIndex={treeItemIndex === focusedItemIndex ? 0 : -1}
+              data-level={treeLevel}
+              data-node-id={nodeId}
+              onFocus={() => setFocusedItemIndex(treeItemIndex)}
+              onKeyDown={(event) => handleTreeItemKeyDown(event, {
+                treeItemIndex,
+                nodeId,
+                level: treeLevel,
+                expandable: hasChildren,
+                expanded: isExpanded,
+              })}
+              onClick={() => onSelectRequestGroup(requestGroup)}
+            >
               <span className="workspace-request__title">{requestGroup.name}</span>
-              <span className="workspace-request__badges">
-                <span className="workspace-chip">{t('workspaceRoute.explorer.tree.kindRequestGroup')}</span>
+              <span className="workspace-request__meta workspace-request__meta--support">
+                {t('workspaceRoute.explorer.tree.requestCount', { count: requestGroupSummary.requestCount })}
               </span>
-            </span>
-            <span className="workspace-request__meta workspace-request__meta--support">
-              {t('workspaceRoute.explorer.tree.requestGroupCount', { count: requestGroupSummary.requestGroupCount })} · {t('workspaceRoute.explorer.tree.requestCount', { count: requestGroupSummary.requestCount })}
-            </span>
-          </button>
-          <div className="request-work-surface__future-actions">
-            <ExplorerActionButton label={t('workspaceRoute.explorer.actions.newRequest')} onClick={(event) => { stopEvent(event); void onCreateRequest(createRequestGroupPlacement(requestGroup)); }} />
-            <ExplorerActionButton label={t('workspaceRoute.explorer.actions.createRequestGroupShort')} onClick={(event) => { stopEvent(event); void onCreateRequestGroup(requestGroup); }} />
-            <ExplorerActionButton label={t('workspaceRoute.explorer.actions.runContainerShort')} onClick={(event) => { stopEvent(event); void onRunRequestGroup(requestGroup); }} />
-            <ExplorerActionButton label={t('workspaceRoute.explorer.actions.renameRequestGroupShort')} onClick={(event) => { stopEvent(event); void onRenameRequestGroup(requestGroup); }} />
-            <ExplorerActionButton
+            </button>
+            <ExplorerDeleteButton
               label={t('workspaceRoute.explorer.actions.deleteRequestGroupShort')}
               disabled={requestGroup.childGroups.length > 0 || requestGroup.requests.length > 0}
               onClick={(event) => { stopEvent(event); void onDeleteRequestGroup(requestGroup); }}
@@ -548,40 +524,40 @@ export function WorkspaceExplorer({
                 <li key={requestNode.id} role="none">
                   <div className="workspace-tree-node" data-kind="request" data-depth={depth + 1}>
                     <span className="workspace-tree-node__toggle-placeholder" aria-hidden="true" />
-                    <button
-                      type="button"
-                      role="treeitem"
-                      className={isSelectedRequest ? 'workspace-request workspace-request--selected' : 'workspace-request'}
-                      aria-label={t('workspaceRoute.explorer.actions.openRequest', { name: requestNode.request.name })}
-                      aria-level={requestTreeLevel}
-                      aria-selected={isSelectedRequest}
-                      tabIndex={requestTreeItemIndex === focusedItemIndex ? 0 : -1}
-                      data-level={requestTreeLevel}
-                      data-node-id={requestNodeId}
-                      data-kind={requestNode.kind}
-                      onFocus={() => setFocusedItemIndex(requestTreeItemIndex)}
-                      onKeyDown={(event) => handleTreeItemKeyDown(event, {
-                        treeItemIndex: requestTreeItemIndex,
-                        nodeId: requestNodeId,
-                        level: requestTreeLevel,
-                        expandable: false,
-                        expanded: false,
-                      })}
-                      onClick={() => onPreviewSavedRequest(requestNode.request)}
-                      onDoubleClick={() => onPinSavedRequest(requestNode.request)}
-                    >
-                      <span className="workspace-request__header">
-                        <span className="workspace-request__title">{requestNode.request.name}</span>
-                        <span className="workspace-request__badges">
-                          <span className="workspace-chip">{requestNode.request.methodLabel}</span>
+                    <div className="workspace-tree-node__item-shell">
+                      <button
+                        type="button"
+                        role="treeitem"
+                        className={isSelectedRequest
+                          ? 'workspace-request workspace-request--compact workspace-request--selected'
+                          : 'workspace-request workspace-request--compact'}
+                        aria-label={t('workspaceRoute.explorer.actions.openRequest', { name: requestNode.request.name })}
+                        aria-level={requestTreeLevel}
+                        aria-selected={isSelectedRequest}
+                        tabIndex={requestTreeItemIndex === focusedItemIndex ? 0 : -1}
+                        data-level={requestTreeLevel}
+                        data-node-id={requestNodeId}
+                        data-kind={requestNode.kind}
+                        onFocus={() => setFocusedItemIndex(requestTreeItemIndex)}
+                        onKeyDown={(event) => handleTreeItemKeyDown(event, {
+                          treeItemIndex: requestTreeItemIndex,
+                          nodeId: requestNodeId,
+                          level: requestTreeLevel,
+                          expandable: false,
+                          expanded: false,
+                        })}
+                        onClick={() => onPreviewSavedRequest(requestNode.request)}
+                        onDoubleClick={() => onPinSavedRequest(requestNode.request)}
+                      >
+                        <span className="workspace-request__title">
+                          <span className="workspace-request__method">{requestNode.request.methodLabel}</span>
+                          <span className="workspace-request__name">{requestNode.request.name}</span>
                         </span>
-                      </span>
-                      <span className="workspace-request__path">{requestNode.request.collectionName} / {requestNode.request.requestGroupName}</span>
-                      <span className="workspace-request__meta workspace-request__meta--support">{requestNode.request.summary}</span>
-                    </button>
-                    <div className="request-work-surface__future-actions">
-                      <ExplorerActionButton label={t('workspaceRoute.explorer.actions.exportSingle')} onClick={(event) => { stopEvent(event); onExportRequest(requestNode.request); }} />
-                      <ExplorerActionButton label={t('workspaceRoute.explorer.actions.deleteRequestShort')} onClick={(event) => { stopEvent(event); onDeleteRequest(requestNode.request); }} />
+                      </button>
+                      <ExplorerDeleteButton
+                        label={t('workspaceRoute.explorer.actions.deleteRequestShort')}
+                        onClick={(event) => { stopEvent(event); void onDeleteRequest(requestNode.request); }}
+                      />
                     </div>
                   </div>
                 </li>
@@ -654,42 +630,35 @@ export function WorkspaceExplorer({
                 ) : (
                   <span className="workspace-tree-node__toggle-placeholder" aria-hidden="true" />
                 )}
-                <button
-                  type="button"
-                  role="treeitem"
-                  className={isSelected ? 'workspace-request workspace-request--selected' : 'workspace-request'}
-                  aria-level={1}
-                  aria-selected={isSelected}
-                  aria-expanded={hasChildren ? isExpanded : undefined}
-                  tabIndex={treeItemIndex === focusedItemIndex ? 0 : -1}
-                  data-level={1}
-                  data-node-id={nodeId}
-                  onFocus={() => setFocusedItemIndex(treeItemIndex)}
-                  onKeyDown={(event) => handleTreeItemKeyDown(event, {
-                    treeItemIndex,
-                    nodeId,
-                    level: 1,
-                    expandable: hasChildren,
-                    expanded: isExpanded,
-                  })}
-                  onClick={() => onSelectCollection(collection)}
-                >
-                  <span className="workspace-request__header">
+                <div className="workspace-tree-node__item-shell">
+                  <button
+                    type="button"
+                    role="treeitem"
+                    className={isSelected
+                      ? 'workspace-request workspace-request--compact workspace-request--selected'
+                      : 'workspace-request workspace-request--compact'}
+                    aria-level={1}
+                    aria-selected={isSelected}
+                    aria-expanded={hasChildren ? isExpanded : undefined}
+                    tabIndex={treeItemIndex === focusedItemIndex ? 0 : -1}
+                    data-level={1}
+                    data-node-id={nodeId}
+                    onFocus={() => setFocusedItemIndex(treeItemIndex)}
+                    onKeyDown={(event) => handleTreeItemKeyDown(event, {
+                      treeItemIndex,
+                      nodeId,
+                      level: 1,
+                      expandable: hasChildren,
+                      expanded: isExpanded,
+                    })}
+                    onClick={() => onSelectCollection(collection)}
+                  >
                     <span className="workspace-request__title">{collection.name}</span>
-                    <span className="workspace-request__badges">
-                      <span className="workspace-chip">{t('workspaceRoute.explorer.tree.kindCollection')}</span>
+                    <span className="workspace-request__meta workspace-request__meta--support">
+                      {t('workspaceRoute.explorer.tree.requestGroupCount', { count: collectionSummary.requestGroupCount })} · {t('workspaceRoute.explorer.tree.requestCount', { count: collectionSummary.requestCount })}
                     </span>
-                  </span>
-                  <span className="workspace-request__meta workspace-request__meta--support">
-                    {t('workspaceRoute.explorer.tree.requestGroupCount', { count: collectionSummary.requestGroupCount })} · {t('workspaceRoute.explorer.tree.requestCount', { count: collectionSummary.requestCount })}
-                  </span>
-                </button>
-                <div className="request-work-surface__future-actions">
-                  <ExplorerActionButton label={t('workspaceRoute.explorer.actions.newRequest')} onClick={(event) => { stopEvent(event); void onCreateRequest(createCollectionPlacement(collection)); }} />
-                  <ExplorerActionButton label={t('workspaceRoute.explorer.actions.createRequestGroupShort')} onClick={(event) => { stopEvent(event); void onCreateRequestGroup(collection); }} />
-                  <ExplorerActionButton label={t('workspaceRoute.explorer.actions.runContainerShort')} onClick={(event) => { stopEvent(event); void onRunCollection(collection); }} />
-                  <ExplorerActionButton label={t('workspaceRoute.explorer.actions.renameCollectionShort')} onClick={(event) => { stopEvent(event); void onRenameCollection(collection); }} />
-                  <ExplorerActionButton
+                  </button>
+                  <ExplorerDeleteButton
                     label={t('workspaceRoute.explorer.actions.deleteCollectionShort')}
                     disabled={collection.childGroups.length > 0}
                     onClick={(event) => { stopEvent(event); void onDeleteCollection(collection); }}
@@ -713,3 +682,4 @@ export function WorkspaceExplorer({
     </div>
   );
 }
+

@@ -762,6 +762,194 @@ async function testCollectionBatchRunTraversesNestedGroupsDepthFirstAndContinues
   }
 }
 
+async function testCollectionBatchRunReturnsEmptyWhenContainerHasNoRequests() {
+  const runtimeState = {
+    histories: [],
+    results: [],
+    testResults: [],
+  };
+  const repositories = createRepositories({
+    runtime: {
+      queries: {
+        insertExecutionHistory(record) {
+          runtimeState.histories.push(record);
+        },
+        insertExecutionResult(record) {
+          runtimeState.results.push(record);
+        },
+        insertTestResults(records) {
+          runtimeState.testResults.push(records);
+        },
+      },
+    },
+  });
+
+  const dependencies = createExecutionDependencies(repositories, runtimeState, {
+    listWorkspaceSavedRequestRecords: () => [],
+    buildWorkspaceRequestTree: () => ({
+      defaults: null,
+      collections: [],
+      requestGroups: [],
+      tree: [
+        {
+          id: 'collection-node-empty',
+          kind: 'collection',
+          collectionId: 'collection-empty',
+          name: 'Empty Collection',
+          childGroups: [],
+        },
+      ],
+    }),
+  });
+
+  await withServer(
+    (app) => registerExecutionRoutes(app, dependencies),
+    async ({ baseUrl }) => {
+      const response = await requestJson(baseUrl, '/api/collections/collection-empty/run', {
+        method: 'POST',
+      });
+
+      assert.equal(response.status, 200);
+      assert.equal(response.payload.data.batchExecution.aggregateOutcome, 'Empty');
+      assert.equal(response.payload.data.batchExecution.requestCount, 0);
+      assert.equal(response.payload.data.batchExecution.totalRuns, 0);
+      assert.equal(response.payload.data.batchExecution.durationMs, 0);
+    },
+  );
+}
+
+async function testCollectionBatchRunMarksTimedOutWhenTransportExceedsConfiguredTimeout() {
+  const runtimeState = {
+    histories: [],
+    results: [],
+    testResults: [],
+  };
+  const repositories = createRepositories({
+    runtime: {
+      queries: {
+        insertExecutionHistory(record) {
+          runtimeState.histories.push(record);
+        },
+        insertExecutionResult(record) {
+          runtimeState.results.push(record);
+        },
+        insertTestResults(records) {
+          runtimeState.testResults.push(records);
+        },
+      },
+    },
+  });
+
+  const savedRequests = [
+    createSavedRequest('request-timeout', 'Timed request', 'https://example.test/timeout'),
+  ];
+
+  const dependencies = createExecutionDependencies(repositories, runtimeState, {
+    listWorkspaceSavedRequestRecords: () => savedRequests,
+    buildWorkspaceRequestTree: () => ({
+      defaults: null,
+      collections: [],
+      requestGroups: [],
+      tree: [
+        {
+          id: 'collection-node-timeout',
+          kind: 'collection',
+          collectionId: 'collection-timeout',
+          name: 'Timeout Collection',
+          childGroups: [
+            {
+              id: 'group-node-timeout',
+              kind: 'request-group',
+              collectionId: 'collection-timeout',
+              requestGroupId: 'group-timeout',
+              name: 'Timeout Group',
+              childGroups: [],
+              requests: [
+                {
+                  id: 'request-node-timeout',
+                  kind: 'request',
+                  name: 'Timed request',
+                  request: createRequestLeaf(savedRequests[0], 'group-timeout', 'Timeout Group'),
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }),
+    applyExecutionDefaults: (request) => ({
+      ...request,
+      runConfig: {
+        ...(request.runConfig || {}),
+        timeoutMs: 20,
+      },
+    }),
+    deriveExecutionOutcome: (stageResults) => {
+      if (stageResults.transport?.status === 'timed_out') {
+        return 'Timed out';
+      }
+
+      if (stageResults.transport?.status === 'failed') {
+        return 'Failed';
+      }
+
+      if (stageResults.transport?.status === 'blocked') {
+        return 'Blocked';
+      }
+
+      return 'Succeeded';
+    },
+  });
+
+  const originalFetch = global.fetch;
+  global.fetch = async (input, init) => {
+    const url = String(input);
+
+    if (!url.startsWith('https://example.test/')) {
+      return originalFetch(input, init);
+    }
+
+    return new Promise((_, reject) => {
+      const abortError = new Error('Transport aborted by timeout.');
+      abortError.name = 'AbortError';
+      const signal = init?.signal;
+
+      if (!signal) {
+        return;
+      }
+
+      if (signal.aborted) {
+        reject(abortError);
+        return;
+      }
+
+      signal.addEventListener('abort', () => {
+        reject(abortError);
+      }, { once: true });
+    });
+  };
+
+  try {
+    await withServer(
+      (app) => registerExecutionRoutes(app, dependencies),
+      async ({ baseUrl }) => {
+        const response = await Promise.race([
+          requestJson(baseUrl, '/api/collections/collection-timeout/run', {
+            method: 'POST',
+          }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Batch run request timed out in test harness.')), 2000)),
+        ]);
+
+        assert.equal(response.status, 200);
+        assert.equal(response.payload.data.batchExecution.aggregateOutcome, 'Timed out');
+        assert.equal(response.payload.data.batchExecution.timedOutCount, 1);
+        assert.equal(response.payload.data.batchExecution.totalRuns, 1);
+      },
+    );
+  } finally {
+    global.fetch = originalFetch;
+  }
+}
 async function testRequestGroupBatchRunTraversesSelectedSubtreeDepthFirst() {
   const runtimeState = {
     histories: [],
@@ -955,9 +1143,14 @@ async function testRequestGroupBatchRunReturnsNotFoundForUnknownGroup() {
   await testSecretProviderErrorBlocksExecution();
   await testExecutionRouteAppliesInheritedDefaultsBeforeEnvironmentResolution();
   await testCollectionBatchRunTraversesNestedGroupsDepthFirstAndContinuesOnError();
+  await testCollectionBatchRunReturnsEmptyWhenContainerHasNoRequests();
+  await testCollectionBatchRunMarksTimedOutWhenTransportExceedsConfiguredTimeout();
   await testRequestGroupBatchRunTraversesSelectedSubtreeDepthFirst();
   await testRequestGroupBatchRunReturnsNotFoundForUnknownGroup();
 })();
+
+
+
 
 
 

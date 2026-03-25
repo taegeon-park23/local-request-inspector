@@ -1,4 +1,4 @@
-﻿import {
+import {
   DEFAULT_REQUEST_COLLECTION_NAME,
   DEFAULT_WORKSPACE_ID,
   RequestBuilderApiError,
@@ -202,6 +202,32 @@ async function parseJsonResponse<TData>(response: Response): Promise<TData> {
   return (payload as ApiEnvelope<TData>).data;
 }
 
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isWorkspaceRequestGroupCandidate(value: unknown): value is WorkspaceRequestGroupNode & { children?: unknown[] } {
+  if (!isObjectRecord(value)) {
+    return false;
+  }
+
+  return value.kind === 'request-group'
+    || typeof value.requestGroupId === 'string'
+    || Array.isArray(value.childGroups);
+}
+
+function isWorkspaceRequestLeafCandidate(value: unknown): value is WorkspaceRequestLeafNode {
+  if (!isObjectRecord(value)) {
+    return false;
+  }
+
+  return value.kind === 'request' || isObjectRecord(value.request);
+}
+
+function readLegacyChildren(value: { children?: unknown }) {
+  return Array.isArray(value.children) ? value.children : [];
+}
+
 function normalizeWorkspaceRequestLeafNode(node: WorkspaceRequestLeafNode): WorkspaceRequestLeafNode {
   return {
     ...node,
@@ -211,24 +237,33 @@ function normalizeWorkspaceRequestLeafNode(node: WorkspaceRequestLeafNode): Work
   };
 }
 
-function normalizeWorkspaceRequestGroupNode(node: WorkspaceRequestGroupNode): WorkspaceRequestGroupNode {
+function normalizeWorkspaceRequestGroupNode(
+  node: WorkspaceRequestGroupNode & { children?: unknown[] },
+): WorkspaceRequestGroupNode {
+  const childGroups = Array.isArray(node.childGroups)
+    ? node.childGroups
+    : readLegacyChildren(node).filter(isWorkspaceRequestGroupCandidate);
+  const requests = Array.isArray(node.requests)
+    ? node.requests
+    : readLegacyChildren(node).filter(isWorkspaceRequestLeafCandidate);
+
   return {
     ...node,
-    childGroups: Array.isArray(node.childGroups)
-      ? node.childGroups.map((childGroup) => normalizeWorkspaceRequestGroupNode(childGroup))
-      : [],
-    requests: Array.isArray(node.requests)
-      ? node.requests.map((requestNode) => normalizeWorkspaceRequestLeafNode(requestNode))
-      : [],
+    childGroups: childGroups.map((childGroup) => normalizeWorkspaceRequestGroupNode(childGroup)),
+    requests: requests.map((requestNode) => normalizeWorkspaceRequestLeafNode(requestNode)),
   };
 }
 
-function normalizeWorkspaceCollectionNode(node: WorkspaceCollectionNode): WorkspaceCollectionNode {
+function normalizeWorkspaceCollectionNode(
+  node: WorkspaceCollectionNode & { children?: unknown[] },
+): WorkspaceCollectionNode {
+  const childGroups = Array.isArray(node.childGroups)
+    ? node.childGroups
+    : readLegacyChildren(node).filter(isWorkspaceRequestGroupCandidate);
+
   return {
     ...node,
-    childGroups: Array.isArray(node.childGroups)
-      ? node.childGroups.map((childGroup) => normalizeWorkspaceRequestGroupNode(childGroup))
-      : [],
+    childGroups: childGroups.map((childGroup) => normalizeWorkspaceRequestGroupNode(childGroup)),
   };
 }
 
@@ -431,6 +466,10 @@ export function buildFallbackWorkspaceRequestTree(
     };
   });
 }
+
+
+
+
 
 
 

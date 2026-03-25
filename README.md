@@ -29,6 +29,7 @@ npm run test:ui
 ```
 
 - `dev:app`: runs the server lane and Vite client lane together.
+- `dev:client`: runs only the Vite lane. Start `dev:server` in another terminal (or use `dev:app`) or `/api` and `/events` requests will fail with proxy `ECONNREFUSED`.
 - `build:client`: builds the React shell for the `/app` entrypoint.
 - `serve:app`: serves the legacy `/` route and, when built, the `/app` shell.
 - `check`: runs lint, typecheck, Node seam tests, and the app-shell readiness check.

@@ -23,7 +23,6 @@ import {
   readRequestGroupName,
   resolveRequestPlacement,
   type RequestPlacementCollectionOption,
-  type RequestPlacementValue,
 } from '@client/features/request-builder/request-placement';
 import { useRequestCommandStore } from '@client/features/request-builder/state/request-command-store';
 import { useRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
@@ -88,11 +87,6 @@ interface PendingImportPreview {
 interface CreateSheetState {
   defaultType: CreateType;
   target: CreateSheetTarget;
-}
-
-function promptForName(initialValue: string, message: string) {
-  const nextValue = window.prompt(message, initialValue);
-  return typeof nextValue === 'string' ? nextValue.trim() : null;
 }
 
 function resolvePresentationTab(
@@ -975,43 +969,6 @@ export function WorkspaceRoute() {
     setSelectedExplorerItem({ kind: 'request-group', id: requestGroup.requestGroupId });
   };
 
-  const handleCreateRequestAtPlacement = (placement?: RequestPlacementValue) => {
-    if (!placement) {
-      void openDraftFromSeed();
-      return;
-    }
-
-    if (placement.requestGroupId) {
-      const requestGroupLocation = findRequestGroupById(explorerTree, placement.requestGroupId);
-
-      if (requestGroupLocation) {
-        void openDraftFromSeed({
-          ...placement,
-          collectionId: requestGroupLocation.collection.collectionId,
-          collectionName: requestGroupLocation.collection.name,
-          requestGroupId: requestGroupLocation.requestGroup.requestGroupId,
-          requestGroupName: requestGroupLocation.requestGroup.name,
-        });
-        return;
-      }
-    }
-
-    if (placement.collectionId) {
-      const collection = findCollectionById(explorerTree, placement.collectionId);
-
-      if (collection) {
-        void openDraftFromSeed({
-          ...placement,
-          collectionId: collection.collectionId,
-          collectionName: collection.name,
-        });
-        return;
-      }
-    }
-
-    void openDraftFromSeed(placement);
-  };
-
   const openCreateSheet = (defaultType: CreateType, target: CreateSheetTarget = null) => {
     setCreateSheetState({
       defaultType,
@@ -1047,32 +1004,12 @@ export function WorkspaceRoute() {
     openCreateSheet('request-group', target);
   };
 
-  const handlePromptRenameCollection = async (collection: WorkspaceCollectionNode) => {
-    const name = promptForName(collection.name, t('workspaceRoute.explorer.prompts.renameCollection', { name: collection.name }));
-
-    if (!name) {
-      return;
-    }
-
-    await handleRenameCollection(collection, name);
-  };
-
   const handlePromptDeleteCollection = async (collection: WorkspaceCollectionNode) => {
     if (!window.confirm(t('workspaceRoute.explorer.prompts.deleteCollection', { name: collection.name }))) {
       return;
     }
 
     await handleDeleteCollection(collection);
-  };
-
-  const handlePromptRenameRequestGroup = async (requestGroup: WorkspaceRequestGroupNode) => {
-    const name = promptForName(requestGroup.name, t('workspaceRoute.explorer.prompts.renameRequestGroup', { name: requestGroup.name }));
-
-    if (!name) {
-      return;
-    }
-
-    await handleRenameRequestGroup(requestGroup, name);
   };
 
   const handlePromptDeleteRequestGroup = async (requestGroup: WorkspaceRequestGroupNode) => {
@@ -1267,15 +1204,8 @@ export function WorkspaceRoute() {
           onSelectRequestGroup={handleSelectRequestGroup}
           onPreviewSavedRequest={handlePreviewSavedRequest}
           onPinSavedRequest={handlePinSavedRequest}
-          onCreateRequest={handleCreateRequestAtPlacement}
-          onCreateRequestGroup={handleOpenCreateRequestGroupSheet}
-          onRunCollection={handleRunCollection}
-          onRunRequestGroup={handleRunRequestGroup}
-          onRenameCollection={handlePromptRenameCollection}
           onDeleteCollection={handlePromptDeleteCollection}
-          onRenameRequestGroup={handlePromptRenameRequestGroup}
           onDeleteRequestGroup={handlePromptDeleteRequestGroup}
-          onExportRequest={(request) => exportRequestMutation.mutate(request)}
           onDeleteRequest={handlePromptDeleteSavedRequest}
         />
         </section>

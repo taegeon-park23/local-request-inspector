@@ -2,7 +2,7 @@
 
 - **Purpose:** Show the live delivery sequence after completed work has been archived out of the default read path.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-25
+- **Last Updated:** 2026-03-26
 - **Related Documents:** `master-task-board.md`, `progress-status.md`, `completed-work-summary.md`, `../prd/overview.md`
 - **Update Rule:** Update when a new bounded task is promoted or when the live verification baseline changes.
 
@@ -23,6 +23,9 @@
 14. `T085` Result Contract Precision is archived.
 15. `T086` Workbench Duplicate Draft Flow is archived.
 16. `T087` Workbench Tab Search And Reopen Flow is archived.
+17. `T088` Request Tree Contract Alignment is archived.
+18. `T089` New Request Save Placement Mismatch Fix is archived.
+19. `T091` Collection/Request-Group Batch Run Timeout Hardening is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.
@@ -31,3 +34,4 @@
 
 ## Immediate Next Step
 - Promote one next bounded task from the remaining PRD scope.
+

@@ -94,15 +94,8 @@ function createExplorer(overrides: Partial<ComponentProps<typeof WorkspaceExplor
       onSelectRequestGroup={vi.fn()}
       onPreviewSavedRequest={vi.fn()}
       onPinSavedRequest={vi.fn()}
-      onCreateRequest={vi.fn()}
-      onCreateRequestGroup={vi.fn()}
-      onRunCollection={vi.fn()}
-      onRunRequestGroup={vi.fn()}
-      onRenameCollection={vi.fn()}
       onDeleteCollection={vi.fn()}
-      onRenameRequestGroup={vi.fn()}
       onDeleteRequestGroup={vi.fn()}
-      onExportRequest={vi.fn()}
       onDeleteRequest={vi.fn()}
       {...overrides}
     />
@@ -124,16 +117,15 @@ describe('WorkspaceExplorer', () => {
     expect(screen.getByText('Login')).toBeInTheDocument();
     expect(screen.getByText('Create session')).toBeInTheDocument();
     expect(screen.getByText('Current selection: Saved Requests / Auth / Login / Create session')).toBeInTheDocument();
-    expect(screen.getByText('1 request group(s) · 1 request(s)')).toBeInTheDocument();
+    expect(screen.getAllByText('1 request(s)').length).toBeGreaterThan(0);
     expect(screen.getByRole('searchbox', { name: 'Explorer search' })).toBeInTheDocument();
   });
 
-  it('uses preview on single click, pin on double click, and seeds nested group placement for new requests', async () => {
+  it('uses preview on single click and pin on double click for request rows', async () => {
     const user = userEvent.setup();
     const tree = createTree();
     const previewRequest = vi.fn();
     const pinRequest = vi.fn();
-    const createRequest = vi.fn();
 
     renderApp(
       <WorkspaceExplorer
@@ -144,15 +136,8 @@ describe('WorkspaceExplorer', () => {
         onSelectRequestGroup={vi.fn()}
         onPreviewSavedRequest={previewRequest}
         onPinSavedRequest={pinRequest}
-        onCreateRequest={createRequest}
-        onCreateRequestGroup={vi.fn()}
-        onRunCollection={vi.fn()}
-        onRunRequestGroup={vi.fn()}
-        onRenameCollection={vi.fn()}
         onDeleteCollection={vi.fn()}
-        onRenameRequestGroup={vi.fn()}
         onDeleteRequestGroup={vi.fn()}
-        onExportRequest={vi.fn()}
         onDeleteRequest={vi.fn()}
       />,
     );
@@ -164,14 +149,7 @@ describe('WorkspaceExplorer', () => {
     previewRequest.mockClear();
     await user.dblClick(requestButton);
     expect(pinRequest).toHaveBeenCalledWith(tree[0]!.childGroups[0]!.childGroups[0]!.requests[0]!.request);
-
-    const newRequestButtons = screen.getAllByRole('button', { name: 'New Request' });
-    await user.click(newRequestButtons[2]!);
-    expect(createRequest).toHaveBeenCalledWith({
-      collectionId: 'collection-saved-requests',
-      requestGroupId: 'request-group-login',
-      requestGroupName: 'Login',
-    });
+    expect(screen.queryByRole('button', { name: 'New Request' })).not.toBeInTheDocument();
   });
 
   it('filters tree nodes by search query and shows empty-state copy when there are no matches', async () => {

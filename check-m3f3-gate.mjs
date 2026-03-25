@@ -11,7 +11,7 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = __dirname;
 const devHost = '127.0.0.1';
-const devPort = 5173;
+const devPort = 6173;
 const devBaseUrl = `http://${devHost}:${devPort}`;
 const fetchTimeoutMs = 5_000;
 

@@ -2,7 +2,7 @@
 
 - **Purpose:** Provide a compact live snapshot without requiring contributors to read archived task history by default.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-25
+- **Last Updated:** 2026-03-26
 - **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `completed-work-summary.md`, `../prd/overview.md`
 - **Update Rule:** Update after each active-task status change or verification-state change.
 
@@ -14,11 +14,14 @@
 - `T085` is archived after adding structured assertion results/summary fields for single and batch execution surfaces and wiring right-panel rendering to the structured contract.
 - `T086` is archived after enabling one-click duplicate from the request header to branch the active draft into a new detached tab without mutating the source tab, plus localized support copy and component coverage.
 - `T087` is archived after shipping tab-strip search/filter and recently closed tab recovery flow, including workspace shell history state wiring and request-tab shell coverage updates.
+- `T088` is archived after aligning the request-tree contract to canonical `childGroups`/`requests` while preserving client-side `children` compatibility parsing.
+- `T089` is archived after preventing cross-collection fallback `requestGroupId` inheritance during draft placement resolution, removing first-save placement mismatch failures.
+- `T091` is archived after adding bounded transport timeouts for batch execution paths and explicit immediate `Empty` completion for empty collection/request-group runs.
 
 ## Verification
-- `npm.cmd run lint` passed on 2026-03-25.
-- `npm.cmd run typecheck` passed on 2026-03-25.
-- `npm.cmd run test:node` passed on 2026-03-25.
+- `npm.cmd run lint` passed on 2026-03-26.
+- `npm.cmd run typecheck` passed on 2026-03-26.
+- `npm.cmd run test:node` passed on 2026-03-26.
 - Agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - If UI full-suite verification is needed, instruct the user to run `npm.cmd run test:ui` locally and treat that result as authoritative.
 
@@ -27,3 +30,4 @@
 2. Read `master-task-board.md` and `priority-roadmap.md`.
 3. Read `completed-work-summary.md` only when archived context is needed.
 4. Define and promote one next bounded task before writing new implementation code.
+

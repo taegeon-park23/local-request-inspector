@@ -58,6 +58,9 @@ function registerExecutionRoutes(app, dependencies) {
   } = dependencies;
   const runtimeQueries = repositories.runtime.queries;
   const scriptRepository = repositories.resources.scripts;
+  const DEFAULT_TRANSPORT_TIMEOUT_MS = 5000;
+  const MIN_TRANSPORT_TIMEOUT_MS = 100;
+  const MAX_TRANSPORT_TIMEOUT_MS = 120000;
 
   function createSecretProviderResolutionSummary(error) {
     const action = typeof error?.details?.action === 'string' && error.details.action.trim().length > 0
@@ -89,6 +92,34 @@ function registerExecutionRoutes(app, dependencies) {
       total,
       passed,
       failed,
+    };
+  }
+
+  function clampTransportTimeoutMs(value) {
+    if (!Number.isFinite(value)) {
+      return DEFAULT_TRANSPORT_TIMEOUT_MS;
+    }
+
+    const roundedValue = Math.floor(Number(value));
+
+    if (roundedValue <= 0) {
+      return DEFAULT_TRANSPORT_TIMEOUT_MS;
+    }
+
+    return Math.min(MAX_TRANSPORT_TIMEOUT_MS, Math.max(MIN_TRANSPORT_TIMEOUT_MS, roundedValue));
+  }
+
+  function readTransportTimeoutMs(runConfig) {
+    return clampTransportTimeoutMs(runConfig?.timeoutMs);
+  }
+
+  function createTransportTimedOutStageResult(timeoutMs) {
+    return {
+      stageId: 'transport',
+      status: 'timed_out',
+      summary: `Transport timed out after ${timeoutMs} ms before a response snapshot was available.`,
+      errorCode: 'execution_timeout',
+      errorSummary: `Transport exceeded the bounded ${timeoutMs} ms timeout before a response snapshot was available.`,
     };
   }
 
@@ -310,6 +341,33 @@ function registerExecutionRoutes(app, dependencies) {
         }
 
         if (!stageResults.transport) {
+          const transportTimeoutMs = readTransportTimeoutMs(resolvedExecutionRequest.runConfig);
+          const transportController = typeof AbortController === 'function'
+            ? new AbortController()
+            : null;
+          let transportAbortListener = null;
+          let transportTimeoutHandle = null;
+          let transportTimedOut = false;
+
+          if (transportController) {
+            transportAbortListener = () => {
+              transportController.abort(executionSignal.reason || 'Execution was cancelled.');
+            };
+
+            if (executionSignal.aborted) {
+              transportAbortListener();
+            } else {
+              executionSignal.addEventListener('abort', transportAbortListener, { once: true });
+            }
+
+            transportTimeoutHandle = setTimeout(() => {
+              transportTimedOut = true;
+              transportController.abort(`Transport timed out after ${transportTimeoutMs} ms.`);
+            }, transportTimeoutMs);
+          }
+
+          const transportSignal = transportController?.signal ?? executionSignal;
+
           try {
             target = createExecutionRequestTarget(
               resolvedExecutionRequest.url,
@@ -324,7 +382,7 @@ function registerExecutionRoutes(app, dependencies) {
             const response = await fetch(target.toString(), {
               method: resolvedExecutionRequest.method,
               headers,
-              signal: executionSignal,
+              signal: transportSignal,
               ...(body !== undefined ? { body } : {}),
             });
 
@@ -361,9 +419,11 @@ function registerExecutionRoutes(app, dependencies) {
             });
             stageResults.tests = testsStage.stageResult;
           } catch (error) {
-            stageResults.transport = executionSignal.aborted || error?.name === 'AbortError'
+            stageResults.transport = executionSignal.aborted
               ? createTransportCancelledStageResult('Transport was cancelled before a response snapshot was available.')
-              : createTransportFailureStageResult(error);
+              : transportTimedOut
+                ? createTransportTimedOutStageResult(transportTimeoutMs)
+                : createTransportFailureStageResult(error);
             stageResults['post-response'] = createSkippedScriptStageAfterTransport(
               'post-response',
               'Post-response did not run because transport failed before a response snapshot was available.',
@@ -372,6 +432,14 @@ function registerExecutionRoutes(app, dependencies) {
               'tests',
               'Tests did not run because transport failed before a response snapshot was available.',
             );
+          } finally {
+            if (transportTimeoutHandle) {
+              clearTimeout(transportTimeoutHandle);
+            }
+
+            if (transportAbortListener) {
+              executionSignal.removeEventListener('abort', transportAbortListener);
+            }
           }
         }
       }
@@ -640,6 +708,11 @@ function registerExecutionRoutes(app, dependencies) {
       requestLeaves = collectRequestsDepthFirst(locatedRequestGroup.requestGroup, []);
     }
 
+    if (requestLeaves.length === 0) {
+      const timestamp = new Date().toISOString();
+      return createBatchExecution(containerType, container, [], [], timestamp, timestamp, 0);
+    }
+
     const startedAt = new Date().toISOString();
     const startedAtMs = Date.now();
     const stepResults = [];
@@ -722,6 +795,10 @@ function registerExecutionRoutes(app, dependencies) {
 module.exports = {
   registerExecutionRoutes,
 };
+
+
+
+
 
 
 

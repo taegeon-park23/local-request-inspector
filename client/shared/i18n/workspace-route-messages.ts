@@ -5,7 +5,7 @@ export const workspaceRouteMessagesEn = {
         eyebrow: 'Workspace explorer',
         title: 'Collections',
         summary:
-          'Persisted collections, nested request groups, and saved requests stay visible here. Explorer actions handle preview, pin, create, run, rename, and delete without leaving the tree.',
+          'Persisted collections, nested request groups, and saved requests stay visible here. Keep navigation compact, focus on quick selection, and use inline delete icons when cleanup is needed.',
         authoringChip: 'Authoring',
         resourceLaneChip: 'Resource lane',
       },
@@ -50,7 +50,7 @@ export const workspaceRouteMessagesEn = {
         boundary:
           'Export and import stay limited to authored request definitions, mock rules, and standalone saved scripts. Runtime history, captures, and execution artifacts remain outside this bundle.',
         navigationOnly:
-          'Explorer actions handle preview, pin, create, run, rename, and delete directly in the tree. Import and export stay in the companion workspace panel.',
+          'The explorer stays navigation-first with compact rows and inline delete controls. Import and export stay in the companion workspace panel.',
         previewAdvisory:
           'Preview is advisory only. Workspace changes before confirm can still change imported names or validation outcomes for {fileName}.',
       },
@@ -953,7 +953,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         eyebrow: '작업공간 탐색기',
         title: '컬렉션',
         summary:
-          '지속된 컬렉션, 중첩 요청 그룹, 저장된 요청을 여기에서 함께 봅니다. explorer 액션으로 트리를 벗어나지 않고 preview, pin, 생성, 실행, 이름 변경, 삭제를 처리합니다.',
+          '지속된 컬렉션, 중첩 요청 그룹, 저장된 요청을 여기에서 함께 봅니다. 탐색은 최대한 컴팩트하게 유지하고, 정리는 인라인 삭제 아이콘으로 처리합니다.',
         authoringChip: '작성',
         resourceLaneChip: '리소스 레인',
       },
@@ -998,7 +998,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         boundary:
           '내보내기와 가져오기는 작성된 요청 정의, mock rule, 그리고 독립 저장 스크립트에만 한정됩니다. 런타임 히스토리, 캡처, 실행 artifact는 이 번들 범위 밖에 있습니다.',
         navigationOnly:
-          'explorer 액션으로 트리 안에서 preview, pin, 생성, 실행, 이름 변경, 삭제를 직접 처리합니다. 가져오기와 내보내기만 보조 workspace 패널에 남습니다.',
+          '탐색기는 컴팩트 행 기반의 선택/이동 중심으로 유지하고 삭제만 인라인 아이콘으로 제공합니다. 가져오기와 내보내기는 보조 workspace 패널에 남습니다.',
         previewAdvisory:
           '미리보기는 참고용입니다. 확정 전에 작업공간이 바뀌면 {fileName}의 가져오기 이름이나 검증 결과가 달라질 수 있습니다.',
       },

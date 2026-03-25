@@ -56,7 +56,15 @@ export function resolveRequestPlacement(
   const nextPlacement: RequestPlacementValue = {};
   const collectionId = primary?.collectionId ?? fallback?.collectionId;
   const collectionName = primary?.collectionName ?? fallback?.collectionName;
-  const requestGroupId = primary?.requestGroupId ?? fallback?.requestGroupId;
+  const primaryCollectionScope = primary?.collectionId ?? primary?.collectionName;
+  const fallbackCollectionScope = fallback?.collectionId ?? fallback?.collectionName;
+  const canInheritFallbackRequestGroup = (
+    !primaryCollectionScope
+    || !fallbackCollectionScope
+    || primaryCollectionScope === fallbackCollectionScope
+  );
+  const requestGroupId = primary?.requestGroupId
+    ?? (canInheritFallbackRequestGroup ? fallback?.requestGroupId : undefined);
   const requestGroupName = readRequestGroupName(primary) ?? readRequestGroupName(fallback);
 
   if (collectionId) {
