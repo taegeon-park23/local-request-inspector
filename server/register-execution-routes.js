@@ -44,18 +44,13 @@ function registerExecutionRoutes(app, dependencies) {
     createPersistedLogSummary,
     createPersistedTestResultRecords,
     createFriendlyStageSummary,
+    listWorkspaceSavedRequestRecords,
+    buildWorkspaceRequestTree,
   } = dependencies;
   const runtimeQueries = repositories.runtime.queries;
   const scriptRepository = repositories.resources.scripts;
 
-  app.post('/api/executions/run', async (req, res) => {
-    const input = req.body?.request;
-    const validationError = validateRequestDefinition(input);
-
-    if (validationError) {
-      return sendError(res, 400, 'invalid_request_execution', validationError);
-    }
-
+  async function executeSingleRun(input) {
     const executionId = randomUUID();
     const startedAt = new Date().toISOString();
     const startedAtMs = Date.now();
@@ -352,7 +347,7 @@ function registerExecutionRoutes(app, dependencies) {
       });
       runtimeQueries.insertTestResults(createPersistedTestResultRecords(executionId, stageResults.tests));
 
-      return sendData(res, { execution });
+      return execution;
     } catch (error) {
       const completedAt = new Date().toISOString();
       const durationMs = Date.now() - startedAtMs;
@@ -430,9 +425,198 @@ function registerExecutionRoutes(app, dependencies) {
         console.error('Execution persistence error:', storageError);
       }
 
-      return sendData(res, { execution });
+      return execution;
     } finally {
       clearActiveExecution(executionId);
+    }
+  }
+
+  function findCollectionNode(tree, collectionId) {
+    return tree.find((collection) => collection.collectionId === collectionId) ?? null;
+  }
+
+  function findRequestGroupNode(tree, requestGroupId) {
+    function walk(groups) {
+      for (const group of groups ?? []) {
+        if (group.requestGroupId === requestGroupId) {
+          return group;
+        }
+        const match = walk(group.childGroups);
+        if (match) {
+          return match;
+        }
+      }
+      return null;
+    }
+
+    for (const collection of tree) {
+      const match = walk(collection.childGroups);
+      if (match) {
+        return {
+          collection,
+          requestGroup: match,
+        };
+      }
+    }
+
+    return null;
+  }
+
+  function collectRequestsDepthFirst(groupNode, collected = []) {
+    for (const childGroup of groupNode.childGroups ?? []) {
+      collectRequestsDepthFirst(childGroup, collected);
+    }
+
+    for (const requestNode of groupNode.requests ?? []) {
+      collected.push(requestNode.request);
+    }
+
+    return collected;
+  }
+
+  function createBatchExecution(containerType, container, requestLeaves, stepResults, startedAt, completedAt, durationMs) {
+    const aggregate = {
+      totalRuns: stepResults.length,
+      succeededCount: stepResults.filter((step) => step.execution.executionOutcome === 'Succeeded').length,
+      failedCount: stepResults.filter((step) => step.execution.executionOutcome === 'Failed').length,
+      blockedCount: stepResults.filter((step) => step.execution.executionOutcome === 'Blocked').length,
+      timedOutCount: stepResults.filter((step) => step.execution.executionOutcome === 'Timed out').length,
+    };
+
+    let aggregateOutcome = 'Succeeded';
+    if (aggregate.totalRuns === 0) {
+      aggregateOutcome = 'Empty';
+    } else if (aggregate.failedCount > 0) {
+      aggregateOutcome = 'Failed';
+    } else if (aggregate.blockedCount > 0) {
+      aggregateOutcome = 'Blocked';
+    } else if (aggregate.timedOutCount > 0) {
+      aggregateOutcome = 'Timed out';
+    }
+
+    return {
+      batchExecutionId: randomUUID(),
+      containerType,
+      containerId: container.id,
+      containerName: container.name,
+      executionOrder: 'depth-first-sequential',
+      continuedAfterFailure: true,
+      startedAt,
+      completedAt,
+      durationMs,
+      aggregateOutcome,
+      requestCount: requestLeaves.length,
+      ...aggregate,
+      steps: stepResults,
+    };
+  }
+
+  async function runBatch(containerType, containerId, workspaceId) {
+    const requestTree = buildWorkspaceRequestTree(workspaceId);
+    const savedRequestsById = new Map(
+      listWorkspaceSavedRequestRecords(workspaceId).map((record) => [record.id, record]),
+    );
+
+    let container = null;
+    let requestLeaves = [];
+
+    if (containerType === 'collection') {
+      const collection = findCollectionNode(requestTree.tree, containerId);
+      if (!collection) {
+        const error = new Error('Collection was not found.');
+        error.code = 'collection_not_found';
+        throw error;
+      }
+      container = { id: collection.collectionId, name: collection.name };
+      for (const childGroup of collection.childGroups ?? []) {
+        collectRequestsDepthFirst(childGroup, requestLeaves);
+      }
+    } else {
+      const locatedRequestGroup = findRequestGroupNode(requestTree.tree, containerId);
+      if (!locatedRequestGroup) {
+        const error = new Error('Request group was not found.');
+        error.code = 'request_group_not_found';
+        throw error;
+      }
+      container = { id: locatedRequestGroup.requestGroup.requestGroupId, name: locatedRequestGroup.requestGroup.name };
+      requestLeaves = collectRequestsDepthFirst(locatedRequestGroup.requestGroup, []);
+    }
+
+    const startedAt = new Date().toISOString();
+    const startedAtMs = Date.now();
+    const stepResults = [];
+
+    for (const requestLeaf of requestLeaves) {
+      const savedRequest = savedRequestsById.get(requestLeaf.id);
+      if (!savedRequest) {
+        continue;
+      }
+
+      const execution = await executeSingleRun(savedRequest);
+      stepResults.push({
+        stepIndex: stepResults.length + 1,
+        requestId: requestLeaf.id,
+        requestName: requestLeaf.name,
+        collectionId: requestLeaf.collectionId,
+        collectionName: requestLeaf.collectionName,
+        requestGroupId: requestLeaf.requestGroupId,
+        requestGroupName: requestLeaf.requestGroupName,
+        execution,
+      });
+    }
+
+    const completedAt = new Date().toISOString();
+    const durationMs = Date.now() - startedAtMs;
+    return createBatchExecution(containerType, container, requestLeaves, stepResults, startedAt, completedAt, durationMs);
+  }
+
+  app.post('/api/executions/run', async (req, res) => {
+    const input = req.body?.request;
+    const validationError = validateRequestDefinition(input);
+
+    if (validationError) {
+      return sendError(res, 400, 'invalid_request_execution', validationError);
+    }
+
+    try {
+      const execution = await executeSingleRun(input);
+      return sendData(res, { execution });
+    } catch (error) {
+      return sendError(res, 500, 'execution_run_failed', error.message);
+    }
+  });
+
+  app.post('/api/collections/:collectionId/run', async (req, res) => {
+    try {
+      const batchExecution = await runBatch('collection', req.params.collectionId, defaultWorkspaceId);
+      return sendData(res, { batchExecution });
+    } catch (error) {
+      if (error.code === 'collection_not_found') {
+        return sendError(res, 404, error.code, error.message, {
+          collectionId: req.params.collectionId,
+        });
+      }
+
+      return sendError(res, 500, 'collection_batch_run_failed', error.message, {
+        collectionId: req.params.collectionId,
+      });
+    }
+  });
+
+  app.post('/api/request-groups/:requestGroupId/run', async (req, res) => {
+    try {
+      const batchExecution = await runBatch('request-group', req.params.requestGroupId, defaultWorkspaceId);
+      return sendData(res, { batchExecution });
+    } catch (error) {
+      if (error.code === 'request_group_not_found') {
+        return sendError(res, 404, error.code, error.message, {
+          requestGroupId: req.params.requestGroupId,
+        });
+      }
+
+      return sendError(res, 500, 'request_group_batch_run_failed', error.message, {
+        requestGroupId: req.params.requestGroupId,
+      });
     }
   });
 }
@@ -440,4 +624,3 @@ function registerExecutionRoutes(app, dependencies) {
 module.exports = {
   registerExecutionRoutes,
 };
-

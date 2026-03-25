@@ -1,8 +1,8 @@
-﻿# UX Information Architecture
+# UX Information Architecture
 
 - **Purpose:** Define the high-level workspace shell, navigation model, screen responsibilities, and visibility rules for the local-first API workbench.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-24
+- **Last Updated:** 2026-03-25
 - **Related Documents:** `overview.md`, `shared-schema.md`, `internal-api-contracts.md`, `script-execution-safety-model.md`, `workspace-flows.md`
 - **Status:** done
 - **Update Rule:** Update when workspace shell, navigation, or summary/detail responsibilities materially change.
@@ -75,11 +75,12 @@ Recommended shell regions:
 - **Secondary sidebar / explorer**
   - section-specific tree or list
   - collection tree, capture list, history list, mock list, etc.
-  - in `Workspace`, the explorer is navigation-only and should not own collection/request-group/request CRUD
+  - in `Workspace`, the explorer remains low-density but does own thin context entrypoints for create, run, rename, and delete actions
 - **Primary content area**
   - editor, detail view, or split-pane work surface
 - **Contextual detail / result panel**
   - response detail, logs, tests, diagnostics, metadata, inspectors
+  - first wave keeps the current right-side panel and switches it between single-request output and collection/request-group batch summaries
 - **Bottom status region** *(optional in MVP; exact placement 확실하지 않음)*
   - connection state, active execution count, sandbox warnings, background tasks
 
@@ -89,7 +90,7 @@ Recommended shell regions:
 | Global top bar | high-level context and quick actions | workspace switcher, environment switcher, search, send/run, cancel, connection health |
 | Left navigation rail | mode switch | Workspace, Captures, History, Mocks, Environments, Scripts, Settings |
 | Secondary sidebar | persisted-tree or list navigation | saved request tree, capture summaries, execution summaries, mock rules |
-| Primary content area | focused editing, inspection, and route-local management | request builder, workspace saved-resource manager, mock editor, environment editor, execution detail |
+| Primary content area | focused editing, inspection, and route-local management | request workbench tabs, quick-request drafting, mock editor, environment editor, execution detail |
 | Contextual detail panel | detail and diagnostics | response body, headers, logs, tests, match trace, metadata |
 
 ## 5. Information Grouping by Scope
@@ -116,7 +117,7 @@ These may need to exist even when workspace ownership is missing or partial:
 ## 6. Screen Map
 | Section | Summary View | Detail / Editor View | Key Secondary Panels |
 | --- | --- | --- | --- |
-| Workspace | collection tree and saved request navigation | request builder tabs, saved-resource manager, request metadata editor | response panel, test panel, logs, resolved variables |
+| Workspace | recursive collection tree and saved request navigation | request workbench tabs, quick-request drafting, request metadata editor | response panel, batch summary, test panel, logs, resolved variables |
 | Captures | capture list with filters | captured request inspector | raw request, matched mock rule, replay configuration |
 | History | execution summary list | execution detail | response, tests, console, stage timeline |
 | Mocks | rule list and status indicators | mock rule editor | match diagnostics, scenario state, sample response |
@@ -174,7 +175,7 @@ Replay should create a new execution or open a prefilled request editor, dependi
 ### 9.1 Request Builder Structure
 The request builder should be the main editor inside the `Workspace` section.
 Recommended zones:
-- request identity header: name, save state, method, URL, and canonical placement
+- request identity header: name, save state, method, URL, canonical placement, and preview/pinned tab state
 - execution controls: send, cancel, environment selector, resolved preview
 - primary tabs:
   - Params
@@ -195,6 +196,8 @@ Recommended zones:
 ### 9.2 Unsaved vs Saved State
 - Unsaved requests should still be runnable.
 - Saved requests should display their collection/request-group location.
+- A single-click on a saved request may reuse the preview tab; first edit, explicit pin, replay-now, or double-click should promote that work to a pinned tab.
+- `Quick Request` should remain session-only until the user explicitly saves it into a collection/request group.
 - Dirty state should be visible in working-tab labels or header metadata, not in the persisted tree itself.
 - Request draft persistence is **확실하지 않음** as a separate domain artifact, but the UX should plan for autosave/session restore hooks.
 
@@ -253,3 +256,9 @@ Recommended exposure points:
 
 
 
+
+## 15. Workspace UI V2 First-Wave Bounds
+- Keep the explorer visually low-density and recursive instead of layering on split editors or bottom docks.
+- Prefer header and tree-context creation flows over a dedicated main-surface CRUD manager.
+- Treat collection and request-group run actions as first-class workspace affordances.
+- Freeze these non-goals for the first wave: multi-select, drag/drop, type-ahead, tab search, reopen-closed-tab, and inheritance-driven runtime configuration.

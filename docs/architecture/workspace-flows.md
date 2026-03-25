@@ -1,8 +1,8 @@
-﻿# Workspace Flows
+# Workspace Flows
 
 - **Purpose:** Document the core user journeys and flow-level state transitions for the local-first API workbench.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-24
+- **Last Updated:** 2026-03-25
 - **Related Documents:** `ux-information-architecture.md`, `internal-api-contracts.md`, `script-execution-safety-model.md`
 - **Status:** done
 - **Update Rule:** Update when primary workspace journeys or runtime-view responsibilities materially change.
@@ -30,11 +30,11 @@ User enters the `Workspace` section and chooses one of:
 - `Import` *(future-ready)*
 
 ### 3.2 Main Steps
-1. Create unsaved request tab.
+1. Create an unsaved request tab, a quick request tab, or open a saved request into the preview slot.
 2. Fill method and URL.
 3. Add params, headers, auth, body, and optional scripts.
 4. Choose environment from global or local selector.
-5. Save request into a collection/request group or continue unsaved from the working tab.
+5. Save request into a collection/request group or continue unsaved/session-only from the working tab.
 6. Run request.
 7. Receive execution status updates.
 8. Review response, logs, and test results in result tabs.
@@ -45,9 +45,10 @@ User enters the `Workspace` section and chooses one of:
 - Execution status should be visible both locally in the working tab and globally in the shell.
 - After run completion, focus should move to the result panel while preserving editor context.
 - Redaction warnings should appear if logs/results hide secret material.
-- The workspace explorer is navigation-only: it opens saved requests and shows canonical placement, but collection/request-group/request management belongs to the main workspace surface.
+- The workspace explorer now owns thin context actions for create, run, rename, and delete while the main work surface stays focused on authoring and inspection.
 - Closing a tab is not the same action as deleting the saved request represented in the persisted tree.
 - Explicit saved-request deletion should remove the tree leaf while leaving any open work as a detached draft until the user closes it.
+- Collection and request-group runs should execute in deterministic depth-first order and surface aggregate results in the existing result panel without changing the shell layout.
 
 ## 4. Flow: Captured Inbound Request Inspection and Replay
 ### 4.1 Entry

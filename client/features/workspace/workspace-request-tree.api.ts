@@ -34,6 +34,7 @@ export interface WorkspaceRequestGroupRecord {
   id: string;
   workspaceId: string;
   collectionId: string;
+  parentRequestGroupId?: string | null;
   name: string;
   description?: string;
   createdAt?: string;
@@ -64,9 +65,11 @@ export interface WorkspaceRequestGroupNode {
   kind: 'request-group';
   collectionId: string;
   requestGroupId: string;
+  parentRequestGroupId?: string | null;
   name: string;
   description?: string;
-  children: WorkspaceRequestLeafNode[];
+  childGroups: WorkspaceRequestGroupNode[];
+  requests: WorkspaceRequestLeafNode[];
 }
 
 export interface WorkspaceCollectionNode {
@@ -75,7 +78,7 @@ export interface WorkspaceCollectionNode {
   collectionId: string;
   name: string;
   description?: string;
-  children: WorkspaceRequestGroupNode[];
+  childGroups: WorkspaceRequestGroupNode[];
 }
 
 export interface WorkspaceRequestTreeResponse {
@@ -100,6 +103,38 @@ export interface WorkspaceCollectionInput {
 export interface WorkspaceRequestGroupInput {
   name: string;
   description?: string;
+  parentRequestGroupId?: string | null;
+}
+
+export interface WorkspaceBatchExecutionStep {
+  stepIndex: number;
+  requestId: string;
+  requestName: string;
+  collectionId?: string;
+  collectionName?: string;
+  requestGroupId?: string;
+  requestGroupName?: string;
+  execution: import('@client/features/request-builder/request-builder.api').RequestRunObservation;
+}
+
+export interface WorkspaceBatchExecution {
+  batchExecutionId: string;
+  containerType: 'collection' | 'request-group';
+  containerId: string;
+  containerName: string;
+  executionOrder: string;
+  continuedAfterFailure: boolean;
+  startedAt: string;
+  completedAt: string;
+  durationMs: number;
+  aggregateOutcome: 'Succeeded' | 'Failed' | 'Blocked' | 'Timed out' | 'Empty';
+  requestCount: number;
+  totalRuns: number;
+  succeededCount: number;
+  failedCount: number;
+  blockedCount: number;
+  timedOutCount: number;
+  steps: WorkspaceBatchExecutionStep[];
 }
 
 async function parseJsonResponse<TData>(response: Response): Promise<TData> {
@@ -217,6 +252,22 @@ export async function deleteWorkspaceRequestGroup(requestGroupId: string) {
   return parseJsonResponse<{ deletedRequestGroupId: string }>(response).then((payload) => payload.deletedRequestGroupId);
 }
 
+export async function runWorkspaceCollection(collectionId: string) {
+  const response = await fetch(`/api/collections/${collectionId}/run`, {
+    method: 'POST',
+  });
+
+  return parseJsonResponse<{ batchExecution: WorkspaceBatchExecution }>(response).then((payload) => payload.batchExecution);
+}
+
+export async function runWorkspaceRequestGroup(requestGroupId: string) {
+  const response = await fetch(`/api/request-groups/${requestGroupId}/run`, {
+    method: 'POST',
+  });
+
+  return parseJsonResponse<{ batchExecution: WorkspaceBatchExecution }>(response).then((payload) => payload.batchExecution);
+}
+
 function compareSavedRequests(left: SavedRequestResourceRecord, right: SavedRequestResourceRecord) {
   return String(right.updatedAt || '').localeCompare(String(left.updatedAt || ''));
 }
@@ -268,30 +319,31 @@ export function buildFallbackWorkspaceRequestTree(
       kind: 'collection' as const,
       collectionId: firstCollectionRequest ? readCollectionId(firstCollectionRequest) : `fallback-${collectionName}`,
       name: collectionName,
-      children: [...requestGroups.entries()].map(([requestGroupName, groupRequests]) => ({
-      id: `fallback-request-group-${collectionName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${requestGroupName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
-      kind: 'request-group',
-      collectionId: groupRequests[0] ? readCollectionId(groupRequests[0]) : `fallback-${collectionName}`,
-      requestGroupId: groupRequests[0] ? readRequestGroupId(groupRequests[0]) : `fallback-${requestGroupName}`,
-      name: requestGroupName,
-      children: groupRequests.map((request) => ({
-        id: `fallback-request-${request.id}`,
-        kind: 'request',
-        name: request.name,
-        request: {
-          id: request.id,
+      childGroups: [...requestGroups.entries()].map(([requestGroupName, groupRequests]) => ({
+        id: `fallback-request-group-${collectionName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${requestGroupName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+        kind: 'request-group',
+        collectionId: groupRequests[0] ? readCollectionId(groupRequests[0]) : `fallback-${collectionName}`,
+        requestGroupId: groupRequests[0] ? readRequestGroupId(groupRequests[0]) : `fallback-${requestGroupName}`,
+        parentRequestGroupId: null,
+        name: requestGroupName,
+        childGroups: [],
+        requests: groupRequests.map((request) => ({
+          id: `fallback-request-${request.id}`,
+          kind: 'request',
           name: request.name,
-          methodLabel: request.method,
-          summary: request.summary,
-          collectionId: readCollectionId(request),
-          collectionName: request.collectionName,
-          requestGroupId: readRequestGroupId(request),
-          requestGroupName: readRequestPlacementGroupName(request) ?? DEFAULT_REQUEST_GROUP_NAME,
-
-          updatedAt: request.updatedAt,
-        },
+          request: {
+            id: request.id,
+            name: request.name,
+            methodLabel: request.method,
+            summary: request.summary,
+            collectionId: readCollectionId(request),
+            collectionName: request.collectionName,
+            requestGroupId: readRequestGroupId(request),
+            requestGroupName: readRequestPlacementGroupName(request) ?? DEFAULT_REQUEST_GROUP_NAME,
+            updatedAt: request.updatedAt,
+          },
+        })),
       })),
-    })),
     };
   });
 }

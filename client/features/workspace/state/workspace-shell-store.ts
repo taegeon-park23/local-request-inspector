@@ -13,16 +13,28 @@ import type {
   SavedWorkspaceRequestSeed,
 } from '@client/features/request-builder/request-tab.types';
 
+export type WorkspaceExplorerItemKind = 'collection' | 'request-group' | 'request';
+
+export interface WorkspaceExplorerSelection {
+  kind: WorkspaceExplorerItemKind;
+  id: string;
+}
+
 interface WorkspaceShellState {
   tabs: RequestTabRecord[];
   activeTabId: string | null;
   selectedExplorerItemId: string | null;
+  selectedExplorerItemKind: WorkspaceExplorerItemKind | null;
   activeRoutePanel: RoutePanelTabId;
   nextDraftSequence: number;
-  openNewRequest: () => void;
-  openSavedRequest: (request: SavedWorkspaceRequestSeed) => void;
+  openNewRequest: (options?: { source?: 'draft' | 'quick'; placement?: RequestPlacementValue }) => RequestTabRecord;
+  openQuickRequest: (options?: { placement?: RequestPlacementValue }) => RequestTabRecord;
+  openSavedRequest: (request: SavedWorkspaceRequestSeed, options?: { tabMode?: 'preview' | 'pinned' }) => RequestTabRecord;
   openReplayRequest: (replaySeed: ReplayRequestTabSeed) => RequestTabRecord;
   markTabSaved: (tabId: string, request: SavedWorkspaceRequestSeed) => void;
+  detachSavedRequest: (requestId: string) => void;
+  pinTab: (tabId: string) => void;
+  setSelectedExplorerItem: (selection: WorkspaceExplorerSelection | null) => void;
   syncCollectionPlacement: (collectionId: string, placement: RequestPlacementValue) => void;
   syncRequestGroupPlacement: (requestGroupId: string, placement: RequestPlacementValue) => void;
   setActiveRoutePanel: (panelId: RoutePanelTabId) => void;
@@ -32,35 +44,43 @@ interface WorkspaceShellState {
 
 const initialWorkspaceShellState: Pick<
   WorkspaceShellState,
-  'tabs' | 'activeTabId' | 'selectedExplorerItemId' | 'activeRoutePanel' | 'nextDraftSequence'
+  'tabs' | 'activeTabId' | 'selectedExplorerItemId' | 'selectedExplorerItemKind' | 'activeRoutePanel' | 'nextDraftSequence'
 > = {
   tabs: [],
   activeTabId: null,
   selectedExplorerItemId: null,
+  selectedExplorerItemKind: null,
   activeRoutePanel: 'main',
   nextDraftSequence: 1,
 };
 
-function createDraftTab(sequence: number): RequestTabRecord {
+function createDraftTab(sequence: number, source: 'draft' | 'quick', placement?: RequestPlacementValue): RequestTabRecord {
   return {
-    id: `draft-${sequence}`,
-    sourceKey: `draft-${sequence}`,
-    title: 'Untitled Request',
+    id: `${source}-${sequence}`,
+    sourceKey: `${source}-${sequence}`,
+    title: source === 'quick' ? 'Quick Request' : 'Untitled Request',
     methodLabel: 'GET',
-    source: 'draft',
-    summary: 'Unsaved request authoring draft.',
+    source,
+    tabMode: 'pinned',
+    summary: source === 'quick' ? 'Session-only request draft.' : 'Unsaved request authoring draft.',
     hasUnsavedChanges: false,
+    ...createRequestPlacementFields(resolveRequestPlacement(placement, null)),
   };
 }
 
-function createSavedTab(request: SavedWorkspaceRequestSeed): RequestTabRecord {
+function createSavedTab(
+  request: SavedWorkspaceRequestSeed,
+  tabMode: 'preview' | 'pinned',
+  existingId?: string,
+): RequestTabRecord {
   return {
-    id: `saved-${request.id}`,
+    id: existingId ?? `saved-${request.id}`,
     sourceKey: `saved-${request.id}`,
     requestId: request.id,
     title: request.name,
     methodLabel: request.methodLabel,
     source: 'saved',
+    tabMode,
     summary: request.summary,
     ...createRequestPlacementFields(request),
     hasUnsavedChanges: false,
@@ -74,10 +94,23 @@ function createReplayTab(sequence: number, replaySeed: ReplayRequestTabSeed): Re
     title: replaySeed.title,
     methodLabel: replaySeed.methodLabel,
     source: 'replay',
+    tabMode: 'pinned',
     summary: replaySeed.summary,
     replaySource: replaySeed.replaySource,
     hasUnsavedChanges: false,
   };
+}
+
+function createRequestSelection(requestId: string | null | undefined) {
+  return requestId
+    ? {
+        selectedExplorerItemId: requestId,
+        selectedExplorerItemKind: 'request' as const,
+      }
+    : {
+        selectedExplorerItemId: null,
+        selectedExplorerItemKind: null,
+      };
 }
 
 function getNextActiveTabId(tabs: RequestTabRecord[], closedTabId: string): string | null {
@@ -98,57 +131,133 @@ function getNextActiveTabId(tabs: RequestTabRecord[], closedTabId: string): stri
   return nextLeftTab ? nextLeftTab.id : null;
 }
 
+function requireCreatedTab(tab: RequestTabRecord | null, message: string) {
+  if (!tab) {
+    throw new Error(message);
+  }
+
+  return tab;
+}
+
 export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
   ...initialWorkspaceShellState,
-  openNewRequest: () =>
+  openNewRequest: (options = {}) => {
+    let createdTab: RequestTabRecord | null = null;
+
     set((state) => {
-      const draftTab = createDraftTab(state.nextDraftSequence);
+      const nextTab = createDraftTab(
+        state.nextDraftSequence,
+        options.source ?? 'draft',
+        options.placement,
+      );
+      createdTab = nextTab;
 
       return {
-        tabs: [...state.tabs, draftTab],
-        activeTabId: draftTab.id,
+        tabs: [...state.tabs, nextTab],
+        activeTabId: nextTab.id,
         selectedExplorerItemId: null,
-        activeRoutePanel: 'main',
-        nextDraftSequence: state.nextDraftSequence + 1,
-      };
-    }),
-  openSavedRequest: (request) =>
-    set((state) => {
-      const existingTab = state.tabs.find((tab) => tab.sourceKey === `saved-${request.id}`);
-
-      if (existingTab) {
-        return {
-          activeTabId: existingTab.id,
-          selectedExplorerItemId: request.id,
-          activeRoutePanel: 'main',
-        };
-      }
-
-      const savedTab = createSavedTab(request);
-
-      return {
-        tabs: [...state.tabs, savedTab],
-        activeTabId: savedTab.id,
-        selectedExplorerItemId: request.id,
-        activeRoutePanel: 'main',
-      };
-    }),
-  openReplayRequest: (replaySeed) => {
-    let replayTab: RequestTabRecord | null = null;
-
-    set((state) => {
-      replayTab = createReplayTab(state.nextDraftSequence, replaySeed);
-
-      return {
-        tabs: [...state.tabs, replayTab],
-        activeTabId: replayTab.id,
-        selectedExplorerItemId: null,
+        selectedExplorerItemKind: null,
         activeRoutePanel: 'main',
         nextDraftSequence: state.nextDraftSequence + 1,
       };
     });
 
-    return replayTab!;
+    return requireCreatedTab(createdTab, 'Failed to create request tab.');
+  },
+  openQuickRequest: (options = {}) => {
+    let createdTab: RequestTabRecord | null = null;
+
+    set((state) => {
+      const nextTab = createDraftTab(
+        state.nextDraftSequence,
+        'quick',
+        options.placement,
+      );
+      createdTab = nextTab;
+
+      return {
+        tabs: [...state.tabs, nextTab],
+        activeTabId: nextTab.id,
+        selectedExplorerItemId: null,
+        selectedExplorerItemKind: null,
+        activeRoutePanel: 'main',
+        nextDraftSequence: state.nextDraftSequence + 1,
+      };
+    });
+
+    return requireCreatedTab(createdTab, 'Failed to create quick request tab.');
+  },
+  openSavedRequest: (request, options = {}) => {
+    let resolvedTab: RequestTabRecord | null = null;
+
+    set((state) => {
+      const requestedTabMode = options.tabMode ?? 'preview';
+      const existingTab = state.tabs.find((tab) => tab.sourceKey === `saved-${request.id}`) ?? null;
+
+      if (existingTab) {
+        const nextTabMode = requestedTabMode === 'pinned' ? 'pinned' : existingTab.tabMode;
+        const nextTab: RequestTabRecord = {
+          ...existingTab,
+          ...createSavedTab(request, nextTabMode, existingTab.id),
+          tabMode: nextTabMode,
+          hasUnsavedChanges: existingTab.hasUnsavedChanges,
+        };
+        resolvedTab = nextTab;
+
+        return {
+          tabs: state.tabs.map((tab) => (tab.id === existingTab.id ? nextTab : tab)),
+          activeTabId: nextTab.id,
+          ...createRequestSelection(request.id),
+          activeRoutePanel: 'main',
+        };
+      }
+
+      if (requestedTabMode === 'preview') {
+        const previewTab = state.tabs.find((tab) => tab.tabMode === 'preview' && tab.source === 'saved') ?? null;
+        const nextPreviewTab = createSavedTab(request, 'preview', previewTab?.id);
+        resolvedTab = nextPreviewTab;
+
+        return {
+          tabs: previewTab
+            ? state.tabs.map((tab) => (tab.id === previewTab.id ? nextPreviewTab : tab))
+            : [...state.tabs, nextPreviewTab],
+          activeTabId: nextPreviewTab.id,
+          ...createRequestSelection(request.id),
+          activeRoutePanel: 'main',
+        };
+      }
+
+      const nextSavedTab = createSavedTab(request, 'pinned');
+      resolvedTab = nextSavedTab;
+
+      return {
+        tabs: [...state.tabs, nextSavedTab],
+        activeTabId: nextSavedTab.id,
+        ...createRequestSelection(request.id),
+        activeRoutePanel: 'main',
+      };
+    });
+
+    return requireCreatedTab(resolvedTab, 'Failed to open saved request tab.');
+  },
+  openReplayRequest: (replaySeed) => {
+    let replayTab: RequestTabRecord | null = null;
+
+    set((state) => {
+      const nextReplayTab = createReplayTab(state.nextDraftSequence, replaySeed);
+      replayTab = nextReplayTab;
+
+      return {
+        tabs: [...state.tabs, nextReplayTab],
+        activeTabId: nextReplayTab.id,
+        selectedExplorerItemId: null,
+        selectedExplorerItemKind: null,
+        activeRoutePanel: 'main',
+        nextDraftSequence: state.nextDraftSequence + 1,
+      };
+    });
+
+    return requireCreatedTab(replayTab, 'Failed to create replay request tab.');
   },
   markTabSaved: (tabId, request) =>
     set((state) => {
@@ -166,13 +275,9 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
 
           const nextTab: RequestTabRecord = {
             ...tab,
-            sourceKey: `saved-${request.id}`,
-            requestId: request.id,
-            title: request.name,
-            methodLabel: request.methodLabel,
+            ...createSavedTab(request, 'pinned', tab.id),
             source: 'saved',
-            summary: request.summary,
-            ...createRequestPlacementFields(request),
+            tabMode: 'pinned',
             hasUnsavedChanges: false,
           };
 
@@ -180,14 +285,56 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
 
           if (!readRequestGroupName(request)) {
             delete nextTab.requestGroupName;
-
           }
 
           return nextTab;
         }),
-        selectedExplorerItemId: state.activeTabId === tabId ? request.id : state.selectedExplorerItemId,
+        ...(state.activeTabId === tabId ? createRequestSelection(request.id) : {}),
       };
     }),
+  detachSavedRequest: (requestId) =>
+    set((state) => {
+      const nextTabs = state.tabs.map((tab) => {
+        if (tab.requestId !== requestId) {
+          return tab;
+        }
+
+        const nextTab: RequestTabRecord = {
+          ...tab,
+          source: 'detached',
+          sourceKey: `detached-${requestId}-${tab.id}`,
+          tabMode: 'pinned',
+          hasUnsavedChanges: true,
+        };
+
+        delete nextTab.requestId;
+        delete nextTab.replaySource;
+
+        return nextTab;
+      });
+      const activeTab = nextTabs.find((tab) => tab.id === state.activeTabId) ?? null;
+
+      return {
+        tabs: nextTabs,
+        ...createRequestSelection(activeTab?.requestId ?? null),
+      };
+    }),
+  pinTab: (tabId) =>
+    set((state) => ({
+      tabs: state.tabs.map((tab) => (
+        tab.id === tabId
+          ? {
+              ...tab,
+              tabMode: 'pinned',
+            }
+          : tab
+      )),
+    })),
+  setSelectedExplorerItem: (selection) =>
+    set(() => ({
+      selectedExplorerItemId: selection?.id ?? null,
+      selectedExplorerItemKind: selection?.kind ?? null,
+    })),
   syncCollectionPlacement: (collectionId, placement) =>
     set((state) => ({
       tabs: state.tabs.map((tab) => {
@@ -226,7 +373,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
 
       return {
         activeTabId: tabId,
-        selectedExplorerItemId: activeTab.requestId ?? null,
+        ...createRequestSelection(activeTab.requestId ?? null),
         activeRoutePanel: 'main',
       };
     }),
@@ -246,7 +393,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
       return {
         tabs: nextTabs,
         activeTabId: fallbackTabId,
-        selectedExplorerItemId: fallbackTab?.requestId ?? null,
+        ...createRequestSelection(fallbackTab?.requestId ?? null),
         activeRoutePanel: fallbackTab ? 'main' : state.activeRoutePanel,
       };
     }),
@@ -255,7 +402,3 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
 export function resetWorkspaceShellStore() {
   useWorkspaceShellStore.setState(initialWorkspaceShellState);
 }
-
-
-
-

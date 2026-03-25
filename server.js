@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const { randomUUID } = require('node:crypto');
@@ -534,6 +534,8 @@ registerExecutionRoutes(app, {
   createPersistedLogSummary,
   createPersistedTestResultRecords,
   createFriendlyStageSummary,
+  listWorkspaceSavedRequestRecords,
+  buildWorkspaceRequestTree,
 });
 
 

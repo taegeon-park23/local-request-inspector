@@ -29,6 +29,48 @@ function registerRequestResourceRoutes(app, dependencies) {
   const requestGroupRepository = repositories.resources.requestGroups;
   const requestRepository = repositories.resources.requests;
 
+  function isRequestGroupDescendant(requestGroups, requestGroupId, candidateParentRequestGroupId) {
+    if (!requestGroupId || !candidateParentRequestGroupId) {
+      return false;
+    }
+
+    const childGroupsByParentId = new Map();
+
+    for (const requestGroup of requestGroups) {
+      const parentRequestGroupId = typeof requestGroup.parentRequestGroupId === 'string' && requestGroup.parentRequestGroupId.trim().length > 0
+        ? requestGroup.parentRequestGroupId.trim()
+        : null;
+
+      if (!parentRequestGroupId) {
+        continue;
+      }
+
+      const childGroups = childGroupsByParentId.get(parentRequestGroupId) ?? [];
+      childGroups.push(requestGroup);
+      childGroupsByParentId.set(parentRequestGroupId, childGroups);
+    }
+
+    const pendingRequestGroupIds = [requestGroupId];
+    const visitedRequestGroupIds = new Set(pendingRequestGroupIds);
+
+    while (pendingRequestGroupIds.length > 0) {
+      const currentRequestGroupId = pendingRequestGroupIds.pop();
+
+      for (const childRequestGroup of childGroupsByParentId.get(currentRequestGroupId) ?? []) {
+        if (childRequestGroup.id === candidateParentRequestGroupId) {
+          return true;
+        }
+
+        if (!visitedRequestGroupIds.has(childRequestGroup.id)) {
+          visitedRequestGroupIds.add(childRequestGroup.id);
+          pendingRequestGroupIds.push(childRequestGroup.id);
+        }
+      }
+    }
+
+    return false;
+  }
+
   app.get('/api/workspaces/:workspaceId/requests', (req, res) => {
     try {
       const items = listWorkspaceSavedRequestRecords(req.params.workspaceId);
@@ -253,16 +295,40 @@ function registerRequestResourceRoutes(app, dependencies) {
     }
 
     try {
+      const workspaceRequestGroups = listWorkspaceRequestGroupRecords(collection.workspaceId || defaultWorkspaceId);
+      const parentRequestGroupId = typeof input?.parentRequestGroupId === 'string' && input.parentRequestGroupId.trim().length > 0
+        ? input.parentRequestGroupId.trim()
+        : null;
+      const parentRequestGroup = parentRequestGroupId
+        ? workspaceRequestGroups.find((record) => record.id === parentRequestGroupId) ?? null
+        : null;
+
+      if (parentRequestGroupId && !parentRequestGroup) {
+        return sendError(res, 404, 'request_group_parent_not_found', 'Parent request group was not found.', {
+          collectionId: req.params.collectionId,
+          parentRequestGroupId,
+        });
+      }
+
+      if (parentRequestGroup && parentRequestGroup.collectionId !== req.params.collectionId) {
+        return sendError(res, 400, 'request_group_parent_collection_mismatch', 'Parent request group must belong to the same collection.', {
+          collectionId: req.params.collectionId,
+          parentRequestGroupId,
+        });
+      }
+
       const existingRequestGroup = findRequestGroupByName(
-        listWorkspaceRequestGroupRecords(collection.workspaceId || defaultWorkspaceId),
+        workspaceRequestGroups,
         req.params.collectionId,
         input.name,
+        parentRequestGroupId,
       );
 
       if (existingRequestGroup) {
-        return sendError(res, 409, 'request_group_name_conflict', 'A request group with this name already exists in the collection.', {
+        return sendError(res, 409, 'request_group_name_conflict', 'A request group with this name already exists in the same parent scope.', {
           collectionId: req.params.collectionId,
           requestGroupId: existingRequestGroup.id,
+          parentRequestGroupId,
         });
       }
 
@@ -270,6 +336,7 @@ function registerRequestResourceRoutes(app, dependencies) {
         {
           ...input,
           collectionId: req.params.collectionId,
+          parentRequestGroupId,
         },
         null,
         collection.workspaceId || defaultWorkspaceId,
@@ -325,6 +392,7 @@ function registerRequestResourceRoutes(app, dependencies) {
     const validationError = validateRequestGroupInput({
       ...input,
       collectionId: existingRecord.collectionId,
+      parentRequestGroupId: input?.parentRequestGroupId ?? existingRecord.parentRequestGroupId ?? null,
     });
 
     if (validationError) {
@@ -335,17 +403,55 @@ function registerRequestResourceRoutes(app, dependencies) {
 
     try {
       const workspaceId = existingRecord.workspaceId || defaultWorkspaceId;
-      const conflictingRequestGroup = listWorkspaceRequestGroupRecords(workspaceId)
+      const workspaceRequestGroups = listWorkspaceRequestGroupRecords(workspaceId);
+      const nextParentRequestGroupId = typeof input?.parentRequestGroupId === 'string' && input.parentRequestGroupId.trim().length > 0
+        ? input.parentRequestGroupId.trim()
+        : null;
+      const parentRequestGroup = nextParentRequestGroupId
+        ? workspaceRequestGroups.find((record) => record.id === nextParentRequestGroupId) ?? null
+        : null;
+
+      if (nextParentRequestGroupId === req.params.requestGroupId) {
+        return sendError(res, 400, 'request_group_parent_cycle', 'Request group cannot be its own parent.', {
+          requestGroupId: req.params.requestGroupId,
+          parentRequestGroupId: nextParentRequestGroupId,
+        });
+      }
+
+      if (nextParentRequestGroupId && !parentRequestGroup) {
+        return sendError(res, 404, 'request_group_parent_not_found', 'Parent request group was not found.', {
+          requestGroupId: req.params.requestGroupId,
+          parentRequestGroupId: nextParentRequestGroupId,
+        });
+      }
+
+      if (parentRequestGroup && parentRequestGroup.collectionId !== existingRecord.collectionId) {
+        return sendError(res, 400, 'request_group_parent_collection_mismatch', 'Parent request group must belong to the same collection.', {
+          requestGroupId: req.params.requestGroupId,
+          parentRequestGroupId: nextParentRequestGroupId,
+        });
+      }
+
+      if (parentRequestGroup && isRequestGroupDescendant(workspaceRequestGroups, req.params.requestGroupId, nextParentRequestGroupId)) {
+        return sendError(res, 400, 'request_group_parent_cycle', 'Request group cannot move inside one of its descendants.', {
+          requestGroupId: req.params.requestGroupId,
+          parentRequestGroupId: nextParentRequestGroupId,
+        });
+      }
+
+      const conflictingRequestGroup = workspaceRequestGroups
         .find((record) => (
           record.id !== req.params.requestGroupId
           && record.collectionId === existingRecord.collectionId
+          && String(record.parentRequestGroupId || '') === String(nextParentRequestGroupId || '')
           && String(record.name || '').trim().toLowerCase() === String(input.name || '').trim().toLowerCase()
         ));
 
       if (conflictingRequestGroup) {
-        return sendError(res, 409, 'request_group_name_conflict', 'A request group with this name already exists in the collection.', {
+        return sendError(res, 409, 'request_group_name_conflict', 'A request group with this name already exists in the same parent scope.', {
           requestGroupId: req.params.requestGroupId,
           conflictingRequestGroupId: conflictingRequestGroup.id,
+          parentRequestGroupId: nextParentRequestGroupId,
         });
       }
 
@@ -354,6 +460,7 @@ function registerRequestResourceRoutes(app, dependencies) {
           ...input,
           id: req.params.requestGroupId,
           collectionId: existingRecord.collectionId,
+          parentRequestGroupId: nextParentRequestGroupId,
         },
         existingRecord,
         workspaceId,
@@ -388,13 +495,17 @@ function registerRequestResourceRoutes(app, dependencies) {
         });
       }
 
-      const requests = listWorkspaceSavedRequestRecords(existingRecord.workspaceId || defaultWorkspaceId)
+      const workspaceId = existingRecord.workspaceId || defaultWorkspaceId;
+      const requests = listWorkspaceSavedRequestRecords(workspaceId)
         .filter((record) => record.requestGroupId === req.params.requestGroupId);
+      const childRequestGroups = listWorkspaceRequestGroupRecords(workspaceId)
+        .filter((record) => record.parentRequestGroupId === req.params.requestGroupId);
 
-      if (requests.length > 0) {
-        return sendError(res, 409, 'request_group_not_empty', 'Request group still contains saved requests and cannot be deleted.', {
+      if (requests.length > 0 || childRequestGroups.length > 0) {
+        return sendError(res, 409, 'request_group_not_empty', 'Request group still contains saved requests or nested request groups and cannot be deleted.', {
           requestGroupId: req.params.requestGroupId,
           requestCount: requests.length,
+          childRequestGroupCount: childRequestGroups.length,
         });
       }
 

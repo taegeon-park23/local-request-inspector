@@ -129,9 +129,14 @@ function createRequestResourceService(dependencies) {
     return records.find((record) => String(record.name || '').trim().toLowerCase() === normalizedCollectionName) ?? null;
   }
 
-  function findRequestGroupByName(records, collectionId, requestGroupName) {
+  function readRequestGroupParentId(value) {
+    return normalizeText(value) || null;
+  }
+
+  function findRequestGroupByName(records, collectionId, requestGroupName, parentRequestGroupId = null) {
     const normalizedCollectionId = normalizeText(collectionId);
     const normalizedRequestGroupName = normalizeText(requestGroupName).toLowerCase();
+    const normalizedParentRequestGroupId = readRequestGroupParentId(parentRequestGroupId);
 
     if (!normalizedCollectionId || !normalizedRequestGroupName) {
       return null;
@@ -139,19 +144,31 @@ function createRequestResourceService(dependencies) {
 
     return records.find((record) => (
       record.collectionId === normalizedCollectionId
+      && readRequestGroupParentId(record.parentRequestGroupId) === normalizedParentRequestGroupId
       && String(record.name || '').trim().toLowerCase() === normalizedRequestGroupName
     )) ?? null;
   }
 
-  function sortRequestGroups(records) {
-    return [...records].sort((left, right) => {
-      const collectionDiff = String(left.collectionId || '').localeCompare(String(right.collectionId || ''));
-      if (collectionDiff !== 0) {
-        return collectionDiff;
-      }
+  function compareRequestGroupRecords(left, right) {
+    const collectionDiff = String(left.collectionId || '').localeCompare(String(right.collectionId || ''));
+    if (collectionDiff !== 0) {
+      return collectionDiff;
+    }
 
-      return compareRequestPlacementRecords(left, right);
-    });
+    const parentDiff = String(left.parentRequestGroupId || '').localeCompare(String(right.parentRequestGroupId || ''));
+    if (parentDiff !== 0) {
+      return parentDiff;
+    }
+
+    return compareRequestPlacementRecords(left, right);
+  }
+
+  function sortRequestGroups(recordsOrLeft, maybeRight) {
+    if (Array.isArray(recordsOrLeft)) {
+      return [...recordsOrLeft].sort(compareRequestGroupRecords);
+    }
+
+    return compareRequestGroupRecords(recordsOrLeft, maybeRight);
   }
 
   function ensureWorkspaceDefaultRequestPlacement(workspaceId, collections, requestGroups) {
@@ -170,12 +187,13 @@ function createRequestResourceService(dependencies) {
       nextCollections = [...nextCollections, defaultCollection].sort(compareRequestPlacementRecords);
     }
 
-    let defaultRequestGroup = findRequestGroupByName(nextRequestGroups, defaultCollection.id, defaultRequestGroupName);
+    let defaultRequestGroup = findRequestGroupByName(nextRequestGroups, defaultCollection.id, defaultRequestGroupName, null);
     if (!defaultRequestGroup) {
       defaultRequestGroup = persistRequestGroupRecord(
         createRequestGroupRecord({
-          id: createStableRequestGroupId(normalizedWorkspaceId, defaultCollection.id, defaultRequestGroupName),
+          id: createStableRequestGroupId(normalizedWorkspaceId, defaultCollection.id, defaultRequestGroupName, null),
           collectionId: defaultCollection.id,
+          parentRequestGroupId: null,
           name: defaultRequestGroupName,
         }, null, normalizedWorkspaceId),
       );
@@ -247,9 +265,11 @@ function createRequestResourceService(dependencies) {
     collectionRecord,
     requestGroupId,
     requestGroupName,
+    parentRequestGroupId = null,
   }) {
     const normalizedRequestGroupId = normalizeText(requestGroupId);
     const normalizedRequestGroupName = normalizeText(requestGroupName) || defaultRequestGroupName;
+    const normalizedParentRequestGroupId = readRequestGroupParentId(parentRequestGroupId);
     let nextRequestGroups = [...requestGroups];
 
     if (normalizedRequestGroupId) {
@@ -283,7 +303,39 @@ function createRequestResourceService(dependencies) {
       };
     }
 
-    const requestGroupByName = findRequestGroupByName(nextRequestGroups, collectionRecord.id, normalizedRequestGroupName);
+    if (normalizedParentRequestGroupId) {
+      const parentRequestGroupRecord = nextRequestGroups.find((record) => record.id === normalizedParentRequestGroupId) ?? null;
+
+      if (!parentRequestGroupRecord) {
+        throw createRequestPlacementError(
+          'request_group_parent_not_found',
+          'Selected parent request group was not found in this workspace.',
+          {
+            workspaceId,
+            parentRequestGroupId: normalizedParentRequestGroupId,
+          },
+        );
+      }
+
+      if (parentRequestGroupRecord.collectionId !== collectionRecord.id) {
+        throw createRequestPlacementError(
+          'request_group_parent_collection_mismatch',
+          'Selected parent request group does not belong to the selected collection.',
+          {
+            workspaceId,
+            parentRequestGroupId: normalizedParentRequestGroupId,
+            collectionId: collectionRecord.id,
+          },
+        );
+      }
+    }
+
+    const requestGroupByName = findRequestGroupByName(
+      nextRequestGroups,
+      collectionRecord.id,
+      normalizedRequestGroupName,
+      normalizedParentRequestGroupId,
+    );
     if (requestGroupByName) {
       return {
         requestGroups: nextRequestGroups,
@@ -293,8 +345,9 @@ function createRequestResourceService(dependencies) {
 
     const createdRequestGroup = persistRequestGroupRecord(
       createRequestGroupRecord({
-        id: createStableRequestGroupId(workspaceId, collectionRecord.id, normalizedRequestGroupName),
+        id: createStableRequestGroupId(workspaceId, collectionRecord.id, normalizedRequestGroupName, normalizedParentRequestGroupId),
         collectionId: collectionRecord.id,
+        parentRequestGroupId: normalizedParentRequestGroupId,
         name: normalizedRequestGroupName,
       }, null, workspaceId),
     );
@@ -314,16 +367,15 @@ function createRequestResourceService(dependencies) {
       .sort(compareRequestPlacementRecords);
     const requestGroups = resourceStorage
       .list('request-group')
-      .map((record) => normalizePersistedRequestGroupRecord(record))
-      .filter((record) => record.workspaceId === workspaceId)
-      .sort((left, right) => {
-        const collectionDiff = String(left.collectionId || '').localeCompare(String(right.collectionId || ''));
-        if (collectionDiff !== 0) {
-          return collectionDiff;
+      .map((record) => {
+        const normalizedRecord = normalizePersistedRequestGroupRecord(record);
+        if (JSON.stringify(normalizedRecord) !== JSON.stringify(record)) {
+          resourceStorage.save('request-group', normalizedRecord);
         }
-
-        return compareRequestPlacementRecords(left, right);
-      });
+        return normalizedRecord;
+      })
+      .filter((record) => record.workspaceId === workspaceId)
+      .sort(sortRequestGroups);
 
     return ensureWorkspaceDefaultRequestPlacement(workspaceId, collections, requestGroups).collections;
   }
@@ -336,16 +388,15 @@ function createRequestResourceService(dependencies) {
       .sort(compareRequestPlacementRecords);
     const requestGroups = resourceStorage
       .list('request-group')
-      .map((record) => normalizePersistedRequestGroupRecord(record))
-      .filter((record) => record.workspaceId === workspaceId)
-      .sort((left, right) => {
-        const collectionDiff = String(left.collectionId || '').localeCompare(String(right.collectionId || ''));
-        if (collectionDiff !== 0) {
-          return collectionDiff;
+      .map((record) => {
+        const normalizedRecord = normalizePersistedRequestGroupRecord(record);
+        if (JSON.stringify(normalizedRecord) !== JSON.stringify(record)) {
+          resourceStorage.save('request-group', normalizedRecord);
         }
-
-        return compareRequestPlacementRecords(left, right);
-      });
+        return normalizedRecord;
+      })
+      .filter((record) => record.workspaceId === workspaceId)
+      .sort(sortRequestGroups);
 
     return ensureWorkspaceDefaultRequestPlacement(workspaceId, collections, requestGroups).requestGroups;
   }
@@ -422,6 +473,7 @@ function createRequestResourceService(dependencies) {
       requestGroups,
       collectionRecord: collectionResolution.collectionRecord,
       requestGroupId: null,
+      parentRequestGroupId: null,
       requestGroupName:
         normalizeText(input?.requestGroupName || input?.folderName || existingRecord?.requestGroupName || existingRecord?.folderName)
         || defaults.defaultRequestGroup.name,
@@ -553,16 +605,15 @@ function createRequestResourceService(dependencies) {
       .sort(compareRequestPlacementRecords);
     let requestGroups = resourceStorage
       .list('request-group')
-      .map((record) => normalizePersistedRequestGroupRecord(record))
-      .filter((record) => record.workspaceId === workspaceId)
-      .sort((left, right) => {
-        const collectionDiff = String(left.collectionId || '').localeCompare(String(right.collectionId || ''));
-        if (collectionDiff !== 0) {
-          return collectionDiff;
+      .map((record) => {
+        const normalizedRecord = normalizePersistedRequestGroupRecord(record);
+        if (JSON.stringify(normalizedRecord) !== JSON.stringify(record)) {
+          resourceStorage.save('request-group', normalizedRecord);
         }
-
-        return compareRequestPlacementRecords(left, right);
-      });
+        return normalizedRecord;
+      })
+      .filter((record) => record.workspaceId === workspaceId)
+      .sort(sortRequestGroups);
     const requestRecords = resourceStorage
       .list('request')
       .map((record) => normalizePersistedRequestRecord(record))
@@ -635,11 +686,63 @@ function createRequestResourceService(dependencies) {
       requestsByGroupId.set(request.requestGroupId, groupRequests);
     }
 
-    const groupsByCollectionId = new Map();
+    const groupsByParentKey = new Map();
     for (const requestGroup of requestGroups) {
-      const collectionGroups = groupsByCollectionId.get(requestGroup.collectionId) ?? [];
-      collectionGroups.push(requestGroup);
-      groupsByCollectionId.set(requestGroup.collectionId, collectionGroups);
+      const parentKey = `${requestGroup.collectionId}::${requestGroup.parentRequestGroupId || '__root__'}`;
+      const scopedGroups = groupsByParentKey.get(parentKey) ?? [];
+      scopedGroups.push(requestGroup);
+      groupsByParentKey.set(parentKey, scopedGroups);
+    }
+
+    function buildRequestGroupNode(collection, requestGroup, ancestorRequestGroupIds = new Set()) {
+      if (ancestorRequestGroupIds.has(requestGroup.id)) {
+        return {
+          id: `request-group-node-${requestGroup.id}`,
+          kind: 'request-group',
+          collectionId: collection.id,
+          requestGroupId: requestGroup.id,
+          parentRequestGroupId: requestGroup.parentRequestGroupId || null,
+          name: requestGroup.name,
+          description: requestGroup.description,
+          childGroups: [],
+          requests: [],
+        };
+      }
+
+      const nextAncestorRequestGroupIds = new Set(ancestorRequestGroupIds);
+      nextAncestorRequestGroupIds.add(requestGroup.id);
+      const childGroupKey = `${collection.id}::${requestGroup.id}`;
+      const childGroups = (groupsByParentKey.get(childGroupKey) ?? []).map((childGroup) => (
+        buildRequestGroupNode(collection, childGroup, nextAncestorRequestGroupIds)
+      ));
+      const requestsForGroup = (requestsByGroupId.get(requestGroup.id) ?? []).map((request) => ({
+        id: `request-node-${request.id}`,
+        kind: 'request',
+        name: request.name,
+        request: {
+          id: request.id,
+          name: request.name,
+          methodLabel: request.method,
+          summary: request.summary,
+          collectionId: request.collectionId,
+          collectionName: request.collectionName,
+          requestGroupId: request.requestGroupId,
+          requestGroupName: request.requestGroupName,
+          updatedAt: request.updatedAt,
+        },
+      }));
+
+      return {
+        id: `request-group-node-${requestGroup.id}`,
+        kind: 'request-group',
+        collectionId: collection.id,
+        requestGroupId: requestGroup.id,
+        parentRequestGroupId: requestGroup.parentRequestGroupId || null,
+        name: requestGroup.name,
+        description: requestGroup.description,
+        childGroups,
+        requests: requestsForGroup,
+      };
     }
 
     return {
@@ -657,25 +760,9 @@ function createRequestResourceService(dependencies) {
         collectionId: collection.id,
         name: collection.name,
         description: collection.description,
-        children: (groupsByCollectionId.get(collection.id) ?? []).map((requestGroup) => ({
-          id: `request-group-node-${requestGroup.id}`,
-          kind: 'request-group',
-          collectionId: collection.id,
-          requestGroupId: requestGroup.id,
-          name: requestGroup.name,
-          description: requestGroup.description,
-          children: (requestsByGroupId.get(requestGroup.id) ?? []).map((request) => ({
-            id: `request-node-${request.id}`,
-            kind: 'request',
-            name: request.name,
-            request: {
-              id: request.id,
-              name: request.name,
-              methodLabel: request.method,
-              summary: request.summary,
-            },
-          })),
-        })),
+        childGroups: (groupsByParentKey.get(`${collection.id}::__root__`) ?? []).map((requestGroup) => (
+          buildRequestGroupNode(collection, requestGroup)
+        )),
       })),
     };
   }

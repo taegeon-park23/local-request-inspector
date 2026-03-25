@@ -1,8 +1,8 @@
-﻿# PRD Overview and Delivery Preparation Summary
+# PRD Overview and Delivery Preparation Summary
 
 - **Purpose:** Reframe the upgrade PRD into an execution-ready summary for planning and task tracking.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-24
+- **Last Updated:** 2026-03-25
 - **Related Documents:** `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`
 - **Update Rule:** Update when product scope, assumptions, or major sequencing decisions change.
 
@@ -107,3 +107,20 @@ The first implementation work should not start with UI polish or feature expansi
 ## 10. Readiness Outcome
 This PRD summary should be treated as the upstream planning source for all task documents and backlog prioritization.
 
+
+## 11. Workspace UI V2 Canon After T075
+The accepted Workspace UI V2 direction is now staged as a post-`T075` sequence rather than a one-shot shell rewrite.
+
+### Canonical First-Wave UX
+- The saved-request explorer is a low-density recursive tree: `Collection > Request Group > nested Request Group > Request`.
+- Saved requests open into tab-based authoring with one reusable preview slot plus pinned tabs for durable work.
+- `Quick Request` is a session-only tab type that is runnable and editable but not persisted or bundled until explicitly saved as a normal request.
+- Create entrypoints move to the workspace header and explorer context surfaces; rename/delete flows are dialog/context driven rather than centered on a main-surface CRUD manager.
+- Collection and request-group runs are first-class workspace actions and reuse the existing right-side result panel for batch summaries.
+
+### First-Wave Non-Goals
+- no split editors or bottom-dock result shell swap
+- no multi-select, drag/drop, or type-ahead tree management
+- no tab search or reopen-closed-tab workflow
+- no collection/request-group inheritance for auth, variables, or scripts in this wave
+- no server-owned `QuickRequest` DTO; quick requests remain client-owned session state

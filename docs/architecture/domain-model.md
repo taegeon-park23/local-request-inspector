@@ -1,8 +1,8 @@
-﻿# T001 Domain Model
+# T001 Domain Model
 
 - **Purpose:** Define the initial domain vocabulary, entity responsibilities, relationships, and field drafts for the Local API Workbench architecture.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-23
+- **Last Updated:** 2026-03-25
 - **Related Documents:** `overview.md`, `migration-plan.md`, `../prd/overview.md`
 - **Status:** done
 - **Update Rule:** Update when entity definitions, naming rules, or certainty levels change.
@@ -85,19 +85,20 @@
 - does not contain root-level `Request` records directly in the canonical model
 
 ### 4.3 RequestGroup
-**Role:** Single-level grouping unit inside a collection. Every saved request belongs to exactly one request group.
+**Role:** Recursive grouping unit inside a collection. Every saved request still belongs to exactly one request group, but groups may nest within the same collection.
 
 **Draft fields**
 - `id`
 - `workspaceId`
 - `collectionId`
+- `parentRequestGroupId` *(optional; null for top-level groups inside a collection)*
 - `name`
 - `description`
 - `sortOrder`
 - `createdAt`
 - `updatedAt`
 
-**Status:** hierarchy depth is fixed to one level in the canonical model; nested groups are out of scope.
+**Status:** nested request groups are now part of the canonical workspace model, but nesting remains collection-local and delete is still limited to empty subtrees.
 
 ### 4.4 Request
 **Role:** Canonical saved outbound request definition used by the workspace.
@@ -130,6 +131,7 @@
 
 **Confirmed vs uncertain**
 - Confirmed: request must store URL, headers, body, and method.
+- Client-owned `QuickRequest` tabs may reuse the same field shape during authoring, but they are session-only and are not persisted as canonical `Request` resources until saved.
 - **확실하지 않음:** whether scripts are embedded snapshots, references, or both.
 
 ### 4.5 Environment

@@ -1,8 +1,8 @@
-﻿# Internal API Contract Design
+# Internal API Contract Design
 
 - **Purpose:** Define storage-agnostic internal HTTP and event contracts for workspace resources, execution flows, mock rules, and inbound capture features so implementation can proceed with stable DTO and lifecycle expectations.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-24
+- **Last Updated:** 2026-03-25
 - **Related Documents:** `overview.md`, `shared-schema.md`, `naming-conventions.md`, `persistence-strategy.md`, `script-execution-safety-model.md`, `request-environment-resolution-summary-contract.md`
 - **Status:** done
 - **Update Rule:** Update when resource boundaries, transport choices, or canonical DTO semantics materially change.
@@ -147,6 +147,12 @@
 | PATCH | `/api/requests/:requestId` | update request | `RequestDetailDto` |
 | DELETE | `/api/requests/:requestId` | delete request | success envelope |
 
+### 7.2B Workspace Tree And Batch-Run Semantics
+- `WorkspaceRequestTreeDto` is recursive: collection nodes expose `childGroups`, and request-group nodes expose both `childGroups` and `requests`.
+- `RequestGroupDetailDto` and authored-resource bundle request-group records now carry optional `parentRequestGroupId` so nested groups can be reconstructed without changing collection ownership.
+- Canonical saved requests still persist `requestGroupId`; collection ownership is validated from the selected request group on write.
+- Client-owned quick requests are intentionally out of scope for server DTOs in the first wave.
+
 ### 7.2A Authored-Resource Bundle Transfer
 The current authored-resource transfer lane is intentionally bounded to persisted authored resources only. Workspace bundle export/import preview/import includes collections, request groups, saved requests, mock rules, and standalone saved scripts. Runtime history, captures, execution artifacts, environments, and request-stage shared-script references remain out of scope.
 
@@ -195,6 +201,8 @@ Secret values must never be returned in plain text unless an explicit future pol
 | Method | Path | Purpose | Response DTO |
 | --- | --- | --- | --- |
 | POST | `/api/executions/run` | execute request with resolved environment and script stages | `ExecutionAcceptedDto` |
+| POST | `/api/collections/:collectionId/run` | execute all saved requests in one collection, depth-first and sequentially | `WorkspaceBatchExecutionDto` |
+| POST | `/api/request-groups/:requestGroupId/run` | execute all saved requests in one request-group subtree, depth-first and sequentially | `WorkspaceBatchExecutionDto` |
 | POST | `/api/executions/:executionId/cancel` | request cancellation | `ExecutionCancellationDto` |
 | GET | `/api/execution-histories` | list execution histories | `ExecutionHistorySummaryDto[]` |
 | GET | `/api/execution-histories/:executionId` | fetch execution history detail | `ExecutionHistoryDetailDto` |
@@ -384,3 +392,10 @@ This stream is optional for MVP and may be added after core capture/execution st
 
 
 
+
+## 12. Workspace Batch Execution DTO
+`WorkspaceBatchExecutionDto` carries:
+- container identity (`containerType`, `containerId`, `containerName`)
+- deterministic execution metadata (`executionOrder`, `continuedAfterFailure`, `startedAt`, `completedAt`, `durationMs`)
+- aggregate outcome counts (`totalRuns`, `succeededCount`, `failedCount`, `blockedCount`, `timedOutCount`, `requestCount`)
+- ordered step results where each step preserves request placement metadata plus the bounded single-request execution observation

@@ -1,4 +1,4 @@
-﻿# Priority Roadmap
+# Priority Roadmap
 
 - **Purpose:** Show the live delivery sequence after completed work has been archived out of the default read path.
 - **Created:** 2026-03-18
@@ -11,11 +11,18 @@
 2. `T073` is archived into `completed-work-summary.md`.
 3. `T074` is archived into `completed-work-summary.md`.
 4. `T075` is the live next bounded task and owns the secret-backend contract lane.
+5. Post-`T075` workspace UI V2 staging is defined as `T076 -> T077 -> T078 -> T079`, but tracker promotion remains frozen until `T075` is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.
 - Define one bounded task at a time and keep the live tracking surface small.
 - Keep Codex-side UI reruns closed; use the Playwright skill for Codex-side UI smoke and reserve `npm.cmd run test:ui` for user-managed local verification.
+
+## Post-T075 Queue
+- `T076` Workspace UI V2 Canon Refresh
+- `T077` Recursive Tree And Placement Contract
+- `T078` Workbench Tabs And Quick Request
+- `T079` Runnable Containers And Batch Results
 
 ## Immediate Next Step
 - Execute `T075`:

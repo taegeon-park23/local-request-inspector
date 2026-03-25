@@ -76,7 +76,7 @@ function findRequestGroupById(
     return null;
   }
 
-  return collection.children.find((requestGroup) => requestGroup.requestGroupId === requestGroupId) ?? null;
+  return collection.childGroups.find((requestGroup) => requestGroup.requestGroupId === requestGroupId) ?? null;
 }
 
 export function WorkspaceResourceManagerPanel({
@@ -153,9 +153,9 @@ export function WorkspaceResourceManagerPanel({
       : activeTab?.collectionId === selectedCollection.collectionId
         ? (activeTab?.requestGroupId ?? '')
         : '';
-    return selectedCollection.children.some((requestGroup) => requestGroup.requestGroupId === selectedRequestGroupId)
+    return selectedCollection.childGroups.some((requestGroup) => requestGroup.requestGroupId === selectedRequestGroupId)
       ? selectedRequestGroupId
-      : (preferredRequestGroupId || selectedCollection.children[0]?.requestGroupId || '');
+      : (preferredRequestGroupId || selectedCollection.childGroups[0]?.requestGroupId || '');
   }, [
     activeDraft?.collectionId,
     activeDraft?.requestGroupId,
@@ -166,7 +166,7 @@ export function WorkspaceResourceManagerPanel({
   ]);
 
   const selectedRequestGroup = useMemo(
-    () => findRequestGroupById(selectedCollection, selectedRequestGroupIdValue) ?? selectedCollection?.children[0] ?? null,
+    () => findRequestGroupById(selectedCollection, selectedRequestGroupIdValue) ?? selectedCollection?.childGroups[0] ?? null,
     [selectedCollection, selectedRequestGroupIdValue],
   );
 
@@ -181,10 +181,10 @@ export function WorkspaceResourceManagerPanel({
 
   const isMutatingCollections = isCreatingCollection || isRenamingCollection || isDeletingCollection;
   const isMutatingRequestGroups = isCreatingRequestGroup || isRenamingRequestGroup || isDeletingRequestGroup;
-  const canDeleteCollection = Boolean(selectedCollection && selectedCollection.children.length === 0);
-  const canDeleteRequestGroup = Boolean(selectedRequestGroup && selectedRequestGroup.children.length === 0);
-  const requestGroupCount = selectedCollection?.children.length ?? 0;
-  const requestCount = selectedRequestGroup?.children.length ?? 0;
+  const canDeleteCollection = Boolean(selectedCollection && selectedCollection.childGroups.length === 0);
+  const canDeleteRequestGroup = Boolean(selectedRequestGroup && selectedRequestGroup.childGroups.length === 0 && selectedRequestGroup.requests.length === 0);
+  const requestGroupCount = selectedCollection?.childGroups.length ?? 0;
+  const requestCount = selectedRequestGroup?.requests.length ?? 0;
   const transferStatus = statuses.transfer ?? null;
   const collectionStatus = statuses.collections ?? null;
   const requestGroupStatus = statuses['request-groups'] ?? null;
@@ -449,10 +449,10 @@ export function WorkspaceResourceManagerPanel({
               aria-label={t('workspaceRoute.management.fields.manageRequestGroup')}
               value={selectedRequestGroup?.requestGroupId ?? ''}
               onChange={(event) => setSelectedRequestGroupId(event.currentTarget.value)}
-              disabled={!selectedCollection || selectedCollection.children.length === 0 || isMutatingRequestGroups}
+              disabled={!selectedCollection || selectedCollection.childGroups.length === 0 || isMutatingRequestGroups}
             >
-              {selectedCollection?.children.length
-                ? selectedCollection.children.map((requestGroup) => (
+              {selectedCollection?.childGroups.length
+                ? selectedCollection.childGroups.map((requestGroup) => (
                     <option key={requestGroup.requestGroupId} value={requestGroup.requestGroupId}>
                       {requestGroup.name}
                     </option>

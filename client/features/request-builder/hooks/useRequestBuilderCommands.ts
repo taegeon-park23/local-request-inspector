@@ -27,6 +27,7 @@ import {
   readRequestGroupName,
 } from '@client/features/request-builder/request-placement';
 import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
+import { useWorkspaceBatchRunStore } from '@client/features/workspace/state/workspace-batch-run-store';
 import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
 
 function isJsonBodyMalformed(draft: RequestDraftState) {
@@ -226,6 +227,7 @@ export function useRequestBuilderCommands(
   const finishRunError = useRequestCommandStore((state) => state.finishRunError);
   const commitSavedDraft = useRequestDraftStore((state) => state.commitSavedDraft);
   const markTabSaved = useWorkspaceShellStore((state) => state.markTabSaved);
+  const deactivateBatchRun = useWorkspaceBatchRunStore((state: ReturnType<typeof useWorkspaceBatchRunStore.getState>) => state.deactivate);
   const focusWorkspaceResultPanel = useWorkspaceUiStore((state) => state.focusWorkspaceResultPanel);
 
   const saveStatus = commandEntry?.save ?? {
@@ -343,6 +345,7 @@ export function useRequestBuilderCommands(
         return;
       }
 
+      deactivateBatchRun();
       startRun(activeTab.id);
     },
     onSuccess: (execution) => {

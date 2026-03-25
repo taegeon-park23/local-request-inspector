@@ -26,8 +26,10 @@ function createStableCollectionId(workspaceId, collectionName) {
   return `collection-${createSlug(workspaceId || DEFAULT_WORKSPACE_ID, 'workspace')}-${createSlug(collectionName, 'saved-requests')}`;
 }
 
-function createStableRequestGroupId(workspaceId, collectionId, groupName) {
-  return `request-group-${createSlug(workspaceId || DEFAULT_WORKSPACE_ID, 'workspace')}-${createSlug(collectionId, 'collection')}-${createSlug(groupName, 'general')}`;
+function createStableRequestGroupId(workspaceId, collectionId, groupName, parentRequestGroupId = null) {
+  const parentScope = normalizeText(parentRequestGroupId) || 'root';
+
+  return `request-group-${createSlug(workspaceId || DEFAULT_WORKSPACE_ID, 'workspace')}-${createSlug(collectionId, 'collection')}-${createSlug(parentScope, 'root')}-${createSlug(groupName, 'general')}`;
 }
 
 function createCollectionRecord(input, existingRecord, workspaceId = DEFAULT_WORKSPACE_ID) {
@@ -65,6 +67,7 @@ function createRequestGroupRecord(input, existingRecord, workspaceId = DEFAULT_W
   const now = new Date().toISOString();
   const name = normalizeText(input?.name) || DEFAULT_REQUEST_GROUP_NAME;
   const collectionId = normalizeText(input?.collectionId ?? existingRecord?.collectionId);
+  const parentRequestGroupId = normalizeText(input?.parentRequestGroupId ?? existingRecord?.parentRequestGroupId);
 
   return {
     resourceKind: RESOURCE_RECORD_KINDS.REQUEST_GROUP,
@@ -72,6 +75,7 @@ function createRequestGroupRecord(input, existingRecord, workspaceId = DEFAULT_W
     id: existingRecord?.id || normalizeText(input?.id) || randomUUID(),
     workspaceId: workspaceId || existingRecord?.workspaceId || DEFAULT_WORKSPACE_ID,
     collectionId,
+    parentRequestGroupId: parentRequestGroupId || null,
     name,
     description: normalizeDescription(input?.description ?? existingRecord?.description),
     createdAt: existingRecord?.createdAt || now,
@@ -90,6 +94,7 @@ function normalizePersistedRequestGroupRecord(record) {
     resourceSchemaVersion: REQUEST_GROUP_RESOURCE_SCHEMA_VERSION,
     workspaceId: normalizeText(record.workspaceId) || DEFAULT_WORKSPACE_ID,
     collectionId: normalizeText(record.collectionId),
+    parentRequestGroupId: normalizeText(record.parentRequestGroupId) || null,
     name: normalizeText(record.name) || DEFAULT_REQUEST_GROUP_NAME,
     description: normalizeDescription(record.description),
   };
@@ -135,6 +140,10 @@ function validateRequestGroupInput(input) {
 
   if (input.description != null && typeof input.description !== 'string') {
     return 'Request group description must be a string when provided.';
+  }
+
+  if (input.parentRequestGroupId != null && typeof input.parentRequestGroupId !== 'string') {
+    return 'Request group parentRequestGroupId must be a string or null when provided.';
   }
 
   return null;

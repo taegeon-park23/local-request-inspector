@@ -69,10 +69,11 @@ function createResourceBundleImportService(dependencies) {
     };
   }
 
-  function createImportedScopedRequestGroupName(name, collectionId, usedScopedNames) {
+  function createImportedScopedRequestGroupName(name, collectionId, parentRequestGroupId, usedScopedNames) {
     const baseName = normalizeText(name) || defaultRequestGroupName;
     const scopedNames = usedScopedNames || new Set();
-    const normalizedBaseKey = `${collectionId}::${baseName.toLowerCase()}`;
+    const normalizedScope = `${collectionId}::${parentRequestGroupId || '__root__'}`;
+    const normalizedBaseKey = `${normalizedScope}::${baseName.toLowerCase()}`;
 
     if (!scopedNames.has(normalizedBaseKey)) {
       scopedNames.add(normalizedBaseKey);
@@ -82,7 +83,7 @@ function createResourceBundleImportService(dependencies) {
     let suffixIndex = 1;
     while (true) {
       const nextName = suffixIndex === 1 ? `${baseName} (Imported)` : `${baseName} (Imported ${suffixIndex})`;
-      const nextKey = `${collectionId}::${nextName.toLowerCase()}`;
+      const nextKey = `${normalizedScope}::${nextName.toLowerCase()}`;
 
       if (!scopedNames.has(nextKey)) {
         scopedNames.add(nextKey);
@@ -102,7 +103,7 @@ function createResourceBundleImportService(dependencies) {
         .map((record) => [normalizeText(record.name).toLowerCase(), record]),
     );
     const requestGroupKeys = new Set(
-      requestGroups.map((record) => `${normalizeText(record.collectionId)}::${normalizeText(record.name).toLowerCase()}`),
+      requestGroups.map((record) => `${normalizeText(record.collectionId)}::${normalizeText(record.parentRequestGroupId) || '__root__'}::${normalizeText(record.name).toLowerCase()}`),
     );
 
     for (const request of Array.isArray(bundle.requests) ? bundle.requests : []) {
@@ -123,15 +124,16 @@ function createResourceBundleImportService(dependencies) {
       }
 
       const requestGroupName = normalizeText(request?.requestGroupName || request?.folderName) || defaultRequestGroupName;
-      const requestGroupKey = `${collectionRecord.id}::${requestGroupName.toLowerCase()}`;
+      const requestGroupKey = `${collectionRecord.id}::__root__::${requestGroupName.toLowerCase()}`;
 
       if (!requestGroupKeys.has(requestGroupKey)) {
         requestGroups.push({
           resourceKind: resourceRecordKinds.REQUEST_GROUP,
           resourceSchemaVersion: requestGroupResourceSchemaVersion,
-          id: normalizeText(request?.requestGroupId) || createStableRequestGroupId(workspaceId, collectionRecord.id, requestGroupName),
+          id: normalizeText(request?.requestGroupId) || createStableRequestGroupId(workspaceId, collectionRecord.id, requestGroupName, null),
           workspaceId,
           collectionId: collectionRecord.id,
+          parentRequestGroupId: null,
           name: requestGroupName,
           description: '',
         });
@@ -203,6 +205,7 @@ function createResourceBundleImportService(dependencies) {
     }
 
     const sourceCollectionId = normalizeText(input?.collectionId);
+    const sourceParentRequestGroupId = normalizeText(input?.parentRequestGroupId);
     const mappedCollectionId = state.collectionIdMap.get(sourceCollectionId) || sourceCollectionId;
     const collectionRecord = readWorkspaceCollectionReference(workspaceId, mappedCollectionId)
       || state.importedCollectionById.get(mappedCollectionId)
@@ -219,9 +222,35 @@ function createResourceBundleImportService(dependencies) {
       };
     }
 
+    const mappedParentRequestGroupId = state.requestGroupIdMap.get(sourceParentRequestGroupId) || sourceParentRequestGroupId;
+    const parentRequestGroupRecord = mappedParentRequestGroupId
+      ? state.importedRequestGroupById.get(mappedParentRequestGroupId) || null
+      : null;
+
+    if (mappedParentRequestGroupId && !parentRequestGroupRecord) {
+      return {
+        rejection: createImportedResourceRejection(
+          'request-group',
+          'Request group references a parent request group that is not available in this workspace import.',
+          input?.name,
+        ),
+      };
+    }
+
+    if (parentRequestGroupRecord && parentRequestGroupRecord.collectionId !== collectionRecord.id) {
+      return {
+        rejection: createImportedResourceRejection(
+          'request-group',
+          'Request group parent must stay inside the same collection during import.',
+          input?.name,
+        ),
+      };
+    }
+
     const validationError = validateRequestGroupInput({
       ...input,
       collectionId: collectionRecord.id,
+      parentRequestGroupId: mappedParentRequestGroupId || null,
     });
 
     if (validationError) {
@@ -230,12 +259,18 @@ function createResourceBundleImportService(dependencies) {
       };
     }
 
-    const importedName = createImportedScopedRequestGroupName(input.name, collectionRecord.id, state.usedRequestGroupKeys);
+    const importedName = createImportedScopedRequestGroupName(
+      input.name,
+      collectionRecord.id,
+      mappedParentRequestGroupId || null,
+      state.usedRequestGroupKeys,
+    );
     const record = createRequestGroupRecord(
       {
         ...input,
         id: randomUUID(),
         collectionId: collectionRecord.id,
+        parentRequestGroupId: mappedParentRequestGroupId || null,
         name: importedName,
       },
       null,
@@ -442,7 +477,7 @@ function createResourceBundleImportService(dependencies) {
       requestGroupRecordBySourceKey: new Map(),
       importedRequestGroupById: new Map(existingRequestGroups.map((record) => [record.id, record])),
       usedRequestGroupKeys: new Set(
-        existingRequestGroups.map((record) => `${record.collectionId}::${normalizeText(record.name).toLowerCase()}`),
+        existingRequestGroups.map((record) => `${record.collectionId}::${record.parentRequestGroupId || '__root__'}::${normalizeText(record.name).toLowerCase()}`),
       ),
       importedScriptBySourceId: new Map(),
       importedScriptBySourceName: new Map(),

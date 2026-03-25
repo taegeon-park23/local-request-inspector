@@ -33,7 +33,11 @@ type DraftRowField = 'key' | 'value' | 'enabled';
 interface RequestDraftStoreState {
   draftsByTabId: Record<string, RequestDraftEntry>;
   nextRowSequence: number;
-  ensureDraftForTab: (tab: RequestTabRecord, draftSeed?: RequestDraftSeed) => void;
+  ensureDraftForTab: (
+    tab: RequestTabRecord,
+    draftSeed?: RequestDraftSeed,
+    options?: { replace?: boolean },
+  ) => void;
   removeDraft: (tabId: string) => void;
   commitSavedDraft: (tabId: string, placement: RequestPlacementValue & { collectionName: string }) => void;
   updateDraftPlacement: (
@@ -203,9 +207,9 @@ function updateDraftEntry(
 
 export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
   ...initialRequestDraftStoreState,
-  ensureDraftForTab: (tab, draftSeed) =>
+  ensureDraftForTab: (tab, draftSeed, options = {}) =>
     set((state) => {
-      if (state.draftsByTabId[tab.id]) {
+      if (state.draftsByTabId[tab.id] && options.replace !== true) {
         return {};
       }
 

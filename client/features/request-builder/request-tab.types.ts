@@ -31,7 +31,8 @@ export interface RequestTabRecord {
   sourceKey: string;
   title: string;
   methodLabel: HttpMethodLabel;
-  source: 'saved' | 'draft' | 'replay';
+  source: 'saved' | 'quick' | 'draft' | 'replay' | 'detached';
+  tabMode: 'preview' | 'pinned';
   summary: string;
   requestId?: string;
   collectionId?: string;

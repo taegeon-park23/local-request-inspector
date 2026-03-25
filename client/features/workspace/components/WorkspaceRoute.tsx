@@ -5,6 +5,7 @@ import {
   workspaceEnvironmentsQueryKey,
 } from '@client/features/environments/environment.api';
 import { workspaceScriptsQueryKey } from '@client/features/scripts/scripts.api';
+import { executionHistoryListQueryKey } from '@client/features/history/history.api';
 import {
   listWorkspaceSavedRequests,
   type SavedRequestResourceRecord,
@@ -21,6 +22,7 @@ import {
   readRequestGroupName,
   resolveRequestPlacement,
   type RequestPlacementCollectionOption,
+  type RequestPlacementValue,
 } from '@client/features/request-builder/request-placement';
 import { useRequestCommandStore } from '@client/features/request-builder/state/request-command-store';
 import { useRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
@@ -34,6 +36,7 @@ import {
   type WorkspaceResourceManagerStatusScope,
 } from '@client/features/workspace/components/WorkspaceResourceManagerPanel';
 import { SectionHeading } from '@client/shared/ui/SectionHeading';
+import { IconLabel } from '@client/shared/ui/IconLabel';
 import {
   downloadAuthoredResourceBundle,
   exportSavedRequestResource,
@@ -52,6 +55,8 @@ import {
   deleteWorkspaceSavedRequest,
   listWorkspaceRequestTree,
   readWorkspaceSavedRequestDetail,
+  runWorkspaceCollection,
+  runWorkspaceRequestGroup,
   updateWorkspaceCollection,
   updateWorkspaceRequestGroup,
   workspaceRequestTreeQueryKey,
@@ -59,6 +64,7 @@ import {
   type WorkspaceRequestGroupNode,
   type WorkspaceTreeRequestLeaf,
 } from '@client/features/workspace/workspace-request-tree.api';
+import { useWorkspaceBatchRunStore } from '@client/features/workspace/state/workspace-batch-run-store';
 import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
 import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
 import { RoutePanelTabsLayout } from '@client/features/route-panel-tabs-layout';
@@ -71,6 +77,11 @@ interface PendingImportPreview {
   bundleText: string;
   fileName: string;
   result: AuthoredResourceBundleImportPreviewResult;
+}
+
+function promptForName(initialValue: string, message: string) {
+  const nextValue = window.prompt(message, initialValue);
+  return typeof nextValue === 'string' ? nextValue.trim() : null;
 }
 
 function resolvePresentationTab(
@@ -230,6 +241,71 @@ function resolveSeededEnvironmentId(draftSeed: RequestDraftSeed | undefined, def
   return defaultEnvironmentId;
 }
 
+function findCollectionById(
+  tree: WorkspaceCollectionNode[],
+  collectionId: string | null | undefined,
+) {
+  if (!collectionId) {
+    return null;
+  }
+
+  return tree.find((collection) => collection.collectionId === collectionId) ?? null;
+}
+
+function findRequestGroupById(
+  tree: WorkspaceCollectionNode[],
+  requestGroupId: string | null | undefined,
+): { collection: WorkspaceCollectionNode; requestGroup: WorkspaceRequestGroupNode } | null {
+  if (!requestGroupId) {
+    return null;
+  }
+
+  function walk(
+    collection: WorkspaceCollectionNode,
+    groups: WorkspaceRequestGroupNode[],
+  ): { collection: WorkspaceCollectionNode; requestGroup: WorkspaceRequestGroupNode } | null {
+    for (const requestGroup of groups) {
+      if (requestGroup.requestGroupId === requestGroupId) {
+        return { collection, requestGroup };
+      }
+
+      const match = walk(collection, requestGroup.childGroups);
+      if (match) {
+        return match;
+      }
+    }
+
+    return null;
+  }
+
+  for (const collection of tree) {
+    const match = walk(collection, collection.childGroups);
+    if (match) {
+      return match;
+    }
+  }
+
+  return null;
+}
+
+function flattenRequestGroups(
+  groups: WorkspaceRequestGroupNode[],
+  path: string[] = [],
+): RequestPlacementCollectionOption['requestGroups'] {
+  return groups.flatMap((requestGroup) => {
+    const nextPath = [...path, requestGroup.name];
+
+    return [
+      {
+        requestGroupId: requestGroup.requestGroupId,
+        requestGroupName: requestGroup.name,
+        requestGroupPathLabel: nextPath.join(' / '),
+      },
+      ...flattenRequestGroups(requestGroup.childGroups, nextPath),
+    ];
+  });
+}
+
 function buildRequestPlacementOptions(
   tree: WorkspaceCollectionNode[],
   defaults: {
@@ -240,19 +316,20 @@ function buildRequestPlacementOptions(
   } | undefined,
 ): RequestPlacementCollectionOption[] {
   if (tree.length > 0) {
-    return tree.map((collection) => ({
-      collectionId: collection.collectionId,
-      collectionName: collection.name,
-      requestGroups: collection.children.length > 0
-        ? collection.children.map((requestGroup) => ({
-            requestGroupId: requestGroup.requestGroupId,
-            requestGroupName: requestGroup.name,
-          }))
-        : [{
-            requestGroupName: defaults?.requestGroupName ?? DEFAULT_REQUEST_GROUP_NAME,
-            pendingCreation: true,
-          }],
-    }));
+    return tree.map((collection) => {
+      const requestGroups = flattenRequestGroups(collection.childGroups);
+
+      return {
+        collectionId: collection.collectionId,
+        collectionName: collection.name,
+        requestGroups: requestGroups.length > 0
+          ? requestGroups
+          : [{
+              requestGroupName: defaults?.requestGroupName ?? DEFAULT_REQUEST_GROUP_NAME,
+              pendingCreation: true,
+            }],
+      };
+    });
   }
 
   if (!defaults) {
@@ -265,6 +342,7 @@ function buildRequestPlacementOptions(
     requestGroups: [{
       requestGroupId: defaults.requestGroupId,
       requestGroupName: defaults.requestGroupName,
+      requestGroupPathLabel: defaults.requestGroupName,
     }],
   }];
 }
@@ -272,18 +350,32 @@ function buildRequestPlacementOptions(
 function findWorkspaceRequestById(
   tree: WorkspaceCollectionNode[],
   requestId: string | null | undefined,
-) {
+): WorkspaceTreeRequestLeaf | null {
   if (!requestId) {
     return null;
   }
 
-  for (const collection of tree) {
-    for (const requestGroup of collection.children) {
-      const requestNode = requestGroup.children.find((child) => child.request.id === requestId);
+  function walk(groups: WorkspaceRequestGroupNode[]): WorkspaceTreeRequestLeaf | null {
+    for (const requestGroup of groups) {
+      const requestNode = requestGroup.requests.find((child) => child.request.id === requestId);
 
       if (requestNode) {
         return requestNode.request;
       }
+
+      const childMatch = walk(requestGroup.childGroups);
+      if (childMatch) {
+        return childMatch;
+      }
+    }
+
+    return null;
+  }
+
+  for (const collection of tree) {
+    const match = walk(collection.childGroups);
+    if (match) {
+      return match;
     }
   }
 
@@ -295,16 +387,22 @@ export function WorkspaceRoute() {
   const { locale, t } = useI18n();
   const [managerStatuses, setManagerStatuses] = useState<WorkspaceResourceManagerStatuses>({});
   const [pendingImportPreview, setPendingImportPreview] = useState<PendingImportPreview | null>(null);
-  const tabs = useWorkspaceShellStore((state) => state.tabs);
-  const activeTabId = useWorkspaceShellStore((state) => state.activeTabId);
-  const selectedExplorerItemId = useWorkspaceShellStore((state) => state.selectedExplorerItemId);
-  const openNewRequest = useWorkspaceShellStore((state) => state.openNewRequest);
-  const openSavedRequest = useWorkspaceShellStore((state) => state.openSavedRequest);
-  const setActiveTab = useWorkspaceShellStore((state) => state.setActiveTab);
+  const tabs = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.tabs);
+  const activeTabId = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.activeTabId);
+  const selectedExplorerItemId = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.selectedExplorerItemId);
+  const selectedExplorerItemKind = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.selectedExplorerItemKind);
+  const openNewRequest = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.openNewRequest);
+  const openQuickRequest = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.openQuickRequest);
+  const openSavedRequest = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.openSavedRequest);
+  const setActiveTab = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.setActiveTab);
+  const setSelectedExplorerItem = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.setSelectedExplorerItem);
+  const detachSavedRequest = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.detachSavedRequest);
+  const pinTab = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.pinTab);
   const workspaceActivePanel = useWorkspaceUiStore((state) => state.routePanels.workspace.activePanel);
   const setWorkspaceActivePanel = useWorkspaceUiStore((state) => state.setRouteActivePanel);
   const focusWorkspaceWorkSurface = useWorkspaceUiStore((state) => state.focusWorkspaceWorkSurface);
-  const closeTab = useWorkspaceShellStore((state) => state.closeTab);
+  const focusWorkspaceResultPanel = useWorkspaceUiStore((state) => state.focusWorkspaceResultPanel);
+  const closeTab = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.closeTab);
   const setFloatingExplorerOpen = useShellStore((state) => state.setFloatingExplorerOpen);
   const draftsByTabId = useRequestDraftStore((state) => state.draftsByTabId);
   const ensureDraftForTab = useRequestDraftStore((state) => state.ensureDraftForTab);
@@ -312,8 +410,12 @@ export function WorkspaceRoute() {
   const syncDraftCollectionPlacement = useRequestDraftStore((state) => state.syncCollectionPlacement);
   const syncDraftRequestGroupPlacement = useRequestDraftStore((state) => state.syncRequestGroupPlacement);
   const removeCommandState = useRequestCommandStore((state) => state.removeTab);
-  const syncTabCollectionPlacement = useWorkspaceShellStore((state) => state.syncCollectionPlacement);
-  const syncTabRequestGroupPlacement = useWorkspaceShellStore((state) => state.syncRequestGroupPlacement);
+  const deactivateBatchRun = useWorkspaceBatchRunStore((state: ReturnType<typeof useWorkspaceBatchRunStore.getState>) => state.deactivate);
+  const startBatchRun = useWorkspaceBatchRunStore((state: ReturnType<typeof useWorkspaceBatchRunStore.getState>) => state.startBatchRun);
+  const finishBatchRunSuccess = useWorkspaceBatchRunStore((state: ReturnType<typeof useWorkspaceBatchRunStore.getState>) => state.finishBatchRunSuccess);
+  const finishBatchRunError = useWorkspaceBatchRunStore((state: ReturnType<typeof useWorkspaceBatchRunStore.getState>) => state.finishBatchRunError);
+  const syncTabCollectionPlacement = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.syncCollectionPlacement);
+  const syncTabRequestGroupPlacement = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.syncRequestGroupPlacement);
 
   const savedRequestsQuery = useQuery({
     queryKey: workspaceSavedRequestsQueryKey,
@@ -538,8 +640,21 @@ export function WorkspaceRoute() {
     },
   });
   const createRequestGroupMutation = useMutation({
-    mutationFn: ({ collectionId, name }: { collectionId: string; name: string }) => (
-      createWorkspaceRequestGroup(collectionId, { name })
+    mutationFn: ({
+      collectionId,
+      name,
+      parentRequestGroupId,
+    }: {
+      collectionId: string;
+      name: string;
+      parentRequestGroupId?: string | null;
+    }) => (
+      createWorkspaceRequestGroup(
+        collectionId,
+        parentRequestGroupId === undefined
+          ? { name }
+          : { name, parentRequestGroupId },
+      )
     ),
     onSuccess: async (requestGroup) => {
       await Promise.all([
@@ -615,31 +730,8 @@ export function WorkspaceRoute() {
   const deleteSavedRequestMutation = useMutation({
     mutationFn: deleteWorkspaceSavedRequest,
     onSuccess: async (deletedRequestId) => {
-      useWorkspaceShellStore.setState((state) => {
-        const nextTabs = state.tabs.map((tab) => {
-          if (tab.requestId !== deletedRequestId) {
-            return tab;
-          }
-
-          const nextTab: RequestTabRecord = {
-            ...tab,
-            source: 'draft',
-            sourceKey: `detached-${deletedRequestId}-${tab.id}`,
-            hasUnsavedChanges: true,
-          };
-
-          delete nextTab.requestId;
-          delete nextTab.replaySource;
-
-          return nextTab;
-        });
-        const activeTab = nextTabs.find((tab) => tab.id === state.activeTabId) ?? null;
-
-        return {
-          tabs: nextTabs,
-          selectedExplorerItemId: activeTab?.requestId ?? null,
-        };
-      });
+      detachSavedRequest(deletedRequestId);
+      setSelectedExplorerItem(null);
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: workspaceRequestTreeQueryKey }),
@@ -686,10 +778,16 @@ export function WorkspaceRoute() {
     : managerStatuses;
   const explorerTree = requestTreeQuery.data?.tree ?? [];
   const requestPlacementOptions = buildRequestPlacementOptions(explorerTree, requestTreeQuery.data?.defaults);
-  const resolvedTabs = tabs.map((tab) => resolvePresentationTab(tab, draftsByTabId[tab.id]));
-  const activeTab = resolvedTabs.find((tab) => tab.id === activeTabId) ?? null;
+  const resolvedTabs = tabs.map((tab: RequestTabRecord) => resolvePresentationTab(tab, draftsByTabId[tab.id]));
+  const activeTab = resolvedTabs.find((tab: RequestTabRecord) => tab.id === activeTabId) ?? null;
   const activeDraft = activeTab ? draftsByTabId[activeTab.id]?.draft ?? null : null;
   const activeSavedRequest = findWorkspaceRequestById(explorerTree, activeTab?.requestId);
+  const selectedCollection = selectedExplorerItemKind === 'collection'
+    ? findCollectionById(explorerTree, selectedExplorerItemId)
+    : null;
+  const selectedRequestGroupLocation = selectedExplorerItemKind === 'request-group'
+    ? findRequestGroupById(explorerTree, selectedExplorerItemId)
+    : null;
   const activeTabKey = activeTab?.id ?? 'empty';
   const pendingReplayRunTabId = useReplayRunStore((state) => state.pendingReplayRunTabId);
   const consumeReplayRun = useReplayRunStore((state) => state.consumeReplayRun);
@@ -723,16 +821,13 @@ export function WorkspaceRoute() {
     replayRunStatus.status,
   ]);
 
-  const openDraftFromSeed = async (draftSeed?: RequestDraftSeed) => {
+  const openDraftFromSeed = async (
+    draftSeed?: RequestDraftSeed,
+    options: { source?: 'draft' | 'quick' } = {},
+  ) => {
     focusWorkspaceWorkSurface();
+    deactivateBatchRun();
     setFloatingExplorerOpen('workspace', false);
-    const previousTabIds = new Set(useWorkspaceShellStore.getState().tabs.map((tab) => tab.id));
-    openNewRequest();
-    const nextTab = useWorkspaceShellStore
-      .getState()
-      .tabs.find((tab) => !previousTabIds.has(tab.id));
-
-    if (nextTab) {
       let defaultEnvironmentId: string | null = null;
 
       try {
@@ -751,16 +846,23 @@ export function WorkspaceRoute() {
         collectionName: draftSeed?.collectionName ?? defaultPlacement?.collectionName ?? 'Saved Requests',
         requestGroupName: readRequestGroupName(draftSeed) ?? defaultPlacement?.requestGroupName ?? DEFAULT_REQUEST_GROUP_NAME,
       });
+      const nextTab = options.source === 'quick'
+        ? openQuickRequest({ placement: seededPlacement })
+        : openNewRequest({ source: 'draft', placement: seededPlacement });
+
       ensureDraftForTab(nextTab, {
         ...(draftSeed ?? {}),
         ...seededPlacement,
         selectedEnvironmentId: resolveSeededEnvironmentId(draftSeed, defaultEnvironmentId),
-      });
-    }
+      }, { replace: true });
   };
 
   const handleCreateRequest = () => {
     void openDraftFromSeed();
+  };
+
+  const handleCreateQuickRequest = () => {
+    void openDraftFromSeed(undefined, { source: 'quick' });
   };
 
   const handleCreateCollection = async (name: string) => {
@@ -819,48 +921,204 @@ export function WorkspaceRoute() {
     await deleteRequestGroupMutation.mutateAsync(requestGroup);
   };
 
-  const handleOpenSavedRequest = async (request: WorkspaceTreeRequestLeaf) => {
+  const handleSelectCollection = (collection: WorkspaceCollectionNode) => {
+    setSelectedExplorerItem({ kind: 'collection', id: collection.collectionId });
+  };
+
+  const handleSelectRequestGroup = (requestGroup: WorkspaceRequestGroupNode) => {
+    setSelectedExplorerItem({ kind: 'request-group', id: requestGroup.requestGroupId });
+  };
+
+  const handleCreateRequestAtPlacement = (placement?: RequestPlacementValue) => {
+    if (!placement) {
+      void openDraftFromSeed();
+      return;
+    }
+
+    if (placement.requestGroupId) {
+      const requestGroupLocation = findRequestGroupById(explorerTree, placement.requestGroupId);
+
+      if (requestGroupLocation) {
+        void openDraftFromSeed({
+          ...placement,
+          collectionId: requestGroupLocation.collection.collectionId,
+          collectionName: requestGroupLocation.collection.name,
+          requestGroupId: requestGroupLocation.requestGroup.requestGroupId,
+          requestGroupName: requestGroupLocation.requestGroup.name,
+        });
+        return;
+      }
+    }
+
+    if (placement.collectionId) {
+      const collection = findCollectionById(explorerTree, placement.collectionId);
+
+      if (collection) {
+        void openDraftFromSeed({
+          ...placement,
+          collectionId: collection.collectionId,
+          collectionName: collection.name,
+        });
+        return;
+      }
+    }
+
+    void openDraftFromSeed(placement);
+  };
+
+  const handlePromptCreateCollection = async () => {
+    const name = promptForName('', 'Collection name');
+
+    if (!name) {
+      return;
+    }
+
+    await handleCreateCollection(name);
+  };
+
+  const handlePromptCreateRequestGroup = async (target: WorkspaceCollectionNode | WorkspaceRequestGroupNode) => {
+    const name = promptForName('', 'Request group name');
+
+    if (!name) {
+      return;
+    }
+
+    if (target.kind === 'collection') {
+      await createRequestGroupMutation.mutateAsync({
+        collectionId: target.collectionId,
+        name,
+        parentRequestGroupId: null,
+      });
+      return;
+    }
+
+    await createRequestGroupMutation.mutateAsync({
+      collectionId: target.collectionId,
+      name,
+      parentRequestGroupId: target.requestGroupId,
+    });
+  };
+
+  const handlePromptRenameCollection = async (collection: WorkspaceCollectionNode) => {
+    const name = promptForName(collection.name, `Rename collection "${collection.name}"`);
+
+    if (!name) {
+      return;
+    }
+
+    await handleRenameCollection(collection, name);
+  };
+
+  const handlePromptDeleteCollection = async (collection: WorkspaceCollectionNode) => {
+    if (!window.confirm(`Delete collection "${collection.name}"?`)) {
+      return;
+    }
+
+    await handleDeleteCollection(collection);
+  };
+
+  const handlePromptRenameRequestGroup = async (requestGroup: WorkspaceRequestGroupNode) => {
+    const name = promptForName(requestGroup.name, `Rename request group "${requestGroup.name}"`);
+
+    if (!name) {
+      return;
+    }
+
+    await handleRenameRequestGroup(requestGroup, name);
+  };
+
+  const handlePromptDeleteRequestGroup = async (requestGroup: WorkspaceRequestGroupNode) => {
+    if (!window.confirm(`Delete request group "${requestGroup.name}"?`)) {
+      return;
+    }
+
+    await handleDeleteRequestGroup(requestGroup);
+  };
+
+  const handlePromptDeleteSavedRequest = async (request: WorkspaceTreeRequestLeaf) => {
+    if (!window.confirm(`Delete saved request "${request.name}"?`)) {
+      return;
+    }
+
+    await deleteSavedRequestMutation.mutateAsync(request.id);
+  };
+
+  const handleRunCollection = async (collection: WorkspaceCollectionNode) => {
+    setSelectedExplorerItem({ kind: 'collection', id: collection.collectionId });
+    startBatchRun(`Running ${collection.name}...`);
+    focusWorkspaceResultPanel('response');
+
+    try {
+      const batchExecution = await runWorkspaceCollection(collection.collectionId);
+      finishBatchRunSuccess(batchExecution);
+      await queryClient.invalidateQueries({ queryKey: executionHistoryListQueryKey });
+    } catch (error) {
+      finishBatchRunError(error instanceof Error ? error.message : 'Collection batch run failed.');
+    }
+  };
+
+  const handleRunRequestGroup = async (requestGroup: WorkspaceRequestGroupNode) => {
+    setSelectedExplorerItem({ kind: 'request-group', id: requestGroup.requestGroupId });
+    startBatchRun(`Running ${requestGroup.name}...`);
+    focusWorkspaceResultPanel('response');
+
+    try {
+      const batchExecution = await runWorkspaceRequestGroup(requestGroup.requestGroupId);
+      finishBatchRunSuccess(batchExecution);
+      await queryClient.invalidateQueries({ queryKey: executionHistoryListQueryKey });
+    } catch (error) {
+      finishBatchRunError(error instanceof Error ? error.message : 'Request group batch run failed.');
+    }
+  };
+
+  const openSavedRequestInWorkbench = async (
+    request: WorkspaceTreeRequestLeaf,
+    tabMode: 'preview' | 'pinned',
+  ) => {
     focusWorkspaceWorkSurface();
+    deactivateBatchRun();
     setFloatingExplorerOpen('workspace', false);
     const existingTab = useWorkspaceShellStore
       .getState()
       .tabs.find((tab) => tab.sourceKey === `saved-${request.id}`);
-
-    openSavedRequest({
+    const nextTab = openSavedRequest({
       id: request.id,
       name: request.name,
       methodLabel: request.methodLabel,
       summary: request.summary,
       collectionName: request.collectionName,
       ...createRequestPlacementFields(request),
-    });
+    }, { tabMode });
 
     if (existingTab) {
       return;
     }
 
-    const nextTab = useWorkspaceShellStore
-      .getState()
-      .tabs.find((tab) => tab.sourceKey === `saved-${request.id}`);
+    removeCommandState(nextTab.id);
+    const savedRecord = await readWorkspaceSavedRequestDetail(request.id);
+    ensureDraftForTab(nextTab, {
+      name: savedRecord.name,
+      method: savedRecord.method,
+      url: savedRecord.url,
+      selectedEnvironmentId: savedRecord.selectedEnvironmentId ?? null,
+      params: savedRecord.params,
+      headers: savedRecord.headers,
+      bodyMode: savedRecord.bodyMode,
+      bodyText: savedRecord.bodyText,
+      formBody: savedRecord.formBody,
+      multipartBody: savedRecord.multipartBody,
+      auth: savedRecord.auth,
+      scripts: savedRecord.scripts,
+      ...createRequestPlacementFields(savedRecord),
+    }, { replace: true });
+  };
 
-    if (nextTab) {
-      const savedRecord = await readWorkspaceSavedRequestDetail(request.id);
-      ensureDraftForTab(nextTab, {
-        name: savedRecord.name,
-        method: savedRecord.method,
-        url: savedRecord.url,
-        selectedEnvironmentId: savedRecord.selectedEnvironmentId ?? null,
-        params: savedRecord.params,
-        headers: savedRecord.headers,
-        bodyMode: savedRecord.bodyMode,
-        bodyText: savedRecord.bodyText,
-        formBody: savedRecord.formBody,
-        multipartBody: savedRecord.multipartBody,
-        auth: savedRecord.auth,
-        scripts: savedRecord.scripts,
-        ...createRequestPlacementFields(savedRecord),
-      });
-    }
+  const handlePreviewSavedRequest = async (request: WorkspaceTreeRequestLeaf) => {
+    await openSavedRequestInWorkbench(request, 'preview');
+  };
+
+  const handlePinSavedRequest = async (request: WorkspaceTreeRequestLeaf) => {
+    await openSavedRequestInWorkbench(request, 'pinned');
   };
 
   const handleSelectTab = (tabId: string) => {
@@ -940,8 +1198,22 @@ export function WorkspaceRoute() {
         ) : null}
         <WorkspaceExplorer
           tree={explorerTree}
-          selectedRequestId={selectedExplorerItemId}
-          onOpenSavedRequest={handleOpenSavedRequest}
+          selectedItemId={selectedExplorerItemId}
+          selectedItemKind={selectedExplorerItemKind}
+          onSelectCollection={handleSelectCollection}
+          onSelectRequestGroup={handleSelectRequestGroup}
+          onPreviewSavedRequest={handlePreviewSavedRequest}
+          onPinSavedRequest={handlePinSavedRequest}
+          onCreateRequest={handleCreateRequestAtPlacement}
+          onCreateRequestGroup={handlePromptCreateRequestGroup}
+          onRunCollection={handleRunCollection}
+          onRunRequestGroup={handleRunRequestGroup}
+          onRenameCollection={handlePromptRenameCollection}
+          onDeleteCollection={handlePromptDeleteCollection}
+          onRenameRequestGroup={handlePromptRenameRequestGroup}
+          onDeleteRequestGroup={handlePromptDeleteRequestGroup}
+          onExportRequest={(request) => exportRequestMutation.mutate(request)}
+          onDeleteRequest={handlePromptDeleteSavedRequest}
         />
         </section>
       )}
@@ -971,12 +1243,37 @@ export function WorkspaceRoute() {
           </div>
         ) : null}
 
+        <div className="request-work-surface__future-actions" aria-label="Workspace header actions">
+          <button type="button" className="workspace-button" onClick={handleCreateRequest}>
+            <IconLabel icon="new">New Request</IconLabel>
+          </button>
+          <button type="button" className="workspace-button workspace-button--secondary" onClick={handleCreateQuickRequest}>
+            <IconLabel icon="new">Quick Request</IconLabel>
+          </button>
+          <button type="button" className="workspace-button workspace-button--secondary" onClick={() => { void handlePromptCreateCollection(); }}>
+            <IconLabel icon="add">New Collection</IconLabel>
+          </button>
+          {selectedCollection || selectedRequestGroupLocation ? (
+            <button type="button" className="workspace-button workspace-button--secondary" onClick={() => {
+              if (selectedRequestGroupLocation) {
+                void handleRunRequestGroup(selectedRequestGroupLocation.requestGroup);
+              } else if (selectedCollection) {
+                void handleRunCollection(selectedCollection);
+              }
+            }}>
+              <IconLabel icon="run">Run Selected</IconLabel>
+            </button>
+          ) : null}
+        </div>
+
         <RequestTabShell
           tabs={resolvedTabs}
           activeTabId={activeTabId}
           onCreateRequest={handleCreateRequest}
+          onCreateQuickRequest={handleCreateQuickRequest}
           onSelectTab={handleSelectTab}
           onCloseTab={handleCloseTab}
+          onPinTab={pinTab}
         />
 
         <WorkspaceResourceManagerPanel

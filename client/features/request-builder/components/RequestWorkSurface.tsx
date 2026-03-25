@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Suspense, lazy, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
 import {
   listWorkspaceEnvironments,
@@ -9,7 +9,7 @@ import { useRequestBuilderCommands } from '@client/features/request-builder/hook
 import type { RequestDraftState, RequestScriptStageId } from '@client/features/request-builder/request-draft.types';
 import type { SavedScriptRecord } from '@client/features/scripts/scripts.types';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
-import { isDetachedRequestTab } from '@client/features/request-builder/request-tab-state';
+import { isDetachedRequestTab, isPreviewRequestTab } from '@client/features/request-builder/request-tab-state';
 import { RequestKeyValueEditor } from '@client/features/request-builder/components/RequestKeyValueEditor';
 import {
   createRequestPlacementFromSelection,
@@ -23,6 +23,7 @@ import {
   type RequestPlacementCollectionOption,
 } from '@client/features/request-builder/request-placement';
 import { useRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
+import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
 import type { AppIconName } from '@client/shared/ui/AppIcon';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 
@@ -121,6 +122,7 @@ export function RequestWorkSurface({
   const linkScriptStageToSavedScript = useRequestDraftStore((state) => state.linkScriptStageToSavedScript);
   const updateSelectedEnvironmentId = useRequestDraftStore((state) => state.updateSelectedEnvironmentId);
   const updateDraftPlacement = useRequestDraftStore((state) => state.updateDraftPlacement);
+  const pinTab = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.pinTab);
   const environmentsQuery = useQuery({
     queryKey: workspaceEnvironmentsQueryKey,
     queryFn: listWorkspaceEnvironments,
@@ -129,6 +131,14 @@ export function RequestWorkSurface({
     activeTab,
     draft,
   );
+
+  useEffect(() => {
+    if (!activeTab || !draft?.dirty || !isPreviewRequestTab(activeTab)) {
+      return;
+    }
+
+    pinTab(activeTab.id);
+  }, [activeTab, draft?.dirty, pinTab]);
 
   if (!activeTab) {
     return (
@@ -290,7 +300,7 @@ export function RequestWorkSurface({
                         <option key={getRequestGroupPlacementValue(requestGroup)} value={getRequestGroupPlacementValue(requestGroup)}>
                           {isPendingRequestPlacementGroup(requestGroup)
                             ? t('workspaceRoute.requestBuilder.placement.pendingOption', { name: requestGroup.requestGroupName })
-                            : requestGroup.requestGroupName}
+                            : requestGroup.requestGroupPathLabel ?? requestGroup.requestGroupName}
                         </option>
                       ))
                     : <option value="">{t('workspaceRoute.requestBuilder.placement.noRequestGroups')}</option>}

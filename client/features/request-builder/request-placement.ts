@@ -8,6 +8,7 @@ export interface RequestPlacementValue {
 export interface RequestPlacementGroupOption {
   requestGroupId?: string;
   requestGroupName: string;
+  requestGroupPathLabel?: string;
   pendingCreation?: boolean;
 }
 
