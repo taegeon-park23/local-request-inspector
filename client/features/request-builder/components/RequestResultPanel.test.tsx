@@ -117,3 +117,29 @@ describe('RequestResultPanel batch mode', () => {
   });
 });
 
+describe('RequestResultPanel replay source localization', () => {
+  it('renders localized replay source copy in Korean observation summary', () => {
+    renderApp(
+      <RequestResultPanel
+        activeTab={{
+          id: 'replay-1',
+          sourceKey: 'replay-capture-1',
+          title: 'Replay of POST /webhooks/stripe',
+          methodLabel: 'POST',
+          source: 'replay',
+          tabMode: 'pinned',
+          summary: 'Replay draft',
+          hasUnsavedChanges: false,
+          replaySource: {
+            kind: 'capture',
+            label: 'Opened from capture',
+            description: 'POST localhost:5671/webhooks/stripe captured at 2026-03-25 09:15.',
+          },
+        }}
+      />,
+      { initialLocale: 'ko' },
+    );
+
+    expect(screen.getAllByText('캡처에서 열림').length).toBeGreaterThan(0);
+  });
+});

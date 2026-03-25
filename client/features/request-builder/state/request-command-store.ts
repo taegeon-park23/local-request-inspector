@@ -67,19 +67,6 @@ function resolveAutoFocusedResultTab(execution: RequestRunObservation, fallback:
   return fallback === 'console' || fallback === 'tests' ? 'response' : fallback;
 }
 
-function createRunStatusMessage(execution: RequestRunObservation) {
-  switch (execution.executionOutcome) {
-    case 'Succeeded':
-      return 'Request run completed.';
-    case 'Blocked':
-      return 'Request run was blocked before completion.';
-    case 'Timed out':
-      return 'Request run timed out.';
-    default:
-      return 'Request run failed.';
-  }
-}
-
 function withEntry(
   state: RequestCommandStoreState,
   tabId: string,
@@ -103,7 +90,7 @@ export const useRequestCommandStore = create<RequestCommandStoreState>((set) => 
         ...entry,
         save: {
           status: 'pending',
-          message: 'Saving request definition...',
+          message: null,
           savedAt: entry.save.savedAt,
         },
       })),
@@ -114,7 +101,7 @@ export const useRequestCommandStore = create<RequestCommandStoreState>((set) => 
         ...entry,
         save: {
           status: 'success',
-          message: 'Request definition saved.',
+          message: null,
           savedAt,
         },
       })),
@@ -136,7 +123,7 @@ export const useRequestCommandStore = create<RequestCommandStoreState>((set) => 
         ...entry,
         run: {
           status: 'pending',
-          message: 'Running request...',
+          message: null,
           latestExecution: entry.run.latestExecution,
           activeResultTab: entry.run.activeResultTab,
         },
@@ -158,7 +145,7 @@ export const useRequestCommandStore = create<RequestCommandStoreState>((set) => 
         ...entry,
         run: {
           status: 'success',
-          message: createRunStatusMessage(execution),
+          message: null,
           latestExecution: execution,
           activeResultTab: resolveAutoFocusedResultTab(execution, entry.run.activeResultTab),
         },

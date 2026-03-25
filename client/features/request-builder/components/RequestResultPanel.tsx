@@ -58,7 +58,15 @@ function getTabSourceCopy(activeTab: RequestTabRecord, t: TranslateFn) {
   }
 
   if (activeTab.source === 'replay') {
-    return activeTab.replaySource?.label ?? t('workspaceRoute.resultPanel.source.replayDraft');
+    if (activeTab.replaySource?.kind === 'capture') {
+      return t('workspaceRoute.resultPanel.source.captureReplay');
+    }
+
+    if (activeTab.replaySource?.kind === 'history') {
+      return t('workspaceRoute.resultPanel.source.historyReplay');
+    }
+
+    return t('workspaceRoute.resultPanel.source.replayDraft');
   }
 
   const requestGroupName = readRequestGroupName(activeTab);
@@ -703,9 +711,7 @@ export function RequestResultPanel({
             { label: t('workspaceRoute.resultPanel.summary.labels.visibleSlot'), value: activeResultTabLabel },
             {
               label: t('workspaceRoute.resultPanel.summary.labels.runLane'),
-              value: runStatus.status === 'pending'
-                ? t('workspaceRoute.resultPanel.summary.values.executionInProgress')
-                : runStatus.message ?? t('workspaceRoute.resultPanel.summary.values.noExecutionYet'),
+              value: getRunLaneCopy(runStatus, t),
             },
           ]}
         />
@@ -995,17 +1001,28 @@ export function RequestResultPanel({
   );
 }
 
+function getRunLaneCopy(
+  runStatus: ReturnType<typeof useRequestCommandStore.getState>['byTabId'][string]['run'],
+  t: TranslateFn,
+) {
+  if (runStatus.status === 'pending') {
+    return t('workspaceRoute.resultPanel.summary.values.executionInProgress');
+  }
 
+  if (runStatus.status === 'success') {
+    switch (runStatus.latestExecution?.executionOutcome) {
+      case 'Blocked':
+        return t('workspaceRoute.requestBuilder.status.runBlocked');
+      case 'Timed out':
+        return t('workspaceRoute.requestBuilder.status.runTimedOut');
+      default:
+        return t('workspaceRoute.requestBuilder.status.runCompleted');
+    }
+  }
 
+  if (runStatus.status === 'error') {
+    return runStatus.message ?? t('workspaceRoute.requestBuilder.status.runError');
+  }
 
-
-
-
-
-
-
-
-
-
-
-
+  return t('workspaceRoute.resultPanel.summary.values.noExecutionYet');
+}

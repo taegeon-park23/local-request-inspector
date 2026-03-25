@@ -113,6 +113,29 @@ function getReplaySourceDescription(
   return replaySource.description;
 }
 
+function getRunStatusCopy(
+  runStatus: ReturnType<typeof useRequestBuilderCommands>['runStatus'],
+  fallbackMessage: string | null,
+  t: ReturnType<typeof useI18n>['t'],
+) {
+  if (runStatus.status === 'pending') {
+    return t('workspaceRoute.requestBuilder.status.runInProgress');
+  }
+
+  if (runStatus.status === 'success') {
+    switch (runStatus.latestExecution?.executionOutcome) {
+      case 'Blocked':
+        return t('workspaceRoute.requestBuilder.status.runBlocked');
+      case 'Timed out':
+        return t('workspaceRoute.requestBuilder.status.runTimedOut');
+      default:
+        return t('workspaceRoute.requestBuilder.status.runCompleted');
+    }
+  }
+
+  return runStatus.message ?? fallbackMessage;
+}
+
 export function RequestWorkSurface({
   activeTab,
   onCreateRequest,
@@ -200,8 +223,14 @@ export function RequestWorkSurface({
       t('workspaceRoute.requestBuilder.status.saveUpToDate'),
       formatDateTime,
     )
-    : saveStatus.message ?? (saveDisabledReason ?? t('workspaceRoute.requestBuilder.status.saveFallback'));
-  const runStatusCopy = runStatus.message ?? (runDisabledReason ?? t('workspaceRoute.requestBuilder.status.runFallback'));
+    : saveStatus.status === 'pending'
+      ? t('workspaceRoute.requestBuilder.status.savingInProgress')
+      : saveStatus.message ?? (saveDisabledReason ?? t('workspaceRoute.requestBuilder.status.saveFallback'));
+  const runStatusCopy = getRunStatusCopy(
+    runStatus,
+    runDisabledReason ?? t('workspaceRoute.requestBuilder.status.runFallback'),
+    t,
+  );
   const environmentSelectValue = draft.selectedEnvironmentId ?? '';
   const selectedEnvironment = (environmentsQuery.data ?? []).find((environment) => environment.id === draft.selectedEnvironmentId) ?? null;
   const hasMissingEnvironmentReference = environmentSelectValue.length > 0 && environmentsQuery.isSuccess && !selectedEnvironment;
