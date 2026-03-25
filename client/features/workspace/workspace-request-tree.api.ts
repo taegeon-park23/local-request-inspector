@@ -160,9 +160,51 @@ async function parseJsonResponse<TData>(response: Response): Promise<TData> {
   return (payload as ApiEnvelope<TData>).data;
 }
 
+function normalizeWorkspaceRequestLeafNode(node: WorkspaceRequestLeafNode): WorkspaceRequestLeafNode {
+  return {
+    ...node,
+    request: {
+      ...node.request,
+    },
+  };
+}
+
+function normalizeWorkspaceRequestGroupNode(node: WorkspaceRequestGroupNode): WorkspaceRequestGroupNode {
+  return {
+    ...node,
+    childGroups: Array.isArray(node.childGroups)
+      ? node.childGroups.map((childGroup) => normalizeWorkspaceRequestGroupNode(childGroup))
+      : [],
+    requests: Array.isArray(node.requests)
+      ? node.requests.map((requestNode) => normalizeWorkspaceRequestLeafNode(requestNode))
+      : [],
+  };
+}
+
+function normalizeWorkspaceCollectionNode(node: WorkspaceCollectionNode): WorkspaceCollectionNode {
+  return {
+    ...node,
+    childGroups: Array.isArray(node.childGroups)
+      ? node.childGroups.map((childGroup) => normalizeWorkspaceRequestGroupNode(childGroup))
+      : [],
+  };
+}
+
+function normalizeWorkspaceRequestTreeResponse(response: WorkspaceRequestTreeResponse): WorkspaceRequestTreeResponse {
+  return {
+    ...response,
+    collections: Array.isArray(response.collections) ? response.collections : [],
+    requestGroups: Array.isArray(response.requestGroups) ? response.requestGroups : [],
+    tree: Array.isArray(response.tree)
+      ? response.tree.map((collection) => normalizeWorkspaceCollectionNode(collection))
+      : [],
+  };
+}
+
 export async function listWorkspaceRequestTree() {
   const response = await fetch(`/api/workspaces/${DEFAULT_WORKSPACE_ID}/request-tree`);
-  return parseJsonResponse<WorkspaceRequestTreeResponse>(response);
+  return parseJsonResponse<WorkspaceRequestTreeResponse>(response)
+    .then((payload) => normalizeWorkspaceRequestTreeResponse(payload));
 }
 
 export async function createWorkspaceCollection(

@@ -303,13 +303,11 @@ export function RequestResultPanel({
     const { t } = useI18n();
   const translateEnvironmentResolutionKey = (key: string) => t(key as Parameters<typeof t>[0]);
   const resultPanelTabs = getResultPanelTabs(t);
-  const batchRunState = useWorkspaceBatchRunStore((state: ReturnType<typeof useWorkspaceBatchRunStore.getState>) => ({
-    isActive: state.isActive,
-    status: state.status,
-    message: state.message,
-    latestExecution: state.latestExecution,
-    activeResultTab: state.activeResultTab,
-  }));
+  const batchRunIsActive = useWorkspaceBatchRunStore((state: ReturnType<typeof useWorkspaceBatchRunStore.getState>) => state.isActive);
+  const batchRunStatus = useWorkspaceBatchRunStore((state: ReturnType<typeof useWorkspaceBatchRunStore.getState>) => state.status);
+  const batchRunMessage = useWorkspaceBatchRunStore((state: ReturnType<typeof useWorkspaceBatchRunStore.getState>) => state.message);
+  const batchExecution = useWorkspaceBatchRunStore((state: ReturnType<typeof useWorkspaceBatchRunStore.getState>) => state.latestExecution);
+  const batchActiveResultTab = useWorkspaceBatchRunStore((state: ReturnType<typeof useWorkspaceBatchRunStore.getState>) => state.activeResultTab);
   const commandEntry = useRequestCommandStore((state) =>
     activeTab ? state.byTabId[activeTab.id] : undefined,
   );
@@ -327,14 +325,12 @@ export function RequestResultPanel({
   const activeResultTab = runStatus.activeResultTab;
   const isDetachedDraft = isDetachedRequestTab(activeTab);
   const environmentResolutionSummary = readExecutionEnvironmentResolutionSummary(execution);
-  const batchExecution = batchRunState.latestExecution;
-  const batchActiveResultTab = batchRunState.activeResultTab;
 
   useEffect(() => {
-    if (batchRunState.isActive) {
+    if (batchRunIsActive) {
       setActiveRoutePanel('detail');
     }
-  }, [batchRunState.isActive, setActiveRoutePanel]);
+  }, [batchRunIsActive, setActiveRoutePanel]);
 
   useEffect(() => {
     if (runStatus.status === 'success' || runStatus.status === 'error') {
@@ -342,7 +338,7 @@ export function RequestResultPanel({
     }
   }, [runStatus.status, setActiveRoutePanel]);
 
-  if (batchRunState.isActive) {
+  if (batchRunIsActive) {
     const activeBatchResultTabLabel = resultPanelTabs.find((tab) => tab.id === batchActiveResultTab)?.label
       ?? t('workspaceRoute.resultPanel.tabs.response');
     const batchLatestBadges = batchExecution ? createBatchLatestBadges(batchExecution, t) : [];
@@ -353,19 +349,19 @@ export function RequestResultPanel({
             ? t('workspaceRoute.resultPanel.batch.status.noRequestsFound')
             : t('workspaceRoute.resultPanel.batch.status.noStepsRecorded'),
         )
-      : [batchRunState.message ?? t('workspaceRoute.resultPanel.batch.status.noExecutionSelected')];
+      : [batchRunMessage ?? t('workspaceRoute.resultPanel.batch.status.noExecutionSelected')];
     const batchConsolePreviewItems = batchExecution
       ? createPreviewItems(
           createBatchConsoleEntries(batchExecution),
           t('workspaceRoute.resultPanel.batch.status.noConsoleCaptured'),
         )
-      : [batchRunState.message ?? t('workspaceRoute.resultPanel.batch.status.noExecutionSelected')];
+      : [batchRunMessage ?? t('workspaceRoute.resultPanel.batch.status.noExecutionSelected')];
     const batchTestPreviewItems = batchExecution
       ? createPreviewItems(
           createBatchTestEntries(batchExecution),
           t('workspaceRoute.resultPanel.batch.status.noTestsCaptured'),
         )
-      : [batchRunState.message ?? t('workspaceRoute.resultPanel.batch.status.noExecutionSelected')];
+      : [batchRunMessage ?? t('workspaceRoute.resultPanel.batch.status.noExecutionSelected')];
 
     return (
       <div className="workspace-detail-panel">
@@ -377,7 +373,7 @@ export function RequestResultPanel({
             <div className="workspace-detail-panel__header-meta request-work-surface__badges">
               <span className="workspace-chip">{batchExecution ? formatBatchContainerLabel(batchExecution, t) : t('workspaceRoute.resultPanel.batch.badges.batchRun')}</span>
               <span className="workspace-chip workspace-chip--secondary">{activeBatchResultTabLabel}</span>
-              {renderBatchHeaderExecutionStatus(t, batchRunState, batchExecution)}
+              {renderBatchHeaderExecutionStatus(t, { status: batchRunStatus }, batchExecution)}
             </div>
             {batchLatestBadges.length > 0 ? (
               <div className="workspace-detail-panel__header-meta request-work-surface__badges" aria-label={t('workspaceRoute.resultPanel.batch.badges.latestAriaLabel')}>
@@ -416,9 +412,9 @@ export function RequestResultPanel({
               },
               {
                 label: t('workspaceRoute.resultPanel.batch.summary.labels.runLane'),
-                value: batchRunState.status === 'pending'
+                value: batchRunStatus === 'pending'
                   ? t('workspaceRoute.resultPanel.batch.summary.values.executionInProgress')
-                  : batchRunState.message ?? t('workspaceRoute.resultPanel.batch.summary.values.noExecutionYet'),
+                  : batchRunMessage ?? t('workspaceRoute.resultPanel.batch.summary.values.noExecutionYet'),
               },
               { label: t('workspaceRoute.resultPanel.batch.summary.labels.requests'), value: batchExecution?.requestCount ?? 0 },
             ]}
@@ -462,7 +458,7 @@ export function RequestResultPanel({
             description={t('workspaceRoute.resultPanel.batch.response.description')}
             tone="muted"
           >
-            {batchRunState.status === 'pending' && !batchExecution ? (
+            {batchRunStatus === 'pending' && !batchExecution ? (
               <EmptyStateCallout
                 title={t('workspaceRoute.resultPanel.batch.response.runningTitle')}
                 description={t('workspaceRoute.resultPanel.batch.response.runningDescription')}
@@ -582,7 +578,7 @@ export function RequestResultPanel({
             description={t('workspaceRoute.resultPanel.batch.executionInfo.description')}
             tone="muted"
           >
-            {batchRunState.status === 'pending' && !batchExecution ? (
+            {batchRunStatus === 'pending' && !batchExecution ? (
               <EmptyStateCallout
                 title={t('workspaceRoute.resultPanel.batch.executionInfo.preparingTitle')}
                 description={t('workspaceRoute.resultPanel.batch.executionInfo.preparingDescription')}
@@ -615,7 +611,7 @@ export function RequestResultPanel({
                       </li>
                     ))}
                   </ul>
-                  {batchRunState.message ? <p className="shared-readiness-note">{batchRunState.message}</p> : null}
+                  {batchRunMessage ? <p className="shared-readiness-note">{batchRunMessage}</p> : null}
                 </div>
               </div>
             ) : (
