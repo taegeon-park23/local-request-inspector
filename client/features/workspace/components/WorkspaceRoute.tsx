@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   listWorkspaceEnvironments,
   workspaceEnvironmentsQueryKey,
@@ -13,7 +13,7 @@ import {
   workspaceSavedRequestsQueryKey,
 } from '@client/features/request-builder/request-builder.api';
 import { useRequestBuilderCommands } from '@client/features/request-builder/hooks/useRequestBuilderCommands';
-import { RequestResultPanel } from '@client/features/request-builder/components/RequestResultPanel';
+import { WorkspaceContextPanel } from '@client/features/workspace/components/WorkspaceContextPanel';
 import { useI18n } from '@client/app/providers/useI18n';
 import { RequestTabShell } from '@client/features/request-builder/components/RequestTabShell';
 import { RequestWorkSurface } from '@client/features/request-builder/components/RequestWorkSurface';
@@ -66,6 +66,7 @@ import {
   updateWorkspaceCollection,
   updateWorkspaceRequestGroup,
   workspaceRequestTreeQueryKey,
+  type WorkspaceBatchRunInput,
   type WorkspaceCollectionNode,
   type WorkspaceRequestGroupNode,
   type WorkspaceTreeRequestLeaf,
@@ -102,6 +103,79 @@ const WORKSPACE_SHORTCUTS = {
   newRequestGroup: 'Alt+Shift+G',
   runSelected: 'Alt+Shift+R',
 } as const;
+
+
+const RUNNER_ENVIRONMENT_INHERIT = '__inherit__';
+const RUNNER_ENVIRONMENT_NONE = '__none__';
+const RUNNER_DEFAULT_EXECUTION_ORDER: NonNullable<WorkspaceBatchRunInput['executionOrder']> = 'depth-first-sequential';
+const RUNNER_MAX_ITERATION_COUNT = 25;
+
+interface WorkspaceRunnerContainerSelection {
+  containerType: 'collection' | 'request-group';
+  containerId: string;
+  containerName: string;
+  requests: WorkspaceTreeRequestLeaf[];
+}
+
+interface WorkspaceRunnerConfigState {
+  containerKey: string;
+  executionOrder: NonNullable<WorkspaceBatchRunInput['executionOrder']>;
+  continueOnError: boolean;
+  iterationInput: string;
+  dataFilePath: string;
+  environmentSelection: string;
+  selectedRequestIds: string[];
+}
+
+function collectRequestLeavesDepthFirst(
+  requestGroups: WorkspaceRequestGroupNode[],
+  collected: WorkspaceTreeRequestLeaf[] = [],
+): WorkspaceTreeRequestLeaf[] {
+  for (const requestGroup of requestGroups) {
+    collectRequestLeavesDepthFirst(requestGroup.childGroups, collected);
+
+    for (const requestNode of requestGroup.requests) {
+      collected.push(requestNode.request);
+    }
+  }
+
+  return collected;
+}
+
+function createRunnerContainerSelection(
+  selectedCollection: WorkspaceCollectionNode | null,
+  selectedRequestGroupLocation: { collection: WorkspaceCollectionNode; requestGroup: WorkspaceRequestGroupNode } | null,
+): WorkspaceRunnerContainerSelection | null {
+  if (selectedRequestGroupLocation) {
+    return {
+      containerType: 'request-group',
+      containerId: selectedRequestGroupLocation.requestGroup.requestGroupId,
+      containerName: selectedRequestGroupLocation.requestGroup.name,
+      requests: collectRequestLeavesDepthFirst([selectedRequestGroupLocation.requestGroup], []),
+    };
+  }
+
+  if (selectedCollection) {
+    return {
+      containerType: 'collection',
+      containerId: selectedCollection.collectionId,
+      containerName: selectedCollection.name,
+      requests: collectRequestLeavesDepthFirst(selectedCollection.childGroups, []),
+    };
+  }
+
+  return null;
+}
+
+function normalizeRunnerIterationCount(rawValue: string) {
+  const parsed = Number.parseInt(rawValue, 10);
+
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return 1;
+  }
+
+  return Math.min(parsed, RUNNER_MAX_ITERATION_COUNT);
+}
 
 function resolvePresentationTab(
   tab: RequestTabRecord,
@@ -471,6 +545,15 @@ export function WorkspaceRoute() {
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
   const openApiImportInputRef = useRef<HTMLInputElement | null>(null);
   const postmanImportInputRef = useRef<HTMLInputElement | null>(null);
+  const [runnerConfigState, setRunnerConfigState] = useState<WorkspaceRunnerConfigState>({
+    containerKey: 'none',
+    executionOrder: RUNNER_DEFAULT_EXECUTION_ORDER,
+    continueOnError: true,
+    iterationInput: '1',
+    dataFilePath: '',
+    environmentSelection: RUNNER_ENVIRONMENT_INHERIT,
+    selectedRequestIds: [],
+  });
   const tabs = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.tabs);
   const activeTabId = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.activeTabId);
   const selectedExplorerItemId = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.selectedExplorerItemId);
@@ -512,6 +595,10 @@ export function WorkspaceRoute() {
   const requestTreeQuery = useQuery({
     queryKey: workspaceRequestTreeQueryKey,
     queryFn: listWorkspaceRequestTree,
+  });
+  const environmentsQuery = useQuery({
+    queryKey: workspaceEnvironmentsQueryKey,
+    queryFn: listWorkspaceEnvironments,
   });
 
   useEffect(() => {
@@ -869,6 +956,65 @@ export function WorkspaceRoute() {
   const selectedRequestGroupLocation = selectedExplorerItemKind === 'request-group'
     ? findRequestGroupById(explorerTree, selectedExplorerItemId)
     : null;
+  const selectedRunnerContainer = useMemo(
+    () => createRunnerContainerSelection(selectedCollection, selectedRequestGroupLocation),
+    [selectedCollection, selectedRequestGroupLocation],
+  );
+  const runnerEnvironmentOptions = environmentsQuery.data ?? [];
+  const runnerContainerRequestIds = useMemo(
+    () => selectedRunnerContainer?.requests.map((request) => request.id) ?? [],
+    [selectedRunnerContainer],
+  );
+  const runnerContainerRequestIdSet = useMemo(
+    () => new Set(runnerContainerRequestIds),
+    [runnerContainerRequestIds],
+  );
+  const runnerContainerKey = selectedRunnerContainer
+    ? `${selectedRunnerContainer.containerType}:${selectedRunnerContainer.containerId}`
+    : 'none';
+
+  const resolveRunnerConfigState = (
+    state: WorkspaceRunnerConfigState,
+  ): WorkspaceRunnerConfigState => (
+    state.containerKey === runnerContainerKey
+      ? state
+      : {
+          containerKey: runnerContainerKey,
+          executionOrder: RUNNER_DEFAULT_EXECUTION_ORDER,
+          continueOnError: true,
+          iterationInput: '1',
+          dataFilePath: '',
+          environmentSelection: RUNNER_ENVIRONMENT_INHERIT,
+          selectedRequestIds: runnerContainerRequestIds,
+        }
+  );
+
+  const runnerConfig = resolveRunnerConfigState(runnerConfigState);
+  const runnerExecutionOrder = runnerConfig.executionOrder;
+  const runnerContinueOnError = runnerConfig.continueOnError;
+  const runnerIterationInput = runnerConfig.iterationInput;
+  const runnerDataFilePath = runnerConfig.dataFilePath;
+  const runnerEnvironmentSelection = runnerConfig.environmentSelection;
+  const runnerSelectedRequestIds = runnerConfig.selectedRequestIds;
+
+  const setRunnerConfig = (updater: (current: WorkspaceRunnerConfigState) => WorkspaceRunnerConfigState) => {
+    setRunnerConfigState((current) => {
+      const base = resolveRunnerConfigState(current);
+      const next = updater(base);
+
+      return {
+        ...next,
+        containerKey: runnerContainerKey,
+      };
+    });
+  };
+
+  const runnerOrderedSelectedRequestIds = useMemo(
+    () => runnerContainerRequestIds.filter((requestId) => runnerSelectedRequestIds.includes(requestId)),
+    [runnerContainerRequestIds, runnerSelectedRequestIds],
+  );
+  const runnerHasRequestSelection = runnerContainerRequestIds.length === 0 || runnerOrderedSelectedRequestIds.length > 0;
+  const runnerCanRunSelectedContainer = Boolean(selectedRunnerContainer) && runnerHasRequestSelection;
   const activeTabKey = activeTab?.id ?? 'empty';
   const pendingReplayRunTabId = useReplayRunStore((state) => state.pendingReplayRunTabId);
   const consumeReplayRun = useReplayRunStore((state) => state.consumeReplayRun);
@@ -1094,16 +1240,78 @@ export function WorkspaceRoute() {
     openCreateSheet('request-group', target);
   };
 
+  const handleToggleRunnerRequestSelection = (requestId: string) => {
+    if (!runnerContainerRequestIdSet.has(requestId)) {
+      return;
+    }
+
+    setRunnerConfig((current) => ({
+      ...current,
+      selectedRequestIds: current.selectedRequestIds.includes(requestId)
+        ? current.selectedRequestIds.filter((candidate) => candidate !== requestId)
+        : [...current.selectedRequestIds, requestId],
+    }));
+  };
+
+  const handleSelectAllRunnerRequests = () => {
+    setRunnerConfig((current) => ({
+      ...current,
+      selectedRequestIds: runnerContainerRequestIds,
+    }));
+  };
+
+  const handleClearRunnerRequestSelection = () => {
+    setRunnerConfig((current) => ({
+      ...current,
+      selectedRequestIds: [],
+    }));
+  };
+
+  const createRunnerBatchRunInput = (): WorkspaceBatchRunInput | null => {
+    if (!selectedRunnerContainer) {
+      return null;
+    }
+
+    const runInput: WorkspaceBatchRunInput = {
+      executionOrder: runnerExecutionOrder,
+      continueOnError: runnerContinueOnError,
+      requestIds: runnerOrderedSelectedRequestIds,
+      iterationCount: normalizeRunnerIterationCount(runnerIterationInput),
+    };
+
+    if (runnerEnvironmentSelection === RUNNER_ENVIRONMENT_NONE) {
+      runInput.environmentId = null;
+    } else if (runnerEnvironmentSelection !== RUNNER_ENVIRONMENT_INHERIT) {
+      runInput.environmentId = runnerEnvironmentSelection;
+    }
+
+    const normalizedDataFilePath = runnerDataFilePath.trim();
+    if (normalizedDataFilePath.length > 0) {
+      runInput.dataFilePath = normalizedDataFilePath;
+    }
+
+    return runInput;
+  };
+
   const handleRunSelectedContainer = () => {
     closeHeaderMenus();
 
+    if (!runnerCanRunSelectedContainer) {
+      return;
+    }
+
+    const runInput = createRunnerBatchRunInput();
+    if (!runInput) {
+      return;
+    }
+
     if (selectedRequestGroupLocation) {
-      void handleRunRequestGroup(selectedRequestGroupLocation.requestGroup);
+      void handleRunRequestGroup(selectedRequestGroupLocation.requestGroup, runInput);
       return;
     }
 
     if (selectedCollection) {
-      void handleRunCollection(selectedCollection);
+      void handleRunCollection(selectedCollection, runInput);
     }
   };
 
@@ -1131,7 +1339,7 @@ export function WorkspaceRoute() {
     await deleteSavedRequestMutation.mutateAsync(request.id);
   };
 
-  const handleRunCollection = async (collection: WorkspaceCollectionNode) => {
+  const handleRunCollection = async (collection: WorkspaceCollectionNode, runInput?: WorkspaceBatchRunInput) => {
     setSelectedExplorerItem({ kind: 'collection', id: collection.collectionId });
     const runningMessage = t('workspaceRoute.resultPanel.batch.status.runningContainer', { name: collection.name });
     startBatchRun(runningMessage);
@@ -1144,7 +1352,7 @@ export function WorkspaceRoute() {
     focusWorkspaceWorkSurface();
 
     try {
-      const batchExecution = await runWorkspaceCollection(collection.collectionId);
+      const batchExecution = await runWorkspaceCollection(collection.collectionId, runInput);
       finishBatchRunSuccess(batchExecution);
       openBatchResult({
         containerType: 'collection',
@@ -1166,7 +1374,7 @@ export function WorkspaceRoute() {
     }
   };
 
-  const handleRunRequestGroup = async (requestGroup: WorkspaceRequestGroupNode) => {
+  const handleRunRequestGroup = async (requestGroup: WorkspaceRequestGroupNode, runInput?: WorkspaceBatchRunInput) => {
     setSelectedExplorerItem({ kind: 'request-group', id: requestGroup.requestGroupId });
     const runningMessage = t('workspaceRoute.resultPanel.batch.status.runningContainer', { name: requestGroup.name });
     startBatchRun(runningMessage);
@@ -1179,7 +1387,7 @@ export function WorkspaceRoute() {
     focusWorkspaceWorkSurface();
 
     try {
-      const batchExecution = await runWorkspaceRequestGroup(requestGroup.requestGroupId);
+      const batchExecution = await runWorkspaceRequestGroup(requestGroup.requestGroupId, runInput);
       finishBatchRunSuccess(batchExecution);
       openBatchResult({
         containerType: 'request-group',
@@ -1671,6 +1879,146 @@ export function WorkspaceRoute() {
           ) : null}
         </div>
 
+        {selectedRunnerContainer ? (
+          <section className="workspace-surface-card workspace-runner-panel" aria-label={t('workspaceRoute.runner.ariaLabel')}>
+            <header className="workspace-runner-panel__header">
+              <div>
+                <h3>{t('workspaceRoute.runner.title')}</h3>
+                <p>
+                  {t('workspaceRoute.runner.description', {
+                    name: selectedRunnerContainer.containerName,
+                  })}
+                </p>
+              </div>
+              <div className="workspace-runner-panel__actions">
+                <button
+                  type="button"
+                  className="workspace-button workspace-button--secondary"
+                  onClick={handleSelectAllRunnerRequests}
+                  disabled={runnerContainerRequestIds.length === 0 || runnerOrderedSelectedRequestIds.length === runnerContainerRequestIds.length}
+                >
+                  {t('workspaceRoute.runner.actions.selectAll')}
+                </button>
+                <button
+                  type="button"
+                  className="workspace-button workspace-button--secondary"
+                  onClick={handleClearRunnerRequestSelection}
+                  disabled={runnerOrderedSelectedRequestIds.length === 0}
+                >
+                  {t('workspaceRoute.runner.actions.clearSelection')}
+                </button>
+              </div>
+            </header>
+
+            <div className="workspace-runner-panel__grid">
+              <label className="request-field">
+                <span>{t('workspaceRoute.runner.fields.executionOrder')}</span>
+                <select
+                  value={runnerExecutionOrder}
+                  onChange={(event) => {
+                    const nextOrder = event.currentTarget.value as NonNullable<WorkspaceBatchRunInput['executionOrder']>;
+                    setRunnerConfig((current) => ({
+                      ...current,
+                      executionOrder: nextOrder,
+                    }));
+                  }}
+                >
+                  <option value="depth-first-sequential">{t('workspaceRoute.runner.options.depthFirstSequential')}</option>
+                </select>
+              </label>
+
+              <label className="request-field">
+                <span>{t('workspaceRoute.runner.fields.environment')}</span>
+                <select
+                  value={runnerEnvironmentSelection}
+                  onChange={(event) => setRunnerConfig((current) => ({
+                    ...current,
+                    environmentSelection: event.currentTarget.value,
+                  }))}
+                >
+                  <option value={RUNNER_ENVIRONMENT_INHERIT}>{t('workspaceRoute.runner.options.inheritEnvironment')}</option>
+                  <option value={RUNNER_ENVIRONMENT_NONE}>{t('workspaceRoute.runner.options.noEnvironment')}</option>
+                  {runnerEnvironmentOptions.map((environment) => (
+                    <option key={environment.id} value={environment.id}>
+                      {environment.isDefault
+                        ? `${environment.name} (${t('workspaceRoute.requestBuilder.environment.defaultBadge')})`
+                        : environment.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="request-field">
+                <span>{t('workspaceRoute.runner.fields.iterationCount')}</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={RUNNER_MAX_ITERATION_COUNT}
+                  step={1}
+                  value={runnerIterationInput}
+                  onChange={(event) => setRunnerConfig((current) => ({
+                    ...current,
+                    iterationInput: event.currentTarget.value,
+                  }))}
+                />
+              </label>
+
+              <label className="request-field">
+                <span>{t('workspaceRoute.runner.fields.dataFilePath')}</span>
+                <input
+                  type="text"
+                  value={runnerDataFilePath}
+                  placeholder={t('workspaceRoute.runner.values.dataFilePathPlaceholder')}
+                  onChange={(event) => setRunnerConfig((current) => ({
+                    ...current,
+                    dataFilePath: event.currentTarget.value,
+                  }))}
+                />
+              </label>
+            </div>
+
+            <label className="workspace-runner-panel__checkbox">
+              <input
+                type="checkbox"
+                checked={runnerContinueOnError}
+                onChange={(event) => setRunnerConfig((current) => ({
+                  ...current,
+                  continueOnError: event.currentTarget.checked,
+                }))}
+              />
+              <span>{t('workspaceRoute.runner.fields.continueOnError')}</span>
+            </label>
+
+            <p className="workspace-runner-panel__selection-copy">
+              {t('workspaceRoute.runner.selectionSummary', {
+                selected: runnerOrderedSelectedRequestIds.length,
+                total: runnerContainerRequestIds.length,
+              })}
+            </p>
+            {selectedRunnerContainer.requests.length > 0 ? (
+              <ul className="workspace-runner-panel__request-list" aria-label={t('workspaceRoute.runner.requestListAriaLabel')}>
+                {selectedRunnerContainer.requests.map((request) => (
+                  <li key={`runner-request-${request.id}`}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={runnerOrderedSelectedRequestIds.includes(request.id)}
+                        onChange={() => handleToggleRunnerRequestSelection(request.id)}
+                      />
+                      <span>
+                        <span className="workspace-runner-panel__request-method">{request.methodLabel}</span>
+                        {request.name}
+                      </span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="workspace-runner-panel__empty-copy">{t('workspaceRoute.runner.values.noRequests')}</p>
+            )}
+          </section>
+        ) : null}
+
         {isCommandMenuOpen ? (
           <section
             id="workspace-command-menu"
@@ -1863,12 +2211,31 @@ export function WorkspaceRoute() {
       )}
       detail={(
         <aside className="shell-panel shell-panel--detail" aria-label={t('shell.routePanels.detailRegion')}>
-        <RequestResultPanel key={`detail-${activeTabKey}`} activeTab={activeTab} />
+          <WorkspaceContextPanel
+            key={`detail-${activeTabKey}`}
+            activeTab={activeTab}
+            activeDraft={activeDraft}
+            workspaceContext={requestTreeQuery.data ?? null}
+          />
         </aside>
       )}
     />
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

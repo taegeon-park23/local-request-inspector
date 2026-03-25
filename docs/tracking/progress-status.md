@@ -7,7 +7,10 @@
 - **Update Rule:** Update after each active-task status change or verification-state change.
 
 ## Current Snapshot
-- `T095` is active (`doing`) to add explorer always-reveal behavior for opened items, tree type-ahead focus navigation, and shortcut/command entry paths for key workspace actions.
+- There is no active bounded task. The next implementation slice must start from one newly promoted bounded task.
+- `T097` is archived after expanding runner inputs (selection/order/environment/iteration/data-file), wiring run-history visibility, and aligning collection/request-group batch payload composition with CLI-friendly server run contracts.
+- `T096` is archived after shipping workspace context-panel tabs (`Overview/Inheritance/Runs`), effective-vs-override inheritance visualization, and collection/request-group/request detail continuity with existing result-panel flows.
+- `T095` is archived after shipping explorer always-reveal behavior for opened items, tree type-ahead focus navigation, and header command/shortcut entry points for major workspace actions.
 - `T094` is archived after shipping +New import entry points (cURL/OpenAPI/Postman), cURL-to-draft conversion, and OpenAPI/Postman bridge wiring into the existing authored-resource import preview flow.
 - `T093` is archived after shipping central workbench tabs for collection overview/request-group overview/batch result plus close current/others/all tab actions while preserving request reopen flow.
 - `T092` is archived after unifying request creation into the thin create sheet (`type/parent/name`) and routing header/surface request-create actions through that single flow before opening seeded drafts.
@@ -33,5 +36,5 @@
 1. Read `../prd/overview.md`.
 2. Read `master-task-board.md` and `priority-roadmap.md`.
 3. Read `completed-work-summary.md` only when archived context is needed.
-4. Continue the single active bounded task (`T095`) until closure, then promote the next task.
+4. Promote one new bounded task before starting additional implementation work.
 

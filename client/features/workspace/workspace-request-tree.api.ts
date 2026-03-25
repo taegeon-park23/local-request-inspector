@@ -148,8 +148,21 @@ export interface WorkspaceRequestGroupInput {
   runConfig?: WorkspaceRunConfig;
 }
 
+export type WorkspaceBatchExecutionOrder = 'depth-first-sequential';
+
+export interface WorkspaceBatchRunInput {
+  executionOrder?: WorkspaceBatchExecutionOrder;
+  continueOnError?: boolean;
+  requestIds?: string[];
+  iterationCount?: number;
+  environmentId?: string | null;
+  selectedEnvironmentId?: string | null;
+  dataFilePath?: string;
+}
+
 export interface WorkspaceBatchExecutionStep {
   stepIndex: number;
+  iteration?: number;
   requestId: string;
   requestName: string;
   collectionId?: string;
@@ -164,13 +177,18 @@ export interface WorkspaceBatchExecution {
   containerType: 'collection' | 'request-group';
   containerId: string;
   containerName: string;
-  executionOrder: string;
+  executionOrder: WorkspaceBatchExecutionOrder | string;
   continuedAfterFailure: boolean;
   startedAt: string;
   completedAt: string;
   durationMs: number;
   aggregateOutcome: 'Succeeded' | 'Failed' | 'Blocked' | 'Timed out' | 'Empty';
   requestCount: number;
+  selectedRequestIds?: string[] | null;
+  iterationCount?: number;
+  environmentOverrideApplied?: boolean;
+  selectedEnvironmentId?: string | null;
+  dataFilePath?: string | null;
   totalRuns: number;
   succeededCount: number;
   failedCount: number;
@@ -371,17 +389,33 @@ export async function deleteWorkspaceRequestGroup(requestGroupId: string) {
   return parseJsonResponse<{ deletedRequestGroupId: string }>(response).then((payload) => payload.deletedRequestGroupId);
 }
 
-export async function runWorkspaceCollection(collectionId: string) {
+export async function runWorkspaceCollection(collectionId: string, runInput?: WorkspaceBatchRunInput) {
   const response = await fetch(`/api/collections/${collectionId}/run`, {
     method: 'POST',
+    ...(runInput
+      ? {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ run: runInput }),
+        }
+      : {}),
   });
 
   return parseJsonResponse<{ batchExecution: WorkspaceBatchExecution }>(response).then((payload) => payload.batchExecution);
 }
 
-export async function runWorkspaceRequestGroup(requestGroupId: string) {
+export async function runWorkspaceRequestGroup(requestGroupId: string, runInput?: WorkspaceBatchRunInput) {
   const response = await fetch(`/api/request-groups/${requestGroupId}/run`, {
     method: 'POST',
+    ...(runInput
+      ? {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ run: runInput }),
+        }
+      : {}),
   });
 
   return parseJsonResponse<{ batchExecution: WorkspaceBatchExecution }>(response).then((payload) => payload.batchExecution);
@@ -466,6 +500,9 @@ export function buildFallbackWorkspaceRequestTree(
     };
   });
 }
+
+
+
 
 
 

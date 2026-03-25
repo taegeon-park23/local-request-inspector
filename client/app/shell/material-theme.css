@@ -4734,6 +4734,107 @@ body {
   padding: 0.35rem 0.25rem 0.55rem 0.25rem;
 }
 
+.workspace-runner-panel {
+  display: grid;
+  gap: var(--m3-space-3);
+}
+
+.workspace-runner-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--m3-space-3);
+  flex-wrap: wrap;
+}
+
+.workspace-runner-panel__header h3,
+.workspace-runner-panel__header p {
+  margin: 0;
+}
+
+.workspace-runner-panel__header p,
+.workspace-runner-panel__selection-copy,
+.workspace-runner-panel__empty-copy {
+  color: var(--m3-color-on-surface-variant);
+}
+
+.workspace-runner-panel__actions {
+  display: flex;
+  gap: var(--m3-space-2);
+  flex-wrap: wrap;
+}
+
+.workspace-runner-panel__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
+  gap: var(--m3-space-3);
+}
+
+.workspace-runner-panel__checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--m3-color-on-surface);
+}
+
+.workspace-runner-panel__checkbox input {
+  margin: 0;
+}
+
+.workspace-runner-panel__selection-copy,
+.workspace-runner-panel__empty-copy {
+  margin: 0;
+}
+
+.workspace-runner-panel__request-list {
+  list-style: none;
+  margin: 0;
+  padding: var(--m3-space-2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--m3-shape-m);
+  max-height: 12.5rem;
+  overflow: auto;
+  display: grid;
+  gap: var(--m3-space-2);
+  background: var(--m3-color-surface-container-lowest);
+}
+
+.workspace-runner-panel__request-list li {
+  min-width: 0;
+}
+
+.workspace-runner-panel__request-list label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.workspace-runner-panel__request-list label > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-runner-panel__request-method {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.3rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: var(--m3-color-on-surface-variant);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
 .request-builder-core__placement-grid {
   display: grid;
   gap: var(--m3-space-3);

@@ -232,6 +232,33 @@ export const workspaceRouteMessagesEn = {
         runSelected: 'Alt+Shift+R',
       },
     },
+    runner: {
+      ariaLabel: 'Workspace runner controls',
+      title: 'Runner',
+      description: 'Configure request selection/order/environment/iterations/data file before running {name}.',
+      fields: {
+        executionOrder: 'Execution order',
+        environment: 'Environment override',
+        iterationCount: 'Iterations',
+        dataFilePath: 'Data file path',
+        continueOnError: 'Continue on error',
+      },
+      options: {
+        depthFirstSequential: 'Depth-first sequential',
+        inheritEnvironment: 'Inherit per request',
+        noEnvironment: 'No environment',
+      },
+      actions: {
+        selectAll: 'Select all',
+        clearSelection: 'Clear selection',
+      },
+      selectionSummary: 'Request selection: {selected} / {total}',
+      requestListAriaLabel: 'Runner request selection list',
+      values: {
+        dataFilePathPlaceholder: 'Optional data file path (CSV/JSON)',
+        noRequests: 'No saved requests are available in this container.',
+      },
+    },
     management: {
       ariaLabel: 'Saved resource manager',
       header: {
@@ -676,6 +703,90 @@ export const workspaceRouteMessagesEn = {
         console: 'Console',
         tests: 'Tests',
         executionInfo: 'Execution Info',
+      },
+      contextTabs: {
+        ariaLabel: 'Context panel tabs',
+        overview: 'Overview',
+        inheritance: 'Inheritance',
+        runs: 'Runs',
+      },
+      context: {
+        overview: {
+          title: 'Context overview',
+          description: 'Review the selected scope metadata before editing or running.',
+          labels: {
+            scope: 'Scope',
+            name: 'Name',
+            collectionId: 'Collection id',
+            requestGroups: 'Request groups',
+            requests: 'Requests',
+            requestGroupId: 'Request group id',
+            collection: 'Collection',
+            childRequestGroups: 'Child groups',
+            method: 'Method',
+            tabSource: 'Tab source',
+            placement: 'Placement',
+          },
+          values: {
+            collection: 'Collection',
+            requestGroup: 'Request group',
+            request: 'Request',
+            notAvailable: 'Not available',
+          },
+        },
+        inheritance: {
+          title: 'Inheritance snapshot',
+          description: 'Compare effective values against explicit overrides for each scope.',
+          note: 'Overrides are shown as explicit values at the selected scope only.',
+          sectionDescription: 'Effective values include inherited defaults; overrides show local intent.',
+          sections: {
+            variables: 'Variables',
+            auth: 'Auth defaults',
+            scripts: 'Script defaults',
+            runConfig: 'Run config',
+          },
+          labels: {
+            effective: 'Effective',
+            override: 'Override',
+          },
+          values: {
+            none: 'None',
+            noOverride: 'No override',
+          },
+        },
+        runs: {
+          title: 'Run summary',
+          description: 'Review the latest container run outcome and ordered request steps.',
+          labels: {
+            scope: 'Scope',
+            outcome: 'Outcome',
+            totalRuns: 'Total runs',
+            requests: 'Requests',
+            issues: 'Issues',
+            history: 'Run history',
+            iterationCount: 'Iterations',
+            continueOnError: 'Continue on error',
+            environment: 'Environment override',
+            dataFilePath: 'Data file path',
+            selection: 'Selected requests',
+            status: 'Batch status',
+          },
+          values: {
+            enabled: 'Enabled',
+            disabled: 'Disabled',
+            inheritPerRequest: 'Inherit per request',
+            noEnvironment: 'No environment',
+            notProvided: 'Not provided',
+            allRequests: 'All requests',
+          },
+          stepsAriaLabel: 'Container run steps',
+          historyAriaLabel: 'Container run history',
+          historySummary: 'Recent runs for this container are listed below.',
+          empty: {
+            title: 'No container run selected yet',
+            description: 'Run this collection or request group to populate container run summaries.',
+          },
+        },
       },
       empty: {
         waitingTitle: 'Observation panel is waiting for an active request tab',
@@ -1237,6 +1348,33 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         runSelected: 'Alt+Shift+R',
       },
     },
+    runner: {
+      ariaLabel: '워크스페이스 러너 제어',
+      title: '러너',
+      description: '{name} 실행 전에 요청 선택/순서/환경/반복/데이터 파일을 설정합니다.',
+      fields: {
+        executionOrder: '실행 순서',
+        environment: '환경 오버라이드',
+        iterationCount: '반복 횟수',
+        dataFilePath: '데이터 파일 경로',
+        continueOnError: '오류 후 계속',
+      },
+      options: {
+        depthFirstSequential: '깊이 우선 순차 실행',
+        inheritEnvironment: '요청별 환경 상속',
+        noEnvironment: '환경 없음',
+      },
+      actions: {
+        selectAll: '전체 선택',
+        clearSelection: '선택 해제',
+      },
+      selectionSummary: '요청 선택: {selected} / {total}',
+      requestListAriaLabel: '러너 요청 선택 목록',
+      values: {
+        dataFilePathPlaceholder: '선택 데이터 파일 경로 (CSV/JSON)',
+        noRequests: '이 컨테이너에는 저장된 요청이 없습니다.',
+      },
+    },
     management: {
       ariaLabel: '저장 리소스 관리자',
       header: {
@@ -1683,6 +1821,90 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         tests: '테스트',
         executionInfo: '실행 정보',
       },
+      contextTabs: {
+        ariaLabel: '컨텍스트 패널 탭',
+        overview: '개요',
+        inheritance: '상속',
+        runs: '실행',
+      },
+      context: {
+        overview: {
+          title: '컨텍스트 개요',
+          description: '편집 또는 실행 전에 선택한 범위의 핵심 메타데이터를 확인합니다.',
+          labels: {
+            scope: '범위',
+            name: '이름',
+            collectionId: '컬렉션 ID',
+            requestGroups: '요청 그룹 수',
+            requests: '요청 수',
+            requestGroupId: '요청 그룹 ID',
+            collection: '컬렉션',
+            childRequestGroups: '하위 그룹 수',
+            method: '메서드',
+            tabSource: '탭 출처',
+            placement: '위치',
+          },
+          values: {
+            collection: '컬렉션',
+            requestGroup: '요청 그룹',
+            request: '요청',
+            notAvailable: '없음',
+          },
+        },
+        inheritance: {
+          title: '상속 스냅샷',
+          description: '범위별로 적용값과 명시적 override를 비교합니다.',
+          note: 'override 값은 선택된 범위에서 직접 지정된 값만 표시합니다.',
+          sectionDescription: '적용값은 상위 기본값을 포함하고, override는 현재 범위의 의도를 보여줍니다.',
+          sections: {
+            variables: '변수',
+            auth: '인증 기본값',
+            scripts: '스크립트 기본값',
+            runConfig: '실행 설정',
+          },
+          labels: {
+            effective: '적용값',
+            override: 'Override',
+          },
+          values: {
+            none: '없음',
+            noOverride: 'Override 없음',
+          },
+        },
+        runs: {
+          title: '실행 요약',
+          description: '최신 컨테이너 실행 결과와 순서화된 요청 단계를 확인합니다.',
+          labels: {
+            scope: '범위',
+            outcome: '결과',
+            totalRuns: '총 실행 수',
+            requests: '요청 수',
+            issues: '이슈 수',
+            history: '실행 히스토리',
+            iterationCount: '반복 횟수',
+            continueOnError: '오류 후 계속',
+            environment: '환경 오버라이드',
+            dataFilePath: '데이터 파일 경로',
+            selection: '선택 요청 수',
+            status: '배치 상태',
+          },
+          values: {
+            enabled: '사용',
+            disabled: '사용 안 함',
+            inheritPerRequest: '요청별 환경 상속',
+            noEnvironment: '환경 없음',
+            notProvided: '미지정',
+            allRequests: '전체 요청',
+          },
+          stepsAriaLabel: '컨테이너 실행 단계',
+          historyAriaLabel: '컨테이너 실행 히스토리',
+          historySummary: '아래에 이 컨테이너의 최근 실행 이력이 표시됩니다.',
+          empty: {
+            title: '선택된 컨테이너 실행이 없습니다',
+            description: '이 컬렉션 또는 요청 그룹을 실행하면 실행 요약이 여기에 표시됩니다.',
+          },
+        },
+      },
       empty: {
         waitingTitle: '활성 요청 탭을 기다리는 관측 패널',
         waitingDescription:
@@ -2004,6 +2226,9 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
     },
   },
 };
+
+
+
 
 
 

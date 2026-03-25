@@ -29,7 +29,9 @@
 20. `T092` Request Create Sheet Unification is archived.
 21. `T093` Workbench Tab Capability Reinforcement is archived.
 22. `T094` +New Import Entry Point is archived.
-23. `T095` Explorer Should + Accessibility Reinforcement is active (`doing`).
+23. `T095` Explorer Should + Accessibility Reinforcement is archived.
+24. `T096` Context Panel V2 + Inheritance Visualization is archived.
+25. `T097` Runner Capability Advancement is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.
@@ -37,5 +39,5 @@
 - Keep Codex-side UI reruns closed; use Playwright smoke in Codex and reserve `npm.cmd run test:ui` for user-managed local verification.
 
 ## Immediate Next Step
-- Complete `T095` and archive it before promoting any subsequent bounded task.
+- Define and promote one new bounded task from remaining PRD Must/Should gaps before additional implementation starts.
 

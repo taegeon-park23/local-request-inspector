@@ -14,18 +14,18 @@
 ## Active Register
 | ID | Title | Status | Notes |
 | --- | --- | --- | --- |
-| T095 | Explorer Should + Accessibility Reinforcement | doing | `docs/tasks/task-t095-explorer-should-accessibility-reinforcement.md` promoted as the active bounded task. |
+| - | No active bounded task | - | Promote the next bounded task after reviewing PRD gaps and shipped scope. |
 
 ## Defined Queue
 | ID | Title | Status | Notes |
 | --- | --- | --- | --- |
-| - | No queued bounded task | - | Promote the next bounded task only after `T095` is closed and archived. |
+| - | No queued bounded task | - | Define one bounded task before starting further implementation work. |
 
 ## Current State
-- **Current bounded task:** `T095` Explorer Should + Accessibility Reinforcement.
-- **Most recent archived implementation:** `T094` +New Import Entry Point.
-- **Highest-priority next step:** complete `T095` by adding always-reveal-opened-item, tree type-ahead focus navigation, and shortcut/command entry for key explorer actions.
-- **Verification baseline:** `npm.cmd run lint`, `npm.cmd run typecheck`, and `npm.cmd run test:node` passed on 2026-03-26 after `T088/T089/T091` implementation updates.
+- **Current bounded task:** none.
+- **Most recent archived implementation:** `T097` Runner Capability Advancement.
+- **Highest-priority next step:** define and promote one new bounded task from remaining PRD Must/Should gaps.
+- **Verification baseline:** `npm.cmd run lint`, `npm.cmd run typecheck`, and `npm.cmd run test:node` passed on 2026-03-26 after `T097` runner capability and payload-alignment updates.
 - **Closed UI-test rerun policy:** agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - **Codex UI verification lane:** use the Playwright skill workflow against the dev route or built shell when available.
 - **User-managed local verification:** if UI full-suite verification is still needed, instruct the user to run `npm.cmd run test:ui` locally and treat that result as authoritative.

@@ -61,6 +61,154 @@ function registerExecutionRoutes(app, dependencies) {
   const DEFAULT_TRANSPORT_TIMEOUT_MS = 5000;
   const MIN_TRANSPORT_TIMEOUT_MS = 100;
   const MAX_TRANSPORT_TIMEOUT_MS = 120000;
+  const BATCH_EXECUTION_ORDER_DEPTH_FIRST = 'depth-first-sequential';
+  const MAX_BATCH_ITERATION_COUNT = 25;
+
+  function createInvalidBatchRunInputError(message) {
+    const error = new Error(message);
+    error.code = 'invalid_batch_run_input';
+    return error;
+  }
+
+  function normalizeBatchEnvironmentId(value, fieldName) {
+    if (value === undefined || value === null) {
+      return null;
+    }
+
+    if (typeof value !== 'string') {
+      throw createInvalidBatchRunInputError(`${fieldName} must be a string or null.`);
+    }
+
+    const normalized = value.trim();
+    if (normalized.length === 0) {
+      throw createInvalidBatchRunInputError(`${fieldName} cannot be an empty string.`);
+    }
+
+    return normalized;
+  }
+
+  function parseBatchRunInput(runInput) {
+    if (runInput === undefined || runInput === null) {
+      return {
+        executionOrder: BATCH_EXECUTION_ORDER_DEPTH_FIRST,
+        continueOnError: true,
+        requestIds: null,
+        iterationCount: 1,
+        dataFilePath: null,
+        environmentOverrideApplied: false,
+        selectedEnvironmentId: null,
+      };
+    }
+
+    if (typeof runInput !== 'object' || Array.isArray(runInput)) {
+      throw createInvalidBatchRunInputError('Batch run input must be an object.');
+    }
+
+    const run = runInput;
+    const executionOrderCandidate = run.executionOrder;
+    if (
+      executionOrderCandidate !== undefined
+      && executionOrderCandidate !== BATCH_EXECUTION_ORDER_DEPTH_FIRST
+    ) {
+      throw createInvalidBatchRunInputError(
+        `executionOrder must be "${BATCH_EXECUTION_ORDER_DEPTH_FIRST}".`,
+      );
+    }
+
+    let continueOnError = true;
+    if (run.continueOnError !== undefined) {
+      if (typeof run.continueOnError !== 'boolean') {
+        throw createInvalidBatchRunInputError('continueOnError must be a boolean.');
+      }
+
+      continueOnError = run.continueOnError;
+    }
+
+    let requestIds = null;
+    if (run.requestIds !== undefined) {
+      if (!Array.isArray(run.requestIds)) {
+        throw createInvalidBatchRunInputError('requestIds must be an array of request ids.');
+      }
+
+      const dedupedRequestIds = [];
+      const requestIdSet = new Set();
+
+      for (const requestIdCandidate of run.requestIds) {
+        if (typeof requestIdCandidate !== 'string' || requestIdCandidate.trim().length === 0) {
+          throw createInvalidBatchRunInputError('requestIds must only include non-empty string ids.');
+        }
+
+        const normalizedRequestId = requestIdCandidate.trim();
+
+        if (!requestIdSet.has(normalizedRequestId)) {
+          requestIdSet.add(normalizedRequestId);
+          dedupedRequestIds.push(normalizedRequestId);
+        }
+      }
+
+      requestIds = dedupedRequestIds;
+    }
+
+    let iterationCount = 1;
+    if (run.iterationCount !== undefined) {
+      if (!Number.isFinite(run.iterationCount)) {
+        throw createInvalidBatchRunInputError('iterationCount must be a finite number.');
+      }
+
+      iterationCount = Math.floor(Number(run.iterationCount));
+      if (iterationCount < 1 || iterationCount > MAX_BATCH_ITERATION_COUNT) {
+        throw createInvalidBatchRunInputError(`iterationCount must be between 1 and ${MAX_BATCH_ITERATION_COUNT}.`);
+      }
+    }
+
+    let dataFilePath = null;
+    if (run.dataFilePath !== undefined && run.dataFilePath !== null) {
+      if (typeof run.dataFilePath !== 'string') {
+        throw createInvalidBatchRunInputError('dataFilePath must be a string when provided.');
+      }
+
+      const normalizedDataFilePath = run.dataFilePath.trim();
+      dataFilePath = normalizedDataFilePath.length > 0 ? normalizedDataFilePath : null;
+    }
+
+    const hasEnvironmentId = Object.prototype.hasOwnProperty.call(run, 'environmentId');
+    const hasSelectedEnvironmentId = Object.prototype.hasOwnProperty.call(run, 'selectedEnvironmentId');
+    let selectedEnvironmentId = null;
+    let environmentOverrideApplied = false;
+
+    if (hasEnvironmentId || hasSelectedEnvironmentId) {
+      const normalizedEnvironmentId = normalizeBatchEnvironmentId(run.environmentId, 'environmentId');
+      const normalizedSelectedEnvironmentId = normalizeBatchEnvironmentId(
+        run.selectedEnvironmentId,
+        'selectedEnvironmentId',
+      );
+
+      if (
+        hasEnvironmentId
+        && hasSelectedEnvironmentId
+        && normalizedEnvironmentId !== normalizedSelectedEnvironmentId
+      ) {
+        throw createInvalidBatchRunInputError(
+          'environmentId and selectedEnvironmentId must match when both are provided.',
+        );
+      }
+
+      selectedEnvironmentId = hasEnvironmentId
+        ? normalizedEnvironmentId
+        : normalizedSelectedEnvironmentId;
+      environmentOverrideApplied = true;
+    }
+
+    return {
+      executionOrder: BATCH_EXECUTION_ORDER_DEPTH_FIRST,
+      continueOnError,
+      requestIds,
+      iterationCount,
+      dataFilePath,
+      environmentOverrideApplied,
+      selectedEnvironmentId,
+    };
+  }
 
   function createSecretProviderResolutionSummary(error) {
     const action = typeof error?.details?.action === 'string' && error.details.action.trim().length > 0
@@ -640,7 +788,7 @@ function registerExecutionRoutes(app, dependencies) {
     return collected;
   }
 
-  function createBatchExecution(containerType, container, requestLeaves, stepResults, startedAt, completedAt, durationMs) {
+  function createBatchExecution(containerType, container, requestLeaves, stepResults, startedAt, completedAt, durationMs, runPlan) {
     const aggregate = {
       totalRuns: stepResults.length,
       succeededCount: stepResults.filter((step) => step.execution.executionOutcome === 'Succeeded').length,
@@ -665,19 +813,27 @@ function registerExecutionRoutes(app, dependencies) {
       containerType,
       containerId: container.id,
       containerName: container.name,
-      executionOrder: 'depth-first-sequential',
-      continuedAfterFailure: true,
+      executionOrder: runPlan.executionOrder,
+      continuedAfterFailure: runPlan.continueOnError,
       startedAt,
       completedAt,
       durationMs,
       aggregateOutcome,
       requestCount: requestLeaves.length,
+      selectedRequestIds: runPlan.requestIds,
+      iterationCount: runPlan.iterationCount,
+      environmentOverrideApplied: runPlan.environmentOverrideApplied,
+      selectedEnvironmentId: runPlan.environmentOverrideApplied
+        ? runPlan.selectedEnvironmentId
+        : null,
+      dataFilePath: runPlan.dataFilePath,
       ...aggregate,
       steps: stepResults,
     };
   }
 
-  async function runBatch(containerType, containerId, workspaceId) {
+  async function runBatch(containerType, containerId, workspaceId, runInput) {
+    const runPlan = parseBatchRunInput(runInput);
     const requestTree = buildWorkspaceRequestTree(workspaceId);
     const savedRequestsById = new Map(
       listWorkspaceSavedRequestRecords(workspaceId).map((record) => [record.id, record]),
@@ -708,37 +864,67 @@ function registerExecutionRoutes(app, dependencies) {
       requestLeaves = collectRequestsDepthFirst(locatedRequestGroup.requestGroup, []);
     }
 
+    if (Array.isArray(runPlan.requestIds)) {
+      const requestedIdSet = new Set(runPlan.requestIds);
+      requestLeaves = requestLeaves.filter((requestLeaf) => requestedIdSet.has(requestLeaf.id));
+    }
+
     if (requestLeaves.length === 0) {
       const timestamp = new Date().toISOString();
-      return createBatchExecution(containerType, container, [], [], timestamp, timestamp, 0);
+      return createBatchExecution(containerType, container, [], [], timestamp, timestamp, 0, runPlan);
     }
 
     const startedAt = new Date().toISOString();
     const startedAtMs = Date.now();
     const stepResults = [];
 
-    for (const requestLeaf of requestLeaves) {
-      const savedRequest = savedRequestsById.get(requestLeaf.id);
-      if (!savedRequest) {
-        continue;
-      }
+    for (let iterationIndex = 0; iterationIndex < runPlan.iterationCount; iterationIndex += 1) {
+      for (const requestLeaf of requestLeaves) {
+        const savedRequest = savedRequestsById.get(requestLeaf.id);
+        if (!savedRequest) {
+          continue;
+        }
 
-      const execution = await executeSingleRun(savedRequest);
-      stepResults.push({
-        stepIndex: stepResults.length,
-        requestId: requestLeaf.id,
-        requestName: requestLeaf.name,
-        collectionId: requestLeaf.collectionId,
-        collectionName: requestLeaf.collectionName,
-        requestGroupId: requestLeaf.requestGroupId,
-        requestGroupName: requestLeaf.requestGroupName,
-        execution,
-      });
+        const executionInput = runPlan.environmentOverrideApplied
+          ? {
+              ...savedRequest,
+              selectedEnvironmentId: runPlan.selectedEnvironmentId,
+            }
+          : savedRequest;
+
+        const execution = await executeSingleRun(executionInput);
+        stepResults.push({
+          stepIndex: stepResults.length,
+          iteration: iterationIndex + 1,
+          requestId: requestLeaf.id,
+          requestName: requestLeaf.name,
+          collectionId: requestLeaf.collectionId,
+          collectionName: requestLeaf.collectionName,
+          requestGroupId: requestLeaf.requestGroupId,
+          requestGroupName: requestLeaf.requestGroupName,
+          execution,
+        });
+
+        if (!runPlan.continueOnError && execution.executionOutcome !== 'Succeeded') {
+          const completedAt = new Date().toISOString();
+          const durationMs = Date.now() - startedAtMs;
+          return createBatchExecution(
+            containerType,
+            container,
+            requestLeaves,
+            stepResults,
+            startedAt,
+            completedAt,
+            durationMs,
+            runPlan,
+          );
+        }
+      }
     }
 
     const completedAt = new Date().toISOString();
     const durationMs = Date.now() - startedAtMs;
-    return createBatchExecution(containerType, container, requestLeaves, stepResults, startedAt, completedAt, durationMs);
+    return createBatchExecution(containerType, container, requestLeaves, stepResults, startedAt, completedAt, durationMs, runPlan);
   }
 
   app.post('/api/executions/run', async (req, res) => {
@@ -759,9 +945,15 @@ function registerExecutionRoutes(app, dependencies) {
 
   app.post('/api/collections/:collectionId/run', async (req, res) => {
     try {
-      const batchExecution = await runBatch('collection', req.params.collectionId, defaultWorkspaceId);
+      const batchExecution = await runBatch('collection', req.params.collectionId, defaultWorkspaceId, req.body?.run);
       return sendData(res, { batchExecution });
     } catch (error) {
+      if (error.code === 'invalid_batch_run_input') {
+        return sendError(res, 400, error.code, error.message, {
+          collectionId: req.params.collectionId,
+        });
+      }
+
       if (error.code === 'collection_not_found') {
         return sendError(res, 404, error.code, error.message, {
           collectionId: req.params.collectionId,
@@ -776,9 +968,15 @@ function registerExecutionRoutes(app, dependencies) {
 
   app.post('/api/request-groups/:requestGroupId/run', async (req, res) => {
     try {
-      const batchExecution = await runBatch('request-group', req.params.requestGroupId, defaultWorkspaceId);
+      const batchExecution = await runBatch('request-group', req.params.requestGroupId, defaultWorkspaceId, req.body?.run);
       return sendData(res, { batchExecution });
     } catch (error) {
+      if (error.code === 'invalid_batch_run_input') {
+        return sendError(res, 400, error.code, error.message, {
+          requestGroupId: req.params.requestGroupId,
+        });
+      }
+
       if (error.code === 'request_group_not_found') {
         return sendError(res, 404, error.code, error.message, {
           requestGroupId: req.params.requestGroupId,
@@ -795,6 +993,10 @@ function registerExecutionRoutes(app, dependencies) {
 module.exports = {
   registerExecutionRoutes,
 };
+
+
+
+
 
 
 

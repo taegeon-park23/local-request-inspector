@@ -762,6 +762,224 @@ async function testCollectionBatchRunTraversesNestedGroupsDepthFirstAndContinues
   }
 }
 
+async function testCollectionBatchRunAppliesRunInputFilterIterationAndStopPolicy() {
+  const runtimeState = {
+    histories: [],
+    results: [],
+    testResults: [],
+  };
+  const repositories = createRepositories({
+    runtime: {
+      queries: {
+        insertExecutionHistory(record) {
+          runtimeState.histories.push(record);
+        },
+        insertExecutionResult(record) {
+          runtimeState.results.push(record);
+        },
+        insertTestResults(records) {
+          runtimeState.testResults.push(records);
+        },
+      },
+    },
+  });
+
+  const savedRequests = [
+    createSavedRequest('request-1', 'Health check', 'https://example.test/health'),
+    createSavedRequest('request-2', 'Create user', 'https://example.test/users'),
+    createSavedRequest('request-3', 'List projects', 'https://example.test/projects'),
+  ];
+
+  const fetchCalls = [];
+  const originalFetch = global.fetch;
+  global.fetch = async (input, init) => {
+    const url = String(input);
+
+    if (!url.startsWith('https://example.test/')) {
+      return originalFetch(input, init);
+    }
+
+    fetchCalls.push(url);
+
+    if (url.endsWith('/users')) {
+      throw new Error('Transport failed for Create user.');
+    }
+
+    return new Response('{"ok":true}', {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  };
+
+  const dependencies = createExecutionDependencies(repositories, runtimeState, {
+    listWorkspaceSavedRequestRecords: () => savedRequests,
+    buildWorkspaceRequestTree: () => ({
+      defaults: null,
+      collections: [],
+      requestGroups: [],
+      tree: [
+        {
+          id: 'collection-node-saved-requests',
+          kind: 'collection',
+          collectionId: 'collection-saved-requests',
+          name: 'Saved Requests',
+          childGroups: [
+            {
+              id: 'group-node-general',
+              kind: 'request-group',
+              collectionId: 'collection-saved-requests',
+              requestGroupId: 'group-general',
+              name: 'General',
+              childGroups: [
+                {
+                  id: 'group-node-nested',
+                  kind: 'request-group',
+                  collectionId: 'collection-saved-requests',
+                  requestGroupId: 'group-nested',
+                  name: 'Nested',
+                  childGroups: [],
+                  requests: [
+                    {
+                      id: 'request-node-request-2',
+                      kind: 'request',
+                      name: 'Create user',
+                      request: createRequestLeaf(savedRequests[1], 'group-nested', 'Nested'),
+                    },
+                  ],
+                },
+              ],
+              requests: [
+                {
+                  id: 'request-node-request-1',
+                  kind: 'request',
+                  name: 'Health check',
+                  request: createRequestLeaf(savedRequests[0], 'group-general', 'General'),
+                },
+              ],
+            },
+            {
+              id: 'group-node-secondary',
+              kind: 'request-group',
+              collectionId: 'collection-saved-requests',
+              requestGroupId: 'group-secondary',
+              name: 'Secondary',
+              childGroups: [],
+              requests: [
+                {
+                  id: 'request-node-request-3',
+                  kind: 'request',
+                  name: 'List projects',
+                  request: createRequestLeaf(savedRequests[2], 'group-secondary', 'Secondary'),
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }),
+    readWorkspaceEnvironmentReference: (_workspaceId, environmentId) => (
+      environmentId === 'env-ci' ? { id: 'env-ci', name: 'CI' } : null
+    ),
+    createExecutionRequestTarget: (url) => new URL(url),
+  });
+
+  try {
+    await withServer(
+      (app) => registerExecutionRoutes(app, dependencies),
+      async ({ baseUrl }) => {
+        const response = await requestJson(baseUrl, '/api/collections/collection-saved-requests/run', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            run: {
+              executionOrder: 'depth-first-sequential',
+              continueOnError: false,
+              requestIds: ['request-2', 'request-3'],
+              iterationCount: 2,
+              environmentId: 'env-ci',
+              dataFilePath: './data/batch.csv',
+            },
+          }),
+        });
+
+        assert.equal(response.status, 200);
+        assert.deepEqual(fetchCalls, ['https://example.test/users']);
+        assert.equal(response.payload.data.batchExecution.executionOrder, 'depth-first-sequential');
+        assert.equal(response.payload.data.batchExecution.continuedAfterFailure, false);
+        assert.deepEqual(response.payload.data.batchExecution.selectedRequestIds, ['request-2', 'request-3']);
+        assert.equal(response.payload.data.batchExecution.iterationCount, 2);
+        assert.equal(response.payload.data.batchExecution.environmentOverrideApplied, true);
+        assert.equal(response.payload.data.batchExecution.selectedEnvironmentId, 'env-ci');
+        assert.equal(response.payload.data.batchExecution.dataFilePath, './data/batch.csv');
+        assert.equal(response.payload.data.batchExecution.requestCount, 2);
+        assert.equal(response.payload.data.batchExecution.totalRuns, 1);
+        assert.equal(response.payload.data.batchExecution.failedCount, 1);
+        assert.equal(response.payload.data.batchExecution.aggregateOutcome, 'Failed');
+        assert.equal(response.payload.data.batchExecution.steps[0].iteration, 1);
+      },
+    );
+  } finally {
+    global.fetch = originalFetch;
+  }
+}
+
+async function testCollectionBatchRunRejectsInvalidRunInput() {
+  const runtimeState = {
+    histories: [],
+    results: [],
+    testResults: [],
+  };
+  const repositories = createRepositories({
+    runtime: {
+      queries: {
+        insertExecutionHistory(record) {
+          runtimeState.histories.push(record);
+        },
+        insertExecutionResult(record) {
+          runtimeState.results.push(record);
+        },
+        insertTestResults(records) {
+          runtimeState.testResults.push(records);
+        },
+      },
+    },
+  });
+
+  const dependencies = createExecutionDependencies(repositories, runtimeState, {
+    listWorkspaceSavedRequestRecords: () => [],
+    buildWorkspaceRequestTree: () => ({
+      defaults: null,
+      collections: [],
+      requestGroups: [],
+      tree: [],
+    }),
+  });
+
+  await withServer(
+    (app) => registerExecutionRoutes(app, dependencies),
+    async ({ baseUrl }) => {
+      const response = await requestJson(baseUrl, '/api/collections/collection-missing/run', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          run: {
+            iterationCount: 0,
+          },
+        }),
+      });
+
+      assert.equal(response.status, 400);
+      assert.equal(response.payload.error.code, 'invalid_batch_run_input');
+      assert.match(response.payload.error.message, /iterationCount/i);
+    },
+  );
+}
 async function testCollectionBatchRunReturnsEmptyWhenContainerHasNoRequests() {
   const runtimeState = {
     histories: [],
@@ -1143,11 +1361,15 @@ async function testRequestGroupBatchRunReturnsNotFoundForUnknownGroup() {
   await testSecretProviderErrorBlocksExecution();
   await testExecutionRouteAppliesInheritedDefaultsBeforeEnvironmentResolution();
   await testCollectionBatchRunTraversesNestedGroupsDepthFirstAndContinuesOnError();
+  await testCollectionBatchRunAppliesRunInputFilterIterationAndStopPolicy();
+  await testCollectionBatchRunRejectsInvalidRunInput();
   await testCollectionBatchRunReturnsEmptyWhenContainerHasNoRequests();
   await testCollectionBatchRunMarksTimedOutWhenTransportExceedsConfiguredTimeout();
   await testRequestGroupBatchRunTraversesSelectedSubtreeDepthFirst();
   await testRequestGroupBatchRunReturnsNotFoundForUnknownGroup();
 })();
+
+
 
 
 
