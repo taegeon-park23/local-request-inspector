@@ -1,3 +1,4 @@
+/* global module */
 function createResourceBundleImportService(dependencies) {
   const {
     randomUUID,
@@ -23,7 +24,10 @@ function createResourceBundleImportService(dependencies) {
     validateRequestGroupInput,
     createStableRequestGroupId,
     defaultRequestGroupName,
-    normalizeSavedRequest,
+    cloneRows,
+    cloneAuth,
+    cloneScripts,
+    createRequestSummary,
     validateRequestDefinition,
     remapRequestScriptsForImport,
     createMockRuleRecord,
@@ -281,10 +285,15 @@ function createResourceBundleImportService(dependencies) {
       state.requestGroupIdMap.set(normalizeText(input.id), record.id);
     }
     state.importedRequestGroupById.set(record.id, record);
-    state.requestGroupRecordBySourceKey.set(
+
+    const requestGroupSourceKeys = new Set([
       `${sourceCollectionId || normalizeText(input?.collectionName).toLowerCase()}::${normalizeText(input?.name).toLowerCase()}`,
-      record,
-    );
+      `${normalizeText(collectionRecord.name).toLowerCase()}::${normalizeText(input?.name).toLowerCase()}`,
+    ].filter((key) => !key.startsWith('::')));
+
+    for (const requestGroupSourceKey of requestGroupSourceKeys) {
+      state.requestGroupRecordBySourceKey.set(requestGroupSourceKey, record);
+    }
 
     return {
       record,
@@ -337,22 +346,53 @@ function createResourceBundleImportService(dependencies) {
       };
     }
 
+    const collectionId = normalizeText(input?.collectionId);
+    const requestGroupId = normalizeText(input?.requestGroupId);
+    const collectionName = normalizeText(input?.collectionName) || defaultRequestCollectionName;
+    const requestGroupName = normalizeText(input?.requestGroupName || input?.folderName) || defaultRequestGroupName;
+
+    if (!collectionId || !requestGroupId) {
+      return {
+        rejection: createImportedResourceRejection(
+          'request',
+          'Request references a request group that is not available in this workspace import.',
+          input?.name,
+        ),
+      };
+    }
+
+    const now = new Date().toISOString();
+    const selectedEnvironmentId = normalizeText(input?.selectedEnvironmentId) || null;
+
     return {
-      record: normalizeSavedRequest(
-        {
-          ...input,
-          id: randomUUID(),
-          workspaceId,
-          name: importedName,
-          scripts: remappedScripts.scripts,
-        },
-        null,
+      record: {
+        resourceKind: resourceRecordKinds.REQUEST,
+        resourceSchemaVersion: requestResourceSchemaVersion,
+        id: randomUUID(),
         workspaceId,
-      ),
+        name: importedName,
+        method: input.method,
+        url: input.url,
+        selectedEnvironmentId,
+        params: cloneRows(input.params),
+        headers: cloneRows(input.headers),
+        bodyMode: input.bodyMode || 'none',
+        bodyText: input.bodyText || '',
+        formBody: cloneRows(input.formBody),
+        multipartBody: cloneRows(input.multipartBody),
+        auth: cloneAuth(input.auth),
+        scripts: cloneScripts(remappedScripts.scripts),
+        collectionId,
+        requestGroupId,
+        collectionName,
+        requestGroupName,
+        summary: createRequestSummary(input.method, input.url),
+        createdAt: now,
+        updatedAt: now,
+      },
       renamed: importedName !== String(input.name || '').trim(),
     };
   }
-
   function createImportedMockRuleResource(input, workspaceId, usedNames) {
     const compatibilityError = validateImportedResourceCompatibility(
       input,
