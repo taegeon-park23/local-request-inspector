@@ -164,11 +164,19 @@ function syncEntryPlacement(entry: RequestDraftEntry, placement: RequestPlacemen
 }
 
 
+function resolveInitialDraftName(tab: RequestTabRecord, draftSeed?: RequestDraftSeed) {
+  if (typeof draftSeed?.name === 'string') {
+    return draftSeed.name;
+  }
+
+  return tab.source === 'saved' || tab.source === 'replay' ? tab.title : '';
+}
+
 function createDraftFromTab(tab: RequestTabRecord, draftSeed?: RequestDraftSeed): RequestDraftState {
 
   return {
     tabId: tab.id,
-    name: draftSeed?.name ?? tab.title,
+    name: resolveInitialDraftName(tab, draftSeed),
     method: draftSeed?.method ?? tab.methodLabel,
     url: draftSeed?.url ?? '',
     selectedEnvironmentId: draftSeed?.selectedEnvironmentId ?? null,

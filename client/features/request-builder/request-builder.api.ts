@@ -236,13 +236,15 @@ async function parseJsonResponse<TData>(response: Response): Promise<TData> {
 export function createRequestDefinitionInput(
   activeTab: RequestTabRecord,
   draft: RequestDraftState,
+  options?: { fallbackTitle?: string },
 ): RequestDefinitionInput {
   const placement = resolveRequestPlacement(draft, activeTab);
+  const resolvedName = draft.name.trim() || options?.fallbackTitle?.trim() || activeTab.title;
 
   return {
     ...(activeTab.requestId ? { id: activeTab.requestId } : {}),
     workspaceId: DEFAULT_WORKSPACE_ID,
-    name: draft.name.trim() || activeTab.title,
+    name: resolvedName,
     method: draft.method,
     url: draft.url,
     selectedEnvironmentId: draft.selectedEnvironmentId ?? null,

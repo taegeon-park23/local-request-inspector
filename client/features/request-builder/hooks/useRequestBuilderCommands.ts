@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useI18n } from '@client/app/providers/useI18n';
 import { listWorkspaceEnvironments, workspaceEnvironmentsQueryKey } from '@client/features/environments/environment.api';
 import { executionHistoryListQueryKey } from '@client/features/history/history.api';
 import {
@@ -207,6 +208,7 @@ export function useRequestBuilderCommands(
   activeTab: RequestTabRecord | null,
   draft: RequestDraftState | null,
 ): UseRequestBuilderCommandsResult {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const environmentsQuery = useQuery({
     queryKey: workspaceEnvironmentsQueryKey,
@@ -297,7 +299,9 @@ export function useRequestBuilderCommands(
       throw new Error('No active request draft is available.');
     }
 
-    const input = createRequestDefinitionInput(activeTab, draft);
+    const input = createRequestDefinitionInput(activeTab, draft, {
+      fallbackTitle: t('workspaceRoute.requestBuilder.defaultTitle'),
+    });
 
     return {
       ...input,
