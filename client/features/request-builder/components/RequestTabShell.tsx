@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
+import { isRequestWorkbenchTab } from '@client/features/request-builder/request-tab-state';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 
 interface RequestTabShellProps {
@@ -12,7 +13,13 @@ interface RequestTabShellProps {
   onCloseTab: (tabId: string) => void;
   onPinTab: (tabId: string) => void;
   onReopenClosedTab: () => void;
+  onCloseCurrentTab: () => void;
+  onCloseOtherTabs: () => void;
+  onCloseAllTabs: () => void;
   canReopenClosedTab: boolean;
+  canCloseCurrentTab: boolean;
+  canCloseOtherTabs: boolean;
+  canCloseAllTabs: boolean;
 }
 
 function getTabSourceLabel(
@@ -30,6 +37,12 @@ function getTabSourceLabel(
       return t('workspaceRoute.tabShell.sourceReplay');
     case 'detached':
       return t('workspaceRoute.tabShell.sourceDetached');
+    case 'collection-overview':
+      return t('workspaceRoute.tabShell.sourceCollectionOverview');
+    case 'request-group-overview':
+      return t('workspaceRoute.tabShell.sourceRequestGroupOverview');
+    case 'batch-result':
+      return t('workspaceRoute.tabShell.sourceBatchResult');
     default:
       return null;
   }
@@ -82,7 +95,13 @@ export function RequestTabShell({
   onCloseTab,
   onPinTab,
   onReopenClosedTab,
+  onCloseCurrentTab,
+  onCloseOtherTabs,
+  onCloseAllTabs,
   canReopenClosedTab,
+  canCloseCurrentTab,
+  canCloseOtherTabs,
+  canCloseAllTabs,
 }: RequestTabShellProps) {
   const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState('');
@@ -122,6 +141,30 @@ export function RequestTabShell({
         >
           <IconLabel icon="replay">{t('workspaceRoute.tabShell.reopenClosedTab')}</IconLabel>
         </button>
+        <button
+          type="button"
+          className="request-tab-shell__new-tab"
+          onClick={onCloseCurrentTab}
+          disabled={!canCloseCurrentTab}
+        >
+          {t('workspaceRoute.tabShell.closeCurrentTab')}
+        </button>
+        <button
+          type="button"
+          className="request-tab-shell__new-tab"
+          onClick={onCloseOtherTabs}
+          disabled={!canCloseOtherTabs}
+        >
+          {t('workspaceRoute.tabShell.closeOtherTabs')}
+        </button>
+        <button
+          type="button"
+          className="request-tab-shell__new-tab"
+          onClick={onCloseAllTabs}
+          disabled={!canCloseAllTabs}
+        >
+          {t('workspaceRoute.tabShell.closeAllTabs')}
+        </button>
 
         {tabs.length === 0 ? (
           <p className="request-tab-shell__strip-empty">{t('workspaceRoute.tabShell.empty')}</p>
@@ -133,6 +176,12 @@ export function RequestTabShell({
           const isActive = tab.id === activeTabId;
           const tabSourceLabel = getTabSourceLabel(tab, t);
           const tabStateLabel = getTabStateLabel(tab, t);
+          const isRequestTab = isRequestWorkbenchTab(tab);
+          const tabMeta = [
+            ...(isRequestTab ? [tab.methodLabel] : []),
+            ...(tabSourceLabel ? [tabSourceLabel] : []),
+            ...(tabStateLabel ? [tabStateLabel] : []),
+          ].join(' · ');
 
           return (
             <div
@@ -155,11 +204,7 @@ export function RequestTabShell({
                     </span>
                   ) : null}
                 </span>
-                <span className="request-tab__meta">
-                  {tab.methodLabel}
-                  {tabSourceLabel ? ` · ${tabSourceLabel}` : ''}
-                  {tabStateLabel ? ` · ${tabStateLabel}` : ''}
-                </span>
+                <span className="request-tab__meta">{tabMeta}</span>
               </button>
               {tab.tabMode === 'preview' ? (
                 <button

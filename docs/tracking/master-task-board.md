@@ -14,17 +14,17 @@
 ## Active Register
 | ID | Title | Status | Notes |
 | --- | --- | --- | --- |
-| - | No active bounded task | - | Promote exactly one new bounded task before starting additional implementation work. |
+| T093 | Workbench Tab Capability Reinforcement | doing | `docs/tasks/task-t093-workbench-tab-capability-reinforcement.md` promoted as the active bounded task. |
 
 ## Defined Queue
 | ID | Title | Status | Notes |
 | --- | --- | --- | --- |
-| T093 | Workbench Tab Capability Reinforcement | todo | Align with PRD WB-01/WB-04 must/should coverage after `T092` archival. |
+| - | No queued bounded task | - | Promote the next bounded task only after `T093` is closed and archived. |
 
 ## Current State
-- **Current bounded task:** none (awaiting next promotion).
+- **Current bounded task:** `T093` Workbench Tab Capability Reinforcement.
 - **Most recent archived implementation:** `T092` Request Create Sheet Unification.
-- **Highest-priority next step:** promote `T093` as the next single active bounded task.
+- **Highest-priority next step:** complete `T093` and verify WB-01/WB-04 tab-workbench behaviors.
 - **Verification baseline:** `npm.cmd run lint`, `npm.cmd run typecheck`, and `npm.cmd run test:node` passed on 2026-03-26 after `T088/T089/T091` implementation updates.
 - **Closed UI-test rerun policy:** agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - **Codex UI verification lane:** use the Playwright skill workflow against the dev route or built shell when available.

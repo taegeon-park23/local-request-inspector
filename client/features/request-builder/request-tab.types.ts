@@ -32,6 +32,14 @@ export interface SavedWorkspaceRequestSeed {
 
 export type RequestTabSaveState = 'idle' | 'pending' | 'saved' | 'error' | 'conflict';
 export type RequestTabRunState = 'idle' | 'pending' | 'success' | 'error';
+export type WorkbenchTabSource =
+  | 'saved'
+  | 'quick'
+  | 'replay'
+  | 'detached'
+  | 'collection-overview'
+  | 'request-group-overview'
+  | 'batch-result';
 
 export interface RequestTabStatusMeta {
   saveState: RequestTabSaveState;
@@ -54,7 +62,7 @@ export interface RequestTabRecord {
   sourceKey: string;
   title: string;
   methodLabel: HttpMethodLabel;
-  source: 'saved' | 'quick' | 'replay' | 'detached';
+  source: WorkbenchTabSource;
   tabMode: 'preview' | 'pinned';
   summary: string;
   requestId?: string;
@@ -62,6 +70,7 @@ export interface RequestTabRecord {
   collectionName?: string;
   requestGroupId?: string;
   requestGroupName?: string;
+  batchExecutionId?: string | null;
   replaySource?: RequestReplaySourceCue;
   hasUnsavedChanges: boolean;
   persistedUpdatedAt?: string | null;

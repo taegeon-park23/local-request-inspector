@@ -23,6 +23,26 @@ export interface WorkspaceExplorerSelection {
   id: string;
 }
 
+interface CollectionOverviewTabSeed {
+  collectionId: string;
+  collectionName: string;
+}
+
+interface RequestGroupOverviewTabSeed {
+  collectionId: string;
+  collectionName: string;
+  requestGroupId: string;
+  requestGroupName: string;
+}
+
+interface BatchResultTabSeed {
+  containerType: 'collection' | 'request-group';
+  containerId: string;
+  containerName: string;
+  status: 'pending' | 'success' | 'error';
+  batchExecutionId?: string | null;
+}
+
 interface WorkspaceShellState {
   tabs: RequestTabRecord[];
   recentlyClosedTabs: RequestTabRecord[];
@@ -35,6 +55,9 @@ interface WorkspaceShellState {
   openQuickRequest: (options?: { placement?: RequestPlacementValue }) => RequestTabRecord;
   openSavedRequest: (request: SavedWorkspaceRequestSeed, options?: { tabMode?: 'preview' | 'pinned' }) => RequestTabRecord;
   openReplayRequest: (replaySeed: ReplayRequestTabSeed) => RequestTabRecord;
+  openCollectionOverview: (seed: CollectionOverviewTabSeed) => RequestTabRecord;
+  openRequestGroupOverview: (seed: RequestGroupOverviewTabSeed) => RequestTabRecord;
+  openBatchResult: (seed: BatchResultTabSeed) => RequestTabRecord;
   markTabSaved: (tabId: string, request: SavedWorkspaceRequestSeed) => void;
   setTabSaveState: (
     tabId: string,
@@ -128,16 +151,97 @@ function createReplayTab(sequence: number, replaySeed: ReplayRequestTabSeed): Re
   };
 }
 
-function createRequestSelection(requestId: string | null | undefined) {
-  return requestId
-    ? {
-        selectedExplorerItemId: requestId,
-        selectedExplorerItemKind: 'request' as const,
-      }
-    : {
-        selectedExplorerItemId: null,
-        selectedExplorerItemKind: null,
-      };
+function createCollectionOverviewTab(seed: CollectionOverviewTabSeed): RequestTabRecord {
+  return {
+    id: `collection-overview-${seed.collectionId}`,
+    sourceKey: `collection-overview-${seed.collectionId}`,
+    title: seed.collectionName,
+    methodLabel: 'GET',
+    source: 'collection-overview',
+    tabMode: 'pinned',
+    summary: 'Collection overview',
+    collectionId: seed.collectionId,
+    collectionName: seed.collectionName,
+    hasUnsavedChanges: false,
+    persistedUpdatedAt: null,
+    statusMeta: createDefaultRequestTabStatusMeta(),
+  };
+}
+
+function createRequestGroupOverviewTab(seed: RequestGroupOverviewTabSeed): RequestTabRecord {
+  return {
+    id: `request-group-overview-${seed.requestGroupId}`,
+    sourceKey: `request-group-overview-${seed.requestGroupId}`,
+    title: seed.requestGroupName,
+    methodLabel: 'GET',
+    source: 'request-group-overview',
+    tabMode: 'pinned',
+    summary: 'Request group overview',
+    collectionId: seed.collectionId,
+    collectionName: seed.collectionName,
+    requestGroupId: seed.requestGroupId,
+    requestGroupName: seed.requestGroupName,
+    hasUnsavedChanges: false,
+    persistedUpdatedAt: null,
+    statusMeta: createDefaultRequestTabStatusMeta(),
+  };
+}
+
+function createBatchResultTab(seed: BatchResultTabSeed): RequestTabRecord {
+  const tab: RequestTabRecord = {
+    id: 'batch-result-latest',
+    sourceKey: 'batch-result-latest',
+    title: seed.containerName,
+    methodLabel: 'GET',
+    source: 'batch-result',
+    tabMode: 'pinned',
+    summary: `Batch run ${seed.status}`,
+    batchExecutionId: seed.batchExecutionId ?? null,
+    hasUnsavedChanges: false,
+    persistedUpdatedAt: null,
+    statusMeta: createDefaultRequestTabStatusMeta(),
+  };
+
+  if (seed.containerType === 'collection') {
+    tab.collectionId = seed.containerId;
+  } else {
+    tab.requestGroupId = seed.containerId;
+  }
+
+  return tab;
+}
+
+function createExplorerSelection(kind: WorkspaceExplorerItemKind, id: string) {
+  return {
+    selectedExplorerItemId: id,
+    selectedExplorerItemKind: kind,
+  };
+}
+
+function createSelectionFromTab(tab: RequestTabRecord | null | undefined) {
+  if (!tab) {
+    return {
+      selectedExplorerItemId: null,
+      selectedExplorerItemKind: null,
+    };
+  }
+
+  if (tab.requestId) {
+    return createExplorerSelection('request', tab.requestId);
+  }
+
+  if (tab.source === 'collection-overview' && tab.collectionId) {
+    return createExplorerSelection('collection', tab.collectionId);
+  }
+
+  if (tab.source === 'request-group-overview' && tab.requestGroupId) {
+    return createExplorerSelection('request-group', tab.requestGroupId);
+  }
+
+  return {
+    selectedExplorerItemId: null,
+    selectedExplorerItemKind: null,
+  };
 }
 
 function getNextActiveTabId(tabs: RequestTabRecord[], closedTabId: string): string | null {
@@ -247,7 +351,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
         return {
           tabs: state.tabs.map((tab) => (tab.id === existingTab.id ? nextTab : tab)),
           activeTabId: nextTab.id,
-          ...createRequestSelection(request.id),
+          ...createExplorerSelection('request', request.id),
           activeRoutePanel: 'main',
         };
       }
@@ -262,7 +366,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
             ? state.tabs.map((tab) => (tab.id === previewTab.id ? nextPreviewTab : tab))
             : [...state.tabs, nextPreviewTab],
           activeTabId: nextPreviewTab.id,
-          ...createRequestSelection(request.id),
+          ...createExplorerSelection('request', request.id),
           activeRoutePanel: 'main',
         };
       }
@@ -273,7 +377,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
       return {
         tabs: [...state.tabs, nextSavedTab],
         activeTabId: nextSavedTab.id,
-        ...createRequestSelection(request.id),
+        ...createExplorerSelection('request', request.id),
         activeRoutePanel: 'main',
       };
     });
@@ -298,6 +402,88 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
     });
 
     return requireCreatedTab(replayTab, 'Failed to create replay request tab.');
+  },
+  openCollectionOverview: (seed) => {
+    let overviewTab: RequestTabRecord | null = null;
+
+    set((state) => {
+      const nextTab = createCollectionOverviewTab(seed);
+      const existingTab = state.tabs.find((tab) => tab.sourceKey === nextTab.sourceKey) ?? null;
+      const resolvedTab = existingTab
+        ? {
+            ...existingTab,
+            ...nextTab,
+            id: existingTab.id,
+          }
+        : nextTab;
+      overviewTab = resolvedTab;
+
+      return {
+        tabs: existingTab
+          ? state.tabs.map((tab) => (tab.id === existingTab.id ? resolvedTab : tab))
+          : [...state.tabs, resolvedTab],
+        activeTabId: resolvedTab.id,
+        ...createExplorerSelection('collection', seed.collectionId),
+        activeRoutePanel: 'main',
+      };
+    });
+
+    return requireCreatedTab(overviewTab, 'Failed to open collection overview tab.');
+  },
+  openRequestGroupOverview: (seed) => {
+    let overviewTab: RequestTabRecord | null = null;
+
+    set((state) => {
+      const nextTab = createRequestGroupOverviewTab(seed);
+      const existingTab = state.tabs.find((tab) => tab.sourceKey === nextTab.sourceKey) ?? null;
+      const resolvedTab = existingTab
+        ? {
+            ...existingTab,
+            ...nextTab,
+            id: existingTab.id,
+          }
+        : nextTab;
+      overviewTab = resolvedTab;
+
+      return {
+        tabs: existingTab
+          ? state.tabs.map((tab) => (tab.id === existingTab.id ? resolvedTab : tab))
+          : [...state.tabs, resolvedTab],
+        activeTabId: resolvedTab.id,
+        ...createExplorerSelection('request-group', seed.requestGroupId),
+        activeRoutePanel: 'main',
+      };
+    });
+
+    return requireCreatedTab(overviewTab, 'Failed to open request-group overview tab.');
+  },
+  openBatchResult: (seed) => {
+    let batchTab: RequestTabRecord | null = null;
+
+    set((state) => {
+      const nextTab = createBatchResultTab(seed);
+      const existingTab = state.tabs.find((tab) => tab.sourceKey === nextTab.sourceKey) ?? null;
+      const resolvedTab = existingTab
+        ? {
+            ...existingTab,
+            ...nextTab,
+            id: existingTab.id,
+          }
+        : nextTab;
+      batchTab = resolvedTab;
+
+      return {
+        tabs: existingTab
+          ? state.tabs.map((tab) => (tab.id === existingTab.id ? resolvedTab : tab))
+          : [...state.tabs, resolvedTab],
+        activeTabId: resolvedTab.id,
+        selectedExplorerItemId: state.selectedExplorerItemId,
+        selectedExplorerItemKind: state.selectedExplorerItemKind,
+        activeRoutePanel: 'main',
+      };
+    });
+
+    return requireCreatedTab(batchTab, 'Failed to open batch-result tab.');
   },
   markTabSaved: (tabId, request) =>
     set((state) => {
@@ -336,7 +522,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
 
           return nextTab;
         }),
-        ...(state.activeTabId === tabId ? createRequestSelection(request.id) : {}),
+        ...(state.activeTabId === tabId ? createExplorerSelection('request', request.id) : {}),
       };
     }),
   setTabSaveState: (tabId, saveState, options = {}) =>
@@ -410,7 +596,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
 
       return {
         tabs: nextTabs,
-        ...createRequestSelection(activeTab?.requestId ?? null),
+        ...createSelectionFromTab(activeTab),
       };
     }),
   pinTab: (tabId) =>
@@ -467,7 +653,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
 
       return {
         activeTabId: tabId,
-        ...createRequestSelection(activeTab.requestId ?? null),
+        ...createSelectionFromTab(activeTab),
         activeRoutePanel: 'main',
       };
     }),
@@ -505,7 +691,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
         tabs: nextTabs,
         recentlyClosedTabs: keptRecentlyClosedTabs,
         activeTabId: fallbackTabId,
-        ...createRequestSelection(fallbackTab?.requestId ?? null),
+        ...createSelectionFromTab(fallbackTab),
         activeRoutePanel: fallbackTab ? 'main' : state.activeRoutePanel,
       };
     });
@@ -529,7 +715,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
 
         return {
           activeTabId: existingBySourceKey.id,
-          ...createRequestSelection(existingBySourceKey.requestId ?? null),
+          ...createSelectionFromTab(existingBySourceKey),
           activeRoutePanel: 'main',
           recentlyClosedTabs: remainingClosedTabs,
         };
@@ -550,7 +736,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
       return {
         tabs: [...state.tabs, nextReopenedTab],
         activeTabId: nextReopenedTab.id,
-        ...createRequestSelection(nextReopenedTab.requestId ?? null),
+        ...createSelectionFromTab(nextReopenedTab),
         activeRoutePanel: 'main',
         recentlyClosedTabs: remainingClosedTabs,
       };
@@ -563,6 +749,13 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
 export function resetWorkspaceShellStore() {
   useWorkspaceShellStore.setState(initialWorkspaceShellState);
 }
+
+
+
+
+
+
+
 
 
 

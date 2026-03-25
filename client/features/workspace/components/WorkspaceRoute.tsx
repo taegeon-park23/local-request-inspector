@@ -449,15 +449,16 @@ export function WorkspaceRoute() {
   const openNewRequest = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.openNewRequest);
   const openQuickRequest = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.openQuickRequest);
   const openSavedRequest = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.openSavedRequest);
+  const openCollectionOverview = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.openCollectionOverview);
+  const openRequestGroupOverview = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.openRequestGroupOverview);
+  const openBatchResult = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.openBatchResult);
   const setActiveTab = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.setActiveTab);
   const setSelectedExplorerItem = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.setSelectedExplorerItem);
   const detachSavedRequest = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.detachSavedRequest);
   const pinTab = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.pinTab);
   const workspaceActivePanel = useWorkspaceUiStore((state) => state.routePanels.workspace.activePanel);
   const setWorkspaceActivePanel = useWorkspaceUiStore((state) => state.setRouteActivePanel);
-  const focusWorkspaceWorkSurface = useWorkspaceUiStore((state) => state.focusWorkspaceWorkSurface);
-  const focusWorkspaceResultPanel = useWorkspaceUiStore((state) => state.focusWorkspaceResultPanel);
-  const closeTab = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.closeTab);
+  const focusWorkspaceWorkSurface = useWorkspaceUiStore((state) => state.focusWorkspaceWorkSurface);  const closeTab = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.closeTab);
   const reopenLastClosedTab = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.reopenLastClosedTab);
   const recentlyClosedTabs = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.recentlyClosedTabs);
   const setFloatingExplorerOpen = useShellStore((state) => state.setFloatingExplorerOpen);
@@ -971,11 +972,25 @@ export function WorkspaceRoute() {
   };
 
   const handleSelectCollection = (collection: WorkspaceCollectionNode) => {
+    deactivateBatchRun();
     setSelectedExplorerItem({ kind: 'collection', id: collection.collectionId });
+    openCollectionOverview({
+      collectionId: collection.collectionId,
+      collectionName: collection.name,
+    });
+    focusWorkspaceWorkSurface();
   };
 
   const handleSelectRequestGroup = (requestGroup: WorkspaceRequestGroupNode) => {
+    deactivateBatchRun();
     setSelectedExplorerItem({ kind: 'request-group', id: requestGroup.requestGroupId });
+    openRequestGroupOverview({
+      collectionId: requestGroup.collectionId,
+      collectionName: findCollectionById(explorerTree, requestGroup.collectionId)?.name ?? requestGroup.name,
+      requestGroupId: requestGroup.requestGroupId,
+      requestGroupName: requestGroup.name,
+    });
+    focusWorkspaceWorkSurface();
   };
 
   const openCreateSheet = (defaultType: CreateType, target: CreateSheetTarget = null) => {
@@ -1066,29 +1081,71 @@ export function WorkspaceRoute() {
 
   const handleRunCollection = async (collection: WorkspaceCollectionNode) => {
     setSelectedExplorerItem({ kind: 'collection', id: collection.collectionId });
-    startBatchRun(t('workspaceRoute.resultPanel.batch.status.runningContainer', { name: collection.name }));
-    focusWorkspaceResultPanel('response');
+    const runningMessage = t('workspaceRoute.resultPanel.batch.status.runningContainer', { name: collection.name });
+    startBatchRun(runningMessage);
+    openBatchResult({
+      containerType: 'collection',
+      containerId: collection.collectionId,
+      containerName: collection.name,
+      status: 'pending',
+    });
+    focusWorkspaceWorkSurface();
 
     try {
       const batchExecution = await runWorkspaceCollection(collection.collectionId);
       finishBatchRunSuccess(batchExecution);
+      openBatchResult({
+        containerType: 'collection',
+        containerId: collection.collectionId,
+        containerName: collection.name,
+        status: 'success',
+        batchExecutionId: batchExecution.batchExecutionId,
+      });
       await queryClient.invalidateQueries({ queryKey: executionHistoryListQueryKey });
     } catch (error) {
-      finishBatchRunError(error instanceof Error ? error.message : t('workspaceRoute.resultPanel.batch.status.collectionFailed'));
+      const message = error instanceof Error ? error.message : t('workspaceRoute.resultPanel.batch.status.collectionFailed');
+      finishBatchRunError(message);
+      openBatchResult({
+        containerType: 'collection',
+        containerId: collection.collectionId,
+        containerName: collection.name,
+        status: 'error',
+      });
     }
   };
 
   const handleRunRequestGroup = async (requestGroup: WorkspaceRequestGroupNode) => {
     setSelectedExplorerItem({ kind: 'request-group', id: requestGroup.requestGroupId });
-    startBatchRun(t('workspaceRoute.resultPanel.batch.status.runningContainer', { name: requestGroup.name }));
-    focusWorkspaceResultPanel('response');
+    const runningMessage = t('workspaceRoute.resultPanel.batch.status.runningContainer', { name: requestGroup.name });
+    startBatchRun(runningMessage);
+    openBatchResult({
+      containerType: 'request-group',
+      containerId: requestGroup.requestGroupId,
+      containerName: requestGroup.name,
+      status: 'pending',
+    });
+    focusWorkspaceWorkSurface();
 
     try {
       const batchExecution = await runWorkspaceRequestGroup(requestGroup.requestGroupId);
       finishBatchRunSuccess(batchExecution);
+      openBatchResult({
+        containerType: 'request-group',
+        containerId: requestGroup.requestGroupId,
+        containerName: requestGroup.name,
+        status: 'success',
+        batchExecutionId: batchExecution.batchExecutionId,
+      });
       await queryClient.invalidateQueries({ queryKey: executionHistoryListQueryKey });
     } catch (error) {
-      finishBatchRunError(error instanceof Error ? error.message : t('workspaceRoute.resultPanel.batch.status.requestGroupFailed'));
+      const message = error instanceof Error ? error.message : t('workspaceRoute.resultPanel.batch.status.requestGroupFailed');
+      finishBatchRunError(message);
+      openBatchResult({
+        containerType: 'request-group',
+        containerId: requestGroup.requestGroupId,
+        containerName: requestGroup.name,
+        status: 'error',
+      });
     }
   };
 
@@ -1154,6 +1211,27 @@ export function WorkspaceRoute() {
       removeDraft(evictedTabId);
       removeCommandState(evictedTabId);
     });
+  };
+  const handleCloseCurrentTab = () => {
+    if (!activeTabId) {
+      return;
+    }
+
+    handleCloseTab(activeTabId);
+  };
+
+  const handleCloseOtherTabs = () => {
+    if (!activeTabId) {
+      return;
+    }
+
+    tabs
+      .filter((tab) => tab.id !== activeTabId)
+      .forEach((tab) => handleCloseTab(tab.id));
+  };
+
+  const handleCloseAllTabs = () => {
+    tabs.forEach((tab) => handleCloseTab(tab.id));
   };
 
   const handleReopenClosedTab = () => {
@@ -1330,7 +1408,13 @@ export function WorkspaceRoute() {
           onCloseTab={handleCloseTab}
           onPinTab={pinTab}
           onReopenClosedTab={handleReopenClosedTab}
+          onCloseCurrentTab={handleCloseCurrentTab}
+          onCloseOtherTabs={handleCloseOtherTabs}
+          onCloseAllTabs={handleCloseAllTabs}
           canReopenClosedTab={recentlyClosedTabs.length > 0}
+          canCloseCurrentTab={Boolean(activeTabId)}
+          canCloseOtherTabs={Boolean(activeTabId) && tabs.length > 1}
+          canCloseAllTabs={tabs.length > 0}
         />
 
         <WorkspaceResourceManagerPanel
@@ -1368,6 +1452,7 @@ export function WorkspaceRoute() {
           onCreateRequest={handleCreateRequest}
           onDuplicateRequest={handleDuplicateRequest}
           placementOptions={requestPlacementOptions}
+          workspaceTree={explorerTree}
         />
         </section>
       )}
@@ -1379,6 +1464,20 @@ export function WorkspaceRoute() {
     />
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

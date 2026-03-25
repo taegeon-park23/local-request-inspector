@@ -269,10 +269,16 @@ export const workspaceRouteMessagesEn = {
       searchPlaceholder: 'Search open tabs',
       searchNoMatches: 'No tabs match the current search.',
       reopenClosedTab: 'Reopen Closed Tab',
+      closeCurrentTab: 'Close Current Tab',
+      closeOtherTabs: 'Close Other Tabs',
+      closeAllTabs: 'Close All Tabs',
       sourcePreview: 'Preview',
       sourceQuick: 'Quick',
       sourceReplay: 'Replay',
       sourceDetached: 'Detached',
+      sourceCollectionOverview: 'Collection Overview',
+      sourceRequestGroupOverview: 'Request Group Overview',
+      sourceBatchResult: 'Run Result',
       states: {
         dirty: 'Dirty',
         saving: 'Saving',
@@ -1218,10 +1224,16 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
       searchPlaceholder: '열린 탭 검색',
       searchNoMatches: '현재 검색과 일치하는 탭이 없습니다.',
       reopenClosedTab: '닫은 탭 다시 열기',
+      closeCurrentTab: '현재 탭 닫기',
+      closeOtherTabs: '다른 탭 닫기',
+      closeAllTabs: '모든 탭 닫기',
       sourcePreview: '미리보기',
       sourceQuick: '빠른',
       sourceReplay: '리플레이',
       sourceDetached: '분리됨',
+      sourceCollectionOverview: '컬렉션 개요',
+      sourceRequestGroupOverview: '요청 그룹 개요',
+      sourceBatchResult: '실행 결과',
       states: {
         dirty: '변경됨',
         saving: '저장 중',
@@ -1892,5 +1904,8 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
     },
   },
 };
+
+
+
 
 

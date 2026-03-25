@@ -106,5 +106,50 @@ describe('workspace-shell-store', () => {
     expect(useWorkspaceShellStore.getState().activeTabId).toBe(secondTab.id);
     expect(useWorkspaceShellStore.getState().recentlyClosedTabs).toHaveLength(0);
   });
+  it('opens collection overview tabs and keeps explorer selection linked to the tab', () => {
+    const overviewTab = useWorkspaceShellStore.getState().openCollectionOverview({
+      collectionId: 'collection-team',
+      collectionName: 'Team API',
+    });
+
+    let state = useWorkspaceShellStore.getState();
+    expect(overviewTab.source).toBe('collection-overview');
+    expect(state.activeTabId).toBe(overviewTab.id);
+    expect(state.selectedExplorerItemKind).toBe('collection');
+    expect(state.selectedExplorerItemId).toBe('collection-team');
+
+    useWorkspaceShellStore.getState().closeTab(overviewTab.id);
+    useWorkspaceShellStore.getState().reopenLastClosedTab();
+
+    state = useWorkspaceShellStore.getState();
+    expect(state.activeTabId).toBe(overviewTab.id);
+    expect(state.selectedExplorerItemKind).toBe('collection');
+    expect(state.selectedExplorerItemId).toBe('collection-team');
+  });
+
+  it('keeps a single batch-result tab slot and updates it with the latest execution metadata', () => {
+    const firstTab = useWorkspaceShellStore.getState().openBatchResult({
+      containerType: 'collection',
+      containerId: 'collection-team',
+      containerName: 'Team API',
+      status: 'pending',
+    });
+
+    const secondTab = useWorkspaceShellStore.getState().openBatchResult({
+      containerType: 'request-group',
+      containerId: 'request-group-auth',
+      containerName: 'Auth',
+      status: 'success',
+      batchExecutionId: 'batch-123',
+    });
+
+    const state = useWorkspaceShellStore.getState();
+    expect(state.tabs).toHaveLength(1);
+    expect(secondTab.id).toBe(firstTab.id);
+    expect(state.tabs[0]?.source).toBe('batch-result');
+    expect(state.tabs[0]?.title).toBe('Auth');
+    expect(state.tabs[0]?.requestGroupId).toBe('request-group-auth');
+    expect(state.tabs[0]?.batchExecutionId).toBe('batch-123');
+  });
 });
 

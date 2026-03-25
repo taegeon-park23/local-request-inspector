@@ -11,3 +11,14 @@ export function isPreviewRequestTab(
 ) {
   return Boolean(tab && tab.tabMode === 'preview');
 }
+
+export function isRequestWorkbenchTab(
+  tab: Pick<RequestTabRecord, 'source'> | null | undefined,
+) {
+  return Boolean(tab && (
+    tab.source === 'saved'
+    || tab.source === 'quick'
+    || tab.source === 'replay'
+    || tab.source === 'detached'
+  ));
+}

@@ -24,6 +24,8 @@ import {
 } from '@client/features/request-builder/request-placement';
 import { useRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
 import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
+import { useWorkspaceBatchRunStore } from '@client/features/workspace/state/workspace-batch-run-store';
+import type { WorkspaceCollectionNode, WorkspaceRequestGroupNode } from '@client/features/workspace/workspace-request-tree.api';
 import type { AppIconName } from '@client/shared/ui/AppIcon';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 
@@ -69,6 +71,7 @@ interface RequestWorkSurfaceProps {
   onCreateRequest: () => void;
   onDuplicateRequest: () => void;
   placementOptions: RequestPlacementCollectionOption[];
+  workspaceTree?: WorkspaceCollectionNode[];
 }
 
 function formatSavedAt(
@@ -137,11 +140,71 @@ function getRunStatusCopy(
   return runStatus.message ?? fallbackMessage;
 }
 
+function summarizeRequestGroupTree(
+  requestGroups: WorkspaceRequestGroupNode[],
+): { requestGroupCount: number; requestCount: number } {
+  return requestGroups.reduce(
+    (summary, requestGroup) => {
+      const nestedSummary = summarizeRequestGroupTree(requestGroup.childGroups);
+
+      return {
+        requestGroupCount: summary.requestGroupCount + 1 + nestedSummary.requestGroupCount,
+        requestCount: summary.requestCount + requestGroup.requests.length + nestedSummary.requestCount,
+      };
+    },
+    { requestGroupCount: 0, requestCount: 0 },
+  );
+}
+
+function findCollectionById(tree: WorkspaceCollectionNode[], collectionId: string | null | undefined) {
+  if (!collectionId) {
+    return null;
+  }
+
+  return tree.find((collection) => collection.collectionId === collectionId) ?? null;
+}
+
+function findRequestGroupById(
+  tree: WorkspaceCollectionNode[],
+  requestGroupId: string | null | undefined,
+): { collection: WorkspaceCollectionNode; requestGroup: WorkspaceRequestGroupNode } | null {
+  if (!requestGroupId) {
+    return null;
+  }
+
+  function walk(
+    collection: WorkspaceCollectionNode,
+    groups: WorkspaceRequestGroupNode[],
+  ): { collection: WorkspaceCollectionNode; requestGroup: WorkspaceRequestGroupNode } | null {
+    for (const requestGroup of groups) {
+      if (requestGroup.requestGroupId === requestGroupId) {
+        return { collection, requestGroup };
+      }
+
+      const childMatch = walk(collection, requestGroup.childGroups);
+      if (childMatch) {
+        return childMatch;
+      }
+    }
+
+    return null;
+  }
+
+  for (const collection of tree) {
+    const match = walk(collection, collection.childGroups);
+    if (match) {
+      return match;
+    }
+  }
+
+  return null;
+}
 export function RequestWorkSurface({
   activeTab,
   onCreateRequest,
   onDuplicateRequest,
   placementOptions,
+  workspaceTree = [],
 }: RequestWorkSurfaceProps) {
   const { t, formatDateTime } = useI18n();
   const [copiedScriptNamesByTabId, setCopiedScriptNamesByTabId] = useState<
@@ -167,6 +230,9 @@ export function RequestWorkSurface({
   const updateSelectedEnvironmentId = useRequestDraftStore((state) => state.updateSelectedEnvironmentId);
   const updateDraftPlacement = useRequestDraftStore((state) => state.updateDraftPlacement);
   const pinTab = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.pinTab);
+  const batchRunStatus = useWorkspaceBatchRunStore((state: ReturnType<typeof useWorkspaceBatchRunStore.getState>) => state.status);
+  const batchRunMessage = useWorkspaceBatchRunStore((state: ReturnType<typeof useWorkspaceBatchRunStore.getState>) => state.message);
+  const batchExecution = useWorkspaceBatchRunStore((state: ReturnType<typeof useWorkspaceBatchRunStore.getState>) => state.latestExecution);
   const environmentsQuery = useQuery({
     queryKey: workspaceEnvironmentsQueryKey,
     queryFn: listWorkspaceEnvironments,
@@ -208,7 +274,93 @@ export function RequestWorkSurface({
       </div>
     );
   }
+  if (activeTab.source === 'collection-overview') {
+    const collection = findCollectionById(workspaceTree, activeTab.collectionId);
+    const collectionSummary = collection
+      ? summarizeRequestGroupTree(collection.childGroups)
+      : { requestGroupCount: 0, requestCount: 0 };
 
+    return (
+      <div className="request-work-surface request-work-surface--empty" data-testid="workbench-collection-overview">
+        <section className="workspace-surface-card request-editor-card">
+          <header className="request-editor-card__header">
+            <div>
+              <p className="section-placeholder__eyebrow">{t('workspaceRoute.tabShell.sourceCollectionOverview')}</p>
+              <h3>{collection?.name ?? activeTab.title}</h3>
+              <p>{t('workspaceRoute.explorer.header.summary')}</p>
+            </div>
+          </header>
+          <div className="request-work-surface__badges">
+            <span className="workspace-chip">{t('workspaceRoute.explorer.tree.requestGroupCount', { count: collectionSummary.requestGroupCount })}</span>
+            <span className="workspace-chip workspace-chip--secondary">{t('workspaceRoute.explorer.tree.requestCount', { count: collectionSummary.requestCount })}</span>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  if (activeTab.source === 'request-group-overview') {
+    const requestGroupLocation = findRequestGroupById(workspaceTree, activeTab.requestGroupId);
+    const requestGroupSummary = requestGroupLocation
+      ? summarizeRequestGroupTree(requestGroupLocation.requestGroup.childGroups)
+      : { requestGroupCount: 0, requestCount: 0 };
+    const requestCount = (requestGroupLocation?.requestGroup.requests.length ?? 0) + requestGroupSummary.requestCount;
+
+    return (
+      <div className="request-work-surface request-work-surface--empty" data-testid="workbench-request-group-overview">
+        <section className="workspace-surface-card request-editor-card">
+          <header className="request-editor-card__header">
+            <div>
+              <p className="section-placeholder__eyebrow">{t('workspaceRoute.tabShell.sourceRequestGroupOverview')}</p>
+              <h3>{requestGroupLocation?.requestGroup.name ?? activeTab.title}</h3>
+              <p>
+                {requestGroupLocation
+                  ? `${requestGroupLocation.collection.name} / ${requestGroupLocation.requestGroup.name}`
+                  : activeTab.summary}
+              </p>
+            </div>
+          </header>
+          <div className="request-work-surface__badges">
+            <span className="workspace-chip">{t('workspaceRoute.explorer.tree.requestCount', { count: requestCount })}</span>
+            <span className="workspace-chip workspace-chip--secondary">{t('workspaceRoute.explorer.tree.requestGroupCount', { count: requestGroupSummary.requestGroupCount })}</span>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  if (activeTab.source === 'batch-result') {
+    const runStatusLabel = batchRunStatus === 'pending'
+      ? t('workspaceRoute.resultPanel.batch.status.running')
+      : batchRunStatus === 'error'
+        ? (batchRunMessage ?? t('workspaceRoute.resultPanel.batch.status.noExecutionSelected'))
+        : batchExecution
+          ? batchExecution.aggregateOutcome
+          : t('workspaceRoute.resultPanel.batch.status.noRunYet');
+
+    return (
+      <div className="request-work-surface request-work-surface--empty" data-testid="workbench-batch-result">
+        <section className="workspace-surface-card request-editor-card">
+          <header className="request-editor-card__header">
+            <div>
+              <p className="section-placeholder__eyebrow">{t('workspaceRoute.tabShell.sourceBatchResult')}</p>
+              <h3>{batchExecution?.containerName ?? activeTab.title}</h3>
+              <p>{t('workspaceRoute.resultPanel.batch.header.description')}</p>
+            </div>
+          </header>
+          <div className="request-work-surface__badges">
+            <span className="workspace-chip">{runStatusLabel}</span>
+            <span className="workspace-chip workspace-chip--secondary">
+              {batchExecution
+                ? t('workspaceRoute.resultPanel.batch.badges.steps', { count: batchExecution.totalRuns })
+                : t('workspaceRoute.resultPanel.batch.status.noRunYet')}
+            </span>
+          </div>
+          {batchRunMessage ? <p className="shared-readiness-note">{batchRunMessage}</p> : null}
+        </section>
+      </div>
+    );
+  }
   if (!draft) {
     return (
       <div className="request-work-surface request-work-surface--empty">
@@ -795,4 +947,15 @@ export function RequestWorkSurface({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
 
