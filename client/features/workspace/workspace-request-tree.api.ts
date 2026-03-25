@@ -1,4 +1,5 @@
 import {
+  DEFAULT_REQUEST_COLLECTION_NAME,
   DEFAULT_WORKSPACE_ID,
   RequestBuilderApiError,
   type SavedRequestResourceRecord,
@@ -339,7 +340,7 @@ export function buildFallbackWorkspaceRequestTree(
   >();
 
   for (const request of [...requests].sort(compareSavedRequests)) {
-    const collectionName = String(request.collectionName || 'Saved Requests');
+    const collectionName = String(request.collectionName || DEFAULT_REQUEST_COLLECTION_NAME);
     const requestGroupName = String(readRequestPlacementGroupName(request) ?? DEFAULT_REQUEST_GROUP_NAME);
     const collectionGroups = collectionMap.get(collectionName) ?? new Map<string, SavedRequestResourceRecord[]>();
 
