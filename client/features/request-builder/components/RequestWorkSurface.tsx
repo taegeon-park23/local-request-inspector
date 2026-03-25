@@ -32,12 +32,12 @@ const LazyRequestScriptsEditorSurface = lazy(async () => {
   return import('@client/features/request-builder/components/RequestScriptsEditorSurface');
 });
 
-const requestEditorTabs: Array<{ id: RequestDraftState['activeEditorTab']; label: string; icon: AppIconName }> = [
-  { id: 'params', label: 'Params', icon: 'params' },
-  { id: 'headers', label: 'Headers', icon: 'headers' },
-  { id: 'body', label: 'Body', icon: 'body' },
-  { id: 'auth', label: 'Auth', icon: 'auth' },
-  { id: 'scripts', label: 'Scripts', icon: 'scripts' },
+const requestEditorTabs: Array<{ id: RequestDraftState['activeEditorTab']; icon: AppIconName }> = [
+  { id: 'params', icon: 'params' },
+  { id: 'headers', icon: 'headers' },
+  { id: 'body', icon: 'body' },
+  { id: 'auth', icon: 'auth' },
+  { id: 'scripts', icon: 'scripts' },
 ];
 
 function getLocalizedRequestEditorTabLabel(
@@ -61,19 +61,8 @@ function getLocalizedRequestEditorTabLabel(
 }
 
 const httpMethodOptions: RequestDraftState['method'][] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
-const bodyModeOptions: Array<{ value: RequestDraftState['bodyMode']; label: string }> = [
-  { value: 'none', label: 'None' },
-  { value: 'json', label: 'JSON' },
-  { value: 'text', label: 'Text' },
-  { value: 'form-urlencoded', label: 'x-www-form-urlencoded' },
-  { value: 'multipart-form-data', label: 'multipart/form-data' },
-];
-const authTypeOptions: Array<{ value: RequestDraftState['auth']['type']; label: string }> = [
-  { value: 'none', label: 'None' },
-  { value: 'bearer', label: 'Bearer token' },
-  { value: 'basic', label: 'Basic auth' },
-  { value: 'api-key', label: 'API key' },
-];
+const bodyModeOptions: RequestDraftState['bodyMode'][] = ['none', 'json', 'text', 'form-urlencoded', 'multipart-form-data'];
+const authTypeOptions: RequestDraftState['auth']['type'][] = ['none', 'bearer', 'basic', 'api-key'];
 
 interface RequestWorkSurfaceProps {
   activeTab: RequestTabRecord | null;
@@ -237,7 +226,7 @@ export function RequestWorkSurface({
           <label className="request-field">
             <span>{t('workspaceRoute.requestBuilder.fields.requestName')}</span>
             <input
-              aria-label="Request name"
+              aria-label={t('workspaceRoute.requestBuilder.fields.requestName')}
               type="text"
               value={draft.name}
               onChange={(event) => updateDraftName(draft.tabId, event.currentTarget.value)}
@@ -249,7 +238,7 @@ export function RequestWorkSurface({
               <label className="request-field request-field--compact">
                 <span>{t('workspaceRoute.requestBuilder.fields.saveCollection')}</span>
                 <select
-                  aria-label="Save collection"
+                  aria-label={t('workspaceRoute.requestBuilder.fields.saveCollection')}
                   value={collectionSelectValue}
                   onChange={(event) => {
                     const nextCollection = placementOptions.find((collection) => (
@@ -277,7 +266,7 @@ export function RequestWorkSurface({
               <label className="request-field request-field--compact">
                 <span>{t('workspaceRoute.requestBuilder.fields.saveRequestGroup')}</span>
                 <select
-                  aria-label="Save request group"
+                  aria-label={t('workspaceRoute.requestBuilder.fields.saveRequestGroup')}
                   value={requestGroupSelectValue}
                   onChange={(event) => {
                     const nextRequestGroup = selectedCollection?.requestGroups.find((requestGroup) => (
@@ -311,7 +300,7 @@ export function RequestWorkSurface({
             <label className="request-field request-field--compact">
               <span>{t('workspaceRoute.requestBuilder.fields.requestEnvironment')}</span>
               <select
-                aria-label="Request environment"
+                aria-label={t('workspaceRoute.requestBuilder.fields.requestEnvironment')}
                 value={environmentSelectValue}
                 onChange={(event) => updateSelectedEnvironmentId(draft.tabId, event.currentTarget.value || null)}
               >
@@ -334,7 +323,7 @@ export function RequestWorkSurface({
           </div>
         </div>
         <div className="request-builder-core__command-area">
-          <div className="request-work-surface__future-actions" aria-label="Request header actions">
+          <div className="request-work-surface__future-actions" aria-label={t('workspaceRoute.requestBuilder.a11y.headerActions')}>
             <button
               type="button"
               className="workspace-button workspace-button--secondary"
@@ -393,7 +382,7 @@ export function RequestWorkSurface({
           <label className="request-field request-field--compact">
             <span>{t('workspaceRoute.requestBuilder.fields.requestMethod')}</span>
             <select
-              aria-label="Request method"
+              aria-label={t('workspaceRoute.requestBuilder.fields.requestMethod')}
               value={draft.method}
               onChange={(event) => updateDraftMethod(draft.tabId, event.currentTarget.value as RequestDraftState['method'])}
             >
@@ -407,8 +396,8 @@ export function RequestWorkSurface({
           <label className="request-field request-field--wide">
             <span>{t('workspaceRoute.requestBuilder.fields.requestUrl')}</span>
             <input
-              aria-label="Request URL"
-              placeholder="https://api.example.com/resource"
+              aria-label={t('workspaceRoute.requestBuilder.fields.requestUrl')}
+              placeholder={t('workspaceRoute.requestBuilder.fields.requestUrlPlaceholder')}
               type="text"
               value={draft.url}
               onChange={(event) => updateDraftUrl(draft.tabId, event.currentTarget.value)}
@@ -417,7 +406,7 @@ export function RequestWorkSurface({
         </div>
       </section>
 
-      <div className="request-work-surface__editor-tabs" aria-label="Editor surface tabs">
+      <div className="request-work-surface__editor-tabs" aria-label={t('workspaceRoute.requestBuilder.a11y.editorTabs')}>
         {requestEditorTabs.map((tab) => (
           <button
             key={tab.id}
@@ -478,8 +467,8 @@ export function RequestWorkSurface({
                 onChange={(event) => updateBodyMode(draft.tabId, event.currentTarget.value as RequestDraftState['bodyMode'])}
               >
                 {bodyModeOptions.map((bodyMode) => (
-                  <option key={bodyMode.value} value={bodyMode.value}>
-                    {bodyMode.value === 'none' ? t('workspaceRoute.requestBuilder.bodyModeOptions.none') : bodyMode.value === 'json' ? t('workspaceRoute.requestBuilder.bodyModeOptions.json') : bodyMode.value === 'text' ? t('workspaceRoute.requestBuilder.bodyModeOptions.text') : bodyMode.value === 'form-urlencoded' ? t('workspaceRoute.requestBuilder.bodyModeOptions.formUrlencoded') : t('workspaceRoute.requestBuilder.bodyModeOptions.multipartFormData')}
+                  <option key={bodyMode} value={bodyMode}>
+                    {bodyMode === 'none' ? t('workspaceRoute.requestBuilder.bodyModeOptions.none') : bodyMode === 'json' ? t('workspaceRoute.requestBuilder.bodyModeOptions.json') : bodyMode === 'text' ? t('workspaceRoute.requestBuilder.bodyModeOptions.text') : bodyMode === 'form-urlencoded' ? t('workspaceRoute.requestBuilder.bodyModeOptions.formUrlencoded') : t('workspaceRoute.requestBuilder.bodyModeOptions.multipartFormData')}
                   </option>
                 ))}
               </select>
@@ -550,8 +539,8 @@ export function RequestWorkSurface({
                 onChange={(event) => updateAuthType(draft.tabId, event.currentTarget.value as RequestDraftState['auth']['type'])}
               >
                 {authTypeOptions.map((authType) => (
-                  <option key={authType.value} value={authType.value}>
-                    {authType.value === 'none' ? t('workspaceRoute.requestBuilder.authTypeOptions.none') : authType.value === 'bearer' ? t('workspaceRoute.requestBuilder.authTypeOptions.bearer') : authType.value === 'basic' ? t('workspaceRoute.requestBuilder.authTypeOptions.basic') : t('workspaceRoute.requestBuilder.authTypeOptions.apiKey')}
+                  <option key={authType} value={authType}>
+                    {authType === 'none' ? t('workspaceRoute.requestBuilder.authTypeOptions.none') : authType === 'bearer' ? t('workspaceRoute.requestBuilder.authTypeOptions.bearer') : authType === 'basic' ? t('workspaceRoute.requestBuilder.authTypeOptions.basic') : t('workspaceRoute.requestBuilder.authTypeOptions.apiKey')}
                   </option>
                 ))}
               </select>
@@ -565,7 +554,7 @@ export function RequestWorkSurface({
               <label className="request-field">
                 <span>{t('workspaceRoute.requestBuilder.authEditor.bearerToken')}</span>
                 <input
-                  aria-label="Bearer token"
+                  aria-label={t('workspaceRoute.requestBuilder.authEditor.bearerToken')}
                   type="text"
                   value={draft.auth.bearerToken}
                   onChange={(event) => updateAuthField(draft.tabId, 'bearerToken', event.currentTarget.value)}
@@ -578,7 +567,7 @@ export function RequestWorkSurface({
                 <label className="request-field">
                   <span>{t('workspaceRoute.requestBuilder.authEditor.username')}</span>
                   <input
-                    aria-label="Username"
+                    aria-label={t('workspaceRoute.requestBuilder.authEditor.username')}
                     type="text"
                     value={draft.auth.basicUsername}
                     onChange={(event) => updateAuthField(draft.tabId, 'basicUsername', event.currentTarget.value)}
@@ -587,7 +576,7 @@ export function RequestWorkSurface({
                 <label className="request-field">
                   <span>{t('workspaceRoute.requestBuilder.authEditor.password')}</span>
                   <input
-                    aria-label="Password"
+                    aria-label={t('workspaceRoute.requestBuilder.authEditor.password')}
                     type="password"
                     value={draft.auth.basicPassword}
                     onChange={(event) => updateAuthField(draft.tabId, 'basicPassword', event.currentTarget.value)}
@@ -601,7 +590,7 @@ export function RequestWorkSurface({
                 <label className="request-field">
                   <span>{t('workspaceRoute.requestBuilder.authEditor.apiKeyName')}</span>
                   <input
-                    aria-label="API key name"
+                    aria-label={t('workspaceRoute.requestBuilder.authEditor.apiKeyName')}
                     type="text"
                     value={draft.auth.apiKeyName}
                     onChange={(event) => updateAuthField(draft.tabId, 'apiKeyName', event.currentTarget.value)}
@@ -610,7 +599,7 @@ export function RequestWorkSurface({
                 <label className="request-field">
                   <span>{t('workspaceRoute.requestBuilder.authEditor.apiKeyValue')}</span>
                   <input
-                    aria-label="API key value"
+                    aria-label={t('workspaceRoute.requestBuilder.authEditor.apiKeyValue')}
                     type="text"
                     value={draft.auth.apiKeyValue}
                     onChange={(event) => updateAuthField(draft.tabId, 'apiKeyValue', event.currentTarget.value)}
@@ -619,7 +608,7 @@ export function RequestWorkSurface({
                 <label className="request-field request-field--compact">
                   <span>{t('workspaceRoute.requestBuilder.authEditor.apiKeyPlacement')}</span>
                   <select
-                    aria-label="API key placement"
+                    aria-label={t('workspaceRoute.requestBuilder.authEditor.apiKeyPlacement')}
                     value={draft.auth.apiKeyPlacement}
                     onChange={(event) => updateAuthField(draft.tabId, 'apiKeyPlacement', event.currentTarget.value)}
                   >

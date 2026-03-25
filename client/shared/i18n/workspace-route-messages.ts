@@ -308,6 +308,11 @@ export const workspaceRouteMessagesEn = {
         requestEnvironment: 'Request environment',
         requestMethod: 'Request method',
         requestUrl: 'Request URL',
+        requestUrlPlaceholder: 'https://api.example.com/resource',
+      },
+      a11y: {
+        headerActions: 'Request header actions',
+        editorTabs: 'Editor surface tabs',
       },
       placement: {
         selected: 'Request will save to {path}.',
@@ -1174,6 +1179,11 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         requestEnvironment: '요청 환경',
         requestMethod: '요청 메서드',
         requestUrl: '요청 URL',
+        requestUrlPlaceholder: 'https://api.example.com/resource',
+      },
+      a11y: {
+        headerActions: '요청 헤더 작업',
+        editorTabs: '편집기 표면 탭',
       },
       placement: {
         selected: '{path} 위치에 저장됩니다.',
