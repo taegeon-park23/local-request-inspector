@@ -30,6 +30,9 @@ function getUrl(input: RequestInfo | URL) {
 async function openNewRequest(user: ReturnType<typeof userEvent.setup>) {
   const mainSurface = screen.getByLabelText('Main work surface');
   await user.click(within(mainSurface).getByRole('button', { name: 'New Request' }));
+  const sheet = screen.getByLabelText('Create workspace item');
+  await user.type(within(sheet).getByLabelText('Name'), 'Untitled Request');
+  await user.click(within(sheet).getByRole('button', { name: 'Create' }));
 }
 
 describe('Request builder save/run wiring', () => {

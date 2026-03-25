@@ -60,6 +60,7 @@ describe('WorkspaceCreateSheet', () => {
         onCancel={vi.fn()}
         onCreateCollection={vi.fn()}
         onCreateRequestGroup={vi.fn()}
+        onCreateRequest={vi.fn()}
       />,
     );
 
@@ -81,6 +82,7 @@ describe('WorkspaceCreateSheet', () => {
         onCancel={vi.fn()}
         onCreateCollection={vi.fn()}
         onCreateRequestGroup={onCreateRequestGroup}
+        onCreateRequest={vi.fn()}
       />,
     );
 
@@ -109,6 +111,7 @@ describe('WorkspaceCreateSheet', () => {
         onCancel={vi.fn()}
         onCreateCollection={onCreateCollection}
         onCreateRequestGroup={vi.fn()}
+        onCreateRequest={vi.fn()}
       />,
     );
 
@@ -117,5 +120,36 @@ describe('WorkspaceCreateSheet', () => {
     await user.click(within(sheet).getByRole('button', { name: 'Create' }));
 
     expect(onCreateCollection).toHaveBeenCalledWith('Team API');
+  });
+
+  it('creates a detached request draft seed with selected parent placement', async () => {
+    const user = userEvent.setup();
+    const onCreateRequest = vi.fn();
+
+    renderApp(
+      <WorkspaceCreateSheet
+        isOpen
+        tree={createTree()}
+        defaultType="request"
+        defaultTarget={null}
+        onCancel={vi.fn()}
+        onCreateCollection={vi.fn()}
+        onCreateRequestGroup={vi.fn()}
+        onCreateRequest={onCreateRequest}
+      />,
+    );
+
+    const sheet = screen.getByLabelText('Create workspace item');
+    await user.selectOptions(within(sheet).getByLabelText('Parent'), 'request-group:request-group-login');
+    await user.type(within(sheet).getByLabelText('Name'), 'Create token');
+    await user.click(within(sheet).getByRole('button', { name: 'Create' }));
+
+    expect(onCreateRequest).toHaveBeenCalledWith({
+      name: 'Create token',
+      collectionId: 'collection-saved-requests',
+      collectionName: 'Saved Requests',
+      requestGroupId: 'request-group-login',
+      requestGroupName: 'Login',
+    });
   });
 });

@@ -157,6 +157,7 @@ export const workspaceRouteMessagesEn = {
         types: {
           collection: 'Collection',
           requestGroup: 'Request group',
+          request: 'Request',
         },
         actions: {
           create: 'Create',
@@ -165,7 +166,7 @@ export const workspaceRouteMessagesEn = {
         },
         validation: {
           nameRequired: 'Enter a name before creating.',
-          parentRequired: 'Choose a parent scope before creating a request group.',
+          parentRequired: 'Choose a parent scope before creating.',
         },
       },
       search: {
@@ -1105,6 +1106,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         types: {
           collection: '컬렉션',
           requestGroup: '요청 그룹',
+          request: '요청',
         },
         actions: {
           create: '생성',
@@ -1113,7 +1115,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         },
         validation: {
           nameRequired: '생성 전에 이름을 입력하세요.',
-          parentRequired: '요청 그룹을 만들기 전에 부모 범위를 선택하세요.',
+          parentRequired: '생성 전에 부모 범위를 선택하세요.',
         },
       },
       search: {

@@ -28,6 +28,9 @@ function getUrl(input: RequestInfo | URL) {
 async function openNewRequest(user: ReturnType<typeof userEvent.setup>) {
   const mainSurface = screen.getByLabelText('Main work surface');
   await user.click(within(mainSurface).getByRole('button', { name: 'New Request' }));
+  const sheet = screen.getByLabelText('Create workspace item');
+  await user.type(within(sheet).getByLabelText('Name'), 'Untitled Request');
+  await user.click(within(sheet).getByRole('button', { name: 'Create' }));
 }
 
 function getSavedResourceManager() {
@@ -80,22 +83,24 @@ describe('Workspace request builder authoring shell', () => {
     expect(screen.getByLabelText('Request URL')).toBeInTheDocument();
   });
 
-  it('keeps explorer create and run actions in the tree while resource transfer stays in the manager surface', () => {
+  it('keeps explorer navigation-only while create actions stay in header and transfer stays in the manager surface', () => {
     renderApp(<AppRouter />);
 
     const explorer = screen.getByLabelText('Section explorer');
     const headerActions = screen.getByLabelText('Workspace header actions');
     const manager = getSavedResourceManager();
 
-    expect(within(explorer).getAllByRole('button', { name: 'New Request' }).length).toBeGreaterThan(0);
-    expect(within(explorer).getAllByRole('button', { name: 'New group' }).length).toBeGreaterThan(0);
-    expect(within(explorer).getAllByRole('button', { name: 'Run' }).length).toBeGreaterThan(0);
+    expect(within(explorer).queryByRole('button', { name: 'New Request' })).not.toBeInTheDocument();
+    expect(within(explorer).queryByRole('button', { name: 'New group' })).not.toBeInTheDocument();
+    expect(within(explorer).queryByRole('button', { name: 'Run' })).not.toBeInTheDocument();
     expect(within(explorer).queryByRole('button', { name: 'Export Resources' })).not.toBeInTheDocument();
     expect(within(explorer).queryByLabelText('Import authored resources')).not.toBeInTheDocument();
 
     expect(within(manager).getByRole('heading', { name: 'Collections' })).toBeInTheDocument();
     expect(within(manager).getByRole('heading', { name: 'Request groups' })).toBeInTheDocument();
     expect(within(manager).getByRole('heading', { name: 'Saved request actions' })).toBeInTheDocument();
+    expect(within(headerActions).getByRole('button', { name: 'New Request' })).toBeInTheDocument();
+    expect(within(headerActions).getByRole('button', { name: 'Quick Request' })).toBeInTheDocument();
     expect(within(headerActions).getByRole('button', { name: 'New collection' })).toBeInTheDocument();
     expect(within(manager).queryByRole('button', { name: 'Create collection' })).not.toBeInTheDocument();
     expect(within(manager).queryByRole('button', { name: 'New group' })).not.toBeInTheDocument();
@@ -2616,9 +2621,11 @@ describe('Workspace request builder authoring shell', () => {
     const user = userEvent.setup();
     renderApp(<AppRouter />, { initialLocale: 'ko' });
 
-    const explorer = screen.getByLabelText('섹션 탐색기');
     expect(screen.getByLabelText('작성 리소스 가져오기')).toBeInTheDocument();
-    await user.click(within(explorer).getByRole('button', { name: '새 요청' }));
+    await user.click(screen.getAllByRole('button', { name: '새 요청' })[0]!);
+    const createSheet = screen.getByLabelText('작업공간 항목 생성');
+    await user.type(within(createSheet).getByLabelText('이름'), '제목 없는 요청');
+    await user.click(within(createSheet).getByRole('button', { name: '생성' }));
 
     const detailPanel = screen.getByLabelText('컨텍스트 상세 패널');
     expect(within(detailPanel).getByRole('heading', { name: '제목 없는 요청에 대한 관측' })).toBeInTheDocument();

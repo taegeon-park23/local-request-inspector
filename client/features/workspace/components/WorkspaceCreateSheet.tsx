@@ -5,14 +5,16 @@ import type {
   WorkspaceRequestGroupNode,
 } from '@client/features/workspace/workspace-request-tree.api';
 
-type CreateType = 'collection' | 'request-group';
+type CreateType = 'collection' | 'request-group' | 'request';
 
 type CreateSheetTarget = WorkspaceCollectionNode | WorkspaceRequestGroupNode | null;
 
 interface ParentOption {
   key: string;
   collectionId: string;
+  collectionName: string;
   parentRequestGroupId: string | null;
+  parentRequestGroupName: string | null;
   label: string;
 }
 
@@ -27,6 +29,13 @@ interface WorkspaceCreateSheetProps {
     name: string;
     collectionId: string;
     parentRequestGroupId: string | null;
+  }) => void | Promise<void>;
+  onCreateRequest: (input: {
+    name: string;
+    collectionId?: string;
+    collectionName?: string;
+    requestGroupId?: string;
+    requestGroupName?: string;
   }) => void | Promise<void>;
 }
 
@@ -50,7 +59,9 @@ function flattenRequestGroupParentOptions(
       {
         key: createRequestGroupParentKey(requestGroup.requestGroupId),
         collectionId: requestGroup.collectionId,
+        collectionName,
         parentRequestGroupId: requestGroup.requestGroupId,
+        parentRequestGroupName: requestGroup.name,
         label: `${collectionName} / ${nextPath.join(' / ')}`,
       },
       ...flattenRequestGroupParentOptions(requestGroup.childGroups, collectionName, nextPath),
@@ -66,7 +77,9 @@ function buildParentOptions(
     const collectionRoot = {
       key: createCollectionParentKey(collection.collectionId),
       collectionId: collection.collectionId,
+      collectionName: collection.name,
       parentRequestGroupId: null,
+      parentRequestGroupName: null,
       label: `${collection.name} / ${collectionRootLabel}`,
     };
 
@@ -108,6 +121,7 @@ export function WorkspaceCreateSheet({
   onCancel,
   onCreateCollection,
   onCreateRequestGroup,
+  onCreateRequest,
 }: WorkspaceCreateSheetProps) {
   const { t } = useI18n();
   const [createType, setCreateType] = useState<CreateType>(defaultType);
@@ -163,16 +177,39 @@ export function WorkspaceCreateSheet({
       } else {
         const selectedParent = parentOptions.find((option) => option.key === parentKey) ?? null;
 
-        if (!selectedParent) {
+        if (!selectedParent && createType === 'request-group') {
           setValidationMessage(t('workspaceRoute.explorer.createSheet.validation.parentRequired'));
           return;
         }
 
-        await onCreateRequestGroup({
-          name: nextName,
-          collectionId: selectedParent.collectionId,
-          parentRequestGroupId: selectedParent.parentRequestGroupId,
-        });
+        if (createType === 'request-group') {
+          await onCreateRequestGroup({
+            name: nextName,
+            collectionId: selectedParent?.collectionId ?? '',
+            parentRequestGroupId: selectedParent?.parentRequestGroupId ?? null,
+          });
+        } else {
+          const requestInput: {
+            name: string;
+            collectionId?: string;
+            collectionName?: string;
+            requestGroupId?: string;
+            requestGroupName?: string;
+          } = { name: nextName };
+
+          if (selectedParent) {
+            requestInput.collectionId = selectedParent.collectionId;
+            requestInput.collectionName = selectedParent.collectionName;
+            if (selectedParent.parentRequestGroupId) {
+              requestInput.requestGroupId = selectedParent.parentRequestGroupId;
+            }
+            if (selectedParent.parentRequestGroupName) {
+              requestInput.requestGroupName = selectedParent.parentRequestGroupName;
+            }
+          }
+
+          await onCreateRequest(requestInput);
+        }
       }
 
       succeeded = true;
@@ -205,10 +242,11 @@ export function WorkspaceCreateSheet({
           >
             <option value="collection">{t('workspaceRoute.explorer.createSheet.types.collection')}</option>
             <option value="request-group">{t('workspaceRoute.explorer.createSheet.types.requestGroup')}</option>
+            <option value="request">{t('workspaceRoute.explorer.createSheet.types.request')}</option>
           </select>
         </label>
 
-        {createType === 'request-group' ? (
+        {createType !== 'collection' ? (
           <label className="request-field request-field--wide">
             <span>{t('workspaceRoute.explorer.createSheet.fields.parent')}</span>
             <select

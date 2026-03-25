@@ -14,17 +14,17 @@
 ## Active Register
 | ID | Title | Status | Notes |
 | --- | --- | --- | --- |
-| - | No active bounded task | - | Promote one bounded task from remaining PRD scope before starting new implementation. |
+| - | No active bounded task | - | Promote exactly one new bounded task before starting additional implementation work. |
 
 ## Defined Queue
 | ID | Title | Status | Notes |
 | --- | --- | --- | --- |
-| - | No queued bounded task | - | Promote one next bounded task after reviewing remaining PRD scope. |
+| T093 | Workbench Tab Capability Reinforcement | todo | Align with PRD WB-01/WB-04 must/should coverage after `T092` archival. |
 
 ## Current State
-- **Current bounded task:** none (promote one bounded task before further implementation).
-- **Most recent archived implementation:** `T091` Collection/Request-Group Batch Run Timeout Hardening.
-- **Highest-priority next step:** promote one next bounded task from remaining PRD scope.
+- **Current bounded task:** none (awaiting next promotion).
+- **Most recent archived implementation:** `T092` Request Create Sheet Unification.
+- **Highest-priority next step:** promote `T093` as the next single active bounded task.
 - **Verification baseline:** `npm.cmd run lint`, `npm.cmd run typecheck`, and `npm.cmd run test:node` passed on 2026-03-26 after `T088/T089/T091` implementation updates.
 - **Closed UI-test rerun policy:** agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - **Codex UI verification lane:** use the Playwright skill workflow against the dev route or built shell when available.

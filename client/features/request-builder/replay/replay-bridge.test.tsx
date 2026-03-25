@@ -80,6 +80,9 @@ describe('Replay bridge S8', () => {
 
     const mainSurface = screen.getByLabelText('Main work surface');
     await user.click(within(mainSurface).getByRole('button', { name: 'New Request' }));
+    const createSheet = screen.getByLabelText('Create workspace item');
+    await user.type(within(createSheet).getByLabelText('Name'), 'Untitled Request');
+    await user.click(within(createSheet).getByRole('button', { name: 'Create' }));
     await user.type(screen.getByLabelText('Request URL'), 'https://draft-one.example');
 
     await user.click(screen.getByRole('link', { name: /history/i }));

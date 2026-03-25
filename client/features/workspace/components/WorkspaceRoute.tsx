@@ -23,6 +23,7 @@ import {
   readRequestGroupName,
   resolveRequestPlacement,
   type RequestPlacementCollectionOption,
+  type RequestPlacementValue,
 } from '@client/features/request-builder/request-placement';
 import { useRequestCommandStore } from '@client/features/request-builder/state/request-command-store';
 import { useRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
@@ -902,7 +903,15 @@ export function WorkspaceRoute() {
   };
 
   const handleCreateRequest = () => {
-    void openDraftFromSeed();
+    const createTarget = selectedRequestGroupLocation?.requestGroup
+      ?? selectedCollection
+      ?? (activeDraft?.requestGroupId
+        ? findRequestGroupById(explorerTree, activeDraft.requestGroupId)?.requestGroup ?? null
+        : null)
+      ?? (activeDraft?.collectionId
+        ? findCollectionById(explorerTree, activeDraft.collectionId)
+        : null);
+    openCreateSheet('request', createTarget);
   };
 
   const handleCreateQuickRequest = () => {
@@ -993,6 +1002,33 @@ export function WorkspaceRoute() {
       collectionId: input.collectionId,
       name: input.name,
       parentRequestGroupId: input.parentRequestGroupId,
+    });
+  };
+
+  const handleCreateRequestFromSheet = async (input: {
+    name: string;
+    collectionId?: string;
+    collectionName?: string;
+    requestGroupId?: string;
+    requestGroupName?: string;
+  }) => {
+    const placement: RequestPlacementValue = {};
+    if (input.collectionId) {
+      placement.collectionId = input.collectionId;
+    }
+    if (input.collectionName) {
+      placement.collectionName = input.collectionName;
+    }
+    if (input.requestGroupId) {
+      placement.requestGroupId = input.requestGroupId;
+    }
+    if (input.requestGroupName) {
+      placement.requestGroupName = input.requestGroupName;
+    }
+
+    await openDraftFromSeed({
+      name: input.name,
+      ...createRequestPlacementFields(placement),
     });
   };
 
@@ -1282,6 +1318,7 @@ export function WorkspaceRoute() {
           onCancel={closeCreateSheet}
           onCreateCollection={handleCreateCollectionFromSheet}
           onCreateRequestGroup={handleCreateRequestGroupFromSheet}
+          onCreateRequest={handleCreateRequestFromSheet}
         />
 
         <RequestTabShell

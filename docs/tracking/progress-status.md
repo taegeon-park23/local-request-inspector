@@ -7,6 +7,7 @@
 - **Update Rule:** Update after each active-task status change or verification-state change.
 
 ## Current Snapshot
+- `T092` is archived after unifying request creation into the thin create sheet (`type/parent/name`) and routing header/surface request-create actions through that single flow before opening seeded drafts.
 - `T081` is archived after shipping Explorer collapse persistence, search filter, WAI-ARIA tree semantics, and keyboard tree navigation.
 - `T082` is archived after replacing prompt-based create actions with the thin creation sheet (type/parent/name) and default parent suggestion flow.
 - `T083` is archived after shipping optimistic save conflict detection (`ifMatchUpdatedAt`), `409 request_conflict` handling, conflict resolution actions (overwrite/save-as-new), and consistent tab save/run state signaling.
@@ -29,5 +30,5 @@
 1. Read `../prd/overview.md`.
 2. Read `master-task-board.md` and `priority-roadmap.md`.
 3. Read `completed-work-summary.md` only when archived context is needed.
-4. Define and promote one next bounded task before writing new implementation code.
+4. Promote exactly one new bounded task (recommended `T093`) before starting additional implementation work.
 
