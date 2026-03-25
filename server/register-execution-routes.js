@@ -45,8 +45,16 @@ function registerExecutionRoutes(app, dependencies) {
     createPersistedLogSummary,
     createPersistedTestResultRecords,
     createFriendlyStageSummary,
-    listWorkspaceSavedRequestRecords,
+    listWorkspaceSavedRequestRecords = () => [],
+    listWorkspaceCollectionRecords = () => [],
+    listWorkspaceRequestGroupRecords = () => [],
     buildWorkspaceRequestTree,
+    applyExecutionDefaults = (request) => request,
+    createEffectiveEnvironmentContext = ({ selectedEnvironmentRecord } = {}) => ({
+      environmentRecord: selectedEnvironmentRecord ?? null,
+      selectedEnvironmentId: selectedEnvironmentRecord?.id ?? null,
+      selectedEnvironmentLabel: selectedEnvironmentRecord?.name || 'No environment selected',
+    }),
   } = dependencies;
   const runtimeQueries = repositories.runtime.queries;
   const scriptRepository = repositories.resources.scripts;
@@ -59,6 +67,31 @@ function registerExecutionRoutes(app, dependencies) {
     return `Secret provider ${action} failed while preparing environment placeholders.`;
   }
 
+  function createObservationAssertionResults(stageResults) {
+    if (!Array.isArray(stageResults?.tests?.testResults)) {
+      return [];
+    }
+
+    return stageResults.tests.testResults.map((result) => ({
+      id: result.id,
+      name: result.name,
+      status: result.status,
+      message: result.message,
+    }));
+  }
+
+  function createObservationAssertionSummary(assertionResults) {
+    const total = assertionResults.length;
+    const failed = assertionResults.filter((result) => result.status === 'failed').length;
+    const passed = total - failed;
+
+    return {
+      total,
+      passed,
+      failed,
+    };
+  }
+
   async function executeSingleRun(input) {
     const executionId = randomUUID();
     const startedAt = new Date().toISOString();
@@ -67,6 +100,15 @@ function registerExecutionRoutes(app, dependencies) {
 
     try {
       let executionRequest = createExecutionRequestSeed(input);
+      const workspaceId = executionRequest.workspaceId || defaultWorkspaceId;
+      const collectionRecord = listWorkspaceCollectionRecords(workspaceId)
+        .find((record) => record.id === executionRequest.collectionId) ?? null;
+      const requestGroupRecord = listWorkspaceRequestGroupRecords(workspaceId)
+        .find((record) => record.id === executionRequest.requestGroupId) ?? null;
+      executionRequest = applyExecutionDefaults(executionRequest, {
+        collectionRecord,
+        requestGroupRecord,
+      });
       const stageResults = {};
       let target = null;
       let responseStatus = null;
@@ -187,15 +229,21 @@ function registerExecutionRoutes(app, dependencies) {
           }
 
           if (!stageResults.transport) {
+            const effectiveEnvironmentContext = createEffectiveEnvironmentContext({
+              workspaceId,
+              selectedEnvironmentRecord: resolvedEnvironmentRecord,
+              collectionRecord,
+              requestGroupRecord,
+            });
             const resolution = resolveExecutionRequestWithEnvironment(
               executionRequest,
-              resolvedEnvironmentRecord,
+              effectiveEnvironmentContext.environmentRecord,
               {
                 secretValuesByKey,
               },
             );
             const environmentResolutionSummary = createEnvironmentResolutionSummary({
-              selectedEnvironmentId: executionRequest.selectedEnvironmentId || null,
+              selectedEnvironmentId: effectiveEnvironmentContext.selectedEnvironmentId,
               resolvedPlaceholderCount: resolution.resolvedPlaceholderCount,
               unresolved: resolution.unresolved,
               affectedInputAreas: resolution.affectedInputAreas,
@@ -203,8 +251,11 @@ function registerExecutionRoutes(app, dependencies) {
 
             resolvedExecutionRequest = {
               ...resolution.request,
-              selectedEnvironmentLabel: createResolvedEnvironmentLabel(resolvedEnvironmentRecord),
+              selectedEnvironmentId: effectiveEnvironmentContext.selectedEnvironmentId,
+              selectedEnvironmentLabel: effectiveEnvironmentContext.selectedEnvironmentLabel
+                || createResolvedEnvironmentLabel(resolvedEnvironmentRecord),
               environmentResolutionSummary,
+              runConfig: executionRequest.runConfig || {},
             };
 
             if (resolution.unresolved.length > 0) {
@@ -233,8 +284,8 @@ function registerExecutionRoutes(app, dependencies) {
                 resolvedExecutionRequest = {
                   ...resolvedExecutionRequest,
                   environmentResolutionSummary: createEnvironmentResolutionSummary({
-                    selectedEnvironmentId: executionRequest.selectedEnvironmentId || null,
-                    resolvedPlaceholderCount: resolution.resolvedPlaceholderCount,
+                    selectedEnvironmentId: effectiveEnvironmentContext.selectedEnvironmentId,
+              resolvedPlaceholderCount: resolution.resolvedPlaceholderCount,
                     unresolved: resolution.unresolved,
                     affectedInputAreas: resolution.affectedInputAreas,
                     invalidResolvedJson: true,
@@ -334,6 +385,8 @@ function registerExecutionRoutes(app, dependencies) {
       const consoleWarningCount = countConsoleWarnings(stageResults);
       const testsSummary = createObservationTestsSummary(stageResults);
       const testEntries = createObservationTestEntries(stageResults);
+      const assertionResults = createObservationAssertionResults(stageResults);
+      const assertionSummary = createObservationAssertionSummary(assertionResults);
       const { errorCode, errorSummary } = createExecutionErrorMetadata(stageResults);
 
       const execution = createExecutionObservation({
@@ -354,6 +407,8 @@ function registerExecutionRoutes(app, dependencies) {
         consoleWarningCount,
         testsSummary,
         testEntries,
+        assertionResults,
+        assertionSummary,
         stageSummaries: createObservationStageSummaries(stageResults),
         ...(errorCode ? { errorCode } : {}),
         ...(errorSummary ? { errorSummary } : {}),
@@ -597,7 +652,7 @@ function registerExecutionRoutes(app, dependencies) {
 
       const execution = await executeSingleRun(savedRequest);
       stepResults.push({
-        stepIndex: stepResults.length + 1,
+        stepIndex: stepResults.length,
         requestId: requestLeaf.id,
         requestName: requestLeaf.name,
         collectionId: requestLeaf.collectionId,
@@ -667,3 +722,12 @@ function registerExecutionRoutes(app, dependencies) {
 module.exports = {
   registerExecutionRoutes,
 };
+
+
+
+
+
+
+
+
+

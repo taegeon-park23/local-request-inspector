@@ -27,6 +27,10 @@ const {
   validateRequestGroupInput,
   createStableCollectionId,
   createStableRequestGroupId,
+  normalizeAuthDefaults,
+  normalizeScriptDefaults,
+  normalizeRunConfig,
+  normalizeScopeVariables,
   DEFAULT_REQUEST_COLLECTION_NAME,
   DEFAULT_REQUEST_GROUP_NAME,
 } = require('./storage/resource/request-placement-record');
@@ -83,6 +87,7 @@ const { registerMockRuleRoutes } = require('./server/register-mock-rule-routes')
 const { createCaptureObservationService } = require('./server/capture-observation-service');
 const { createExecutionObservationService } = require('./server/execution-observation-service');
 const { createExecutionFlowService } = require('./server/execution-flow-service');
+const { createExecutionConfigResolver } = require('./server/execution-config-resolver');
 const { createRuntimePresentationService } = require('./server/runtime-presentation-service');
 const { createRequestResourceService } = require('./server/request-resource-service');
 const { createEnvironmentScriptResourceService } = require('./server/environment-script-resource-service');
@@ -227,6 +232,17 @@ const {
   defaultRequestGroupName: DEFAULT_REQUEST_GROUP_NAME,
   requestResourceKind: RESOURCE_RECORD_KINDS.REQUEST,
   requestResourceSchemaVersion: REQUEST_RESOURCE_SCHEMA_VERSION,
+});
+
+const {
+  applyExecutionDefaults,
+  createEffectiveEnvironmentContext,
+} = createExecutionConfigResolver({
+  normalizeRequestScriptsState,
+  normalizeAuthDefaults,
+  normalizeScriptDefaults,
+  normalizeRunConfig,
+  normalizeScopeVariables,
 });
 
 const {
@@ -544,7 +560,11 @@ registerExecutionRoutes(app, {
   createPersistedTestResultRecords,
   createFriendlyStageSummary,
   listWorkspaceSavedRequestRecords,
+  listWorkspaceCollectionRecords,
+  listWorkspaceRequestGroupRecords,
   buildWorkspaceRequestTree,
+  applyExecutionDefaults,
+  createEffectiveEnvironmentContext,
 });
 
 
@@ -583,3 +603,5 @@ app.listen(PORT, () => {
       : `[Ready] Built app shell unavailable at ${appShellStatus.appRoute}. Run "${appShellStatus.buildCommand}" or use ${appShellStatus.devClientUrl} for development.`,
   );
 });
+
+

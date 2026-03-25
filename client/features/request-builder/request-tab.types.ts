@@ -27,6 +27,26 @@ export interface SavedWorkspaceRequestSeed {
   collectionName: string;
   requestGroupId?: string;
   requestGroupName?: string;
+  updatedAt?: string | null;
+}
+
+export type RequestTabSaveState = 'idle' | 'pending' | 'saved' | 'error' | 'conflict';
+export type RequestTabRunState = 'idle' | 'pending' | 'success' | 'error';
+
+export interface RequestTabStatusMeta {
+  saveState: RequestTabSaveState;
+  runState: RequestTabRunState;
+  savedAt: string | null;
+  conflictUpdatedAt: string | null;
+}
+
+export function createDefaultRequestTabStatusMeta(): RequestTabStatusMeta {
+  return {
+    saveState: 'idle',
+    runState: 'idle',
+    savedAt: null,
+    conflictUpdatedAt: null,
+  };
 }
 
 export interface RequestTabRecord {
@@ -44,7 +64,6 @@ export interface RequestTabRecord {
   requestGroupName?: string;
   replaySource?: RequestReplaySourceCue;
   hasUnsavedChanges: boolean;
+  persistedUpdatedAt?: string | null;
+  statusMeta?: RequestTabStatusMeta;
 }
-
-
-

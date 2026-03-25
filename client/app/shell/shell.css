@@ -1093,3 +1093,40 @@ body { margin: 0; background: #020617; overflow: hidden; }
 
 
 
+.workspace-explorer__search-field {
+  margin: 0;
+}
+
+.workspace-tree-node__toggle,
+.workspace-tree-node__toggle-placeholder {
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 0.55rem;
+  flex: 0 0 1.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.workspace-tree-node__toggle {
+  border: 1px solid #334155;
+  background: #020617;
+  color: #cbd5e1;
+  cursor: pointer;
+}
+
+.workspace-tree-node__toggle:hover {
+  border-color: #38bdf8;
+}
+
+.workspace-tree-node__toggle-placeholder {
+  opacity: 0;
+}
+
+.workspace-explorer__tree [role="treeitem"]:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+.workspace-create-sheet {
+  margin: 0 0 1rem;
+}

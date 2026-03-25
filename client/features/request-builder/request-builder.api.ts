@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   RequestDraftAuthState,
   RequestDraftSeed,
   RequestDraftScriptsState,
@@ -41,6 +41,7 @@ interface ApiErrorEnvelope {
 
 export interface RequestDefinitionInput {
   id?: string;
+  ifMatchUpdatedAt?: string | null;
   workspaceId?: string;
   name: string;
   method: RequestDraftState['method'];
@@ -78,6 +79,18 @@ interface WorkspaceSavedRequestResourceSeed extends SavedWorkspaceRequestSeed {
 export type RequestExecutionOutcome = 'Succeeded' | 'Failed' | 'Blocked' | 'Timed out';
 export type RequestScriptStageOutcome = 'Succeeded' | 'Failed' | 'Blocked' | 'Timed out' | 'Skipped';
 export type RequestExecutionStageId = 'pre-request' | 'transport' | 'post-response' | 'tests';
+export interface RequestAssertionResult {
+  id: string;
+  name: string;
+  status: 'passed' | 'failed';
+  message: string;
+}
+
+export interface RequestAssertionSummary {
+  total: number;
+  passed: number;
+  failed: number;
+}
 
 export interface RequestExecutionStageSummary {
   stageId: RequestExecutionStageId;
@@ -108,6 +121,8 @@ export interface RequestRunObservation {
   consoleWarningCount?: number;
   testsSummary: string;
   testEntries: string[];
+  assertionResults?: RequestAssertionResult[];
+  assertionSummary?: RequestAssertionSummary;
   requestSnapshotSummary?: string;
   requestInputSummary?: string;
   requestHeaderCount?: number;
@@ -273,6 +288,7 @@ export function mapSavedRequestResourceToWorkspaceSeed(
     name: record.name,
     methodLabel: record.method,
     summary: record.summary,
+    updatedAt: record.updatedAt,
     collectionName: record.collectionName,
     ...placement,
     resourceKind: 'persisted',
@@ -317,7 +333,16 @@ export async function saveRequestDefinition(input: RequestDefinitionInput) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ request: input }),
+      body: JSON.stringify({
+        request: {
+          ...input,
+          ifMatchUpdatedAt: isUpdate
+            ? (typeof input.ifMatchUpdatedAt === 'string' && input.ifMatchUpdatedAt.trim().length > 0
+              ? input.ifMatchUpdatedAt.trim()
+              : null)
+            : undefined,
+        },
+      }),
     },
   );
 
@@ -336,6 +361,8 @@ export async function runRequestDefinition(input: RequestDefinitionInput) {
 
   return parseJsonResponse<{ execution: RequestRunObservation }>(response).then((payload) => payload.execution);
 }
+
+
 
 
 

@@ -77,12 +77,13 @@ Recommended shell regions:
   - collection tree, capture list, history list, mock list, etc.
   - in `Workspace`, the explorer remains low-density but does own thin context entrypoints for create, run, rename, and delete actions
 - **Primary content area**
-  - editor, detail view, or split-pane work surface
+  - editor and focused work surface
 - **Contextual detail / result panel**
   - response detail, logs, tests, diagnostics, metadata, inspectors
   - first wave keeps the current right-side panel and switches it between single-request output and collection/request-group batch summaries
-- **Bottom status region** *(optional in MVP; exact placement 확실하지 않음)*
+- **Bottom status region** *(optional in MVP)*
   - connection state, active execution count, sandbox warnings, background tasks
+  - informational only in first wave; result/detail rendering stays in the right-side contextual panel rather than a bottom-dock result shell
 
 ### 4.2 Panel Responsibility Table
 | Region | Primary Responsibility | Typical Content |
@@ -142,7 +143,7 @@ Recommended detail content:
 - **Capture detail:** headers, query, raw body, parsed body, matched mock rule, replay action
 - **History detail:** execution stages, response detail, logs, test results, structured errors
 - **Mock rule detail:** matchers, response definition, delay, scenario behavior, diagnostics
-- **Environment detail:** variable list, secret metadata, inheritance/resolution warnings
+- **Environment detail:** variable list, secret metadata, binding/resolution warnings
 - **Script detail:** code, scriptType, capability notes, diagnostics, usage links
 
 ## 8. Search, Filter, and Replay Placement
@@ -242,9 +243,8 @@ Recommended exposure points:
 
 ## 13. Open Questions
 1. Whether `Captures` and `History` should merge into one timeline by default in MVP is **확실하지 않음**.
-2. Whether the shell should expose a bottom dock for logs/tests or keep them in the right panel is **확실하지 않음**.
-3. Whether `Scripts` should be a top-level section in MVP or remain secondary to the request builder is **확실하지 않음**.
-4. Whether file/asset browsing needs its own navigation entry is **확실하지 않음**.
+2. Whether `Scripts` should be a top-level section in MVP or remain secondary to the request builder is **확실하지 않음**.
+3. Whether file/asset browsing needs its own navigation entry is **확실하지 않음**.
 
 ## 14. Handoff Notes
 - T006 should use this shell breakdown to decide route/state boundaries and whether a multi-pane desktop-style layout is required.
@@ -261,4 +261,11 @@ Recommended exposure points:
 - Keep the explorer visually low-density and recursive instead of layering on split editors or bottom docks.
 - Prefer header and tree-context creation flows over a dedicated main-surface CRUD manager.
 - Treat collection and request-group run actions as first-class workspace affordances.
+- Keep result and diagnostics rendering in the existing right-side panel; do not introduce a bottom-dock result shell in this wave.
 - Freeze these non-goals for the first wave: multi-select, drag/drop, type-ahead, tab search, reopen-closed-tab, and inheritance-driven runtime configuration.
+
+## 16. Post-T075 Workspace UI V2 Task Boundaries
+- `T076` owns canonical documentation/tracker alignment only and does not ship runtime or UI behavior changes.
+- `T077` owns recursive tree and placement contract follow-up: `parentRequestGroupId`, same-collection nesting validation, recursive DTO shape, and empty-subtree delete rules.
+- `T078` owns workbench tab and quick-request follow-up: preview-slot reuse policy, pin promotion triggers, session-only quick-request save promotion, and context-seeded creation.
+- `T079` owns runnable-container and batch-result follow-up: collection/request-group run orchestration, sequential batch execution DTOs, and right-panel batch result switching.

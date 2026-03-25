@@ -48,4 +48,5 @@ npm run test:ui
 - `npm run test:ui` now fails fast with a bounded sandbox-compatibility message when the esbuild transform worker cannot start in the current environment.
 - `npm run test:node` is the stable fallback verification lane for low-level storage/runtime seams.
 - `npm run build:client` now avoids the earlier config-load blocker and preflights esbuild first, but some sandboxed Windows environments still block the transform worker itself.
-- If `/app` shows a fallback page, the built client shell is missing. Run `npm run build:client` and reload the server route.
+- If the built client shell is missing, `/app` redirects HTML requests to the Vite dev route when reachable; otherwise it serves the fallback page. Run `npm run build:client` to restore server-backed built-shell serving.
+

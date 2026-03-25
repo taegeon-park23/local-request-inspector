@@ -118,6 +118,7 @@ describe('RequestWorkSurface localization', () => {
       <RequestWorkSurface
         activeTab={activeTab}
         onCreateRequest={vi.fn()}
+        onDuplicateRequest={vi.fn()}
         placementOptions={[
           {
             collectionId: 'collection-team',
@@ -163,6 +164,45 @@ describe('RequestWorkSurface localization', () => {
     await user.click(screen.getByRole('tab', { name: '테스트' }));
     expect(screen.getByLabelText('테스트 스크립트')).toBeInTheDocument();
   });
+  it('calls duplicate handler when duplicate action is clicked', async () => {
+    const user = userEvent.setup();
+    const onDuplicateRequest = vi.fn();
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/environments') {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/scripts') {
+        return createApiResponse({ items: [] });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    const activeTab = createTab();
+    useRequestDraftStore.getState().ensureDraftForTab(activeTab, {
+      name: 'Duplicate target',
+      method: 'GET',
+      url: 'https://api.example.com/items',
+    }, { replace: true });
+
+    renderApp(
+      <RequestWorkSurface
+        activeTab={activeTab}
+        onCreateRequest={vi.fn()}
+        onDuplicateRequest={onDuplicateRequest}
+        placementOptions={[]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Duplicate' }));
+    expect(onDuplicateRequest).toHaveBeenCalledTimes(1);
+  });
+
   it('renders Korean replay source copy from semantic replay metadata', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = getUrl(input);
@@ -207,6 +247,7 @@ describe('RequestWorkSurface localization', () => {
       <RequestWorkSurface
         activeTab={replayTab}
         onCreateRequest={vi.fn()}
+        onDuplicateRequest={vi.fn()}
         placementOptions={[]}
       />,
       { initialLocale: 'ko' },
@@ -217,3 +258,4 @@ describe('RequestWorkSurface localization', () => {
     expect(screen.getByText('2026-03-25 09:15에 수신된 POST localhost:5671/webhooks/stripe 캡처에서 열었습니다.')).toBeInTheDocument();
   });
 });
+

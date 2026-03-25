@@ -1,4 +1,4 @@
-﻿# Master Task Board
+# Master Task Board
 - **Purpose:** Provide the canonical live execution status for work that is still operationally relevant.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-25
@@ -14,28 +14,24 @@
 ## Active Register
 | ID | Title | Status | Notes |
 | --- | --- | --- | --- |
-| - | (No active bounded task) | - | `T075` is archived. Promote one next bounded task (`T076`) when follow-up implementation starts. |
+| - | No active bounded task | - | Promote one bounded task from remaining PRD scope before starting new implementation. |
 
-## Defined Post-T075 Queue
+## Defined Queue
 | ID | Title | Status | Notes |
 | --- | --- | --- | --- |
-| T076 | Workspace UI V2 Canon Refresh | todo | Next promotable bounded task after archived `T075`. Owns canonical product/architecture refresh for recursive explorer, preview/pinned tabs, Quick Request, thin create flows, and first-wave non-goals. |
-| T077 | Recursive Tree And Placement Contract | todo | Follow-up for `parentRequestGroupId`, recursive tree DTOs, same-collection nesting validation, and empty-subtree delete rules. |
-| T078 | Workbench Tabs And Quick Request | todo | Follow-up for preview/pinned tabs, session-only quick requests, detached-save promotion, and context-seeded request creation. |
-| T079 | Runnable Containers And Batch Results | todo | Follow-up for collection/request-group runs, sequential batch execution DTOs, and right-panel batch result switching. |
+| - | No queued bounded task | - | Promote one next bounded task after reviewing remaining PRD scope. |
 
 ## Current State
-- **Current bounded task:** none active (awaiting next promotion).
-- **Most recent archived implementation:** `T075` secret provider contract/capability seam (`status/store/resolve/clear`), environment mutation planner, execution-time secret resolve hook, and runtime-status optional provider metadata.
-- **Highest-priority next step:** promote `T076` as the next single bounded task before new implementation work starts.
-- **Verification baseline:** `npm.cmd run lint`, `npm.cmd run typecheck`, and `npm.cmd run test:node` passed on 2026-03-25 for the archived `T075` changes.
-- **Codex smoke baseline:** Playwright smoke passed on 2026-03-25 for workspace route load, settings route load, and runtime-status endpoint reachability.
+- **Current bounded task:** none (promote one bounded task before further implementation).
+- **Most recent archived implementation:** `T086` Workbench Duplicate Draft Flow.
+- **Highest-priority next step:** promote one next bounded task from remaining PRD scope.
+- **Verification baseline:** `npm.cmd run lint`, `npm.cmd run typecheck`, and `npm.cmd run test:node` passed on 2026-03-25 after `T086` implementation updates.
 - **Closed UI-test rerun policy:** agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - **Codex UI verification lane:** use the Playwright skill workflow against the dev route or built shell when available.
-- **User-managed local verification:** if UI verification still needs the full UI suite, instruct the user to run `npm.cmd run test:ui` locally and treat that result as authoritative.
+- **User-managed local verification:** if UI full-suite verification is still needed, instruct the user to run `npm.cmd run test:ui` locally and treat that result as authoritative.
 
 ## Operational Notes
-- Completed task history now lives only in `completed-work-summary.md`.
-- `docs/tasks/` is reserved for active or incomplete task docs only.
-- Future work must start from one newly promoted bounded task, not from reopening archived task files.
+- Completed task history lives only in `completed-work-summary.md`.
+- `docs/tasks/` is reserved for active or incomplete task docs.
+- Future work must start from one newly promoted bounded task.
 - `T074` and `T075` are archived; future secret-storage work should extend their shipped seams instead of reintroducing raw secret persistence into environment JSON.

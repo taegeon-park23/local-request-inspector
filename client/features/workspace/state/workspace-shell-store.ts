@@ -10,8 +10,11 @@ import {
 import type {
   ReplayRequestTabSeed,
   RequestTabRecord,
+  RequestTabRunState,
+  RequestTabSaveState,
   SavedWorkspaceRequestSeed,
 } from '@client/features/request-builder/request-tab.types';
+import { createDefaultRequestTabStatusMeta } from '@client/features/request-builder/request-tab.types';
 
 export type WorkspaceExplorerItemKind = 'collection' | 'request-group' | 'request';
 
@@ -32,6 +35,15 @@ interface WorkspaceShellState {
   openSavedRequest: (request: SavedWorkspaceRequestSeed, options?: { tabMode?: 'preview' | 'pinned' }) => RequestTabRecord;
   openReplayRequest: (replaySeed: ReplayRequestTabSeed) => RequestTabRecord;
   markTabSaved: (tabId: string, request: SavedWorkspaceRequestSeed) => void;
+  setTabSaveState: (
+    tabId: string,
+    saveState: RequestTabSaveState,
+    options?: {
+      savedAt?: string | null;
+      conflictUpdatedAt?: string | null;
+    },
+  ) => void;
+  setTabRunState: (tabId: string, runState: RequestTabRunState) => void;
   detachSavedRequest: (requestId: string) => void;
   pinTab: (tabId: string) => void;
   setSelectedExplorerItem: (selection: WorkspaceExplorerSelection | null) => void;
@@ -64,6 +76,8 @@ function createDraftTab(sequence: number, source: 'detached' | 'quick', placemen
     tabMode: 'pinned',
     summary: source === 'quick' ? 'Session-only request draft.' : 'Unsaved request authoring draft.',
     hasUnsavedChanges: false,
+    persistedUpdatedAt: null,
+    statusMeta: createDefaultRequestTabStatusMeta(),
     ...createRequestPlacementFields(resolveRequestPlacement(placement, null)),
   };
 }
@@ -82,6 +96,12 @@ function createSavedTab(
     source: 'saved',
     tabMode,
     summary: request.summary,
+    persistedUpdatedAt: request.updatedAt ?? null,
+    statusMeta: {
+      ...createDefaultRequestTabStatusMeta(),
+      saveState: 'saved',
+      savedAt: request.updatedAt ?? null,
+    },
     ...createRequestPlacementFields(request),
     hasUnsavedChanges: false,
   };
@@ -98,6 +118,8 @@ function createReplayTab(sequence: number, replaySeed: ReplayRequestTabSeed): Re
     summary: replaySeed.summary,
     replaySource: replaySeed.replaySource,
     hasUnsavedChanges: false,
+    persistedUpdatedAt: null,
+    statusMeta: createDefaultRequestTabStatusMeta(),
   };
 }
 
@@ -137,6 +159,18 @@ function requireCreatedTab(tab: RequestTabRecord | null, message: string) {
   }
 
   return tab;
+}
+
+function withTabStatusMeta(
+  tab: RequestTabRecord,
+  updater: (statusMeta: NonNullable<RequestTabRecord['statusMeta']>) => NonNullable<RequestTabRecord['statusMeta']>,
+): RequestTabRecord {
+  const currentStatusMeta = tab.statusMeta ?? createDefaultRequestTabStatusMeta();
+
+  return {
+    ...tab,
+    statusMeta: updater(currentStatusMeta),
+  };
 }
 
 export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
@@ -201,6 +235,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
           ...createSavedTab(request, nextTabMode, existingTab.id),
           tabMode: nextTabMode,
           hasUnsavedChanges: existingTab.hasUnsavedChanges,
+          statusMeta: existingTab.statusMeta ?? createDefaultRequestTabStatusMeta(),
         };
         resolvedTab = nextTab;
 
@@ -279,6 +314,13 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
             source: 'saved',
             tabMode: 'pinned',
             hasUnsavedChanges: false,
+            persistedUpdatedAt: request.updatedAt ?? null,
+            statusMeta: {
+              ...(tab.statusMeta ?? createDefaultRequestTabStatusMeta()),
+              saveState: 'saved',
+              savedAt: request.updatedAt ?? null,
+              conflictUpdatedAt: null,
+            },
           };
 
           delete nextTab.replaySource;
@@ -292,6 +334,47 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
         ...(state.activeTabId === tabId ? createRequestSelection(request.id) : {}),
       };
     }),
+  setTabSaveState: (tabId, saveState, options = {}) =>
+    set((state) => ({
+      tabs: state.tabs.map((tab) => {
+        if (tab.id !== tabId) {
+          return tab;
+        }
+
+        return withTabStatusMeta(tab, (statusMeta) => ({
+          ...statusMeta,
+          saveState,
+          savedAt: saveState === 'saved'
+            ? options.savedAt ?? statusMeta.savedAt
+            : statusMeta.savedAt,
+          conflictUpdatedAt: saveState === 'conflict'
+            ? options.conflictUpdatedAt ?? statusMeta.conflictUpdatedAt
+            : null,
+        }));
+      }).map((tab) => {
+        if (tab.id !== tabId || saveState !== 'saved') {
+          return tab;
+        }
+
+        return {
+          ...tab,
+          persistedUpdatedAt: options.savedAt ?? tab.persistedUpdatedAt ?? null,
+        };
+      }),
+    })),
+  setTabRunState: (tabId, runState) =>
+    set((state) => ({
+      tabs: state.tabs.map((tab) => {
+        if (tab.id !== tabId) {
+          return tab;
+        }
+
+        return withTabStatusMeta(tab, (statusMeta) => ({
+          ...statusMeta,
+          runState,
+        }));
+      }),
+    })),
   detachSavedRequest: (requestId) =>
     set((state) => {
       const nextTabs = state.tabs.map((tab) => {
@@ -305,6 +388,12 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
           sourceKey: `detached-${requestId}-${tab.id}`,
           tabMode: 'pinned',
           hasUnsavedChanges: true,
+          persistedUpdatedAt: null,
+          statusMeta: {
+            ...(tab.statusMeta ?? createDefaultRequestTabStatusMeta()),
+            saveState: 'idle',
+            conflictUpdatedAt: null,
+          },
         };
 
         delete nextTab.requestId;

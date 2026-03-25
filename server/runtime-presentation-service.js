@@ -1,4 +1,4 @@
-function createRuntimePresentationService(dependencies) {
+﻿function createRuntimePresentationService(dependencies) {
   const {
     sanitizeEnvironmentResolutionSummary,
     createRequestSummary,
@@ -330,6 +330,8 @@ function createRuntimePresentationService(dependencies) {
     consoleWarningCount,
     testsSummary,
     testEntries,
+    assertionResults,
+    assertionSummary,
     stageSummaries,
     errorCode,
     errorSummary,
@@ -379,6 +381,21 @@ function createRuntimePresentationService(dependencies) {
       consoleWarningCount: typeof consoleWarningCount === 'number' ? consoleWarningCount : 0,
       testsSummary: testsSummary || 'No tests were recorded for this run.',
       testEntries: testEntries || [],
+      assertionResults: Array.isArray(assertionResults)
+        ? assertionResults.map((result) => ({
+          id: result.id,
+          name: result.name,
+          status: result.status,
+          message: result.message,
+        }))
+        : [],
+      assertionSummary: assertionSummary && typeof assertionSummary === 'object'
+        ? {
+          total: Number.isFinite(assertionSummary.total) ? Math.max(0, Math.trunc(assertionSummary.total)) : 0,
+          passed: Number.isFinite(assertionSummary.passed) ? Math.max(0, Math.trunc(assertionSummary.passed)) : 0,
+          failed: Number.isFinite(assertionSummary.failed) ? Math.max(0, Math.trunc(assertionSummary.failed)) : 0,
+        }
+        : undefined,
       requestSnapshotSummary: createRequestSnapshotSummary(requestSnapshot),
       requestInputSummary: createRequestInputSummary(requestSnapshot),
       requestHeaderCount,
@@ -422,3 +439,4 @@ function createRuntimePresentationService(dependencies) {
 module.exports = {
   createRuntimePresentationService,
 };
+

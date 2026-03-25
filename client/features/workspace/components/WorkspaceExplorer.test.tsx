@@ -1,7 +1,12 @@
+import type { ComponentProps } from 'react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
 import { WorkspaceExplorer } from '@client/features/workspace/components/WorkspaceExplorer';
+import {
+  resetWorkspaceExplorerStore,
+  useWorkspaceExplorerStore,
+} from '@client/features/workspace/state/workspace-explorer-store';
 import type {
   WorkspaceCollectionNode,
   WorkspaceRequestGroupNode,
@@ -17,7 +22,7 @@ function createRequestLeaf(
   const requestGroupId = overrides.requestGroupId ?? 'request-group-login';
   const requestGroupName = overrides.requestGroupName ?? 'Login';
 
-  const requestLeaf = {
+  return {
     id: overrides.id,
     name: overrides.name,
     methodLabel: overrides.methodLabel ?? 'POST',
@@ -28,8 +33,6 @@ function createRequestLeaf(
     requestGroupName,
     ...(overrides.updatedAt ? { updatedAt: overrides.updatedAt } : {}),
   } satisfies WorkspaceTreeRequestLeaf;
-
-  return requestLeaf;
 }
 
 function createRequestGroupNode(
@@ -81,37 +84,48 @@ function createTree() {
   } satisfies WorkspaceCollectionNode];
 }
 
+function createExplorer(overrides: Partial<ComponentProps<typeof WorkspaceExplorer>> = {}) {
+  return (
+    <WorkspaceExplorer
+      tree={createTree()}
+      selectedItemId="request-create-session"
+      selectedItemKind="request"
+      onSelectCollection={vi.fn()}
+      onSelectRequestGroup={vi.fn()}
+      onPreviewSavedRequest={vi.fn()}
+      onPinSavedRequest={vi.fn()}
+      onCreateRequest={vi.fn()}
+      onCreateRequestGroup={vi.fn()}
+      onRunCollection={vi.fn()}
+      onRunRequestGroup={vi.fn()}
+      onRenameCollection={vi.fn()}
+      onDeleteCollection={vi.fn()}
+      onRenameRequestGroup={vi.fn()}
+      onDeleteRequestGroup={vi.fn()}
+      onExportRequest={vi.fn()}
+      onDeleteRequest={vi.fn()}
+      {...overrides}
+    />
+  );
+}
+
+afterEach(() => {
+  resetWorkspaceExplorerStore();
+  window.localStorage.clear();
+});
+
 describe('WorkspaceExplorer', () => {
   it('renders recursive groups and shows a nested selection breadcrumb', () => {
-    renderApp(
-      <WorkspaceExplorer
-        tree={createTree()}
-        selectedItemId="request-create-session"
-        selectedItemKind="request"
-        onSelectCollection={vi.fn()}
-        onSelectRequestGroup={vi.fn()}
-        onPreviewSavedRequest={vi.fn()}
-        onPinSavedRequest={vi.fn()}
-        onCreateRequest={vi.fn()}
-        onCreateRequestGroup={vi.fn()}
-        onRunCollection={vi.fn()}
-        onRunRequestGroup={vi.fn()}
-        onRenameCollection={vi.fn()}
-        onDeleteCollection={vi.fn()}
-        onRenameRequestGroup={vi.fn()}
-        onDeleteRequestGroup={vi.fn()}
-        onExportRequest={vi.fn()}
-        onDeleteRequest={vi.fn()}
-      />,
-    );
+    renderApp(createExplorer());
 
+    expect(screen.getByRole('tree', { name: 'Workspace explorer tree' })).toBeInTheDocument();
     expect(screen.getByText('Saved Requests')).toBeInTheDocument();
     expect(screen.getByText('Auth')).toBeInTheDocument();
     expect(screen.getByText('Login')).toBeInTheDocument();
     expect(screen.getByText('Create session')).toBeInTheDocument();
-    expect(screen.getByText('Persisted collections, nested request groups, and saved requests stay visible here. Explorer actions handle preview, pin, create, run, rename, and delete without leaving the tree.')).toBeInTheDocument();
     expect(screen.getByText('Current selection: Saved Requests / Auth / Login / Create session')).toBeInTheDocument();
     expect(screen.getByText('1 request group(s) · 1 request(s)')).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Explorer search' })).toBeInTheDocument();
   });
 
   it('uses preview on single click, pin on double click, and seeds nested group placement for new requests', async () => {
@@ -143,7 +157,7 @@ describe('WorkspaceExplorer', () => {
       />,
     );
 
-    const requestButton = screen.getByRole('button', { name: 'Open Create session' });
+    const requestButton = screen.getByRole('treeitem', { name: 'Open Create session' });
     await user.click(requestButton);
     expect(previewRequest).toHaveBeenCalledWith(tree[0]!.childGroups[0]!.childGroups[0]!.requests[0]!.request);
 
@@ -159,4 +173,43 @@ describe('WorkspaceExplorer', () => {
       requestGroupName: 'Login',
     });
   });
+
+  it('filters tree nodes by search query and shows empty-state copy when there are no matches', async () => {
+    const user = userEvent.setup();
+    renderApp(createExplorer({ selectedItemId: null, selectedItemKind: null }));
+
+    await user.type(screen.getByRole('searchbox', { name: 'Explorer search' }), 'session');
+    expect(screen.getByText('Create session')).toBeInTheDocument();
+    expect(screen.queryByText('No request groups exist in this collection yet.')).not.toBeInTheDocument();
+
+    await user.clear(screen.getByRole('searchbox', { name: 'Explorer search' }));
+    await user.type(screen.getByRole('searchbox', { name: 'Explorer search' }), 'no-match-keyword');
+    expect(screen.getByText('No explorer items match the current search.')).toBeInTheDocument();
+  });
+
+  it('supports collapse persistence and keyboard traversal for treeitems', async () => {
+    const user = userEvent.setup();
+    const onSelectRequestGroup = vi.fn();
+
+    renderApp(createExplorer({
+      selectedItemId: null,
+      selectedItemKind: null,
+      onSelectRequestGroup,
+    }));
+
+    await user.click(screen.getByRole('button', { name: 'Collapse Auth' }));
+    expect(screen.queryByText('Create session')).not.toBeInTheDocument();
+
+    expect(useWorkspaceExplorerStore.getState().collapsedNodeIds).toContain('request-group:request-group-auth');
+
+    const firstTreeItem = screen.getAllByRole('treeitem')[0]!;
+    firstTreeItem.focus();
+    await user.keyboard('{ArrowDown}{ArrowRight}{ArrowDown}{Enter}');
+
+    expect(onSelectRequestGroup).toHaveBeenCalledWith(expect.objectContaining({
+      requestGroupId: 'request-group-login',
+    }));
+  });
 });
+
+

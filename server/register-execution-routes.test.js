@@ -7,6 +7,14 @@ const {
   sendError,
   withServer,
 } = require('./test-support');
+const { createExecutionConfigResolver } = require('./execution-config-resolver');
+const {
+  normalizeAuthDefaults,
+  normalizeScriptDefaults,
+  normalizeRunConfig,
+  normalizeScopeVariables,
+} = require('../storage/resource/request-placement-record');
+const { normalizeRequestScriptsState } = require('../storage/resource/request-script-binding');
 
 function createBaseRequest(selectedEnvironmentId = null, overrides = {}) {
   return {
@@ -402,6 +410,211 @@ async function testSecretProviderErrorBlocksExecution() {
     },
   );
 }
+async function testExecutionRouteAppliesInheritedDefaultsBeforeEnvironmentResolution() {
+  const runtimeState = {
+    histories: [],
+    results: [],
+    testResults: [],
+  };
+  const repositories = createRepositories({
+    runtime: {
+      queries: {
+        insertExecutionHistory(record) {
+          runtimeState.histories.push(record);
+        },
+        insertExecutionResult(record) {
+          runtimeState.results.push(record);
+        },
+        insertTestResults(records) {
+          runtimeState.testResults.push(records);
+        },
+      },
+    },
+  });
+
+  let capturedExecutionRequest = null;
+  let capturedEnvironmentRecord = null;
+  const { applyExecutionDefaults, createEffectiveEnvironmentContext } = createExecutionConfigResolver({
+    normalizeRequestScriptsState,
+    normalizeAuthDefaults,
+    normalizeScriptDefaults,
+    normalizeRunConfig,
+    normalizeScopeVariables,
+    workspaceGlobalConfig: {
+      variables: [
+        { key: 'SHARED_KEY', value: 'global', isEnabled: true },
+      ],
+      authDefaults: {
+        type: 'bearer',
+        bearerToken: 'global-token',
+        basicUsername: '',
+        basicPassword: '',
+        apiKeyName: '',
+        apiKeyValue: '',
+        apiKeyPlacement: 'header',
+      },
+      scriptDefaults: {
+        preRequest: 'global-pre',
+        postResponse: 'global-post',
+        tests: 'global-tests',
+      },
+      runConfig: {
+        timeoutMs: 1000,
+        retries: 0,
+        strictSsl: true,
+      },
+    },
+  });
+
+  const dependencies = createExecutionDependencies(repositories, runtimeState, {
+    listWorkspaceCollectionRecords: () => ([{
+      id: 'collection-1',
+      workspaceId: 'local-workspace',
+      runConfig: {
+        timeoutMs: 2000,
+      },
+      authDefaults: {
+        type: 'bearer',
+        bearerToken: 'collection-token',
+        basicUsername: '',
+        basicPassword: '',
+        apiKeyName: '',
+        apiKeyValue: '',
+        apiKeyPlacement: 'header',
+      },
+      scriptDefaults: {
+        preRequest: 'collection-pre',
+        postResponse: 'collection-post',
+        tests: 'collection-tests',
+      },
+      variables: [
+        { key: 'SHARED_KEY', value: 'collection', isEnabled: true },
+      ],
+    }]),
+    listWorkspaceRequestGroupRecords: () => ([{
+      id: 'group-1',
+      workspaceId: 'local-workspace',
+      collectionId: 'collection-1',
+      runConfig: {
+        retries: 2,
+        traceEnabled: true,
+      },
+      authDefaults: {
+        type: 'bearer',
+        bearerToken: 'group-token',
+        basicUsername: '',
+        basicPassword: '',
+        apiKeyName: '',
+        apiKeyValue: '',
+        apiKeyPlacement: 'header',
+      },
+      scriptDefaults: {
+        preRequest: 'group-pre',
+        postResponse: '',
+        tests: 'group-tests',
+      },
+      variables: [
+        { key: 'SHARED_KEY', value: 'group', isEnabled: true },
+      ],
+    }]),
+    readWorkspaceEnvironmentReference: () => ({
+      id: 'env-1',
+      workspaceId: 'local-workspace',
+      name: 'Local',
+      variables: [
+        { key: 'SHARED_KEY', value: 'environment', isEnabled: true },
+      ],
+    }),
+    applyExecutionDefaults,
+    createEffectiveEnvironmentContext,
+    resolveExecutionRequestWithEnvironment: (request, environmentRecord) => {
+      capturedExecutionRequest = request;
+      capturedEnvironmentRecord = environmentRecord;
+      return {
+        request,
+        resolvedPlaceholderCount: 0,
+        unresolved: [],
+        affectedInputAreas: [],
+      };
+    },
+    createExecutionRequestTarget: (url) => new URL(url),
+  });
+
+  const originalFetch = global.fetch;
+  global.fetch = async (input, init) => {
+    const url = String(input);
+
+    if (!url.startsWith('https://example.test/')) {
+      return originalFetch(input, init);
+    }
+
+    return new Response('{"ok":true}', {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  };
+
+  try {
+    await withServer(
+      (app) => registerExecutionRoutes(app, dependencies),
+      async ({ baseUrl }) => {
+        const response = await requestJson(baseUrl, '/api/executions/run', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            request: createBaseRequest('env-1', {
+              collectionId: 'collection-1',
+              requestGroupId: 'group-1',
+              auth: {
+                type: 'none',
+                bearerToken: '',
+                basicUsername: '',
+                basicPassword: '',
+                apiKeyName: '',
+                apiKeyValue: '',
+                apiKeyPlacement: 'header',
+              },
+              scripts: {
+                activeStage: 'tests',
+                preRequest: '',
+                postResponse: '',
+                tests: '',
+              },
+            }),
+          }),
+        });
+
+        assert.equal(response.status, 200);
+        assert.equal(response.payload.data.execution.executionOutcome, 'Succeeded');
+        assert.ok(capturedExecutionRequest);
+        assert.equal(capturedExecutionRequest.auth.type, 'bearer');
+        assert.equal(capturedExecutionRequest.auth.bearerToken, 'group-token');
+        assert.equal(capturedExecutionRequest.scripts.preRequest.mode, 'inline');
+        assert.equal(capturedExecutionRequest.scripts.preRequest.sourceCode, 'group-pre');
+        assert.equal(capturedExecutionRequest.scripts.postResponse.sourceCode, 'collection-post');
+        assert.equal(capturedExecutionRequest.scripts.tests.sourceCode, 'group-tests');
+        assert.deepEqual(capturedExecutionRequest.runConfig, {
+          timeoutMs: 2000,
+          retries: 2,
+          strictSsl: true,
+          traceEnabled: true,
+        });
+        assert.ok(capturedEnvironmentRecord);
+        assert.equal(
+          capturedEnvironmentRecord.variables.find((row) => row.key === 'SHARED_KEY')?.value,
+          'group',
+        );
+      },
+    );
+  } finally {
+    global.fetch = originalFetch;
+  }
+}
+
 async function testCollectionBatchRunTraversesNestedGroupsDepthFirstAndContinuesOnError() {
   const runtimeState = {
     histories: [],
@@ -549,10 +762,204 @@ async function testCollectionBatchRunTraversesNestedGroupsDepthFirstAndContinues
   }
 }
 
+async function testRequestGroupBatchRunTraversesSelectedSubtreeDepthFirst() {
+  const runtimeState = {
+    histories: [],
+    results: [],
+    testResults: [],
+  };
+  const repositories = createRepositories({
+    runtime: {
+      queries: {
+        insertExecutionHistory(record) {
+          runtimeState.histories.push(record);
+        },
+        insertExecutionResult(record) {
+          runtimeState.results.push(record);
+        },
+        insertTestResults(records) {
+          runtimeState.testResults.push(records);
+        },
+      },
+    },
+  });
+  const savedRequests = [
+    createSavedRequest('request-1', 'Health check', 'https://example.test/health'),
+    createSavedRequest('request-2', 'Create user', 'https://example.test/users'),
+    createSavedRequest('request-3', 'List projects', 'https://example.test/projects'),
+  ];
+  const fetchCalls = [];
+  const originalFetch = global.fetch;
+  global.fetch = async (input, init) => {
+    const url = String(input);
+
+    if (!url.startsWith('https://example.test/')) {
+      return originalFetch(input, init);
+    }
+
+    fetchCalls.push(url);
+    return new Response('{"ok":true}', {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  };
+
+  const dependencies = createExecutionDependencies(repositories, runtimeState, {
+    listWorkspaceSavedRequestRecords: () => savedRequests,
+    buildWorkspaceRequestTree: () => ({
+      defaults: null,
+      collections: [],
+      requestGroups: [],
+      tree: [
+        {
+          id: 'collection-node-saved-requests',
+          kind: 'collection',
+          collectionId: 'collection-saved-requests',
+          name: 'Saved Requests',
+          childGroups: [
+            {
+              id: 'group-node-general',
+              kind: 'request-group',
+              collectionId: 'collection-saved-requests',
+              requestGroupId: 'group-general',
+              name: 'General',
+              childGroups: [
+                {
+                  id: 'group-node-nested',
+                  kind: 'request-group',
+                  collectionId: 'collection-saved-requests',
+                  requestGroupId: 'group-nested',
+                  name: 'Nested',
+                  childGroups: [],
+                  requests: [
+                    {
+                      id: 'request-node-request-2',
+                      kind: 'request',
+                      name: 'Create user',
+                      request: createRequestLeaf(savedRequests[1], 'group-nested', 'Nested'),
+                    },
+                  ],
+                },
+              ],
+              requests: [
+                {
+                  id: 'request-node-request-1',
+                  kind: 'request',
+                  name: 'Health check',
+                  request: createRequestLeaf(savedRequests[0], 'group-general', 'General'),
+                },
+              ],
+            },
+            {
+              id: 'group-node-secondary',
+              kind: 'request-group',
+              collectionId: 'collection-saved-requests',
+              requestGroupId: 'group-secondary',
+              name: 'Secondary',
+              childGroups: [],
+              requests: [
+                {
+                  id: 'request-node-request-3',
+                  kind: 'request',
+                  name: 'List projects',
+                  request: createRequestLeaf(savedRequests[2], 'group-secondary', 'Secondary'),
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }),
+    createExecutionRequestTarget: (url) => new URL(url),
+  });
+
+  try {
+    await withServer(
+      (app) => registerExecutionRoutes(app, dependencies),
+      async ({ baseUrl }) => {
+        const response = await requestJson(baseUrl, '/api/request-groups/group-general/run', {
+          method: 'POST',
+        });
+
+        assert.equal(response.status, 200);
+        assert.deepEqual(fetchCalls, [
+          'https://example.test/users',
+          'https://example.test/health',
+        ]);
+        assert.equal(response.payload.data.batchExecution.containerType, 'request-group');
+        assert.equal(response.payload.data.batchExecution.containerId, 'group-general');
+        assert.deepEqual(
+          response.payload.data.batchExecution.steps.map((step) => step.requestId),
+          ['request-2', 'request-1'],
+        );
+        assert.equal(response.payload.data.batchExecution.requestCount, 2);
+        assert.equal(response.payload.data.batchExecution.succeededCount, 2);
+      },
+    );
+  } finally {
+    global.fetch = originalFetch;
+  }
+}
+
+async function testRequestGroupBatchRunReturnsNotFoundForUnknownGroup() {
+  const runtimeState = {
+    histories: [],
+    results: [],
+    testResults: [],
+  };
+  const repositories = createRepositories({
+    runtime: {
+      queries: {
+        insertExecutionHistory(record) {
+          runtimeState.histories.push(record);
+        },
+        insertExecutionResult(record) {
+          runtimeState.results.push(record);
+        },
+        insertTestResults(records) {
+          runtimeState.testResults.push(records);
+        },
+      },
+    },
+  });
+
+  const dependencies = createExecutionDependencies(repositories, runtimeState, {
+    listWorkspaceSavedRequestRecords: () => [],
+    buildWorkspaceRequestTree: () => ({
+      defaults: null,
+      collections: [],
+      requestGroups: [],
+      tree: [],
+    }),
+  });
+
+  await withServer(
+    (app) => registerExecutionRoutes(app, dependencies),
+    async ({ baseUrl }) => {
+      const response = await requestJson(baseUrl, '/api/request-groups/group-missing/run', {
+        method: 'POST',
+      });
+
+      assert.equal(response.status, 404);
+      assert.equal(response.payload.error.code, 'request_group_not_found');
+      assert.equal(response.payload.error.details.requestGroupId, 'group-missing');
+    },
+  );
+}
 (async function run() {
   await testMissingLinkedScriptBlocksExecutionAndPersistsError();
   await testUnresolvedEnvironmentPlaceholderBlocksExecution();
   await testResolvedSecretValuesArePassedIntoEnvironmentResolution();
   await testSecretProviderErrorBlocksExecution();
+  await testExecutionRouteAppliesInheritedDefaultsBeforeEnvironmentResolution();
   await testCollectionBatchRunTraversesNestedGroupsDepthFirstAndContinuesOnError();
+  await testRequestGroupBatchRunTraversesSelectedSubtreeDepthFirst();
+  await testRequestGroupBatchRunReturnsNotFoundForUnknownGroup();
 })();
+
+
+
+
+

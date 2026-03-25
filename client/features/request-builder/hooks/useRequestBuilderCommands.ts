@@ -221,6 +221,7 @@ function mapSavedRecordToTabSeed(record: SavedRequestResourceRecord): SavedWorks
     name: record.name,
     methodLabel: record.method,
     summary: record.summary,
+    updatedAt: record.updatedAt,
     collectionName: record.collectionName,
     ...createRequestPlacementFields(record),
   };
@@ -231,8 +232,25 @@ interface UseRequestBuilderCommandsResult {
   runStatus: ReturnType<typeof useRequestCommandStore.getState>['byTabId'][string]['run'];
   saveDisabledReason: string | null;
   runDisabledReason: string | null;
+  hasSaveConflict: boolean;
+  conflictUpdatedAt: string | null;
   handleSave: () => void;
+  handleOverwriteSave: () => void;
+  handleSaveAsNew: () => void;
   handleRun: () => void;
+}
+
+type SaveIntent = 'default' | 'overwrite' | 'save-as-new';
+
+function isRequestConflictError(error: unknown): error is RequestBuilderApiError {
+  return error instanceof RequestBuilderApiError && error.code === 'request_conflict';
+}
+
+function readConflictUpdatedAt(error: RequestBuilderApiError) {
+  const nextUpdatedAt = error.details?.currentUpdatedAt;
+  return typeof nextUpdatedAt === 'string' && nextUpdatedAt.trim().length > 0
+    ? nextUpdatedAt.trim()
+    : null;
 }
 
 export function useRequestBuilderCommands(
@@ -260,6 +278,8 @@ export function useRequestBuilderCommands(
   const finishRunError = useRequestCommandStore((state) => state.finishRunError);
   const commitSavedDraft = useRequestDraftStore((state) => state.commitSavedDraft);
   const markTabSaved = useWorkspaceShellStore((state) => state.markTabSaved);
+  const setTabSaveState = useWorkspaceShellStore((state) => state.setTabSaveState);
+  const setTabRunState = useWorkspaceShellStore((state) => state.setTabRunState);
   const deactivateBatchRun = useWorkspaceBatchRunStore((state: ReturnType<typeof useWorkspaceBatchRunStore.getState>) => state.deactivate);
   const focusWorkspaceResultPanel = useWorkspaceUiStore((state) => state.focusWorkspaceResultPanel);
 
@@ -325,7 +345,7 @@ export function useRequestBuilderCommands(
                   ? t('workspaceRoute.requestBuilder.disabledReasons.runPending')
                   : null;
 
-  const buildDefinitionInput = () => {
+  const buildDefinitionInput = (intent: SaveIntent = 'default') => {
     if (!activeTab || !draft) {
       throw new Error('No active request draft is available.');
     }
@@ -334,20 +354,37 @@ export function useRequestBuilderCommands(
       fallbackTitle: t('workspaceRoute.requestBuilder.defaultTitle'),
     });
 
+    if (intent === 'save-as-new') {
+      const saveAsNewInput: RequestDefinitionInput = {
+        ...input,
+      };
+      delete saveAsNewInput.id;
+
+      return {
+        ...saveAsNewInput,
+        ifMatchUpdatedAt: null,
+        collectionName: input.collectionName ?? DEFAULT_REQUEST_COLLECTION_NAME,
+      } satisfies RequestDefinitionInput;
+    }
+
     return {
       ...input,
+      ifMatchUpdatedAt: intent === 'overwrite'
+        ? null
+        : activeTab.persistedUpdatedAt ?? null,
       collectionName: input.collectionName ?? DEFAULT_REQUEST_COLLECTION_NAME,
     } satisfies RequestDefinitionInput;
   };
 
   const saveMutation = useMutation({
-    mutationFn: async () => saveRequestDefinition(buildDefinitionInput()),
+    mutationFn: async (intent: SaveIntent) => saveRequestDefinition(buildDefinitionInput(intent)),
     onMutate: () => {
       if (!activeTab) {
         return;
       }
 
       startSave(activeTab.id);
+      setTabSaveState(activeTab.id, 'pending');
     },
     onSuccess: (savedRecord) => {
       if (!activeTab) {
@@ -360,6 +397,7 @@ export function useRequestBuilderCommands(
         ...createRequestPlacementFields(savedRecord),
       });
       finishSaveSuccess(activeTab.id, savedRecord.updatedAt);
+      setTabSaveState(activeTab.id, 'saved', { savedAt: savedRecord.updatedAt });
       queryClient.setQueryData<SavedRequestResourceRecord[]>(workspaceSavedRequestsQueryKey, (current) =>
         upsertSavedRequestResource(current ?? [], savedRecord),
       );
@@ -369,6 +407,14 @@ export function useRequestBuilderCommands(
         return;
       }
 
+      if (isRequestConflictError(error)) {
+        const conflictUpdatedAt = readConflictUpdatedAt(error);
+        setTabSaveState(activeTab.id, 'conflict', { conflictUpdatedAt });
+        finishSaveError(activeTab.id, t('workspaceRoute.requestBuilder.status.saveConflict'));
+        return;
+      }
+
+      setTabSaveState(activeTab.id, 'error');
       finishSaveError(activeTab.id, error instanceof Error ? error.message : t('workspaceRoute.requestBuilder.status.saveError'));
     },
   });
@@ -382,6 +428,7 @@ export function useRequestBuilderCommands(
 
       deactivateBatchRun();
       startRun(activeTab.id);
+      setTabRunState(activeTab.id, 'pending');
     },
     onSuccess: (execution) => {
       if (!activeTab) {
@@ -389,6 +436,7 @@ export function useRequestBuilderCommands(
       }
 
       finishRunSuccess(activeTab.id, execution);
+      setTabRunState(activeTab.id, 'success');
       focusWorkspaceResultPanel('response');
       queryClient.invalidateQueries({ queryKey: executionHistoryListQueryKey });
     },
@@ -404,21 +452,37 @@ export function useRequestBuilderCommands(
       );
 
       finishRunError(activeTab.id, failedExecution, failedExecution.errorSummary ?? t('workspaceRoute.requestBuilder.status.runError'));
+      setTabRunState(activeTab.id, 'error');
       focusWorkspaceResultPanel('response');
     },
   });
+
+  const hasSaveConflict = activeTab?.statusMeta?.saveState === 'conflict';
+  const conflictUpdatedAt = hasSaveConflict ? (activeTab?.statusMeta?.conflictUpdatedAt ?? null) : null;
+
+  const triggerSave = (intent: SaveIntent) => {
+    if (saveDisabledReason) {
+      return;
+    }
+
+    saveMutation.mutate(intent);
+  };
 
   return {
     saveStatus,
     runStatus,
     saveDisabledReason,
     runDisabledReason,
+    hasSaveConflict,
+    conflictUpdatedAt,
     handleSave: () => {
-      if (saveDisabledReason) {
-        return;
-      }
-
-      saveMutation.mutate();
+      triggerSave('default');
+    },
+    handleOverwriteSave: () => {
+      triggerSave('overwrite');
+    },
+    handleSaveAsNew: () => {
+      triggerSave('save-as-new');
     },
     handleRun: () => {
       if (runDisabledReason) {
@@ -429,6 +493,7 @@ export function useRequestBuilderCommands(
     },
   };
 }
+
 
 
 

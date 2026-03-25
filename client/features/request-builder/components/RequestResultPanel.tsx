@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
 import type { RequestRunObservation } from '@client/features/request-builder/request-builder.api';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
@@ -176,6 +176,49 @@ function renderHeaderExecutionStatus(
   return <StatusBadge kind="neutral" value={t('workspaceRoute.resultPanel.summary.badges.noExecutionYet')} />;
 }
 
+function readAssertionSummary(execution: RequestRunObservation | null) {
+  if (!execution?.assertionSummary) {
+    return null;
+  }
+
+  return execution.assertionSummary;
+}
+
+function readAssertionEntries(execution: RequestRunObservation | null) {
+  if (!execution) {
+    return [];
+  }
+
+  if (Array.isArray(execution.assertionResults) && execution.assertionResults.length > 0) {
+    return execution.assertionResults.map((entry) => {
+      const normalizedName = typeof entry.name === 'string' && entry.name.trim().length > 0
+        ? entry.name.trim()
+        : entry.id;
+      const statusLabel = entry.status === 'failed' ? 'FAIL' : 'PASS';
+      const message = typeof entry.message === 'string' && entry.message.trim().length > 0
+        ? entry.message
+        : normalizedName;
+      return `${statusLabel} ${normalizedName}: ${message}`;
+    });
+  }
+
+  return execution.testEntries ?? [];
+}
+
+function readAssertionCount(execution: RequestRunObservation | null) {
+  const summary = readAssertionSummary(execution);
+
+  if (summary) {
+    return summary.total;
+  }
+
+  if (Array.isArray(execution?.assertionResults)) {
+    return execution.assertionResults.length;
+  }
+
+  return execution?.testEntries?.length ?? 0;
+}
+
 function createLatestResultBadges(execution: RequestRunObservation | null, t: TranslateFn) {
   if (!execution) {
     return [];
@@ -184,13 +227,14 @@ function createLatestResultBadges(execution: RequestRunObservation | null, t: Tr
   const badges = [
     <StatusBadge key="outcome" kind="executionOutcome" value={execution.executionOutcome} />,
   ];
+  const assertionCount = readAssertionCount(execution);
 
-  if (execution.testEntries.length > 0) {
+  if (assertionCount > 0) {
     badges.push(
       <StatusBadge
         key="tests"
         kind="testSummary"
-        value={t('workspaceRoute.resultPanel.summary.badges.testsReady', { count: execution.testEntries.length })}
+        value={t('workspaceRoute.resultPanel.summary.badges.testsReady', { count: assertionCount })}
       />,
     );
   }
@@ -215,7 +259,6 @@ function createLatestResultBadges(execution: RequestRunObservation | null, t: Tr
 function createPreviewItems(items: string[], emptyMessage: string, limit = 3) {
   return items.length > 0 ? items.slice(0, limit) : [emptyMessage];
 }
-
 function readExecutionEnvironmentResolutionSummary(execution: RequestRunObservation | null) {
   return (execution as (RequestRunObservation & {
     environmentResolutionSummary?: EnvironmentResolutionSummary;
@@ -259,7 +302,13 @@ function createBatchConsoleEntries(execution: WorkspaceBatchExecution) {
 }
 
 function createBatchTestEntries(execution: WorkspaceBatchExecution) {
-  return execution.steps.map((step) => `${step.requestName}: ${step.execution.testsSummary}`);
+  return execution.steps.map((step) => {
+    const assertionCount = readAssertionCount(step.execution);
+    const summary = assertionCount > 0
+      ? `${assertionCount} assertion(s)`
+      : step.execution.testsSummary;
+    return `${step.requestName}: ${summary}`;
+  });
 }
 
 function createBatchLatestBadges(execution: WorkspaceBatchExecution, t: TranslateFn) {
@@ -652,8 +701,10 @@ export function RequestResultPanel({
     execution?.consoleEntries ?? [],
     execution?.consoleSummary ?? t('workspaceRoute.resultPanel.summary.preview.consoleEmpty'),
   );
+  const assertionEntries = readAssertionEntries(execution);
+  const assertionCount = readAssertionCount(execution);
   const testPreviewItems = createPreviewItems(
-    execution?.testEntries ?? [],
+    assertionEntries,
     execution?.testsSummary ?? t('workspaceRoute.resultPanel.summary.preview.testsEmpty'),
   );
 
@@ -787,7 +838,7 @@ export function RequestResultPanel({
                     ))}
                   </ul>
                 ) : null}
-                {execution.testEntries.length > 0 ? (
+                {assertionEntries.length > 0 ? (
                   <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.summary.preview.testsAriaLabel')}>
                     {testPreviewItems.map((entry, index) => (
                       <li key={`response-tests-${index}`}>{entry}</li>
@@ -859,13 +910,13 @@ export function RequestResultPanel({
               <KeyValueMetaList
                 items={[
                   { label: t('workspaceRoute.resultPanel.tests.labels.summary'), value: execution.testsSummary },
-                  { label: t('workspaceRoute.resultPanel.tests.labels.entries'), value: execution.testEntries.length },
+                  { label: t('workspaceRoute.resultPanel.tests.labels.entries'), value: assertionCount },
                   { label: t('workspaceRoute.resultPanel.tests.labels.testsStage'), value: getStageStatus(executionStageSummaries, 'tests') },
                 ]}
               />
-              {execution.testEntries.length > 0 ? (
+              {assertionEntries.length > 0 ? (
                 <ul className="history-preview-list">
-                  {execution.testEntries.map((entry, index) => (
+                  {assertionEntries.map((entry, index) => (
                     <li key={`${entry}-${index}`}>{entry}</li>
                   ))}
                 </ul>
@@ -1026,3 +1077,8 @@ function getRunLaneCopy(
 
   return t('workspaceRoute.resultPanel.summary.values.noExecutionYet');
 }
+
+
+
+
+

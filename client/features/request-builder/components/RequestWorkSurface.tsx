@@ -67,6 +67,7 @@ const authTypeOptions: RequestDraftState['auth']['type'][] = ['none', 'bearer', 
 interface RequestWorkSurfaceProps {
   activeTab: RequestTabRecord | null;
   onCreateRequest: () => void;
+  onDuplicateRequest: () => void;
   placementOptions: RequestPlacementCollectionOption[];
 }
 
@@ -139,6 +140,7 @@ function getRunStatusCopy(
 export function RequestWorkSurface({
   activeTab,
   onCreateRequest,
+  onDuplicateRequest,
   placementOptions,
 }: RequestWorkSurfaceProps) {
   const { t, formatDateTime } = useI18n();
@@ -169,7 +171,18 @@ export function RequestWorkSurface({
     queryKey: workspaceEnvironmentsQueryKey,
     queryFn: listWorkspaceEnvironments,
   });
-  const { saveStatus, runStatus, saveDisabledReason, runDisabledReason, handleSave, handleRun } = useRequestBuilderCommands(
+  const {
+    saveStatus,
+    runStatus,
+    saveDisabledReason,
+    runDisabledReason,
+    hasSaveConflict,
+    conflictUpdatedAt,
+    handleSave,
+    handleOverwriteSave,
+    handleSaveAsNew,
+    handleRun,
+  } = useRequestBuilderCommands(
     activeTab,
     draft,
   );
@@ -225,7 +238,13 @@ export function RequestWorkSurface({
     )
     : saveStatus.status === 'pending'
       ? t('workspaceRoute.requestBuilder.status.savingInProgress')
-      : saveStatus.message ?? (saveDisabledReason ?? t('workspaceRoute.requestBuilder.status.saveFallback'));
+      : hasSaveConflict
+        ? conflictUpdatedAt
+          ? t('workspaceRoute.requestBuilder.status.saveConflictAtTime', {
+              time: formatDateTime(conflictUpdatedAt, { dateStyle: 'medium', timeStyle: 'short' }),
+            })
+          : t('workspaceRoute.requestBuilder.status.saveConflict')
+        : saveStatus.message ?? (saveDisabledReason ?? t('workspaceRoute.requestBuilder.status.saveFallback'));
   const runStatusCopy = getRunStatusCopy(
     runStatus,
     runDisabledReason ?? t('workspaceRoute.requestBuilder.status.runFallback'),
@@ -391,7 +410,11 @@ export function RequestWorkSurface({
             >
               <IconLabel icon="save">{saveStatus.status === 'pending' ? t('workspaceRoute.requestBuilder.commands.saving') : t('workspaceRoute.requestBuilder.commands.save')}</IconLabel>
             </button>
-            <button type="button" className="workspace-button workspace-button--secondary" disabled>
+            <button
+              type="button"
+              className="workspace-button workspace-button--secondary"
+              onClick={onDuplicateRequest}
+            >
               <IconLabel icon="duplicate">{t('workspaceRoute.requestBuilder.commands.duplicate')}</IconLabel>
             </button>
             <button
@@ -416,7 +439,31 @@ export function RequestWorkSurface({
               <p className="shared-readiness-note" data-testid="run-command-status">{runStatusCopy}</p>
             </div>
             <div className="request-builder-core__command-support">
-              <p className="shared-readiness-note">{t('workspaceRoute.requestBuilder.commands.duplicateDeferred')}</p>
+              {hasSaveConflict ? (
+                <>
+                  <div className="request-work-surface__future-actions">
+                    <button
+                      type="button"
+                      className="workspace-button workspace-button--secondary"
+                      onClick={handleOverwriteSave}
+                      disabled={saveStatus.status === 'pending'}
+                    >
+                      {t('workspaceRoute.requestBuilder.commands.overwrite')}
+                    </button>
+                    <button
+                      type="button"
+                      className="workspace-button workspace-button--secondary"
+                      onClick={handleSaveAsNew}
+                      disabled={saveStatus.status === 'pending'}
+                    >
+                      {t('workspaceRoute.requestBuilder.commands.saveAsNew')}
+                    </button>
+                  </div>
+                  <p className="shared-readiness-note">{t('workspaceRoute.requestBuilder.status.saveConflictResolutionHint')}</p>
+                </>
+              ) : (
+                <p className="shared-readiness-note">{t('workspaceRoute.requestBuilder.commands.duplicateDeferred')}</p>
+              )}
             </div>
           </div>
         </div>
@@ -748,10 +795,4 @@ export function RequestWorkSurface({
     </div>
   );
 }
-
-
-
-
-
-
 

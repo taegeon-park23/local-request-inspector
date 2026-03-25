@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+﻿import { useMemo, useState } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
 import type { RequestDraftState } from '@client/features/request-builder/request-draft.types';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
@@ -230,7 +230,7 @@ export function WorkspaceResourceManagerPanel({
   const collectionStatus = statuses.collections ?? null;
   const requestGroupStatus = statuses['request-groups'] ?? null;
   const savedRequestStatus = statuses['saved-request'] ?? null;
-  const activeTabState = activeSavedRequest
+  const baseActiveTabState = activeSavedRequest
     ? t('workspaceRoute.management.context.values.savedRequest')
     : isDetachedDraft
       ? t('workspaceRoute.management.context.values.detachedDraft')
@@ -239,6 +239,22 @@ export function WorkspaceResourceManagerPanel({
         : activeTab
           ? t('workspaceRoute.management.context.values.workingDraft')
           : t('workspaceRoute.management.context.values.noActiveTab');
+  const activeTabStateTag = !activeTab
+    ? null
+    : activeTab.statusMeta?.saveState === 'conflict'
+      ? t('workspaceRoute.tabShell.states.conflict')
+      : activeTab.statusMeta?.saveState === 'pending'
+        ? t('workspaceRoute.tabShell.states.saving')
+        : activeTab.statusMeta?.runState === 'pending'
+          ? t('workspaceRoute.tabShell.states.running')
+          : activeTab.hasUnsavedChanges
+            ? t('workspaceRoute.tabShell.states.dirty')
+            : activeTab.statusMeta?.saveState === 'saved'
+              ? t('workspaceRoute.tabShell.states.saved')
+              : null;
+  const activeTabState = activeTabStateTag
+    ? `${baseActiveTabState} · ${activeTabStateTag}`
+    : baseActiveTabState;
 
   return (
     <section className="workspace-resource-manager workspace-surface-card" aria-label={t('workspaceRoute.management.ariaLabel')}>
@@ -620,3 +636,4 @@ export function WorkspaceResourceManagerPanel({
     </section>
   );
 }
+

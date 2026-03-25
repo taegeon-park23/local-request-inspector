@@ -1,4 +1,4 @@
-import {
+﻿import {
   DEFAULT_REQUEST_COLLECTION_NAME,
   DEFAULT_WORKSPACE_ID,
   RequestBuilderApiError,
@@ -22,11 +22,40 @@ interface ApiErrorEnvelope {
   };
 }
 
+export interface WorkspaceScopedVariableRow {
+  id?: string;
+  key: string;
+  value: string;
+  isEnabled?: boolean;
+}
+
+export interface WorkspaceAuthDefaults {
+  type: 'none' | 'bearer' | 'basic' | 'api-key';
+  bearerToken: string;
+  basicUsername: string;
+  basicPassword: string;
+  apiKeyName: string;
+  apiKeyValue: string;
+  apiKeyPlacement: 'header' | 'query';
+}
+
+export interface WorkspaceScriptDefaults {
+  preRequest: string;
+  postResponse: string;
+  tests: string;
+}
+
+export type WorkspaceRunConfig = Record<string, string | number | boolean>;
+
 export interface WorkspaceCollectionRecord {
   id: string;
   workspaceId: string;
   name: string;
   description?: string;
+  variables?: WorkspaceScopedVariableRow[];
+  authDefaults?: WorkspaceAuthDefaults;
+  scriptDefaults?: WorkspaceScriptDefaults;
+  runConfig?: WorkspaceRunConfig;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -38,6 +67,10 @@ export interface WorkspaceRequestGroupRecord {
   parentRequestGroupId?: string | null;
   name: string;
   description?: string;
+  variables?: WorkspaceScopedVariableRow[];
+  authDefaults?: WorkspaceAuthDefaults;
+  scriptDefaults?: WorkspaceScriptDefaults;
+  runConfig?: WorkspaceRunConfig;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -99,12 +132,20 @@ export const workspaceRequestTreeQueryKey = ['workspace-request-tree', DEFAULT_W
 export interface WorkspaceCollectionInput {
   name: string;
   description?: string;
+  variables?: WorkspaceScopedVariableRow[];
+  authDefaults?: WorkspaceAuthDefaults;
+  scriptDefaults?: WorkspaceScriptDefaults;
+  runConfig?: WorkspaceRunConfig;
 }
 
 export interface WorkspaceRequestGroupInput {
   name: string;
   description?: string;
   parentRequestGroupId?: string | null;
+  variables?: WorkspaceScopedVariableRow[];
+  authDefaults?: WorkspaceAuthDefaults;
+  scriptDefaults?: WorkspaceScriptDefaults;
+  runConfig?: WorkspaceRunConfig;
 }
 
 export interface WorkspaceBatchExecutionStep {
@@ -390,6 +431,7 @@ export function buildFallbackWorkspaceRequestTree(
     };
   });
 }
+
 
 
 

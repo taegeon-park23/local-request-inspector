@@ -1,4 +1,4 @@
-import { useI18n } from '@client/app/providers/useI18n';
+﻿import { useI18n } from '@client/app/providers/useI18n';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 
@@ -32,6 +32,43 @@ function getTabSourceLabel(
   }
 }
 
+function getTabStateLabel(
+  tab: RequestTabRecord,
+  t: ReturnType<typeof useI18n>['t'],
+) {
+  const saveState = tab.statusMeta?.saveState ?? 'idle';
+  const runState = tab.statusMeta?.runState ?? 'idle';
+
+  if (saveState === 'conflict') {
+    return t('workspaceRoute.tabShell.states.conflict');
+  }
+
+  if (saveState === 'pending') {
+    return t('workspaceRoute.tabShell.states.saving');
+  }
+
+  if (runState === 'pending') {
+    return t('workspaceRoute.tabShell.states.running');
+  }
+
+  if (tab.hasUnsavedChanges) {
+    return t('workspaceRoute.tabShell.states.dirty');
+  }
+
+  if (saveState === 'saved') {
+    return t('workspaceRoute.tabShell.states.saved');
+  }
+
+  if (saveState === 'error') {
+    return t('workspaceRoute.tabShell.states.saveError');
+  }
+
+  if (runState === 'error') {
+    return t('workspaceRoute.tabShell.states.runError');
+  }
+
+  return null;
+}
 export function RequestTabShell({
   tabs,
   activeTabId,
@@ -53,6 +90,7 @@ export function RequestTabShell({
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId;
           const tabSourceLabel = getTabSourceLabel(tab, t);
+          const tabStateLabel = getTabStateLabel(tab, t);
 
           return (
             <div
@@ -78,6 +116,7 @@ export function RequestTabShell({
                 <span className="request-tab__meta">
                   {tab.methodLabel}
                   {tabSourceLabel ? ` · ${tabSourceLabel}` : ''}
+                  {tabStateLabel ? ` · ${tabStateLabel}` : ''}
                 </span>
               </button>
               {tab.tabMode === 'preview' ? (
@@ -112,3 +151,6 @@ export function RequestTabShell({
     </div>
   );
 }
+
+
+

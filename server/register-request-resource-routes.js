@@ -1,4 +1,4 @@
-function registerRequestResourceRoutes(app, dependencies) {
+﻿function registerRequestResourceRoutes(app, dependencies) {
   const {
     sendData,
     sendError,
@@ -29,11 +29,7 @@ function registerRequestResourceRoutes(app, dependencies) {
   const requestGroupRepository = repositories.resources.requestGroups;
   const requestRepository = repositories.resources.requests;
 
-  function isRequestGroupDescendant(requestGroups, requestGroupId, candidateParentRequestGroupId) {
-    if (!requestGroupId || !candidateParentRequestGroupId) {
-      return false;
-    }
-
+  function createChildGroupsByParentId(requestGroups) {
     const childGroupsByParentId = new Map();
 
     for (const requestGroup of requestGroups) {
@@ -50,25 +46,41 @@ function registerRequestResourceRoutes(app, dependencies) {
       childGroupsByParentId.set(parentRequestGroupId, childGroups);
     }
 
+    return childGroupsByParentId;
+  }
+
+  function listDescendantRequestGroupIds(childGroupsByParentId, requestGroupId) {
+    if (!requestGroupId) {
+      return [];
+    }
+
     const pendingRequestGroupIds = [requestGroupId];
     const visitedRequestGroupIds = new Set(pendingRequestGroupIds);
+    const descendantRequestGroupIds = [];
 
     while (pendingRequestGroupIds.length > 0) {
       const currentRequestGroupId = pendingRequestGroupIds.pop();
 
       for (const childRequestGroup of childGroupsByParentId.get(currentRequestGroupId) ?? []) {
-        if (childRequestGroup.id === candidateParentRequestGroupId) {
-          return true;
-        }
-
         if (!visitedRequestGroupIds.has(childRequestGroup.id)) {
           visitedRequestGroupIds.add(childRequestGroup.id);
+          descendantRequestGroupIds.push(childRequestGroup.id);
           pendingRequestGroupIds.push(childRequestGroup.id);
         }
       }
     }
 
-    return false;
+    return descendantRequestGroupIds;
+  }
+
+  function isRequestGroupDescendant(requestGroups, requestGroupId, candidateParentRequestGroupId) {
+    if (!requestGroupId || !candidateParentRequestGroupId) {
+      return false;
+    }
+
+    const childGroupsByParentId = createChildGroupsByParentId(requestGroups);
+    const descendantRequestGroupIds = listDescendantRequestGroupIds(childGroupsByParentId, requestGroupId);
+    return descendantRequestGroupIds.includes(candidateParentRequestGroupId);
   }
 
   app.get('/api/workspaces/:workspaceId/requests', (req, res) => {
@@ -496,21 +508,34 @@ function registerRequestResourceRoutes(app, dependencies) {
       }
 
       const workspaceId = existingRecord.workspaceId || defaultWorkspaceId;
-      const requests = listWorkspaceSavedRequestRecords(workspaceId)
-        .filter((record) => record.requestGroupId === req.params.requestGroupId);
-      const childRequestGroups = listWorkspaceRequestGroupRecords(workspaceId)
-        .filter((record) => record.parentRequestGroupId === req.params.requestGroupId);
+      const workspaceRequestGroups = listWorkspaceRequestGroupRecords(workspaceId);
+      const childGroupsByParentId = createChildGroupsByParentId(workspaceRequestGroups);
+      const descendantRequestGroupIds = listDescendantRequestGroupIds(
+        childGroupsByParentId,
+        req.params.requestGroupId,
+      );
+      const directChildRequestGroupCount = (childGroupsByParentId.get(req.params.requestGroupId) ?? []).length;
+      const subtreeRequestGroupIds = new Set([req.params.requestGroupId, ...descendantRequestGroupIds]);
+      const subtreeRequests = listWorkspaceSavedRequestRecords(workspaceId)
+        .filter((record) => subtreeRequestGroupIds.has(record.requestGroupId));
 
-      if (requests.length > 0 || childRequestGroups.length > 0) {
+      if (subtreeRequests.length > 0) {
         return sendError(res, 409, 'request_group_not_empty', 'Request group still contains saved requests or nested request groups and cannot be deleted.', {
           requestGroupId: req.params.requestGroupId,
-          requestCount: requests.length,
-          childRequestGroupCount: childRequestGroups.length,
+          requestCount: subtreeRequests.length,
+          childRequestGroupCount: directChildRequestGroupCount,
+          descendantRequestGroupCount: descendantRequestGroupIds.length,
         });
       }
 
+      for (const descendantRequestGroupId of descendantRequestGroupIds) {
+        requestGroupRepository.delete(descendantRequestGroupId);
+      }
       requestGroupRepository.delete(req.params.requestGroupId);
-      return sendData(res, { deletedRequestGroupId: req.params.requestGroupId });
+      return sendData(res, {
+        deletedRequestGroupId: req.params.requestGroupId,
+        deletedRequestGroupIds: [req.params.requestGroupId, ...descendantRequestGroupIds],
+      });
     } catch (error) {
       return sendError(res, 500, 'request_group_delete_failed', error.message, {
         requestGroupId: req.params.requestGroupId,
@@ -607,6 +632,18 @@ function registerRequestResourceRoutes(app, dependencies) {
         });
       }
 
+      const ifMatchUpdatedAt = typeof input?.ifMatchUpdatedAt === 'string' && input.ifMatchUpdatedAt.trim().length > 0
+        ? input.ifMatchUpdatedAt.trim()
+        : null;
+
+      if (ifMatchUpdatedAt && String(existingRecord.updatedAt || '') !== ifMatchUpdatedAt) {
+        return sendError(res, 409, 'request_conflict', 'Saved request has changed since this tab loaded. Refresh, overwrite, or save as new.', {
+          requestId: req.params.requestId,
+          ifMatchUpdatedAt,
+          currentUpdatedAt: existingRecord.updatedAt || null,
+        });
+      }
+
       if (
         typeof input?.selectedEnvironmentId === 'string'
         && input.selectedEnvironmentId.trim().length > 0
@@ -672,4 +709,6 @@ function registerRequestResourceRoutes(app, dependencies) {
 module.exports = {
   registerRequestResourceRoutes,
 };
+
+
 

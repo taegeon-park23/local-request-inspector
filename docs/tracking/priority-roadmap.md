@@ -1,4 +1,4 @@
-﻿# Priority Roadmap
+# Priority Roadmap
 
 - **Purpose:** Show the live delivery sequence after completed work has been archived out of the default read path.
 - **Created:** 2026-03-18
@@ -11,18 +11,22 @@
 2. `T073` is archived into `completed-work-summary.md`.
 3. `T074` is archived into `completed-work-summary.md`.
 4. `T075` is archived into `completed-work-summary.md`.
-5. Next promotion candidate is `T076`, followed by `T077 -> T078 -> T079`.
+5. `T076` is archived into `completed-work-summary.md`.
+6. `T077` is archived into `completed-work-summary.md`.
+7. `T078` is archived into `completed-work-summary.md`.
+8. `T079` is archived into `completed-work-summary.md`.
+9. `T080` is archived into `completed-work-summary.md`.
+10. `T081` Explorer Interaction And Accessibility Completion is archived.
+11. `T082` Creation Flow Hybrid Completion is archived.
+12. `T083` Workbench Tab Conflict And Status Hardening is archived.
+13. `T084` Inheritance Config Model V1 is archived.
+14. `T085` Result Contract Precision is archived.
+15. `T086` Workbench Duplicate Draft Flow is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.
 - Define and execute one bounded task at a time.
 - Keep Codex-side UI reruns closed; use Playwright smoke in Codex and reserve `npm.cmd run test:ui` for user-managed local verification.
 
-## Next Queue
-- `T076` Workspace UI V2 Canon Refresh
-- `T077` Recursive Tree And Placement Contract
-- `T078` Workbench Tabs And Quick Request
-- `T079` Runnable Containers And Batch Results
-
 ## Immediate Next Step
-- Promote `T076` as the next active bounded task before further implementation.
+- Promote one next bounded task from the remaining PRD scope.

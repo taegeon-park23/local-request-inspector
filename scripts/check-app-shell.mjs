@@ -60,7 +60,7 @@ const lines = [
 
 if (builtClientAvailable === false) {
   lines.push('');
-  lines.push('Built shell note: /app stays on a bounded fallback page until you run "npm run build:client".');
+  lines.push('Built shell note: when dist is missing, /app redirects HTML requests to the Vite dev route when reachable; otherwise it serves the bounded fallback page until you run "npm run build:client".');
 }
 
 if (buildLane.supported === false) {
@@ -79,3 +79,4 @@ if (storageBootstrapped === false) {
 }
 
 console.log(lines.join('\n'));
+

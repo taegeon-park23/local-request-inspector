@@ -110,6 +110,7 @@ This PRD summary should be treated as the upstream planning source for all task 
 
 ## 11. Workspace UI V2 Canon After T075
 The accepted Workspace UI V2 direction is now staged as a post-`T075` sequence rather than a one-shot shell rewrite.
+This section is the canonical wording baseline for `T076` and the downstream `T077 -> T078 -> T079` implementation handoff.
 
 ### Canonical First-Wave UX
 - The saved-request explorer is a low-density recursive tree: `Collection > Request Group > nested Request Group > Request`.

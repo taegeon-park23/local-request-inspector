@@ -32,6 +32,11 @@ import type { RequestTabRecord } from '@client/features/request-builder/request-
 import { workspaceMockRulesQueryKey } from '@client/features/mocks/mock-rules.api';
 import { WorkspaceExplorer } from '@client/features/workspace/components/WorkspaceExplorer';
 import {
+  WorkspaceCreateSheet,
+  type CreateSheetTarget,
+  type CreateType,
+} from '@client/features/workspace/components/WorkspaceCreateSheet';
+import {
   WorkspaceResourceManagerPanel,
   type WorkspaceResourceManagerStatus,
   type WorkspaceResourceManagerStatusScope,
@@ -78,6 +83,11 @@ interface PendingImportPreview {
   bundleText: string;
   fileName: string;
   result: AuthoredResourceBundleImportPreviewResult;
+}
+
+interface CreateSheetState {
+  defaultType: CreateType;
+  target: CreateSheetTarget;
 }
 
 function promptForName(initialValue: string, message: string) {
@@ -436,6 +446,7 @@ export function WorkspaceRoute() {
   const { t } = useI18n();
   const [managerStatuses, setManagerStatuses] = useState<WorkspaceResourceManagerStatuses>({});
   const [pendingImportPreview, setPendingImportPreview] = useState<PendingImportPreview | null>(null);
+  const [createSheetState, setCreateSheetState] = useState<CreateSheetState | null>(null);
   const tabs = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.tabs);
   const activeTabId = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.activeTabId);
   const selectedExplorerItemId = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.selectedExplorerItemId);
@@ -902,6 +913,14 @@ export function WorkspaceRoute() {
     void openDraftFromSeed(undefined, { source: 'quick' });
   };
 
+  const handleDuplicateRequest = () => {
+    if (!activeDraft) {
+      return;
+    }
+
+    void openDraftFromSeed(activeDraft);
+  };
+
   const handleCreateCollection = async (name: string) => {
     const nextName = name.trim();
 
@@ -991,37 +1010,39 @@ export function WorkspaceRoute() {
     void openDraftFromSeed(placement);
   };
 
-  const handlePromptCreateCollection = async () => {
-    const name = promptForName('', t('workspaceRoute.explorer.fields.collectionName'));
+  const openCreateSheet = (defaultType: CreateType, target: CreateSheetTarget = null) => {
+    setCreateSheetState({
+      defaultType,
+      target,
+    });
+  };
 
-    if (!name) {
-      return;
-    }
+  const closeCreateSheet = () => {
+    setCreateSheetState(null);
+  };
 
+  const handleCreateCollectionFromSheet = async (name: string) => {
     await handleCreateCollection(name);
   };
 
-  const handlePromptCreateRequestGroup = async (target: WorkspaceCollectionNode | WorkspaceRequestGroupNode) => {
-    const name = promptForName('', t('workspaceRoute.explorer.fields.requestGroupName'));
-
-    if (!name) {
-      return;
-    }
-
-    if (target.kind === 'collection') {
-      await createRequestGroupMutation.mutateAsync({
-        collectionId: target.collectionId,
-        name,
-        parentRequestGroupId: null,
-      });
-      return;
-    }
-
+  const handleCreateRequestGroupFromSheet = async (input: {
+    name: string;
+    collectionId: string;
+    parentRequestGroupId: string | null;
+  }) => {
     await createRequestGroupMutation.mutateAsync({
-      collectionId: target.collectionId,
-      name,
-      parentRequestGroupId: target.requestGroupId,
+      collectionId: input.collectionId,
+      name: input.name,
+      parentRequestGroupId: input.parentRequestGroupId,
     });
+  };
+
+  const handleOpenCreateCollectionSheet = () => {
+    openCreateSheet('collection');
+  };
+
+  const handleOpenCreateRequestGroupSheet = (target: WorkspaceCollectionNode | WorkspaceRequestGroupNode) => {
+    openCreateSheet('request-group', target);
   };
 
   const handlePromptRenameCollection = async (collection: WorkspaceCollectionNode) => {
@@ -1230,7 +1251,7 @@ export function WorkspaceRoute() {
           onPreviewSavedRequest={handlePreviewSavedRequest}
           onPinSavedRequest={handlePinSavedRequest}
           onCreateRequest={handleCreateRequestAtPlacement}
-          onCreateRequestGroup={handlePromptCreateRequestGroup}
+          onCreateRequestGroup={handleOpenCreateRequestGroupSheet}
           onRunCollection={handleRunCollection}
           onRunRequestGroup={handleRunRequestGroup}
           onRenameCollection={handlePromptRenameCollection}
@@ -1275,7 +1296,7 @@ export function WorkspaceRoute() {
           <button type="button" className="workspace-button workspace-button--secondary" onClick={handleCreateQuickRequest}>
             <IconLabel icon="new">{t('workspaceRoute.tabShell.quickRequest')}</IconLabel>
           </button>
-          <button type="button" className="workspace-button workspace-button--secondary" onClick={() => { void handlePromptCreateCollection(); }}>
+          <button type="button" className="workspace-button workspace-button--secondary" onClick={handleOpenCreateCollectionSheet}>
             <IconLabel icon="add">{t('workspaceRoute.explorer.actions.createCollectionShort')}</IconLabel>
           </button>
           {selectedCollection || selectedRequestGroupLocation ? (
@@ -1286,7 +1307,7 @@ export function WorkspaceRoute() {
                 const createTarget = selectedRequestGroupLocation?.requestGroup ?? selectedCollection;
 
                 if (createTarget) {
-                  void handlePromptCreateRequestGroup(createTarget);
+                  handleOpenCreateRequestGroupSheet(createTarget);
                 }
               }}
             >
@@ -1305,6 +1326,16 @@ export function WorkspaceRoute() {
             </button>
           ) : null}
         </div>
+
+        <WorkspaceCreateSheet
+          isOpen={Boolean(createSheetState)}
+          tree={explorerTree}
+          defaultType={createSheetState?.defaultType ?? 'collection'}
+          defaultTarget={createSheetState?.target ?? null}
+          onCancel={closeCreateSheet}
+          onCreateCollection={handleCreateCollectionFromSheet}
+          onCreateRequestGroup={handleCreateRequestGroupFromSheet}
+        />
 
         <RequestTabShell
           tabs={resolvedTabs}
@@ -1349,6 +1380,7 @@ export function WorkspaceRoute() {
           key={`work-${activeTabKey}`}
           activeTab={activeTab}
           onCreateRequest={handleCreateRequest}
+          onDuplicateRequest={handleDuplicateRequest}
           placementOptions={requestPlacementOptions}
         />
         </section>

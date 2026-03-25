@@ -49,6 +49,8 @@ User enters the `Workspace` section and chooses one of:
 - Closing a tab is not the same action as deleting the saved request represented in the persisted tree.
 - Explicit saved-request deletion should remove the tree leaf while leaving any open work as a detached draft until the user closes it.
 - Collection and request-group runs should execute in deterministic depth-first order and surface aggregate results in the existing result panel without changing the shell layout.
+- First-wave result presentation stays in the existing right-side panel; a bottom-dock result shell is out of scope.
+- First-wave non-goals remain frozen: multi-select tree operations, drag/drop, type-ahead tree management, tab search, reopen-closed-tab, and inheritance-driven runtime configuration.
 
 ## 4. Flow: Captured Inbound Request Inspection and Replay
 ### 4.1 Entry
@@ -176,4 +178,11 @@ User enters `History` from navigation, after execution completion, or via deep l
 2. Whether the `Scripts` section needs its own list/detail workspace in MVP or can remain request-context-first is **확실하지 않음**.
 3. Whether mock scenario state deserves a dedicated inspector panel is **확실하지 않음**.
 4. Whether first-use should auto-create default environments and starter scripts is **확실하지 않음**.
+
+## 12. Post-T075 Workspace UI V2 Task Boundaries
+- `T076` is a canon refresh slice for documentation/tracker alignment only.
+- `T077` owns recursive saved-tree and placement contract follow-up (`parentRequestGroupId`, same-collection nesting guard, recursive DTO shape, empty-subtree delete rules).
+- `T078` owns workbench tab and quick-request behavior follow-up (preview/pinned lifecycle, quick-request save promotion, context-seeded request creation).
+- `T079` owns collection/request-group run orchestration and right-panel batch result switching.
+- Implementers should keep these scopes separated so one bounded task does not absorb downstream implementation work.
 

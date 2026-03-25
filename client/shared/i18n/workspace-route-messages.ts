@@ -43,6 +43,8 @@ export const workspaceRouteMessagesEn = {
         saveRequestGroup: 'Create group',
         saveRenamedRequestGroup: 'Save rename',
         cancelRequestGroup: 'Cancel',
+        expandNode: 'Expand {name}',
+        collapseNode: 'Collapse {name}',
       },
       notes: {
         boundary:
@@ -142,6 +144,38 @@ export const workspaceRouteMessagesEn = {
         deleteRequestGroup: 'Delete request group "{name}"?',
         deleteSavedRequest: 'Delete saved request "{name}"?',
       },
+      createSheet: {
+        ariaLabel: 'Create workspace item',
+        title: 'Create item',
+        description: 'Choose the item type, parent scope, and name before writing to the canonical workspace tree.',
+        parentRootLabel: 'Collection root',
+        fields: {
+          type: 'Type',
+          parent: 'Parent',
+          name: 'Name',
+        },
+        types: {
+          collection: 'Collection',
+          requestGroup: 'Request group',
+        },
+        actions: {
+          create: 'Create',
+          creating: 'Creating...',
+          cancel: 'Cancel',
+        },
+        validation: {
+          nameRequired: 'Enter a name before creating.',
+          parentRequired: 'Choose a parent scope before creating a request group.',
+        },
+      },
+      search: {
+        label: 'Explorer search',
+        placeholder: 'Search collections, groups, and requests',
+        empty: 'No explorer items match the current search.',
+      },
+      a11y: {
+        treeLabel: 'Workspace explorer tree',
+      },
       selection: {
         current: 'Current selection: {path}',
         none: 'No saved request is selected in the explorer.',
@@ -234,6 +268,15 @@ export const workspaceRouteMessagesEn = {
       sourceQuick: 'Quick',
       sourceReplay: 'Replay',
       sourceDetached: 'Detached',
+      states: {
+        dirty: 'Dirty',
+        saving: 'Saving',
+        saved: 'Saved',
+        conflict: 'Conflict',
+        running: 'Running',
+        saveError: 'Save error',
+        runError: 'Run error',
+      },
     },
     requestBuilder: {
       defaultTitle: 'Untitled Request',
@@ -283,6 +326,9 @@ export const workspaceRouteMessagesEn = {
         runCompleted: 'Request run completed.',
         runBlocked: 'Request run was blocked before completion.',
         runTimedOut: 'Request run timed out.',
+        saveConflict: 'Another update was saved before this tab could save. Choose overwrite or save as new.',
+        saveConflictAtTime: 'A newer saved version exists from {time}. Choose overwrite or save as new.',
+        saveConflictResolutionHint: 'Overwrite replaces the latest saved request. Save as new keeps the latest request and creates a new saved copy from this tab.',
         saveError: 'Failed to save request definition.',
         runError: 'Failed to run request.',
       },
@@ -362,6 +408,8 @@ export const workspaceRouteMessagesEn = {
         save: 'Save',
         saving: 'Saving...',
         duplicate: 'Duplicate',
+        overwrite: 'Overwrite',
+        saveAsNew: 'Save as new',
         run: 'Run',
         running: 'Running...',
         replayIntro:
@@ -369,7 +417,7 @@ export const workspaceRouteMessagesEn = {
         defaultIntro:
           'Save updates the request definition. Run does not save automatically and does not clear unsaved authoring changes.',
         duplicateDeferred:
-          'Duplicate stays deferred until saved-request copy semantics are added in a later slice.',
+          'Duplicate opens the current draft in a new detached tab without changing this tab.',
       },
       tabs: {
         params: 'Params',
@@ -939,6 +987,8 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         saveRequestGroup: '그룹 생성',
         saveRenamedRequestGroup: '이름 저장',
         cancelRequestGroup: '취소',
+        expandNode: '{name} 펼치기',
+        collapseNode: '{name} 접기',
       },
       notes: {
         boundary:
@@ -1038,6 +1088,38 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         deleteRequestGroup: '요청 그룹 "{name}"을(를) 삭제할까요?',
         deleteSavedRequest: '저장 요청 "{name}"을(를) 삭제할까요?',
       },
+      createSheet: {
+        ariaLabel: '작업공간 항목 생성',
+        title: '항목 생성',
+        description: '정규 작업공간 트리에 쓰기 전에 항목 유형, 부모 범위, 이름을 선택하세요.',
+        parentRootLabel: '컬렉션 루트',
+        fields: {
+          type: '유형',
+          parent: '부모',
+          name: '이름',
+        },
+        types: {
+          collection: '컬렉션',
+          requestGroup: '요청 그룹',
+        },
+        actions: {
+          create: '생성',
+          creating: '생성 중...',
+          cancel: '취소',
+        },
+        validation: {
+          nameRequired: '생성 전에 이름을 입력하세요.',
+          parentRequired: '요청 그룹을 만들기 전에 부모 범위를 선택하세요.',
+        },
+      },
+      search: {
+        label: '탐색기 검색',
+        placeholder: '컬렉션, 그룹, 요청 검색',
+        empty: '현재 검색 조건과 일치하는 항목이 없습니다.',
+      },
+      a11y: {
+        treeLabel: '작업공간 탐색기 트리',
+      },
       selection: {
         current: '현재 선택: {path}',
         none: '탐색기에서 선택된 저장 요청이 없습니다.',
@@ -1130,6 +1212,15 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
       sourceQuick: '빠른',
       sourceReplay: '리플레이',
       sourceDetached: '분리됨',
+      states: {
+        dirty: '변경됨',
+        saving: '저장 중',
+        saved: '저장됨',
+        conflict: '충돌',
+        running: '실행 중',
+        saveError: '저장 오류',
+        runError: '실행 오류',
+      },
     },
     requestBuilder: {
       defaultTitle: '제목 없는 요청',
@@ -1179,6 +1270,9 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         runCompleted: '요청 실행이 완료되었습니다.',
         runBlocked: '요청 실행이 완료 전에 차단되었습니다.',
         runTimedOut: '요청 실행이 시간 초과되었습니다.',
+        saveConflict: '이 탭이 저장하기 전에 다른 변경이 먼저 저장되었습니다. 덮어쓰기 또는 새로 저장을 선택하세요.',
+        saveConflictAtTime: '{time}에 더 최신 저장본이 있습니다. 덮어쓰기 또는 새로 저장을 선택하세요.',
+        saveConflictResolutionHint: '덮어쓰기는 최신 저장 요청을 교체합니다. 새로 저장은 최신 요청을 유지하고 이 탭 내용으로 새 저장본을 만듭니다.',
         saveError: '요청 정의 저장에 실패했습니다.',
         runError: '요청 실행에 실패했습니다.',
       },
@@ -1258,6 +1352,8 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         save: '저장',
         saving: '저장 중...',
         duplicate: '복제',
+        overwrite: '덮어쓰기',
+        saveAsNew: '새로 저장',
         run: '실행',
         running: '실행 중...',
         replayIntro:
@@ -1265,7 +1361,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         defaultIntro:
           'Save는 요청 정의를 갱신합니다. Run은 자동 저장하지 않으며, 작성 중인 변경도 지우지 않습니다.',
         duplicateDeferred:
-          'Duplicate는 저장된 요청 복제 의미가 추가되는 이후 slice로 미뤄져 있습니다.',
+          'Duplicate는 현재 draft를 이 탭 변경 없이 새 detached 탭으로 분기합니다.',
       },
       tabs: {
         params: '파라미터',
