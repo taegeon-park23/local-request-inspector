@@ -68,4 +68,23 @@ describe('workspace-shell-store', () => {
     expect(savedTab?.tabMode).toBe('pinned');
     expect(savedTab?.title).toBe('Quick save');
   });
+
+  it('opens a seeded detached request tab for new authoring flows', () => {
+    const detachedTab = useWorkspaceShellStore.getState().openNewRequest({
+      placement: {
+        collectionId: 'collection-saved-requests',
+        collectionName: 'Saved Requests',
+        requestGroupId: 'request-group-auth',
+        requestGroupName: 'Auth',
+      },
+    });
+
+    expect(detachedTab.source).toBe('detached');
+    expect(detachedTab.tabMode).toBe('pinned');
+    expect(detachedTab.collectionId).toBe('collection-saved-requests');
+    expect(detachedTab.collectionName).toBe('Saved Requests');
+    expect(detachedTab.requestGroupId).toBe('request-group-auth');
+    expect(detachedTab.requestGroupName).toBe('Auth');
+    expect(detachedTab.title).toBe('Untitled Request');
+  });
 });

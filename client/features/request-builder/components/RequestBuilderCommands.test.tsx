@@ -67,7 +67,7 @@ describe('Request builder save/run wiring', () => {
 
     const observationMeta = observationHeaderCopy?.querySelector('.workspace-detail-panel__header-meta');
     expect(observationMeta).not.toBeNull();
-    expect(within(observationMeta as HTMLElement).getByText('Draft request tab')).toBeInTheDocument();
+    expect(within(observationMeta as HTMLElement).getByText('Detached draft')).toBeInTheDocument();
     expect(within(observationMeta as HTMLElement).getByText('Response')).toBeInTheDocument();
     expect(within(observationMeta as HTMLElement).getByText('No execution yet')).toBeInTheDocument();
   });
