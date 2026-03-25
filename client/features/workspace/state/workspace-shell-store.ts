@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { RoutePanelTabId } from '@client/features/shared-section-placeholder';
+import type { RoutePanelTabId } from '@client/features/route-panel-tabs-layout';
 import {
   createRequestPlacementFields,
   readRequestGroupName,

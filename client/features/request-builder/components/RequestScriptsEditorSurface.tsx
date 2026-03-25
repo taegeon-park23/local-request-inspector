@@ -161,7 +161,8 @@ export default function RequestScriptsEditorSurface({
   const activeStageLabelId = `script-stage-${draft.tabId}-${activeStage}`;
   const activeStagePanelId = `script-stage-panel-${draft.tabId}-${activeStage}`;
   const copiedFromScriptName = activeStageBinding.mode === 'inline' ? copiedFromScriptNames[activeStage] : null;
-  const linkedResolution = activeStageBinding.mode === 'linked'
+  const linkedLibraryDegraded = activeStageBinding.mode === 'linked' && savedScriptsQuery.isError;
+  const linkedResolution = activeStageBinding.mode === 'linked' && savedScriptsQuery.isSuccess
     ? resolveLinkedStage(activeStageBinding, activeStage, savedScripts)
     : null;
   const linkedScriptName = activeStageBinding.mode === 'linked'
@@ -169,12 +170,14 @@ export default function RequestScriptsEditorSurface({
     : '';
   const linkedSourcePreview = linkedResolution?.savedScript?.sourceCode ?? '';
   const canDetachToCopy = activeStageBinding.mode === 'linked' && linkedSourcePreview.length > 0;
-  const linkedStatusTone = linkedResolution?.status === 'healthy' ? 'secondary' : 'replay';
-  const linkedStatusCopy = linkedResolution?.status === 'missing'
-    ? t('workspaceRoute.scriptsEditor.attach.linkedMissingSummary')
-    : linkedResolution?.status === 'mismatched'
-      ? t('workspaceRoute.scriptsEditor.attach.linkedMismatchSummary')
-      : t('workspaceRoute.scriptsEditor.attach.linkedResolvedHint', { name: linkedScriptName });
+  const linkedStatusTone = linkedResolution?.status === 'healthy' || linkedLibraryDegraded ? 'secondary' : 'replay';
+  const linkedStatusCopy = linkedLibraryDegraded
+    ? t('workspaceRoute.scriptsEditor.attach.degraded')
+    : linkedResolution?.status === 'missing'
+      ? t('workspaceRoute.scriptsEditor.attach.linkedMissingSummary')
+      : linkedResolution?.status === 'mismatched'
+        ? t('workspaceRoute.scriptsEditor.attach.linkedMismatchSummary')
+        : t('workspaceRoute.scriptsEditor.attach.linkedResolvedHint', { name: linkedScriptName });
 
   return (
     <section className="workspace-surface-card request-editor-card request-editor-card--scripts" data-testid="script-editor-surface">
@@ -244,9 +247,9 @@ export default function RequestScriptsEditorSurface({
                   <p>{t('workspaceRoute.scriptsEditor.attach.linkedDescription')}</p>
                 </div>
                 <span className={`workspace-chip workspace-chip--${linkedStatusTone}`}>
-                  {linkedResolution?.status === 'healthy'
-                    ? t('workspaceRoute.scriptsEditor.attach.linkedBadge')
-                    : t('workspaceRoute.scriptsEditor.attach.linkedBrokenBadge')}
+                  {linkedResolution?.status === 'missing' || linkedResolution?.status === 'mismatched'
+                    ? t('workspaceRoute.scriptsEditor.attach.linkedBrokenBadge')
+                    : t('workspaceRoute.scriptsEditor.attach.linkedBadge')}
                 </span>
               </div>
 

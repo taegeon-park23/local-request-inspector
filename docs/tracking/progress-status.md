@@ -27,13 +27,15 @@
 - Request-resource, environment/script, mock-rule, execution, resource-bundle, and legacy capture writes now route through `repositories.resources.*` and `repositories.runtime.queries` instead of direct storage calls inside the route modules.
 - Workspace environment/script helper logic now lives in `server/environment-script-resource-service.js`, mock-rule normalization/list logic now lives in `server/mock-rule-resource-service.js`, authored bundle import planning now lives in `server/resource-bundle-import-service.js`, execution seed/stage/transport flow logic now lives in `server/execution-flow-service.js`, and runtime snapshot/redaction/presentation logic now lives in `server/runtime-presentation-service.js`, cutting `server.js` down to 526 lines from the earlier 1686-line baseline.
 - Workspace saved-resource load failures now surface as explicit degraded state, the default runtime-events adapter now reports offline instead of silently replaying synthetic captures when EventSource support is unavailable, and the shipped request-draft/mock authoring paths no longer depend on fixture-backed production defaults.
-- Node seam tests now cover request-resource mutation, environment/script default reconciliation and listing, the new execution flow service, the new runtime presentation service, blocked execution paths, and resource-bundle preview/import under `server/*.test.js`.
+- The shared route-panel implementation now lives in `client/features/route-panel-tabs-layout.tsx`, while environment detail, script detail, and linked saved-script library failures now surface as degraded state instead of falling back to `No selection` or broken-link copy.
+- Node seam tests now cover request-resource mutation, environment/script default reconciliation and listing, the new execution flow service, the new runtime presentation service, blocked execution paths, and resource-bundle preview/import under `server/*.test.js`. Client regression coverage now also exists in the affected Vitest route/request-builder suites for those degraded-state paths.
 - The latest archived implementation is `T072`, which shipped linked request-stage saved-script references with export blocking.
 - Completed work history has been pruned out of `docs/tasks/` and condensed into `completed-work-summary.md`.
 
 ## Verification
 - `npm.cmd run check` passed on 2026-03-25.
 - `npm.cmd run test:node` passed on 2026-03-25, including the expanded `server/*.test.js` HTTP seam coverage.
+- A targeted Vitest rerun for the new environment/scripts/request-stage degraded-state regressions was attempted on 2026-03-25, but sandboxed esbuild transform startup failed with `spawn EPERM` before the client test runner could start.
 - Codex-side Playwright smoke passed on 2026-03-24 for workspace run, history replay-now, capture replay-now, and settings route load.
 - Agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - Codex-side UI verification should use the Playwright skill workflow.

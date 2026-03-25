@@ -24,7 +24,7 @@ import { EmptyStateCallout } from '@client/shared/ui/EmptyStateCallout';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 import { KeyValueMetaList } from '@client/shared/ui/KeyValueMetaList';
 import { SectionHeading } from '@client/shared/ui/SectionHeading';
-import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
+import { RoutePanelTabsLayout } from '@client/features/route-panel-tabs-layout';
 import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
 import { useShellStore } from '@client/app/providers/shell-store';
 
@@ -194,6 +194,9 @@ export function ScriptsRoute() {
     : null;
   const requestedStageLabel = requestedStageFilter === 'all' ? null : getScriptTypeLabel(requestedStageFilter, t);
   const requestedListScript = (listQuery.data ?? []).find((item) => item.id === requestedScriptId) ?? null;
+  const detailDegradedReason = detailQuery.error instanceof Error
+    ? detailQuery.error.message
+    : t('scriptsRoute.empty.degraded.fallbackDescription');
 
   const createMutation = useMutation({
     mutationFn: createSavedScript,
@@ -365,13 +368,17 @@ export function ScriptsRoute() {
             <div className="request-work-surface request-work-surface--empty">
               <EmptyStateCallout title={t('scriptsRoute.empty.loadingDetail.title')} description={t('scriptsRoute.empty.loadingDetail.description')} />
             </div>
-          ) : !isCreatingDraft && !detailQuery.data ? (
-            <div className="request-work-surface request-work-surface--empty">
-              <EmptyStateCallout title={t('scriptsRoute.empty.noSelection.title')} description={t('scriptsRoute.empty.noSelection.description')} />
-            </div>
           ) : detailQuery.isPending && !detailQuery.data && !isCreatingDraft ? (
             <div className="request-work-surface request-work-surface--empty">
               <EmptyStateCallout title={t('scriptsRoute.empty.loadingPersistedDetail.title')} description={t('scriptsRoute.empty.loadingPersistedDetail.description')} />
+            </div>
+          ) : detailQuery.isError && !isCreatingDraft ? (
+            <div className="request-work-surface request-work-surface--empty">
+              <EmptyStateCallout title={t('scriptsRoute.empty.degraded.title')} description={`${t('scriptsRoute.empty.degraded.fallbackDescription')} ${detailDegradedReason}`} />
+            </div>
+          ) : !isCreatingDraft && !detailQuery.data ? (
+            <div className="request-work-surface request-work-surface--empty">
+              <EmptyStateCallout title={t('scriptsRoute.empty.noSelection.title')} description={t('scriptsRoute.empty.noSelection.description')} />
             </div>
           ) : (
             <div className="scripts-detail">

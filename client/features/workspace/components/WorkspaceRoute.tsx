@@ -61,7 +61,7 @@ import {
 } from '@client/features/workspace/workspace-request-tree.api';
 import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
 import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
-import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
+import { RoutePanelTabsLayout } from '@client/features/route-panel-tabs-layout';
 import { useShellStore } from '@client/app/providers/shell-store';
 import { useReplayRunStore } from '@client/shared/replay-run-store';
 

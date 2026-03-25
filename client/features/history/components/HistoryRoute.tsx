@@ -30,7 +30,7 @@ import { PanelTabs } from '@client/shared/ui/PanelTabs';
 import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
 import { IconLabel } from '@client/shared/ui/IconLabel';
-import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
+import { RoutePanelTabsLayout } from '@client/features/route-panel-tabs-layout';
 import { useReplayRunStore } from '@client/shared/replay-run-store';
 
 type Translate = ReturnType<typeof useI18n>['t'];

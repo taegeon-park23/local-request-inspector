@@ -423,6 +423,84 @@ describe('Request builder save/run wiring', () => {
     expect(screen.getByText('The saved script referenced by this stage is no longer available.')).toBeInTheDocument();
   });
 
+  it('shows linked-script degraded state instead of a broken-link state when the scripts library query fails', async () => {
+    const user = userEvent.setup();
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({
+          items: [
+            {
+              id: 'request-linked-degraded-script',
+              workspaceId: 'local-workspace',
+              name: 'Linked degraded script',
+              method: 'GET',
+              url: 'https://api.example.com/linked-degraded',
+              selectedEnvironmentId: null,
+              params: [],
+              headers: [],
+              bodyMode: 'none',
+              bodyText: '',
+              formBody: [],
+              multipartBody: [],
+              auth: {
+                type: 'none',
+                bearerToken: '',
+                basicUsername: '',
+                basicPassword: '',
+                apiKeyName: '',
+                apiKeyValue: '',
+                apiKeyPlacement: 'header',
+              },
+              scripts: {
+                activeStage: 'pre-request',
+                preRequest: {
+                  mode: 'linked',
+                  savedScriptId: 'saved-script-pre-trace',
+                  savedScriptNameSnapshot: 'Pre-request trace seed',
+                  linkedAt: '2026-03-24T00:00:00.000Z',
+                },
+                postResponse: '',
+                tests: '',
+              },
+              summary: 'GET https://api.example.com/linked-degraded',
+              collectionName: 'Saved Requests',
+              createdAt: '2026-03-24T00:00:00.000Z',
+              updatedAt: '2026-03-24T00:00:00.000Z',
+            },
+          ],
+        });
+      }
+
+      if (url === '/api/workspaces/local-workspace/scripts' && (!init || !init.method || init.method === 'GET')) {
+        return new Response(JSON.stringify({ error: { message: 'Saved scripts are temporarily unavailable.' } }), {
+          status: 503,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    const explorer = screen.getByLabelText('Section explorer');
+    await user.click(await within(explorer).findByRole('button', { name: 'Open Linked degraded script' }));
+
+    expect(screen.getByRole('button', { name: 'Run' })).toBeEnabled();
+
+    const mainSurface = screen.getByLabelText('Main work surface');
+    await user.click(within(mainSurface).getByRole('button', { name: 'Scripts' }));
+
+    expect(await screen.findAllByText('Saved script library is unavailable right now. Try again after the Scripts route responds.')).not.toHaveLength(0);
+    expect(screen.queryByText('Broken link')).not.toBeInTheDocument();
+    expect(screen.queryByText('The saved script referenced by this stage is no longer available.')).not.toBeInTheDocument();
+  });
   it('opens the scripts library with request-stage context and returns to the same workspace draft', async () => {
     const user = userEvent.setup();
 

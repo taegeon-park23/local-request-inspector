@@ -232,6 +232,40 @@ describe('Environments MVP route', () => {
     await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Open environment Stage copy updated' })).not.toBeInTheDocument());
   }, 30000);
+  it('shows degraded detail state when the selected environment cannot be loaded', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+      const method = init?.method ?? 'GET';
+
+      if (url === '/api/workspaces/local-workspace/requests' && method === 'GET') {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/environments' && method === 'GET') {
+        return createApiResponse({ items: defaultEnvironmentFixtureDetails.map((environment) => summarizeEnvironment(environment)) });
+      }
+
+      if (url.startsWith('/api/environments/') && method === 'GET') {
+        return new Response(JSON.stringify({ error: { message: 'Environment detail is temporarily unavailable.' } }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />, { initialEntries: ['/environments'] });
+
+    const explorer = screen.getByLabelText('Section explorer');
+    await user.click(await within(explorer).findByRole('button', { name: 'Open environment Local API' }));
+
+    expect(await screen.findByText('Environment management is degraded')).toBeInTheDocument();
+    expect(screen.getByText('Environment resources could not be loaded cleanly. Environment detail is temporarily unavailable.')).toBeInTheDocument();
+    expect(screen.queryByText('No environment selected')).not.toBeInTheDocument();
+  });
   it('renders the environments route copy in Korean when the locale is switched', async () => {
     vi.stubGlobal('fetch', createEnvironmentsFetch());
     renderApp(<AppRouter />, { initialEntries: ['/environments'], initialLocale: 'ko' });

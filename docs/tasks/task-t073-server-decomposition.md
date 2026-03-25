@@ -61,17 +61,21 @@
 - Replaced the default runtime-events synthetic fallback with an explicit offline adapter, while the shared test renderer now opts into synthetic runtime events on purpose so production no longer masks missing live EventSource support.
 - Removed production fallback-to-empty behavior from the workspace request tree/request list loader, so saved-resource route failures now surface as explicit degraded state instead of looking like an empty workspace.
 - Removed production fixture-backed draft/mock defaults from `client/features/request-builder/state/request-draft-store.ts` and `client/features/mocks/components/MocksRoute.tsx` so shipped authoring state no longer depends on seed fixture modules.
+- Renamed the shared route-panel layout implementation from `client/features/shared-section-placeholder.tsx` to `client/features/route-panel-tabs-layout.tsx` and removed the dead `SectionPlaceholder` export so shipped route surfaces no longer import a misleading placeholder-named implementation file.
+- Updated `EnvironmentsRoute`, `ScriptsRoute`, and the request-stage linked saved-script surface so persisted detail or library query failures now show degraded state instead of a misleading `No selection` or broken-link fallback.
+- Added client regression coverage for those degraded-state paths in `client/features/environments/components/EnvironmentsPlaceholder.test.tsx`, `client/features/scripts/components/ScriptsPlaceholder.test.tsx`, and `client/features/request-builder/components/RequestBuilderCommands.test.tsx`.
 - Added Node HTTP seam coverage for request-resource mutation, blocked execution failure paths, and resource-bundle preview/import under `server/*.test.js`, and extended `scripts/run-node-seam-tests.mjs` to include `server/`.
 - Completed history/capture replay-now flows so both routes open a replay draft, queue an immediate run, and return focus to the Workspace result panel.
 - Removed linked saved-script export blocking by serializing/remapping linked request-stage bindings during resource bundle export/import.
 
 ## Current Verification Status
 - `npm.cmd run check` passed on 2026-03-25.
+- A targeted Vitest rerun for `client/features/environments/components/EnvironmentsPlaceholder.test.tsx`, `client/features/scripts/components/ScriptsPlaceholder.test.tsx`, and `client/features/request-builder/components/RequestBuilderCommands.test.tsx` was attempted on 2026-03-25, but sandboxed esbuild transform startup failed with `spawn EPERM` before client test execution could begin.
 - Codex-side Playwright smoke succeeded on the Vite dev route for workspace run, history replay-now, capture replay-now, and settings route load on 2026-03-24.
 - The Playwright skill CLI path was attempted first, but sandboxed `npx` package fetch failed in this environment, so browser validation continued with the built-in Playwright MCP against the same local app.
 
 ## Remaining Work
-- Finish the live-doc cleanup slice that upgrades already-decided PRD/architecture uncertainty markers and renames remaining implementation-only `Placeholder` artifacts where they are now misleading.
-- Audit the last production false-success/default paths outside the already-fixed workspace, request-draft, mock, and runtime-events flows and remove any remaining ones that still mask degraded state.
+- Finish the last live-doc wording cleanup where landed behavior is still described as deferred or open by default even after implementation has shipped.
+- Continue the production false-success/default-path audit only if another shipped route still masks degraded state outside the now-fixed workspace, request-stage scripts, environments, scripts, mock, and runtime-events flows.
 
 

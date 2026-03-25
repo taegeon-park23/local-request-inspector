@@ -10,7 +10,7 @@ import { StatusBadge } from '@client/shared/ui/StatusBadge';
 import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 import { localeStorageKey, type LocaleCode } from '@client/shared/i18n/messages';
-import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
+import { RoutePanelTabsLayout } from '@client/features/route-panel-tabs-layout';
 
 async function writeClipboardText(value: string) {
   if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {

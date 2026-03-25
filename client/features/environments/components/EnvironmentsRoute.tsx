@@ -21,7 +21,7 @@ import { EmptyStateCallout } from '@client/shared/ui/EmptyStateCallout';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 import { KeyValueMetaList } from '@client/shared/ui/KeyValueMetaList';
 import { SectionHeading } from '@client/shared/ui/SectionHeading';
-import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
+import { RoutePanelTabsLayout } from '@client/features/route-panel-tabs-layout';
 import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
 import { useShellStore } from '@client/app/providers/shell-store';
 
@@ -188,6 +188,9 @@ export function EnvironmentsRoute() {
           }
         : null))
     : null;
+  const detailDegradedReason = detailQuery.error instanceof Error
+    ? detailQuery.error.message
+    : t('environmentsRoute.empty.degraded.fallbackDescription');
 
   const createMutation = useMutation({
     mutationFn: createEnvironment,
@@ -277,7 +280,7 @@ export function EnvironmentsRoute() {
       main={(
         <section className="shell-panel shell-panel--main" aria-label={t('shell.routePanels.mainRegion')}>
         <SectionHeading icon="environments" title={t('routes.environments.title')} summary={t('routes.environments.summary')} />
-        {listQuery.isPending && !listQuery.data ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('environmentsRoute.empty.loadingDetail.title')} description={t('environmentsRoute.empty.loadingDetail.description')} /></div> : !isCreatingDraft && !detailQuery.data ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('environmentsRoute.empty.noSelection.title')} description={t('environmentsRoute.empty.noSelection.description')} /></div> : detailQuery.isPending && !detailQuery.data && !isCreatingDraft ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('environmentsRoute.empty.loadingPersistedDetail.title')} description={t('environmentsRoute.empty.loadingPersistedDetail.description')} /></div> : (
+        {listQuery.isPending && !listQuery.data ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('environmentsRoute.empty.loadingDetail.title')} description={t('environmentsRoute.empty.loadingDetail.description')} /></div> : detailQuery.isPending && !detailQuery.data && !isCreatingDraft ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('environmentsRoute.empty.loadingPersistedDetail.title')} description={t('environmentsRoute.empty.loadingPersistedDetail.description')} /></div> : detailQuery.isError && !isCreatingDraft ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('environmentsRoute.empty.degraded.title')} description={`${t('environmentsRoute.empty.degraded.fallbackDescription')} ${detailDegradedReason}`} /></div> : !isCreatingDraft && !detailQuery.data ? <div className="request-work-surface request-work-surface--empty"><EmptyStateCallout title={t('environmentsRoute.empty.noSelection.title')} description={t('environmentsRoute.empty.noSelection.description')} /></div> : (
           <div className="environments-detail">
             <header className="environments-detail__header management-detail__header">
               <div>

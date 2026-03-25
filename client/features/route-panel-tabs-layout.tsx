@@ -24,14 +24,6 @@ interface RoutePanelTabsLayoutProps {
   onActiveTabChange?: (tab: RoutePanelTabId) => void;
 }
 
-interface SectionPlaceholderProps {
-  title: string;
-  summary: string;
-  sidebarLabel: string;
-  detailLabel: string;
-  children?: ReactNode;
-}
-
 const routePanelTabIcons: Record<RoutePanelTabId, AppIconName> = {
   explorer: 'overview',
   main: 'workspace',
@@ -192,44 +184,5 @@ export function RoutePanelTabsLayout({
         </div>
       </div>
     </div>
-  );
-}
-
-export function SectionPlaceholder({
-  title,
-  summary,
-  sidebarLabel,
-  detailLabel,
-  children,
-}: SectionPlaceholderProps) {
-  const { t } = useI18n();
-
-  return (
-    <RoutePanelTabsLayout
-      defaultActiveTab="main"
-      explorer={(
-        <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>
-          <h2>{title} explorer</h2>
-          <p>{sidebarLabel}</p>
-        </section>
-      )}
-      main={(
-        <section className="shell-panel shell-panel--main" aria-label={t('shell.routePanels.mainRegion')}>
-          <header className="section-placeholder__header">
-            <p className="section-placeholder__eyebrow">Top-level section</p>
-            <h1>{title}</h1>
-          </header>
-          <p>{summary}</p>
-          <p>This section is intentionally a placeholder in S1 and does not include feature-specific business logic yet.</p>
-          {children}
-        </section>
-      )}
-      detail={(
-        <aside className="shell-panel shell-panel--detail" aria-label={t('shell.routePanels.detailRegion')}>
-          <h2>{title} detail</h2>
-          <p>{detailLabel}</p>
-        </aside>
-      )}
-    />
   );
 }

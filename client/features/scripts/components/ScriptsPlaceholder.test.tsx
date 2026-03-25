@@ -189,6 +189,44 @@ describe('Scripts MVP route', () => {
     const templatesList = screen.getByLabelText('Script templates list');
     expect(within(templatesList).getByRole('button', { name: 'Use Trace ID starter' })).toBeInTheDocument();
   });
+  it('shows degraded detail state when the selected script cannot be loaded', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+      const method = init?.method ?? 'GET';
+
+      if (url === '/api/workspaces/local-workspace/requests' && method === 'GET') {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/scripts' && method === 'GET') {
+        return createApiResponse({ items: defaultSavedScriptFixtureRecords });
+      }
+
+      if (url === '/api/script-templates' && method === 'GET') {
+        return createApiResponse({ items: defaultScriptTemplateFixtureRecords });
+      }
+
+      if (url.startsWith('/api/scripts/') && method === 'GET') {
+        return new Response(JSON.stringify({ error: { message: 'Saved script detail is temporarily unavailable.' } }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />, { initialEntries: ['/scripts'] });
+
+    const explorer = screen.getByLabelText('Section explorer');
+    await user.click(await within(explorer).findByRole('button', { name: 'Open script Health status assertions' }));
+
+    expect(await screen.findByText('Scripts library is degraded')).toBeInTheDocument();
+    expect(screen.getByText('Saved scripts could not be loaded cleanly. Saved script detail is temporarily unavailable.')).toBeInTheDocument();
+    expect(screen.queryByText('No script selected')).not.toBeInTheDocument();
+  });
   it('renders the scripts route copy in Korean when the locale is switched', async () => {
     vi.stubGlobal('fetch', createScriptsFetch());
     renderApp(<AppRouter />, { initialEntries: ['/scripts'], initialLocale: 'ko' });

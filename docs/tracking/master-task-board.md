@@ -19,8 +19,8 @@
 ## Current State
 - **Current active implementation:** `T073` server decomposition, runtime hardening, replay/transfer follow-up, and documentation cleanup.
 - **Most recent archived implementation:** `T072` request-stage linked reusable-script reference baseline.
-- **Highest-priority next step:** finish `T073` with the remaining live-doc cleanup and a final production false-success/default-path audit now that `server.js` is down to bootstrap-sized wiring plus shared comparators.
-- **Verification baseline:** `npm.cmd run check` and `npm.cmd run test:node` passed on 2026-03-25, including the expanded `server/*.test.js` seam coverage for request-resource, environment/script, execution flow, runtime presentation, and resource-bundle routes.
+- **Highest-priority next step:** finish `T073` by closing the last live-doc wording cleanup and only continuing the false-success audit if another shipped route still masks degraded state after the environment/scripts/request-stage fixes.
+- **Verification baseline:** `npm.cmd run check` and `npm.cmd run test:node` passed on 2026-03-25, including the expanded `server/*.test.js` seam coverage for request-resource, environment/script, execution flow, runtime presentation, and resource-bundle routes. The targeted client Vitest rerun for the new degraded-state regressions remained sandbox-blocked by `spawn EPERM`.
 - **Codex smoke baseline:** Playwright smoke passed on 2026-03-24 for workspace run, history replay-now, capture replay-now, and settings route load.
 - **Closed UI-test rerun policy:** agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - **Codex UI verification lane:** use the Playwright skill workflow against the dev route or built shell when available.

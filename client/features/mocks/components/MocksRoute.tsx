@@ -37,7 +37,7 @@ import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
 import { downloadAuthoredResourceBundle } from '@client/features/workspace/resource-bundle.api';
-import { RoutePanelTabsLayout } from '@client/features/shared-section-placeholder';
+import { RoutePanelTabsLayout } from '@client/features/route-panel-tabs-layout';
 
 type Translate = ReturnType<typeof useI18n>['t'];
 
