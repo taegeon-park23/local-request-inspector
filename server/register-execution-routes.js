@@ -16,6 +16,7 @@ function registerExecutionRoutes(app, dependencies) {
     createEnvironmentResolutionSummary,
     executeScriptStage,
     readWorkspaceEnvironmentReference,
+    resolveEnvironmentSecretValues = async () => ({ secretValuesByKey: {} }),
     createTransportSkippedStageResult,
     createSkippedScriptStageAfterTransport,
     createTransportBlockedStageResult,
@@ -49,6 +50,14 @@ function registerExecutionRoutes(app, dependencies) {
   } = dependencies;
   const runtimeQueries = repositories.runtime.queries;
   const scriptRepository = repositories.resources.scripts;
+
+  function createSecretProviderResolutionSummary(error) {
+    const action = typeof error?.details?.action === 'string' && error.details.action.trim().length > 0
+      ? error.details.action.trim()
+      : 'resolve';
+
+    return `Secret provider ${action} failed while preparing environment placeholders.`;
+  }
 
   async function executeSingleRun(input) {
     const executionId = randomUUID();
@@ -148,60 +157,23 @@ function registerExecutionRoutes(app, dependencies) {
         }
 
         if (!stageResults.transport) {
-          const resolution = resolveExecutionRequestWithEnvironment(
-            executionRequest,
-            resolvedEnvironmentRecord,
-          );
-          const environmentResolutionSummary = createEnvironmentResolutionSummary({
-            selectedEnvironmentId: executionRequest.selectedEnvironmentId || null,
-            resolvedPlaceholderCount: resolution.resolvedPlaceholderCount,
-            unresolved: resolution.unresolved,
-            affectedInputAreas: resolution.affectedInputAreas,
-          });
+          let secretValuesByKey = {};
 
-          resolvedExecutionRequest = {
-            ...resolution.request,
-            selectedEnvironmentLabel: createResolvedEnvironmentLabel(resolvedEnvironmentRecord),
-            environmentResolutionSummary,
-          };
-
-          if (resolution.unresolved.length > 0) {
-            const unresolvedSummary = summarizeUnresolvedEnvironmentPlaceholders(resolution.unresolved);
-
-            stageResults.transport = createTransportBlockedStageResult(
-              'Transport did not run because environment resolution left placeholders unresolved.',
-              'environment_resolution_unresolved',
-              unresolvedSummary,
-            );
-            stageResults['post-response'] = createSkippedScriptStageAfterTransport(
-              'post-response',
-              'Post-response did not run because transport never started.',
-            );
-            stageResults.tests = createSkippedScriptStageAfterTransport(
-              'tests',
-              'Tests did not run because transport never started.',
-            );
-          } else if (
-            resolvedExecutionRequest.bodyMode === 'json'
-            && resolvedExecutionRequest.bodyText.trim().length > 0
-          ) {
+          if (resolvedEnvironmentRecord) {
             try {
-              JSON.parse(resolvedExecutionRequest.bodyText);
-            } catch {
-              resolvedExecutionRequest = {
-                ...resolvedExecutionRequest,
-                environmentResolutionSummary: createEnvironmentResolutionSummary({
-                  selectedEnvironmentId: executionRequest.selectedEnvironmentId || null,
-                  resolvedPlaceholderCount: resolution.resolvedPlaceholderCount,
-                  unresolved: resolution.unresolved,
-                  affectedInputAreas: resolution.affectedInputAreas,
-                  invalidResolvedJson: true,
-                }),
-              };
+              const secretResolution = await resolveEnvironmentSecretValues(resolvedEnvironmentRecord, {
+                workspaceId: executionRequest.workspaceId || defaultWorkspaceId,
+                environmentId: resolvedEnvironmentRecord.id,
+              });
+              secretValuesByKey = secretResolution?.secretValuesByKey
+                && typeof secretResolution.secretValuesByKey === 'object'
+                ? secretResolution.secretValuesByKey
+                : {};
+            } catch (error) {
               stageResults.transport = createTransportBlockedStageResult(
-                'Transport did not run because environment resolution produced invalid JSON body content.',
-                'environment_resolution_invalid_json',
-                'Resolved JSON body is invalid after environment substitution.',
+                'Transport did not run because secret provider resolution failed.',
+                'secret_provider_error',
+                createSecretProviderResolutionSummary(error),
               );
               stageResults['post-response'] = createSkippedScriptStageAfterTransport(
                 'post-response',
@@ -211,6 +183,77 @@ function registerExecutionRoutes(app, dependencies) {
                 'tests',
                 'Tests did not run because transport never started.',
               );
+            }
+          }
+
+          if (!stageResults.transport) {
+            const resolution = resolveExecutionRequestWithEnvironment(
+              executionRequest,
+              resolvedEnvironmentRecord,
+              {
+                secretValuesByKey,
+              },
+            );
+            const environmentResolutionSummary = createEnvironmentResolutionSummary({
+              selectedEnvironmentId: executionRequest.selectedEnvironmentId || null,
+              resolvedPlaceholderCount: resolution.resolvedPlaceholderCount,
+              unresolved: resolution.unresolved,
+              affectedInputAreas: resolution.affectedInputAreas,
+            });
+
+            resolvedExecutionRequest = {
+              ...resolution.request,
+              selectedEnvironmentLabel: createResolvedEnvironmentLabel(resolvedEnvironmentRecord),
+              environmentResolutionSummary,
+            };
+
+            if (resolution.unresolved.length > 0) {
+              const unresolvedSummary = summarizeUnresolvedEnvironmentPlaceholders(resolution.unresolved);
+
+              stageResults.transport = createTransportBlockedStageResult(
+                'Transport did not run because environment resolution left placeholders unresolved.',
+                'environment_resolution_unresolved',
+                unresolvedSummary,
+              );
+              stageResults['post-response'] = createSkippedScriptStageAfterTransport(
+                'post-response',
+                'Post-response did not run because transport never started.',
+              );
+              stageResults.tests = createSkippedScriptStageAfterTransport(
+                'tests',
+                'Tests did not run because transport never started.',
+              );
+            } else if (
+              resolvedExecutionRequest.bodyMode === 'json'
+              && resolvedExecutionRequest.bodyText.trim().length > 0
+            ) {
+              try {
+                JSON.parse(resolvedExecutionRequest.bodyText);
+              } catch {
+                resolvedExecutionRequest = {
+                  ...resolvedExecutionRequest,
+                  environmentResolutionSummary: createEnvironmentResolutionSummary({
+                    selectedEnvironmentId: executionRequest.selectedEnvironmentId || null,
+                    resolvedPlaceholderCount: resolution.resolvedPlaceholderCount,
+                    unresolved: resolution.unresolved,
+                    affectedInputAreas: resolution.affectedInputAreas,
+                    invalidResolvedJson: true,
+                  }),
+                };
+                stageResults.transport = createTransportBlockedStageResult(
+                  'Transport did not run because environment resolution produced invalid JSON body content.',
+                  'environment_resolution_invalid_json',
+                  'Resolved JSON body is invalid after environment substitution.',
+                );
+                stageResults['post-response'] = createSkippedScriptStageAfterTransport(
+                  'post-response',
+                  'Post-response did not run because transport never started.',
+                );
+                stageResults.tests = createSkippedScriptStageAfterTransport(
+                  'tests',
+                  'Tests did not run because transport never started.',
+                );
+              }
             }
           }
         }

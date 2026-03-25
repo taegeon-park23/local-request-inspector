@@ -1,4 +1,4 @@
-﻿const assert = require('node:assert/strict');
+const assert = require('node:assert/strict');
 const {
   countLegacySecretRows,
   createEnvironmentRecord,
@@ -28,7 +28,7 @@ const {
   withServer,
 } = require('./test-support');
 
-function createRouteDependencies(repositories) {
+function createRouteDependencies(repositories, options = {}) {
   const environmentScriptService = createEnvironmentScriptResourceService({
     repositories,
     countLegacySecretRows,
@@ -37,6 +37,9 @@ function createRouteDependencies(repositories) {
     compareEnvironmentRecords,
     normalizePersistedSavedScriptRecord,
     compareSavedScriptRecords,
+  });
+  const secretPolicyService = createEnvironmentSecretPolicyService({
+    ...(options.secretProvider ? { secretProvider: options.secretProvider } : {}),
   });
 
   return {
@@ -49,7 +52,7 @@ function createRouteDependencies(repositories) {
     normalizePersistedEnvironmentRecord,
     presentEnvironmentRecord,
     summarizePresentedEnvironmentRecord,
-    validateEnvironmentSecretMutation: createEnvironmentSecretPolicyService().validateEnvironmentSecretMutation,
+    applyEnvironmentSecretMutations: secretPolicyService.applyEnvironmentSecretMutations,
     validateSavedScriptInput,
     createSavedScriptRecord,
     normalizePersistedSavedScriptRecord,
@@ -269,12 +272,180 @@ async function testCreatingEnvironmentWithSecretReplacementFailsClosed() {
     },
   );
 }
+
+async function testClearingStoredSecretWithoutBackendIsAllowed() {
+  const repositories = createRepositories();
+  repositories.resources.environments.save(normalizePersistedEnvironmentRecord({
+    id: 'env-clear',
+    workspaceId: 'local-workspace',
+    name: 'Clear secret env',
+    description: '',
+    isDefault: false,
+    variables: [
+      {
+        id: 'env-clear-token',
+        key: 'API_TOKEN',
+        description: 'Secret token',
+        isEnabled: true,
+        isSecret: true,
+        valueType: 'plain',
+        value: '',
+        hasStoredValue: true,
+      },
+    ],
+    createdAt: '2026-03-25T00:00:00.000Z',
+    updatedAt: '2026-03-25T00:00:00.000Z',
+  }));
+
+  await withServer(
+    (app) => registerEnvironmentScriptRoutes(app, createRouteDependencies(repositories)),
+    async ({ baseUrl }) => {
+      const response = await requestJson(baseUrl, '/api/environments/env-clear', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          environment: {
+            name: 'Clear secret env',
+            description: '',
+            isDefault: false,
+            variables: [
+              {
+                id: 'env-clear-token',
+                key: 'API_TOKEN',
+                description: 'Secret token',
+                isEnabled: true,
+                isSecret: true,
+                valueType: 'plain',
+                clearStoredValue: true,
+              },
+            ],
+          },
+        }),
+      });
+
+      assert.equal(response.status, 200);
+      assert.equal(response.payload.data.environment.variables[0].hasStoredValue, false);
+      assert.equal(repositories.resources.environments.read('env-clear').variables[0].hasStoredValue, false);
+    },
+  );
+}
+
+async function testAvailableProviderStoreAndClearUseExpectedLocator() {
+  const repositories = createRepositories();
+  const storeCalls = [];
+  const clearCalls = [];
+  const secretProvider = {
+    async status() {
+      return {
+        secureBackendAvailable: true,
+        backendLabel: 'stub-provider',
+        providerId: 'stub',
+        providerVersion: '1.0.0',
+        providerStatus: 'ready',
+        capabilities: ['store', 'resolve', 'clear'],
+      };
+    },
+    async store(input) {
+      storeCalls.push(input);
+      return { stored: true };
+    },
+    async resolve() {
+      return { found: false, value: null };
+    },
+    async clear(input) {
+      clearCalls.push(input);
+      return { cleared: true };
+    },
+  };
+
+  await withServer(
+    (app) => registerEnvironmentScriptRoutes(app, createRouteDependencies(repositories, { secretProvider })),
+    async ({ baseUrl }) => {
+      const createResponse = await requestJson(baseUrl, '/api/workspaces/local-workspace/environments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          environment: {
+            name: 'Secret provider env',
+            description: '',
+            isDefault: false,
+            variables: [
+              {
+                key: 'API_TOKEN',
+                description: 'Secret token',
+                isEnabled: true,
+                isSecret: true,
+                valueType: 'plain',
+                replacementValue: 'secret-value',
+              },
+            ],
+          },
+        }),
+      });
+
+      assert.equal(createResponse.status, 201);
+      assert.equal(storeCalls.length, 1);
+
+      const environmentId = createResponse.payload.data.environment.id;
+      const variableId = createResponse.payload.data.environment.variables[0].id;
+
+      assert.deepEqual(storeCalls[0], {
+        locator: {
+          workspaceId: 'local-workspace',
+          environmentId,
+          variableId,
+        },
+        value: 'secret-value',
+      });
+
+      const clearResponse = await requestJson(baseUrl, `/api/environments/${environmentId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          environment: {
+            name: 'Secret provider env',
+            description: '',
+            isDefault: false,
+            variables: [
+              {
+                id: variableId,
+                key: 'API_TOKEN',
+                description: 'Secret token',
+                isEnabled: true,
+                isSecret: true,
+                valueType: 'plain',
+                clearStoredValue: true,
+              },
+            ],
+          },
+        }),
+      });
+
+      assert.equal(clearResponse.status, 200);
+      assert.equal(clearCalls.length, 1);
+      assert.deepEqual(clearCalls[0], {
+        locator: {
+          workspaceId: 'local-workspace',
+          environmentId,
+          variableId,
+        },
+      });
+      assert.equal(clearResponse.payload.data.environment.variables[0].hasStoredValue, false);
+    },
+  );
+}
 (async function run() {
   await testCreatingDefaultEnvironmentDemotesPreviousDefault();
   await testDeletingDefaultEnvironmentPromotesRemainingFallback();
   await testListingWorkspaceScriptsUsesServiceOrdering();
   await testReadingLegacySecretRowsSanitizesPersistedEnvironmentRecord();
   await testCreatingEnvironmentWithSecretReplacementFailsClosed();
+  await testClearingStoredSecretWithoutBackendIsAllowed();
+  await testAvailableProviderStoreAndClearUseExpectedLocator();
 })();
-
-

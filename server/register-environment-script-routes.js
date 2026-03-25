@@ -1,4 +1,4 @@
-﻿function registerEnvironmentScriptRoutes(app, dependencies) {
+function registerEnvironmentScriptRoutes(app, dependencies) {
   const {
     sendData,
     sendError,
@@ -12,7 +12,7 @@
     upsertWorkspaceEnvironmentRecord,
     reconcileWorkspaceEnvironmentDefaults,
     readEnvironmentRecord,
-    validateEnvironmentSecretMutation,
+    applyEnvironmentSecretMutations,
     validateSavedScriptInput,
     createSavedScriptRecord,
     normalizePersistedSavedScriptRecord,
@@ -33,7 +33,7 @@
     }
   });
 
-  app.post('/api/workspaces/:workspaceId/environments', (req, res) => {
+  app.post('/api/workspaces/:workspaceId/environments', async (req, res) => {
     const input = req.body?.environment;
     const validationError = validateEnvironmentInput(input);
 
@@ -47,20 +47,26 @@
       });
     }
 
-    const secretMutationError = validateEnvironmentSecretMutation(input);
-    if (secretMutationError) {
-      return sendError(
-        res,
-        secretMutationError.status,
-        secretMutationError.code,
-        secretMutationError.message,
-        secretMutationError.details,
-        secretMutationError.retryable,
-      );
-    }
-
     try {
       const candidateRecord = createEnvironmentRecord(input, null, req.params.workspaceId);
+      const secretMutationError = await applyEnvironmentSecretMutations({
+        input,
+        workspaceId: req.params.workspaceId,
+        environmentId: candidateRecord.id,
+        persistedVariables: candidateRecord.variables,
+      });
+
+      if (secretMutationError) {
+        return sendError(
+          res,
+          secretMutationError.status,
+          secretMutationError.code,
+          secretMutationError.message,
+          secretMutationError.details,
+          secretMutationError.retryable,
+        );
+      }
+
       const environment = upsertWorkspaceEnvironmentRecord(
         req.params.workspaceId,
         candidateRecord,
@@ -91,7 +97,7 @@
     }
   });
 
-  app.patch('/api/environments/:environmentId', (req, res) => {
+  app.patch('/api/environments/:environmentId', async (req, res) => {
     const input = req.body?.environment;
     const validationError = validateEnvironmentInput(input);
 
@@ -99,21 +105,6 @@
       return sendError(res, 400, 'invalid_environment', validationError, {
         environmentId: req.params.environmentId,
       });
-    }
-
-    const secretMutationError = validateEnvironmentSecretMutation(input);
-    if (secretMutationError) {
-      return sendError(
-        res,
-        secretMutationError.status,
-        secretMutationError.code,
-        secretMutationError.message,
-        {
-          environmentId: req.params.environmentId,
-          ...(secretMutationError.details || {}),
-        },
-        secretMutationError.retryable,
-      );
     }
 
     try {
@@ -133,6 +124,28 @@
         existingRecord,
         existingRecord.workspaceId || defaultWorkspaceId,
       );
+
+      const secretMutationError = await applyEnvironmentSecretMutations({
+        input,
+        workspaceId: existingRecord.workspaceId || defaultWorkspaceId,
+        environmentId: candidateRecord.id,
+        persistedVariables: candidateRecord.variables,
+      });
+
+      if (secretMutationError) {
+        return sendError(
+          res,
+          secretMutationError.status,
+          secretMutationError.code,
+          secretMutationError.message,
+          {
+            environmentId: req.params.environmentId,
+            ...(secretMutationError.details || {}),
+          },
+          secretMutationError.retryable,
+        );
+      }
+
       const environment = upsertWorkspaceEnvironmentRecord(
         existingRecord.workspaceId || defaultWorkspaceId,
         candidateRecord,
@@ -306,6 +319,3 @@
 module.exports = {
   registerEnvironmentScriptRoutes,
 };
-
-
-

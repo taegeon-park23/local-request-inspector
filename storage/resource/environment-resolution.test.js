@@ -1,4 +1,4 @@
-﻿const assert = require('node:assert/strict');
+const assert = require('node:assert/strict');
 const {
   buildEnvironmentValueLookup,
   createEnvironmentResolutionSummary,
@@ -91,6 +91,38 @@ const { createEnvironmentRecord, presentEnvironmentRecord } = require('./environ
     affectedInputAreas: ['url', 'params', 'headers', 'body', 'auth'],
   });
 
+
+  const resolvedWithSecretLookup = resolveExecutionRequestWithEnvironment({
+    method: 'POST',
+    url: '{{API_BASE}}/users',
+    params: [{ id: 'param-1', key: 'token', value: '{{api_token}}', enabled: true }],
+    headers: [{ id: 'header-1', key: 'Authorization', value: 'Bearer {{API_TOKEN}}', enabled: true }],
+    bodyMode: 'json',
+    bodyText: '{"token":"{{API_TOKEN}}"}',
+    formBody: [],
+    multipartBody: [],
+    auth: {
+      type: 'bearer',
+      bearerToken: '{{API_TOKEN}}',
+      basicUsername: '',
+      basicPassword: '',
+      apiKeyName: '',
+      apiKeyValue: '',
+      apiKeyPlacement: 'header',
+    },
+    selectedEnvironmentId: environment.id,
+  }, environment, {
+    secretValuesByKey: {
+      api_token: 'resolved-secret-token',
+    },
+  });
+
+  assert.equal(resolvedWithSecretLookup.request.params[0].value, 'resolved-secret-token');
+  assert.equal(resolvedWithSecretLookup.request.headers[0].value, 'Bearer resolved-secret-token');
+  assert.equal(resolvedWithSecretLookup.request.bodyText, '{"token":"resolved-secret-token"}');
+  assert.equal(resolvedWithSecretLookup.request.auth.bearerToken, 'resolved-secret-token');
+  assert.equal(resolvedWithSecretLookup.unresolved.length, 0);
+  assert.equal(resolvedWithSecretLookup.resolvedPlaceholderCount, 5);
   const unresolved = resolveExecutionRequestWithEnvironment({
     method: 'POST',
     url: '{{MISSING_BASE}}/users',
@@ -182,5 +214,3 @@ const { createEnvironmentRecord, presentEnvironmentRecord } = require('./environ
   assert.equal(presented.variables.find((row) => row.key === 'API_TOKEN')?.value, '');
   assert.equal(presented.variables.find((row) => row.key === 'API_TOKEN')?.hasStoredValue, true);
 })();
-
-

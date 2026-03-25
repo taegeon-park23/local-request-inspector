@@ -23,7 +23,37 @@ function cloneRequestRows(rows) {
     : [];
 }
 
-function buildEnvironmentValueLookup(environmentRecord) {
+function appendSecretValueEntries(lookup, secretValuesByKey) {
+  if (secretValuesByKey instanceof Map) {
+    for (const [key, value] of secretValuesByKey.entries()) {
+      const normalizedKey = normalizeLookupKey(key);
+
+      if (normalizedKey.length === 0 || typeof value !== 'string') {
+        continue;
+      }
+
+      lookup.set(normalizedKey, value);
+    }
+
+    return;
+  }
+
+  if (!secretValuesByKey || typeof secretValuesByKey !== 'object') {
+    return;
+  }
+
+  for (const [key, value] of Object.entries(secretValuesByKey)) {
+    const normalizedKey = normalizeLookupKey(key);
+
+    if (normalizedKey.length === 0 || typeof value !== 'string') {
+      continue;
+    }
+
+    lookup.set(normalizedKey, value);
+  }
+}
+
+function buildEnvironmentValueLookup(environmentRecord, options = {}) {
   const lookup = new Map();
 
   for (const row of Array.isArray(environmentRecord?.variables) ? environmentRecord.variables : []) {
@@ -39,6 +69,8 @@ function buildEnvironmentValueLookup(environmentRecord) {
 
     lookup.set(normalizedKey, typeof row.value === 'string' ? row.value : '');
   }
+
+  appendSecretValueEntries(lookup, options.secretValuesByKey);
 
   return lookup;
 }
@@ -312,8 +344,8 @@ function sanitizeEnvironmentResolutionSummary(summary) {
   };
 }
 
-function resolveExecutionRequestWithEnvironment(request, environmentRecord) {
-  const lookup = buildEnvironmentValueLookup(environmentRecord);
+function resolveExecutionRequestWithEnvironment(request, environmentRecord, options = {}) {
+  const lookup = buildEnvironmentValueLookup(environmentRecord, options);
   const unresolved = [];
   const resolutionState = {
     resolvedPlaceholderCount: 0,

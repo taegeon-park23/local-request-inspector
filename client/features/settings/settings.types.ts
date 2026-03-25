@@ -36,6 +36,10 @@ export interface RuntimeStatusResponse {
   secretStorage: {
     secureBackendAvailable: boolean;
     backendLabel: string;
+    providerId?: string;
+    providerVersion?: string;
+    providerStatus?: string;
+    capabilities?: Array<'store' | 'resolve' | 'clear'>;
     readModelPolicy: string;
     replacementWritePolicy: string;
     runtimeResolutionPolicy: string;

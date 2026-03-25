@@ -26,6 +26,10 @@ export const defaultRuntimeStatusFixture: RuntimeStatusResponse = {
   secretStorage: {
     secureBackendAvailable: false,
     backendLabel: 'unavailable',
+    providerId: 'stub-provider',
+    providerVersion: '1.0.0',
+    providerStatus: 'unavailable',
+    capabilities: ['store', 'resolve', 'clear'],
     readModelPolicy: 'Secret rows remain write-only and expose only hasStoredValue in read responses.',
     replacementWritePolicy: 'Secret replacement writes fail closed until a secure backend is configured.',
     runtimeResolutionPolicy: 'Run time continues to resolve plain variables only. Secret-backed placeholders stay unavailable until a secure backend is configured.',

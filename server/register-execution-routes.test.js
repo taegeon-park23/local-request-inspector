@@ -60,6 +60,7 @@ function createExecutionDependencies(repositories, runtimeState, overrides = {})
       stageResult: { stageId, status: 'succeeded', summary: `${stageId} succeeded.` },
     }),
     readWorkspaceEnvironmentReference: () => null,
+    resolveEnvironmentSecretValues: async () => ({ secretValuesByKey: {} }),
     createTransportSkippedStageResult: (summary) => ({ stageId: 'transport', status: 'skipped', summary }),
     createSkippedScriptStageAfterTransport: (stageId, summary) => ({ stageId, status: 'skipped', summary }),
     createTransportBlockedStageResult: (summary, errorCode, errorSummary) => ({
@@ -245,6 +246,162 @@ async function testUnresolvedEnvironmentPlaceholderBlocksExecution() {
   );
 }
 
+
+async function testResolvedSecretValuesArePassedIntoEnvironmentResolution() {
+  const runtimeState = {
+    histories: [],
+    results: [],
+    testResults: [],
+  };
+  const repositories = createRepositories({
+    runtime: {
+      queries: {
+        insertExecutionHistory(record) {
+          runtimeState.histories.push(record);
+        },
+        insertExecutionResult(record) {
+          runtimeState.results.push(record);
+        },
+        insertTestResults(records) {
+          runtimeState.testResults.push(records);
+        },
+      },
+    },
+  });
+
+  let capturedSecretLookup = null;
+  const dependencies = createExecutionDependencies(repositories, runtimeState, {
+    readWorkspaceEnvironmentReference: () => ({
+      id: 'env-1',
+      workspaceId: 'local-workspace',
+      name: 'Local',
+      variables: [],
+    }),
+    resolveEnvironmentSecretValues: async () => ({
+      secretValuesByKey: {
+        api_token: 'resolved-secret-token',
+      },
+    }),
+    resolveExecutionRequestWithEnvironment: (request, environmentRecord, options = {}) => {
+      capturedSecretLookup = options.secretValuesByKey || {};
+      return {
+        request: {
+          ...request,
+          headers: [{ id: 'header-1', key: 'Authorization', value: 'Bearer resolved-secret-token', enabled: true }],
+        },
+        resolvedPlaceholderCount: 1,
+        unresolved: [],
+        affectedInputAreas: ['headers'],
+      };
+    },
+  });
+
+  const originalFetch = global.fetch;
+  global.fetch = async (input, init) => {
+    const url = String(input);
+
+    if (!url.startsWith('https://example.test/')) {
+      return originalFetch(input, init);
+    }
+
+    return new Response('{"ok":true}', {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  };
+
+  try {
+    await withServer(
+      (app) => registerExecutionRoutes(app, dependencies),
+      async ({ baseUrl }) => {
+        const response = await requestJson(baseUrl, '/api/executions/run', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            request: createBaseRequest('env-1', {
+              headers: [{ id: 'header-1', key: 'Authorization', value: 'Bearer {{API_TOKEN}}', enabled: true }],
+            }),
+          }),
+        });
+
+        assert.equal(response.status, 200);
+        assert.equal(response.payload.data.execution.executionOutcome, 'Succeeded');
+        assert.equal(capturedSecretLookup.api_token, 'resolved-secret-token');
+      },
+    );
+  } finally {
+    global.fetch = originalFetch;
+  }
+}
+
+async function testSecretProviderErrorBlocksExecution() {
+  const runtimeState = {
+    histories: [],
+    results: [],
+    testResults: [],
+  };
+  const repositories = createRepositories({
+    runtime: {
+      queries: {
+        insertExecutionHistory(record) {
+          runtimeState.histories.push(record);
+        },
+        insertExecutionResult(record) {
+          runtimeState.results.push(record);
+        },
+        insertTestResults(records) {
+          runtimeState.testResults.push(records);
+        },
+      },
+    },
+  });
+
+  const dependencies = createExecutionDependencies(repositories, runtimeState, {
+    readWorkspaceEnvironmentReference: () => ({
+      id: 'env-1',
+      workspaceId: 'local-workspace',
+      name: 'Local',
+      variables: [],
+    }),
+    resolveEnvironmentSecretValues: async () => {
+      throw {
+        code: 'secret_provider_error',
+        details: {
+          action: 'resolve',
+        },
+        message: 'sensitive provider internals',
+      };
+    },
+  });
+
+  await withServer(
+    (app) => registerExecutionRoutes(app, dependencies),
+    async ({ baseUrl }) => {
+      const response = await requestJson(baseUrl, '/api/executions/run', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ request: createBaseRequest('env-1') }),
+      });
+
+      assert.equal(response.status, 200);
+      assert.equal(response.payload.data.execution.executionOutcome, 'Blocked');
+      assert.equal(response.payload.data.execution.errorCode, 'secret_provider_error');
+      assert.equal(
+        response.payload.data.execution.errorSummary,
+        'Secret provider resolve failed while preparing environment placeholders.',
+      );
+      assert.equal(response.payload.data.execution.errorSummary.includes('sensitive'), false);
+      assert.equal(runtimeState.histories.length, 1);
+      assert.equal(runtimeState.histories[0].errorCode, 'secret_provider_error');
+    },
+  );
+}
 async function testCollectionBatchRunTraversesNestedGroupsDepthFirstAndContinuesOnError() {
   const runtimeState = {
     histories: [],
@@ -395,5 +552,7 @@ async function testCollectionBatchRunTraversesNestedGroupsDepthFirstAndContinues
 (async function run() {
   await testMissingLinkedScriptBlocksExecutionAndPersistsError();
   await testUnresolvedEnvironmentPlaceholderBlocksExecution();
+  await testResolvedSecretValuesArePassedIntoEnvironmentResolution();
+  await testSecretProviderErrorBlocksExecution();
   await testCollectionBatchRunTraversesNestedGroupsDepthFirstAndContinuesOnError();
 })();

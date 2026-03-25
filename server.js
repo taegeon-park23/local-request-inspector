@@ -87,6 +87,7 @@ const { createRuntimePresentationService } = require('./server/runtime-presentat
 const { createRequestResourceService } = require('./server/request-resource-service');
 const { createEnvironmentScriptResourceService } = require('./server/environment-script-resource-service');
 const { createEnvironmentSecretPolicyService } = require('./server/environment-secret-policy-service');
+const { createUnavailableSecretProvider } = require('./server/secret-provider');
 const { createMockRuleResourceService } = require('./server/mock-rule-resource-service');
 const { createResourceBundleImportService } = require('./server/resource-bundle-import-service');
 const { registerRequestResourceRoutes } = require('./server/register-request-resource-routes');
@@ -172,10 +173,14 @@ const {
   normalizePersistedSavedScriptRecord,
   compareSavedScriptRecords,
 });
+const secretProvider = createUnavailableSecretProvider();
 const {
-  validateEnvironmentSecretMutation,
+  applyEnvironmentSecretMutations,
+  resolveEnvironmentSecretValues,
   createSecretStorageStatusSnapshot,
-} = createEnvironmentSecretPolicyService();
+} = createEnvironmentSecretPolicyService({
+  secretProvider,
+});
 
 const {
   cloneRows,
@@ -456,7 +461,7 @@ registerEnvironmentScriptRoutes(app, {
   upsertWorkspaceEnvironmentRecord,
   reconcileWorkspaceEnvironmentDefaults,
   readEnvironmentRecord,
-  validateEnvironmentSecretMutation,
+  applyEnvironmentSecretMutations,
   validateSavedScriptInput,
   createSavedScriptRecord,
   normalizePersistedSavedScriptRecord,
@@ -509,6 +514,7 @@ registerExecutionRoutes(app, {
   createEnvironmentResolutionSummary,
   executeScriptStage,
   readWorkspaceEnvironmentReference,
+  resolveEnvironmentSecretValues,
   createTransportSkippedStageResult,
   createSkippedScriptStageAfterTransport,
   createTransportBlockedStageResult,
@@ -577,12 +583,3 @@ app.listen(PORT, () => {
       : `[Ready] Built app shell unavailable at ${appShellStatus.appRoute}. Run "${appShellStatus.buildCommand}" or use ${appShellStatus.devClientUrl} for development.`,
   );
 });
-
-
-
-
-
-
-
-
-

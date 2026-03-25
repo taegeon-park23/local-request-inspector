@@ -14,13 +14,17 @@ function registerStatusRoutes(app, dependencies) {
     });
   });
 
-  app.get('/api/settings/runtime-status', (req, res) => {
+  app.get('/api/settings/runtime-status', async (req, res) => {
     try {
+      const secretStorage = typeof getSecretStorageStatus === 'function'
+        ? await getSecretStorageStatus()
+        : null;
+
       return sendData(res, {
         status: createRuntimeStatusSnapshot({
           appShell: getClientShellStatus(),
           layout,
-          secretStorage: typeof getSecretStorageStatus === 'function' ? getSecretStorageStatus() : null,
+          secretStorage,
         }),
       });
     } catch (error) {

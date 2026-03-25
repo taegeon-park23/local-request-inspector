@@ -1,8 +1,8 @@
-﻿# Script Execution Safety Model Draft
+# Script Execution Safety Model Draft
 
 - **Purpose:** Define the script execution safety model for the Local API Workbench, balancing local usability with realistic security and containment expectations.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-24
+- **Last Updated:** 2026-03-25
 - **Related Documents:** `overview.md`, `shared-schema.md`, `persistence-strategy.md`, `internal-api-contracts.md`
 - **Status:** done
 - **Update Rule:** Update when execution capabilities, isolation mechanisms, or artifact redaction rules change.
@@ -358,3 +358,10 @@ The current model is convenient but too implicit. It blurs trust boundaries, mak
 2. default file-read enablement remains **확실하지 않음**.
 3. exact timeout defaults remain **확실하지 않음**.
 4. Child-process isolation is now the primary runner baseline; the remaining question is how long the worker-thread fallback should stay available for spawn-restricted sandbox environments.
+## 15. T075 Runtime Boundary Update
+- Secret resolution now executes through a provider seam (`status/store/resolve/clear`) before transport starts.
+- The runtime keeps a fail-closed posture:
+  - unavailable provider does not expose secret values and unresolved placeholders remain blocking
+  - provider internal failures are surfaced as `secret_provider_error`
+- `secret_provider_error` summaries must remain redaction-safe and must not include raw provider payloads or secret values.
+- Persisted execution history/results continue to store bounded error code/summary metadata only.

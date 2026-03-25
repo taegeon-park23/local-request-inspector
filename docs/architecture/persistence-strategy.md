@@ -1,8 +1,8 @@
-﻿# Persistence Strategy Decision
+# Persistence Strategy Decision
 
 - **Purpose:** Compare local persistence options and recommend a storage direction for workspace resources and runtime artifacts in the Local API Workbench.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-22
+- **Last Updated:** 2026-03-25
 - **Related Documents:** `shared-schema.md`, `overview.md`, `migration-plan.md`
 - **Status:** done
 - **Update Rule:** Update when storage decisions, entity placement, or retention policy assumptions change.
@@ -283,3 +283,8 @@ That possibility should not block the hybrid MVP decision now.
 2. `MockScenarioState` persistence remains **확실하지 않음**.
 3. exact retention defaults remain **확실하지 않음**.
 4. whether some small runtime artifacts should be inlined into history rows remains **확실하지 않음**.
+## 14. T075 Contract Note
+- The secret lane now uses a backend-agnostic provider contract (`status/store/resolve/clear`) with a derived locator (`workspaceId + environmentId + variableId`).
+- Environment JSON schema remains unchanged in this slice; no new secret-storage columns were added.
+- In unavailable-provider mode, `store` remains fail-closed while `clearStoredValue` is allowed to clear `hasStoredValue` metadata.
+- Runtime-status `secretStorage` remains canonical and now allows optional provider metadata fields (`providerId`, `providerVersion`, `providerStatus`, `capabilities`) without breaking old clients.

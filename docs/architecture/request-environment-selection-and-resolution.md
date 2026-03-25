@@ -1,8 +1,8 @@
-﻿# Request Environment Selection And Resolution
+# Request Environment Selection And Resolution
 
 - **Purpose:** Define the bounded next-step design for request-level environment selection and server-owned environment resolution after `T027` made environments a real persisted workflow surface.
 - **Created:** 2026-03-22
-- **Last Updated:** 2026-03-23
+- **Last Updated:** 2026-03-25
 - **Related Documents:** `request-builder-mvp.md`, `internal-api-contracts.md`, `script-execution-safety-model.md`, `workspace-flows.md`
 - **Status:** implemented baseline
 - **Update Rule:** Update when request-level environment selection, environment resolution ownership, or runtime secret-handling boundaries materially change.
@@ -145,3 +145,15 @@ Do not persist:
 
 ## 12. Canonical Decision
 The implemented environment baseline is request-level selector plus server-owned run-time resolution, not a top-bar global selector. The request definition persists explicit `selectedEnvironmentId`, new requests seed from the current workspace default only at creation time, and deleted environment references surface as a blocking missing-reference state instead of being silently cleared.
+## 13. T075 Secret Provider Contract Alignment
+- Runtime environment resolution now has an explicit provider seam before placeholder substitution.
+- The provider contract is fixed as async `status/store/resolve/clear`; the default runtime adapter remains `unavailable` until a real secure backend is attached.
+- Execution-time flow:
+  - read selected environment reference
+  - resolve secret-backed values through provider when available
+  - merge resolved secret lookup with plain variable lookup
+  - run placeholder substitution through the existing unresolved-placeholder validator
+- Failure behavior remains deterministic:
+  - provider unavailable: secret placeholders remain unresolved and execution is blocked by the existing unresolved-placeholder rule
+  - provider internal failure: execution is blocked with `secret_provider_error` and a redaction-safe summary
+- Persisted runtime artifacts still store only bounded summaries and status metadata; raw secret values do not cross this boundary.

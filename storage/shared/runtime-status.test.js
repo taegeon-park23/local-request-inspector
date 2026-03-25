@@ -31,6 +31,10 @@ const { createRuntimeStatusSnapshot } = require('./runtime-status');
     secretStorage: {
       secureBackendAvailable: false,
       backendLabel: 'unavailable',
+      providerId: 'stub-provider',
+      providerVersion: '1.0.0',
+      providerStatus: 'unavailable',
+      capabilities: ['store', 'resolve', 'clear'],
       readModelPolicy: 'Secret rows remain write-only and expose only hasStoredValue in read responses.',
       replacementWritePolicy: 'Secret replacement writes fail closed until a secure backend is configured.',
       runtimeResolutionPolicy: 'Run time continues to resolve plain variables only. Secret-backed placeholders stay unavailable until a secure backend is configured.',
@@ -45,6 +49,10 @@ const { createRuntimeStatusSnapshot } = require('./runtime-status');
   assert.equal(snapshot.storage.ready, true);
   assert.equal(snapshot.storage.runtimeDbAvailable, true);
   assert.equal(snapshot.secretStorage?.secureBackendAvailable, false);
+  assert.equal(snapshot.secretStorage?.providerId, 'stub-provider');
+  assert.equal(snapshot.secretStorage?.providerVersion, '1.0.0');
+  assert.equal(snapshot.secretStorage?.providerStatus, 'unavailable');
+  assert.deepEqual(snapshot.secretStorage?.capabilities, ['store', 'resolve', 'clear']);
   assert.equal(snapshot.secretStorage?.sanitizedLegacySecretRowCount, 2);
   assert.equal(snapshot.commands.some((item) => item.command === 'npm run check'), true);
   assert.equal(snapshot.routes.some((item) => item.path === 'http://localhost:6173/'), true);
