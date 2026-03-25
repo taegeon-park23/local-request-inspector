@@ -218,6 +218,7 @@ beforeEach(() => {
             id: 'request-group-general',
             workspaceId: 'local-workspace',
             collectionId: 'collection-saved-requests',
+            parentRequestGroupId: null,
             name: 'General',
             description: '',
           },
@@ -229,15 +230,17 @@ beforeEach(() => {
             collectionId: 'collection-saved-requests',
             name: 'Saved Requests',
             description: '',
-            children: [
+            childGroups: [
               {
                 id: 'request-group-node-request-group-general',
                 kind: 'request-group',
                 collectionId: 'collection-saved-requests',
                 requestGroupId: 'request-group-general',
+                parentRequestGroupId: null,
                 name: 'General',
                 description: '',
-                children: [
+                childGroups: [],
+                requests: [
                   {
                     id: 'request-node-request-health-check',
                     kind: 'request',

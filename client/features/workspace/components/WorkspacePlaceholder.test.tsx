@@ -80,21 +80,24 @@ describe('Workspace request builder authoring shell', () => {
     expect(screen.getByLabelText('Request URL')).toBeInTheDocument();
   });
 
-  it('keeps the explorer navigation-only and exposes saved-resource management in the main surface', () => {
+  it('keeps explorer create and run actions in the tree while resource transfer stays in the manager surface', () => {
     renderApp(<AppRouter />);
 
     const explorer = screen.getByLabelText('Section explorer');
     const manager = getSavedResourceManager();
 
-    expect(within(explorer).queryByRole('button', { name: 'Create collection' })).not.toBeInTheDocument();
+    expect(within(explorer).getAllByRole('button', { name: 'New Request' }).length).toBeGreaterThan(0);
+    expect(within(explorer).getAllByRole('button', { name: 'New group' }).length).toBeGreaterThan(0);
+    expect(within(explorer).getAllByRole('button', { name: 'Run' }).length).toBeGreaterThan(0);
     expect(within(explorer).queryByRole('button', { name: 'Export Resources' })).not.toBeInTheDocument();
-    expect(within(explorer).queryByRole('button', { name: 'Delete saved request' })).not.toBeInTheDocument();
+    expect(within(explorer).queryByLabelText('Import authored resources')).not.toBeInTheDocument();
 
     expect(within(manager).getByRole('heading', { name: 'Collections' })).toBeInTheDocument();
     expect(within(manager).getByRole('heading', { name: 'Request groups' })).toBeInTheDocument();
     expect(within(manager).getByRole('heading', { name: 'Saved request actions' })).toBeInTheDocument();
     expect(within(manager).getByRole('button', { name: 'Create collection' })).toBeInTheDocument();
     expect(within(manager).getByRole('button', { name: 'Export Resources' })).toBeInTheDocument();
+    expect(within(manager).getByLabelText('Import authored resources')).toBeInTheDocument();
   });
 
   it('seeds a new request with the current default environment at creation time', async () => {
@@ -163,6 +166,7 @@ describe('Workspace request builder authoring shell', () => {
           id: 'request-group-general',
           workspaceId: 'local-workspace',
           collectionId: 'collection-saved-requests',
+          parentRequestGroupId: null,
           name: 'General',
           description: '',
         },
@@ -174,15 +178,17 @@ describe('Workspace request builder authoring shell', () => {
           collectionId: 'collection-saved-requests',
           name: 'Saved Requests',
           description: '',
-          children: [
+          childGroups: [
             {
               id: 'request-group-node-request-group-general',
               kind: 'request-group',
               collectionId: 'collection-saved-requests',
               requestGroupId: 'request-group-general',
+              parentRequestGroupId: null,
               name: 'General',
               description: '',
-              children: [],
+              childGroups: [],
+              requests: [],
             },
           ],
         },
@@ -210,17 +216,20 @@ describe('Workspace request builder authoring shell', () => {
           id: requestGroupId,
           workspaceId: 'local-workspace',
           collectionId: 'collection-saved-requests',
+          parentRequestGroupId: null,
           name: requestGroupName,
           description: '',
         });
-        requestTreeResponse.tree[0]?.children.push({
+        requestTreeResponse.tree[0]?.childGroups.push({
           id: `request-group-node-${requestGroupId}`,
           kind: 'request-group',
           collectionId: 'collection-saved-requests',
           requestGroupId,
+          parentRequestGroupId: null,
           name: requestGroupName,
           description: '',
-          children: [],
+          childGroups: [],
+          requests: [],
         });
 
         return createApiResponse({
@@ -228,6 +237,7 @@ describe('Workspace request builder authoring shell', () => {
             id: requestGroupId,
             workspaceId: 'local-workspace',
             collectionId: 'collection-saved-requests',
+            parentRequestGroupId: null,
             name: requestGroupName,
             description: '',
           },
@@ -277,6 +287,7 @@ describe('Workspace request builder authoring shell', () => {
           id: 'request-group-general',
           workspaceId: 'local-workspace',
           collectionId: 'collection-saved-requests',
+          parentRequestGroupId: null,
           name: 'General',
           description: '',
         },
@@ -288,15 +299,17 @@ describe('Workspace request builder authoring shell', () => {
           collectionId: 'collection-saved-requests',
           name: 'Saved Requests',
           description: '',
-          children: [
+          childGroups: [
             {
               id: 'request-group-node-request-group-general',
               kind: 'request-group',
               collectionId: 'collection-saved-requests',
               requestGroupId: 'request-group-general',
+              parentRequestGroupId: null,
               name: 'General',
               description: '',
-              children: [],
+              childGroups: [],
+              requests: [],
             },
           ],
         },
@@ -332,7 +345,7 @@ describe('Workspace request builder authoring shell', () => {
           collectionId,
           name: collectionName,
           description: '',
-          children: [],
+          childGroups: [],
         });
 
         return createApiResponse({
@@ -394,6 +407,7 @@ describe('Workspace request builder authoring shell', () => {
           id: 'request-group-general',
           workspaceId: 'local-workspace',
           collectionId: 'collection-saved-requests',
+          parentRequestGroupId: null,
           name: 'General',
           description: '',
         },
@@ -401,6 +415,7 @@ describe('Workspace request builder authoring shell', () => {
           id: 'request-group-team-requests',
           workspaceId: 'local-workspace',
           collectionId: 'collection-team-api',
+          parentRequestGroupId: null,
           name: 'Team Requests',
           description: '',
         },
@@ -412,15 +427,17 @@ describe('Workspace request builder authoring shell', () => {
           collectionId: 'collection-saved-requests',
           name: 'Saved Requests',
           description: '',
-          children: [
+          childGroups: [
             {
               id: 'request-group-node-request-group-general',
               kind: 'request-group',
               collectionId: 'collection-saved-requests',
               requestGroupId: 'request-group-general',
+              parentRequestGroupId: null,
               name: 'General',
               description: '',
-              children: [],
+              childGroups: [],
+              requests: [],
             },
           ],
         },
@@ -430,15 +447,17 @@ describe('Workspace request builder authoring shell', () => {
           collectionId: 'collection-team-api',
           name: 'Team API',
           description: '',
-          children: [
+          childGroups: [
             {
               id: 'request-group-node-request-group-team-requests',
               kind: 'request-group',
               collectionId: 'collection-team-api',
               requestGroupId: 'request-group-team-requests',
+              parentRequestGroupId: null,
               name: 'Team Requests',
               description: '',
-              children: [],
+              childGroups: [],
+              requests: [],
             },
           ],
         },
@@ -527,6 +546,7 @@ describe('Workspace request builder authoring shell', () => {
           id: 'request-group-general',
           workspaceId: 'local-workspace',
           collectionId: 'collection-saved-requests',
+          parentRequestGroupId: null,
           name: 'General',
           description: '',
         },
@@ -538,15 +558,17 @@ describe('Workspace request builder authoring shell', () => {
           collectionId: 'collection-saved-requests',
           name: 'Saved Requests',
           description: '',
-          children: [
+          childGroups: [
             {
               id: 'request-group-node-request-group-general',
               kind: 'request-group',
               collectionId: 'collection-saved-requests',
               requestGroupId: 'request-group-general',
+              parentRequestGroupId: null,
               name: 'General',
               description: '',
-              children: [],
+              childGroups: [],
+              requests: [],
             },
           ],
         },
@@ -556,7 +578,7 @@ describe('Workspace request builder authoring shell', () => {
           collectionId: 'collection-temp',
           name: 'Temp Collection',
           description: '',
-          children: [],
+          childGroups: [],
         },
       ],
     };
@@ -633,6 +655,7 @@ describe('Workspace request builder authoring shell', () => {
           id: 'request-group-general',
           workspaceId: 'local-workspace',
           collectionId: 'collection-saved-requests',
+          parentRequestGroupId: null,
           name: 'General',
           description: '',
         },
@@ -644,15 +667,17 @@ describe('Workspace request builder authoring shell', () => {
           collectionId: 'collection-saved-requests',
           name: 'Saved Requests',
           description: '',
-          children: [
+          childGroups: [
             {
               id: 'request-group-node-request-group-general',
               kind: 'request-group',
               collectionId: 'collection-saved-requests',
               requestGroupId: 'request-group-general',
+              parentRequestGroupId: null,
               name: 'General',
               description: '',
-              children: [],
+              childGroups: [],
+              requests: [],
             },
           ],
         },
@@ -662,7 +687,7 @@ describe('Workspace request builder authoring shell', () => {
           collectionId: 'collection-temp',
           name: 'Temp Collection',
           description: '',
-          children: [],
+          childGroups: [],
         },
       ],
     };
@@ -774,6 +799,7 @@ describe('Workspace request builder authoring shell', () => {
           id: 'request-group-general',
           workspaceId: 'local-workspace',
           collectionId: 'collection-saved-requests',
+          parentRequestGroupId: null,
           name: 'General',
           description: '',
         },
@@ -781,6 +807,7 @@ describe('Workspace request builder authoring shell', () => {
           id: 'request-group-auth-flows',
           workspaceId: 'local-workspace',
           collectionId: 'collection-saved-requests',
+          parentRequestGroupId: null,
           name: 'Auth flows',
           description: '',
         },
@@ -792,24 +819,28 @@ describe('Workspace request builder authoring shell', () => {
           collectionId: 'collection-saved-requests',
           name: 'Saved Requests',
           description: '',
-          children: [
+          childGroups: [
             {
               id: 'request-group-node-request-group-general',
               kind: 'request-group',
               collectionId: 'collection-saved-requests',
               requestGroupId: 'request-group-general',
+              parentRequestGroupId: null,
               name: 'General',
               description: '',
-              children: [],
+              childGroups: [],
+              requests: [],
             },
             {
               id: 'request-group-node-request-group-auth-flows',
               kind: 'request-group',
               collectionId: 'collection-saved-requests',
               requestGroupId: 'request-group-auth-flows',
+              parentRequestGroupId: null,
               name: 'Auth flows',
               description: '',
-              children: [],
+              childGroups: [],
+              requests: [],
             },
           ],
         },
@@ -832,7 +863,7 @@ describe('Workspace request builder authoring shell', () => {
         const payload = JSON.parse(String(init?.body ?? '{}')) as { requestGroup?: { name?: string } };
         const nextName = payload.requestGroup?.name ?? 'Authentication';
         requestTreeResponse.requestGroups[1]!.name = nextName;
-        requestTreeResponse.tree[0]!.children[1]!.name = nextName;
+        requestTreeResponse.tree[0]!.childGroups[1]!.name = nextName;
 
         return createApiResponse({
           requestGroup: {
@@ -893,6 +924,7 @@ describe('Workspace request builder authoring shell', () => {
           id: 'request-group-general',
           workspaceId: 'local-workspace',
           collectionId: 'collection-saved-requests',
+          parentRequestGroupId: null,
           name: 'General',
           description: '',
         },
@@ -900,6 +932,7 @@ describe('Workspace request builder authoring shell', () => {
           id: 'request-group-temp',
           workspaceId: 'local-workspace',
           collectionId: 'collection-saved-requests',
+          parentRequestGroupId: null,
           name: 'Temp',
           description: '',
         },
@@ -911,24 +944,28 @@ describe('Workspace request builder authoring shell', () => {
           collectionId: 'collection-saved-requests',
           name: 'Saved Requests',
           description: '',
-          children: [
+          childGroups: [
             {
               id: 'request-group-node-request-group-general',
               kind: 'request-group',
               collectionId: 'collection-saved-requests',
               requestGroupId: 'request-group-general',
+              parentRequestGroupId: null,
               name: 'General',
               description: '',
-              children: [],
+              childGroups: [],
+              requests: [],
             },
             {
               id: 'request-group-node-request-group-temp',
               kind: 'request-group',
               collectionId: 'collection-saved-requests',
               requestGroupId: 'request-group-temp',
+              parentRequestGroupId: null,
               name: 'Temp',
               description: '',
-              children: [],
+              childGroups: [],
+              requests: [],
             },
           ],
         },
@@ -949,7 +986,7 @@ describe('Workspace request builder authoring shell', () => {
 
       if (url === '/api/request-groups/request-group-temp' && method === 'DELETE') {
         requestTreeResponse.requestGroups.splice(1, 1);
-        requestTreeResponse.tree[0]!.children.splice(1, 1);
+        requestTreeResponse.tree[0]!.childGroups.splice(1, 1);
         return createApiResponse({ deletedRequestGroupId: 'request-group-temp' });
       }
 
@@ -1000,6 +1037,7 @@ describe('Workspace request builder authoring shell', () => {
           id: 'request-group-general',
           workspaceId: 'local-workspace',
           collectionId: 'collection-saved-requests',
+          parentRequestGroupId: null,
           name: 'General',
           description: '',
         },
@@ -1007,6 +1045,7 @@ describe('Workspace request builder authoring shell', () => {
           id: 'request-group-auth-flows',
           workspaceId: 'local-workspace',
           collectionId: 'collection-saved-requests',
+          parentRequestGroupId: null,
           name: 'Auth flows',
           description: '',
         },
@@ -1018,24 +1057,28 @@ describe('Workspace request builder authoring shell', () => {
           collectionId: 'collection-saved-requests',
           name: 'Saved Requests',
           description: '',
-          children: [
+          childGroups: [
             {
               id: 'request-group-node-request-group-general',
               kind: 'request-group',
               collectionId: 'collection-saved-requests',
               requestGroupId: 'request-group-general',
+              parentRequestGroupId: null,
               name: 'General',
               description: '',
-              children: [],
+              childGroups: [],
+              requests: [],
             },
             {
               id: 'request-group-node-request-group-auth-flows',
               kind: 'request-group',
               collectionId: 'collection-saved-requests',
               requestGroupId: 'request-group-auth-flows',
+              parentRequestGroupId: null,
               name: 'Auth flows',
               description: '',
-              children: [],
+              childGroups: [],
+              requests: [],
             },
           ],
         },
@@ -2468,6 +2511,7 @@ describe('Workspace request builder authoring shell', () => {
           id: 'request-group-general',
           workspaceId: 'local-workspace',
           collectionId: 'collection-saved-requests',
+          parentRequestGroupId: null,
           name: 'General',
           description: '',
         },
@@ -2479,15 +2523,17 @@ describe('Workspace request builder authoring shell', () => {
           collectionId: 'collection-saved-requests',
           name: 'Saved Requests',
           description: '',
-          children: [
+          childGroups: [
             {
               id: 'request-group-node-request-group-general',
               kind: 'request-group',
               collectionId: 'collection-saved-requests',
               requestGroupId: 'request-group-general',
+              parentRequestGroupId: null,
               name: 'General',
               description: '',
-              children: [
+              childGroups: [],
+              requests: [
                 {
                   id: 'request-node-request-health-persisted',
                   kind: 'request',
@@ -2529,7 +2575,7 @@ describe('Workspace request builder authoring shell', () => {
 
       if (url === '/api/requests/request-health-persisted' && method === 'DELETE') {
         persistedRequests.splice(0, persistedRequests.length);
-        requestTreeResponse.tree[0]!.children[0]!.children = [];
+        requestTreeResponse.tree[0]!.childGroups[0]!.requests = [];
         return createApiResponse({ deletedRequestId: 'request-health-persisted' });
       }
 
