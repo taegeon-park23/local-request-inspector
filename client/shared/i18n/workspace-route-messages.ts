@@ -150,7 +150,7 @@ export const workspaceRouteMessagesEn = {
           'Export or preview-import authored resources from the main surface without turning the explorer into a mutation lane.',
         collectionTitle: 'Collections',
         collectionDescription:
-          'Create, rename, or delete empty collections here. Request placement copy stays aligned after successful mutation.',
+          'Review, rename, or delete empty collections here after creating them from the header or explorer.',
         requestGroupTitle: 'Request groups',
         requestGroupDescription:
           'Review, rename, or delete the currently selected request group here, including nested groups that appear with full tree paths.',
@@ -837,7 +837,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
           '탐색기를 변경 레인으로 쓰지 않고 메인 surface에서 작성 리소스를 내보내거나 미리 본 뒤 가져옵니다.',
         collectionTitle: '컬렉션',
         collectionDescription:
-          '여기서 컬렉션을 생성, 이름 변경, 삭제합니다. 성공 후 요청 배치 문구도 함께 정렬됩니다.',
+          '컬렉션은 header나 explorer에서 만들고, 여기서는 선택된 컬렉션의 이름 변경과 삭제를 정리합니다.',
         requestGroupTitle: '요청 그룹',
         requestGroupDescription:
           '현재 선택된 요청 그룹을 여기에서 검토, 이름 변경, 삭제할 수 있고, 중첩 그룹도 전체 경로와 함께 선택할 수 있습니다.',

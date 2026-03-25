@@ -39,10 +39,8 @@ interface WorkspaceResourceManagerPanelProps {
   activeTab: RequestTabRecord | null;
   activeDraft: RequestDraftState | null;
   activeSavedRequest: WorkspaceTreeRequestLeaf | null;
-  onCreateCollection: (name: string) => Promise<{ id: string; name: string } | void> | void;
   onRenameCollection: (collection: WorkspaceCollectionNode, name: string) => Promise<{ id: string; name: string } | void> | void;
   onDeleteCollection: (collection: WorkspaceCollectionNode) => Promise<void> | void;
-  onCreateRequestGroup: (collection: WorkspaceCollectionNode, name: string) => Promise<{ id: string; name: string } | void> | void;
   onRenameRequestGroup: (requestGroup: WorkspaceRequestGroupNode, name: string) => Promise<{ id: string; name: string } | void> | void;
   onDeleteRequestGroup: (requestGroup: WorkspaceRequestGroupNode) => Promise<void> | void;
   onExportRequest: (request: WorkspaceTreeRequestLeaf) => void;
@@ -122,10 +120,8 @@ export function WorkspaceResourceManagerPanel({
   activeTab,
   activeDraft,
   activeSavedRequest,
-  onCreateCollection,
   onRenameCollection,
   onDeleteCollection,
-  onCreateRequestGroup,
   onRenameRequestGroup,
   onDeleteRequestGroup,
   onExportRequest,
@@ -392,6 +388,7 @@ export function WorkspaceResourceManagerPanel({
               aria-label={t('workspaceRoute.explorer.fields.collectionName')}
               type="text"
               value={collectionNameDraft}
+              disabled={!selectedCollection || isMutatingCollections}
               onChange={(event) => setCollectionEditorState({
                 targetId: collectionEditorTargetId,
                 value: event.currentTarget.value,
@@ -399,21 +396,6 @@ export function WorkspaceResourceManagerPanel({
             />
           </label>
           <div className="request-work-surface__future-actions workspace-resource-manager__actions">
-            <button
-              type="button"
-              className="workspace-button"
-              onClick={async () => {
-                const result = await onCreateCollection(collectionNameDraft.trim());
-
-                if (result && 'id' in result) {
-                  setSelectedCollectionId(result.id);
-                  setCollectionEditorState({ targetId: result.id, value: result.name });
-                }
-              }}
-              disabled={isMutatingCollections || collectionNameDraft.trim().length === 0}
-            >
-              <IconLabel icon="add">{t('workspaceRoute.explorer.actions.createCollection')}</IconLabel>
-            </button>
             <button
               type="button"
               className="workspace-button workspace-button--secondary"
@@ -511,6 +493,7 @@ export function WorkspaceResourceManagerPanel({
               aria-label={t('workspaceRoute.explorer.fields.requestGroupName')}
               type="text"
               value={requestGroupNameDraft}
+              disabled={!selectedRequestGroup || isMutatingRequestGroups}
               onChange={(event) => setRequestGroupEditorState({
                 targetId: requestGroupEditorTargetId,
                 value: event.currentTarget.value,
@@ -518,25 +501,6 @@ export function WorkspaceResourceManagerPanel({
             />
           </label>
           <div className="request-work-surface__future-actions workspace-resource-manager__actions">
-            <button
-              type="button"
-              className="workspace-button"
-              onClick={async () => {
-                if (!selectedCollection) {
-                  return;
-                }
-
-                const result = await onCreateRequestGroup(selectedCollection, requestGroupNameDraft.trim());
-
-                if (result && 'id' in result) {
-                  setSelectedRequestGroupId(result.id);
-                  setRequestGroupEditorState({ targetId: result.id, value: result.name });
-                }
-              }}
-              disabled={isMutatingRequestGroups || !selectedCollection || requestGroupNameDraft.trim().length === 0}
-            >
-              <IconLabel icon="add">{t('workspaceRoute.explorer.actions.createRequestGroupShort')}</IconLabel>
-            </button>
             <button
               type="button"
               className="workspace-button workspace-button--secondary"

@@ -84,6 +84,7 @@ describe('Workspace request builder authoring shell', () => {
     renderApp(<AppRouter />);
 
     const explorer = screen.getByLabelText('Section explorer');
+    const headerActions = screen.getByLabelText('Workspace header actions');
     const manager = getSavedResourceManager();
 
     expect(within(explorer).getAllByRole('button', { name: 'New Request' }).length).toBeGreaterThan(0);
@@ -95,7 +96,9 @@ describe('Workspace request builder authoring shell', () => {
     expect(within(manager).getByRole('heading', { name: 'Collections' })).toBeInTheDocument();
     expect(within(manager).getByRole('heading', { name: 'Request groups' })).toBeInTheDocument();
     expect(within(manager).getByRole('heading', { name: 'Saved request actions' })).toBeInTheDocument();
-    expect(within(manager).getByRole('button', { name: 'Create collection' })).toBeInTheDocument();
+    expect(within(headerActions).getByRole('button', { name: 'New collection' })).toBeInTheDocument();
+    expect(within(manager).queryByRole('button', { name: 'Create collection' })).not.toBeInTheDocument();
+    expect(within(manager).queryByRole('button', { name: 'New group' })).not.toBeInTheDocument();
     expect(within(manager).getByRole('button', { name: 'Export Resources' })).toBeInTheDocument();
     expect(within(manager).getByLabelText('Import authored resources')).toBeInTheDocument();
   });
@@ -144,7 +147,7 @@ describe('Workspace request builder authoring shell', () => {
     expect(screen.getByText(/Local API contributes 3 enabled variable\(s\) to this request at run time/i)).toBeInTheDocument();
   });
 
-  it('creates a request group from the main-surface manager and reflects it in the canonical collection tree', async () => {
+  it('creates a request group from the header flow and reflects it in the canonical collection tree', async () => {
     const user = userEvent.setup();
     const requestTreeResponse = {
       defaults: {
@@ -252,20 +255,21 @@ describe('Workspace request builder authoring shell', () => {
     });
 
     vi.stubGlobal('fetch', fetchMock);
+    vi.spyOn(window, 'prompt').mockReturnValue('Auth flows');
     renderApp(<AppRouter />);
 
     const explorer = screen.getByLabelText('Section explorer');
-    const requestGroupSection = getManagerSection('Request groups');
+    const headerActions = screen.getByLabelText('Workspace header actions');
     await within(explorer).findByText('Saved Requests');
 
-    await user.type(screen.getByLabelText('Request group name'), 'Auth flows');
-    await user.click(requestGroupSection.getByRole('button', { name: 'New group' }));
+    await user.click(within(explorer).getByRole('button', { name: /Saved Requests/ }));
+    await user.click(within(headerActions).getByRole('button', { name: 'New group' }));
 
     expect(await within(explorer).findByText('Auth flows')).toBeInTheDocument();
     expect(await within(getSavedResourceManager()).findByText('Created request group Auth flows in the canonical saved tree.')).toBeInTheDocument();
   });
 
-  it('creates a collection from the main-surface manager and reflects it in the canonical saved tree', async () => {
+  it('creates a collection from the header flow and reflects it in the canonical saved tree', async () => {
     const user = userEvent.setup();
     const requestTreeResponse = {
       defaults: {
@@ -366,14 +370,14 @@ describe('Workspace request builder authoring shell', () => {
     });
 
     vi.stubGlobal('fetch', fetchMock);
+    vi.spyOn(window, 'prompt').mockReturnValue('Team API');
     renderApp(<AppRouter />);
 
     const explorer = screen.getByLabelText('Section explorer');
-    const collectionsSection = getManagerSection('Collections');
+    const headerActions = screen.getByLabelText('Workspace header actions');
     await within(explorer).findByText('Saved Requests');
 
-    await user.type(screen.getByLabelText('Collection name'), 'Team API');
-    await user.click(collectionsSection.getByRole('button', { name: 'Create collection' }));
+    await user.click(within(headerActions).getByRole('button', { name: 'New collection' }));
 
     expect(await within(explorer).findByText('Team API')).toBeInTheDocument();
     expect(await within(getSavedResourceManager()).findByText('Created collection Team API in the canonical saved tree.')).toBeInTheDocument();

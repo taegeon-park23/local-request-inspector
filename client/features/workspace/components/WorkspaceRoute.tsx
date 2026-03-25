@@ -891,18 +891,6 @@ export function WorkspaceRoute() {
   const handleDeleteCollection = async (collection: WorkspaceCollectionNode) => {
     await deleteCollectionMutation.mutateAsync(collection);
   };
-  const handleCreateRequestGroup = async (collection: WorkspaceCollectionNode, name: string) => {
-    const nextName = name.trim();
-
-    if (nextName.length === 0) {
-      return;
-    }
-
-    return createRequestGroupMutation.mutateAsync({
-      collectionId: collection.collectionId,
-      name: nextName,
-    });
-  };
 
   const handleRenameRequestGroup = async (requestGroup: WorkspaceRequestGroupNode, name: string) => {
     const nextName = name.trim();
@@ -1254,6 +1242,21 @@ export function WorkspaceRoute() {
             <IconLabel icon="add">{t('workspaceRoute.explorer.actions.createCollectionShort')}</IconLabel>
           </button>
           {selectedCollection || selectedRequestGroupLocation ? (
+            <button
+              type="button"
+              className="workspace-button workspace-button--secondary"
+              onClick={() => {
+                const createTarget = selectedRequestGroupLocation?.requestGroup ?? selectedCollection;
+
+                if (createTarget) {
+                  void handlePromptCreateRequestGroup(createTarget);
+                }
+              }}
+            >
+              <IconLabel icon="add">{t('workspaceRoute.explorer.actions.createRequestGroupShort')}</IconLabel>
+            </button>
+          ) : null}
+          {selectedCollection || selectedRequestGroupLocation ? (
             <button type="button" className="workspace-button workspace-button--secondary" onClick={() => {
               if (selectedRequestGroupLocation) {
                 void handleRunRequestGroup(selectedRequestGroupLocation.requestGroup);
@@ -1281,10 +1284,8 @@ export function WorkspaceRoute() {
           activeTab={activeTab}
           activeDraft={activeDraft}
           activeSavedRequest={activeSavedRequest}
-          onCreateCollection={handleCreateCollection}
           onRenameCollection={handleRenameCollection}
           onDeleteCollection={handleDeleteCollection}
-          onCreateRequestGroup={handleCreateRequestGroup}
           onRenameRequestGroup={handleRenameRequestGroup}
           onDeleteRequestGroup={handleDeleteRequestGroup}
           onExportRequest={(request) => exportRequestMutation.mutate(request)}
