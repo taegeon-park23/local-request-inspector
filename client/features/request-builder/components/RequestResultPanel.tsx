@@ -79,9 +79,9 @@ function getTabSourceCopy(activeTab: RequestTabRecord, t: TranslateFn) {
   return t('workspaceRoute.resultPanel.source.savedRequest');
 }
 
-function getTransportOutcomeLabel(responseStatus: number | null) {
+function getTransportOutcomeLabel(responseStatus: number | null, t: TranslateFn) {
   if (responseStatus === null) {
-    return 'No response';
+    return t('workspaceRoute.resultPanel.common.transportNoResponse');
   }
 
   return `HTTP ${responseStatus}`;
@@ -122,6 +122,19 @@ function formatObservedLinkage(
   }
 
   return t('workspaceRoute.resultPanel.linkage.noLinkedSavedRequest');
+}
+
+function getLocalizedExecutionSourceLabel(sourceLabel: string | undefined, t: TranslateFn) {
+  switch (sourceLabel) {
+    case 'Saved request snapshot':
+      return t('workspaceRoute.resultPanel.executionInfo.values.savedRequestSnapshot');
+    case 'Ad hoc request snapshot':
+      return t('workspaceRoute.resultPanel.executionInfo.values.adHocRequestSnapshot');
+    case 'Runtime request snapshot':
+      return t('workspaceRoute.resultPanel.executionInfo.values.runtimeRequestSnapshot');
+    default:
+      return sourceLabel ?? t('workspaceRoute.resultPanel.executionInfo.values.runtimeRequestSnapshot');
+  }
 }
 
 function getStageStatus(
@@ -185,7 +198,7 @@ function createLatestResultBadges(execution: RequestRunObservation | null, t: Tr
   }
 
   if (execution.responseStatus !== null) {
-    badges.push(<StatusBadge key="transport" kind="transportOutcome" value={getTransportOutcomeLabel(execution.responseStatus)} />);
+    badges.push(<StatusBadge key="transport" kind="transportOutcome" value={getTransportOutcomeLabel(execution.responseStatus, t)} />);
   }
 
   return badges;
@@ -201,11 +214,13 @@ function readExecutionEnvironmentResolutionSummary(execution: RequestRunObservat
   }) | null)?.environmentResolutionSummary;
 }
 
-function formatBatchContainerLabel(execution: WorkspaceBatchExecution) {
-  return execution.containerType === 'collection' ? 'Collection batch run' : 'Request group batch run';
+function formatBatchContainerLabel(execution: WorkspaceBatchExecution, t: TranslateFn) {
+  return execution.containerType === 'collection'
+    ? t('workspaceRoute.resultPanel.batch.containerLabels.collection')
+    : t('workspaceRoute.resultPanel.batch.containerLabels.requestGroup');
 }
 
-function formatBatchStepPlacement(step: WorkspaceBatchExecution['steps'][number]) {
+function formatBatchStepPlacement(step: WorkspaceBatchExecution['steps'][number], t: TranslateFn) {
   if (step.collectionName && step.requestGroupName) {
     return `${step.collectionName} / ${step.requestGroupName}`;
   }
@@ -214,11 +229,11 @@ function formatBatchStepPlacement(step: WorkspaceBatchExecution['steps'][number]
     return step.collectionName;
   }
 
-  return 'Workspace';
+  return t('workspaceRoute.resultPanel.common.workspaceRoot');
 }
 
-function createBatchStepSummary(step: WorkspaceBatchExecution['steps'][number]) {
-  return `${step.stepIndex + 1}. ${step.requestName} - ${step.execution.executionOutcome} - ${formatBatchStepPlacement(step)}`;
+function createBatchStepSummary(step: WorkspaceBatchExecution['steps'][number], t: TranslateFn) {
+  return `${step.stepIndex + 1}. ${step.requestName} - ${step.execution.executionOutcome} - ${formatBatchStepPlacement(step, t)}`;
 }
 
 function createBatchConsoleEntries(execution: WorkspaceBatchExecution) {
@@ -239,10 +254,10 @@ function createBatchTestEntries(execution: WorkspaceBatchExecution) {
   return execution.steps.map((step) => `${step.requestName}: ${step.execution.testsSummary}`);
 }
 
-function createBatchLatestBadges(execution: WorkspaceBatchExecution) {
+function createBatchLatestBadges(execution: WorkspaceBatchExecution, t: TranslateFn) {
   const badges = [
     <StatusBadge key="outcome" kind="executionOutcome" value={execution.aggregateOutcome} />,
-    <StatusBadge key="steps" kind="neutral" value={`Steps ${execution.totalRuns}`} />,
+    <StatusBadge key="steps" kind="neutral" value={t('workspaceRoute.resultPanel.batch.badges.steps', { count: execution.totalRuns })} />,
   ];
 
   if (execution.failedCount + execution.blockedCount + execution.timedOutCount > 0) {
@@ -250,14 +265,16 @@ function createBatchLatestBadges(execution: WorkspaceBatchExecution) {
       <StatusBadge
         key="issues"
         kind="neutral"
-        value={`Issues ${execution.failedCount + execution.blockedCount + execution.timedOutCount}`}
+        value={t('workspaceRoute.resultPanel.batch.badges.issues', {
+          count: execution.failedCount + execution.blockedCount + execution.timedOutCount,
+        })}
       />,
     );
   }
 
   if (execution.succeededCount > 0) {
     badges.push(
-      <StatusBadge key="success" kind="neutral" value={`Succeeded ${execution.succeededCount}`} />,
+      <StatusBadge key="success" kind="neutral" value={t('workspaceRoute.resultPanel.batch.badges.succeeded', { count: execution.succeededCount })} />,
     );
   }
 
@@ -265,18 +282,19 @@ function createBatchLatestBadges(execution: WorkspaceBatchExecution) {
 }
 
 function renderBatchHeaderExecutionStatus(
+  t: TranslateFn,
   batchRunState: { status: 'idle' | 'pending' | 'success' | 'error' },
   execution: WorkspaceBatchExecution | null,
 ) {
   if (batchRunState.status === 'pending') {
-    return <StatusBadge kind="neutral" value="Running batch" />;
+    return <StatusBadge kind="neutral" value={t('workspaceRoute.resultPanel.batch.status.running')} />;
   }
 
   if (execution) {
     return <StatusBadge kind="executionOutcome" value={execution.aggregateOutcome} />;
   }
 
-  return <StatusBadge kind="neutral" value="No batch run yet" />;
+  return <StatusBadge kind="neutral" value={t('workspaceRoute.resultPanel.batch.status.noRunYet')} />;
 }
 
 export function RequestResultPanel({
@@ -327,42 +345,42 @@ export function RequestResultPanel({
   if (batchRunState.isActive) {
     const activeBatchResultTabLabel = resultPanelTabs.find((tab) => tab.id === batchActiveResultTab)?.label
       ?? t('workspaceRoute.resultPanel.tabs.response');
-    const batchLatestBadges = batchExecution ? createBatchLatestBadges(batchExecution) : [];
+    const batchLatestBadges = batchExecution ? createBatchLatestBadges(batchExecution, t) : [];
     const batchStepPreviewItems = batchExecution
       ? createPreviewItems(
-          batchExecution.steps.map((step) => createBatchStepSummary(step)),
+          batchExecution.steps.map((step) => createBatchStepSummary(step, t)),
           batchExecution.aggregateOutcome === 'Empty'
-            ? 'No saved requests were found in this container.'
-            : 'No batch steps were recorded.',
+            ? t('workspaceRoute.resultPanel.batch.status.noRequestsFound')
+            : t('workspaceRoute.resultPanel.batch.status.noStepsRecorded'),
         )
-      : [batchRunState.message ?? 'No batch execution selected.'];
+      : [batchRunState.message ?? t('workspaceRoute.resultPanel.batch.status.noExecutionSelected')];
     const batchConsolePreviewItems = batchExecution
       ? createPreviewItems(
           createBatchConsoleEntries(batchExecution),
-          'No console output was captured for this batch run.',
+          t('workspaceRoute.resultPanel.batch.status.noConsoleCaptured'),
         )
-      : [batchRunState.message ?? 'No batch execution selected.'];
+      : [batchRunState.message ?? t('workspaceRoute.resultPanel.batch.status.noExecutionSelected')];
     const batchTestPreviewItems = batchExecution
       ? createPreviewItems(
           createBatchTestEntries(batchExecution),
-          'No test results were captured for this batch run.',
+          t('workspaceRoute.resultPanel.batch.status.noTestsCaptured'),
         )
-      : [batchRunState.message ?? 'No batch execution selected.'];
+      : [batchRunState.message ?? t('workspaceRoute.resultPanel.batch.status.noExecutionSelected')];
 
     return (
       <div className="workspace-detail-panel">
         <header className="workspace-detail-panel__header">
           <div className="workspace-detail-panel__header-copy">
-            <p className="section-placeholder__eyebrow">Batch results</p>
-            <h2>{batchExecution ? batchExecution.containerName : 'Workspace batch run'}</h2>
-            <p>Collection and group runs reuse this panel to show sequential results without changing the current shell layout.</p>
+            <p className="section-placeholder__eyebrow">{t('workspaceRoute.resultPanel.batch.header.eyebrow')}</p>
+            <h2>{batchExecution ? batchExecution.containerName : t('workspaceRoute.resultPanel.batch.header.titleFallback')}</h2>
+            <p>{t('workspaceRoute.resultPanel.batch.header.description')}</p>
             <div className="workspace-detail-panel__header-meta request-work-surface__badges">
-              <span className="workspace-chip">{batchExecution ? formatBatchContainerLabel(batchExecution) : 'Batch run'}</span>
+              <span className="workspace-chip">{batchExecution ? formatBatchContainerLabel(batchExecution, t) : t('workspaceRoute.resultPanel.batch.badges.batchRun')}</span>
               <span className="workspace-chip workspace-chip--secondary">{activeBatchResultTabLabel}</span>
-              {renderBatchHeaderExecutionStatus(batchRunState, batchExecution)}
+              {renderBatchHeaderExecutionStatus(t, batchRunState, batchExecution)}
             </div>
             {batchLatestBadges.length > 0 ? (
-              <div className="workspace-detail-panel__header-meta request-work-surface__badges" aria-label="Latest batch run badges">
+              <div className="workspace-detail-panel__header-meta request-work-surface__badges" aria-label={t('workspaceRoute.resultPanel.batch.badges.latestAriaLabel')}>
                 {batchLatestBadges}
               </div>
             ) : null}
@@ -378,33 +396,42 @@ export function RequestResultPanel({
 
         <DetailViewerSection
           icon={getResultPanelIcon(batchActiveResultTab)}
-          title={`Batch summary · ${activeBatchResultTabLabel}`}
-          description="Batch execution summaries stay in the existing result surface."
+          title={t('workspaceRoute.resultPanel.batch.summary.title', { tabLabel: activeBatchResultTabLabel })}
+          description={t('workspaceRoute.resultPanel.batch.summary.description')}
           actions={batchExecution ? <StatusBadge kind="executionOutcome" value={batchExecution.aggregateOutcome} /> : null}
         >
           <KeyValueMetaList
             items={[
-              { label: 'Scope', value: batchExecution ? formatBatchContainerLabel(batchExecution) : 'Batch run' },
-              { label: 'Container', value: batchExecution?.containerName ?? 'Pending selection' },
-              { label: 'Order', value: batchExecution?.executionOrder ?? 'Depth-first' },
               {
-                label: 'Run lane',
-                value: batchRunState.status === 'pending'
-                  ? 'Batch execution in progress'
-                  : batchRunState.message ?? 'No batch execution yet',
+                label: t('workspaceRoute.resultPanel.batch.summary.labels.scope'),
+                value: batchExecution ? formatBatchContainerLabel(batchExecution, t) : t('workspaceRoute.resultPanel.batch.badges.batchRun'),
               },
-              { label: 'Requests', value: batchExecution?.requestCount ?? 0 },
+              {
+                label: t('workspaceRoute.resultPanel.batch.summary.labels.container'),
+                value: batchExecution?.containerName ?? t('workspaceRoute.resultPanel.batch.summary.values.pendingSelection'),
+              },
+              {
+                label: t('workspaceRoute.resultPanel.batch.summary.labels.order'),
+                value: batchExecution?.executionOrder ?? t('workspaceRoute.resultPanel.batch.summary.values.depthFirst'),
+              },
+              {
+                label: t('workspaceRoute.resultPanel.batch.summary.labels.runLane'),
+                value: batchRunState.status === 'pending'
+                  ? t('workspaceRoute.resultPanel.batch.summary.values.executionInProgress')
+                  : batchRunState.message ?? t('workspaceRoute.resultPanel.batch.summary.values.noExecutionYet'),
+              },
+              { label: t('workspaceRoute.resultPanel.batch.summary.labels.requests'), value: batchExecution?.requestCount ?? 0 },
             ]}
           />
           <div className="workspace-detail-panel__result-stack">
             <div className="workspace-detail-panel__result-summary">
               <DetailViewerSection
                 icon="tests"
-                title="Step preview"
-                description="Ordered request steps for this batch run."
+                title={t('workspaceRoute.resultPanel.batch.summary.preview.stepTitle')}
+                description={t('workspaceRoute.resultPanel.batch.summary.preview.stepDescription')}
                 tone="muted"
               >
-                <ul className="history-preview-list" aria-label="Batch step preview">
+                <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.batch.summary.preview.stepAriaLabel')}>
                   {batchStepPreviewItems.map((entry, index) => (
                     <li key={`batch-step-preview-${index}`}>{entry}</li>
                   ))}
@@ -414,11 +441,11 @@ export function RequestResultPanel({
             <div className="workspace-detail-panel__result-support">
               <DetailViewerSection
                 icon="console"
-                title="Console preview"
-                description="Console and failure highlights across the batch run."
+                title={t('workspaceRoute.resultPanel.batch.summary.preview.consoleTitle')}
+                description={t('workspaceRoute.resultPanel.batch.summary.preview.consoleDescription')}
                 tone="muted"
               >
-                <ul className="history-preview-list" aria-label="Batch console preview">
+                <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.batch.summary.preview.consoleAriaLabel')}>
                   {batchConsolePreviewItems.map((entry, index) => (
                     <li key={`batch-console-preview-${index}`}>{entry}</li>
                   ))}
@@ -431,38 +458,38 @@ export function RequestResultPanel({
         {batchActiveResultTab === 'response' ? (
           <DetailViewerSection
             icon="response"
-            title="Batch response summary"
-            description="Aggregate outcomes and ordered request results."
+            title={t('workspaceRoute.resultPanel.batch.response.title')}
+            description={t('workspaceRoute.resultPanel.batch.response.description')}
             tone="muted"
           >
             {batchRunState.status === 'pending' && !batchExecution ? (
               <EmptyStateCallout
-                title="Batch run in progress"
-                description="Responses will appear here as each request completes."
+                title={t('workspaceRoute.resultPanel.batch.response.runningTitle')}
+                description={t('workspaceRoute.resultPanel.batch.response.runningDescription')}
               />
             ) : batchExecution ? (
               <div className="workspace-detail-panel__result-stack">
                 <div className="workspace-detail-panel__result-summary">
                   <div className="request-run-outcome-row">
                     <StatusBadge kind="executionOutcome" value={batchExecution.aggregateOutcome} />
-                    <StatusBadge kind="neutral" value={`Duration ${batchExecution.durationMs} ms`} />
+                    <StatusBadge kind="neutral" value={t('workspaceRoute.resultPanel.common.durationMs', { durationMs: batchExecution.durationMs })} />
                   </div>
                   <KeyValueMetaList
                     items={[
-                      { label: 'Started', value: batchExecution.startedAt },
-                      { label: 'Completed', value: batchExecution.completedAt },
-                      { label: 'Succeeded', value: batchExecution.succeededCount },
-                      { label: 'Failed', value: batchExecution.failedCount },
-                      { label: 'Blocked', value: batchExecution.blockedCount },
-                      { label: 'Timed out', value: batchExecution.timedOutCount },
+                      { label: t('workspaceRoute.resultPanel.batch.response.labels.started'), value: batchExecution.startedAt },
+                      { label: t('workspaceRoute.resultPanel.batch.response.labels.completed'), value: batchExecution.completedAt },
+                      { label: t('workspaceRoute.resultPanel.batch.response.labels.succeeded'), value: batchExecution.succeededCount },
+                      { label: t('workspaceRoute.resultPanel.batch.response.labels.failed'), value: batchExecution.failedCount },
+                      { label: t('workspaceRoute.resultPanel.batch.response.labels.blocked'), value: batchExecution.blockedCount },
+                      { label: t('workspaceRoute.resultPanel.batch.response.labels.timedOut'), value: batchExecution.timedOutCount },
                     ]}
                   />
                 </div>
                 <div className="workspace-detail-panel__result-support">
-                  <ul className="history-preview-list" aria-label="Batch response steps">
+                  <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.batch.response.stepsAriaLabel')}>
                     {batchExecution.steps.map((step) => (
                       <li key={`${step.requestId}-${step.stepIndex}`}>
-                        <strong>{step.requestName}</strong>: {step.execution.executionOutcome} · {getTransportOutcomeLabel(step.execution.responseStatus)} · {formatBatchStepPlacement(step)}
+                        <strong>{step.requestName}</strong>: {step.execution.executionOutcome} · {getTransportOutcomeLabel(step.execution.responseStatus, t)} · {formatBatchStepPlacement(step, t)}
                       </li>
                     ))}
                   </ul>
@@ -470,8 +497,8 @@ export function RequestResultPanel({
               </div>
             ) : (
               <EmptyStateCallout
-                title="No batch execution yet"
-                description="Run a collection or request group to inspect aggregate results here."
+                title={t('workspaceRoute.resultPanel.batch.response.emptyTitle')}
+                description={t('workspaceRoute.resultPanel.batch.response.emptyDescription')}
               />
             )}
           </DetailViewerSection>
@@ -480,18 +507,18 @@ export function RequestResultPanel({
         {batchActiveResultTab === 'console' ? (
           <DetailViewerSection
             icon="console"
-            title="Batch console"
-            description="Console logs and error summaries across ordered steps."
+            title={t('workspaceRoute.resultPanel.batch.console.title')}
+            description={t('workspaceRoute.resultPanel.batch.console.description')}
             tone="muted"
           >
             {batchExecution ? (
               <>
                 <KeyValueMetaList
                   items={[
-                    { label: 'Requests with logs', value: batchExecution.steps.filter((step) => step.execution.consoleEntries.length > 0).length },
-                    { label: 'Total console lines', value: batchExecution.steps.reduce((total, step) => total + step.execution.consoleEntries.length, 0) },
-                    { label: 'Failed or blocked', value: batchExecution.failedCount + batchExecution.blockedCount + batchExecution.timedOutCount },
-                    { label: 'Continue on error', value: batchExecution.continuedAfterFailure ? 'Enabled' : 'Disabled' },
+                    { label: t('workspaceRoute.resultPanel.batch.console.labels.requestsWithLogs'), value: batchExecution.steps.filter((step) => step.execution.consoleEntries.length > 0).length },
+                    { label: t('workspaceRoute.resultPanel.batch.console.labels.totalConsoleLines'), value: batchExecution.steps.reduce((total, step) => total + step.execution.consoleEntries.length, 0) },
+                    { label: t('workspaceRoute.resultPanel.batch.console.labels.failedOrBlocked'), value: batchExecution.failedCount + batchExecution.blockedCount + batchExecution.timedOutCount },
+                    { label: t('workspaceRoute.resultPanel.batch.console.labels.continueOnError'), value: batchExecution.continuedAfterFailure ? t('workspaceRoute.resultPanel.batch.console.values.enabled') : t('workspaceRoute.resultPanel.batch.console.values.disabled') },
                   ]}
                 />
                 {createBatchConsoleEntries(batchExecution).length > 0 ? (
@@ -502,15 +529,15 @@ export function RequestResultPanel({
                   </ul>
                 ) : (
                   <EmptyStateCallout
-                    title="No console output"
-                    description="This batch run completed without stored console entries or error summaries."
+                    title={t('workspaceRoute.resultPanel.batch.status.noOutputTitle')}
+                    description={t('workspaceRoute.resultPanel.batch.status.noOutputDescription')}
                   />
                 )}
               </>
             ) : (
               <EmptyStateCallout
-                title="No batch execution yet"
-                description="Run a collection or request group to inspect console details here."
+                title={t('workspaceRoute.resultPanel.batch.console.emptyTitle')}
+                description={t('workspaceRoute.resultPanel.batch.console.emptyDescription')}
               />
             )}
           </DetailViewerSection>
@@ -519,18 +546,18 @@ export function RequestResultPanel({
         {batchActiveResultTab === 'tests' ? (
           <DetailViewerSection
             icon="tests"
-            title="Batch tests"
-            description="Per-step test summaries for the current batch run."
+            title={t('workspaceRoute.resultPanel.batch.tests.title')}
+            description={t('workspaceRoute.resultPanel.batch.tests.description')}
             tone="muted"
           >
             {batchExecution ? (
               <>
                 <KeyValueMetaList
                   items={[
-                    { label: 'Steps', value: batchExecution.totalRuns },
-                    { label: 'Succeeded', value: batchExecution.succeededCount },
-                    { label: 'Failed', value: batchExecution.failedCount },
-                    { label: 'Timed out', value: batchExecution.timedOutCount },
+                    { label: t('workspaceRoute.resultPanel.batch.tests.labels.steps'), value: batchExecution.totalRuns },
+                    { label: t('workspaceRoute.resultPanel.batch.tests.labels.succeeded'), value: batchExecution.succeededCount },
+                    { label: t('workspaceRoute.resultPanel.batch.tests.labels.failed'), value: batchExecution.failedCount },
+                    { label: t('workspaceRoute.resultPanel.batch.tests.labels.timedOut'), value: batchExecution.timedOutCount },
                   ]}
                 />
                 <ul className="history-preview-list">
@@ -541,8 +568,8 @@ export function RequestResultPanel({
               </>
             ) : (
               <EmptyStateCallout
-                title="No batch execution yet"
-                description="Run a collection or request group to inspect test summaries here."
+                title={t('workspaceRoute.resultPanel.batch.tests.emptyTitle')}
+                description={t('workspaceRoute.resultPanel.batch.tests.emptyDescription')}
               />
             )}
           </DetailViewerSection>
@@ -551,14 +578,14 @@ export function RequestResultPanel({
         {batchActiveResultTab === 'execution-info' ? (
           <DetailViewerSection
             icon="info"
-            title="Batch execution info"
-            description="Container metadata and run identifiers for the latest batch execution."
+            title={t('workspaceRoute.resultPanel.batch.executionInfo.title')}
+            description={t('workspaceRoute.resultPanel.batch.executionInfo.description')}
             tone="muted"
           >
             {batchRunState.status === 'pending' && !batchExecution ? (
               <EmptyStateCallout
-                title="Preparing batch execution"
-                description="Execution metadata will appear here once the first request starts."
+                title={t('workspaceRoute.resultPanel.batch.executionInfo.preparingTitle')}
+                description={t('workspaceRoute.resultPanel.batch.executionInfo.preparingDescription')}
               />
             ) : batchExecution ? (
               <div className="workspace-detail-panel__result-stack">
@@ -569,22 +596,22 @@ export function RequestResultPanel({
                   </div>
                   <KeyValueMetaList
                     items={[
-                      { label: 'Batch execution ID', value: batchExecution.batchExecutionId },
-                      { label: 'Container type', value: batchExecution.containerType },
-                      { label: 'Container ID', value: batchExecution.containerId },
-                      { label: 'Started at', value: batchExecution.startedAt },
-                      { label: 'Completed at', value: batchExecution.completedAt },
-                      { label: 'Duration', value: `${batchExecution.durationMs} ms` },
-                      { label: 'Execution order', value: batchExecution.executionOrder },
-                      { label: 'Continue on error', value: batchExecution.continuedAfterFailure ? 'Enabled' : 'Disabled' },
+                      { label: t('workspaceRoute.resultPanel.batch.executionInfo.labels.batchExecutionId'), value: batchExecution.batchExecutionId },
+                      { label: t('workspaceRoute.resultPanel.batch.executionInfo.labels.containerType'), value: batchExecution.containerType },
+                      { label: t('workspaceRoute.resultPanel.batch.executionInfo.labels.containerId'), value: batchExecution.containerId },
+                      { label: t('workspaceRoute.resultPanel.batch.executionInfo.labels.startedAt'), value: batchExecution.startedAt },
+                      { label: t('workspaceRoute.resultPanel.batch.executionInfo.labels.completedAt'), value: batchExecution.completedAt },
+                      { label: t('workspaceRoute.resultPanel.batch.executionInfo.labels.duration'), value: t('workspaceRoute.resultPanel.common.durationMs', { durationMs: batchExecution.durationMs }) },
+                      { label: t('workspaceRoute.resultPanel.batch.executionInfo.labels.executionOrder'), value: batchExecution.executionOrder },
+                      { label: t('workspaceRoute.resultPanel.batch.executionInfo.labels.continueOnError'), value: batchExecution.continuedAfterFailure ? t('workspaceRoute.resultPanel.batch.executionInfo.values.enabled') : t('workspaceRoute.resultPanel.batch.executionInfo.values.disabled') },
                     ]}
                   />
                 </div>
                 <div className="workspace-detail-panel__result-support">
-                  <ul className="history-preview-list" aria-label="Batch execution steps">
+                  <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.batch.executionInfo.stepsAriaLabel')}>
                     {batchExecution.steps.map((step) => (
                       <li key={`batch-info-${step.stepIndex}-${step.requestId}`}>
-                        <strong>{step.requestName}</strong>: {step.execution.executionId} · {step.execution.executionOutcome} · {formatBatchStepPlacement(step)}
+                        <strong>{step.requestName}</strong>: {step.execution.executionId} · {step.execution.executionOutcome} · {formatBatchStepPlacement(step, t)}
                       </li>
                     ))}
                   </ul>
@@ -593,8 +620,8 @@ export function RequestResultPanel({
               </div>
             ) : (
               <EmptyStateCallout
-                title="No batch execution yet"
-                description="Run a collection or request group to inspect execution metadata here."
+                title={t('workspaceRoute.resultPanel.batch.executionInfo.emptyTitle')}
+                description={t('workspaceRoute.resultPanel.batch.executionInfo.emptyDescription')}
               />
             )}
           </DetailViewerSection>
@@ -737,7 +764,7 @@ export function RequestResultPanel({
               <div className="workspace-detail-panel__result-summary">
                 <div className="request-run-outcome-row">
                   <StatusBadge kind="executionOutcome" value={execution.executionOutcome} />
-                  <StatusBadge kind="transportOutcome" value={getTransportOutcomeLabel(execution.responseStatus)} />
+                  <StatusBadge kind="transportOutcome" value={getTransportOutcomeLabel(execution.responseStatus, t)} />
               </div>
                 <KeyValueMetaList
                   items={[
@@ -873,7 +900,7 @@ export function RequestResultPanel({
               <div className="workspace-detail-panel__result-summary">
                 <div className="request-run-outcome-row">
                   <StatusBadge kind="executionOutcome" value={execution.executionOutcome} />
-                  <StatusBadge kind="transportOutcome" value={getTransportOutcomeLabel(execution.responseStatus)} />
+                  <StatusBadge kind="transportOutcome" value={getTransportOutcomeLabel(execution.responseStatus, t)} />
               </div>
                 <KeyValueMetaList
                   items={[
@@ -881,7 +908,7 @@ export function RequestResultPanel({
                     { label: t('workspaceRoute.resultPanel.executionInfo.labels.startedAt'), value: execution.startedAt },
                     { label: t('workspaceRoute.resultPanel.executionInfo.labels.completedAt'), value: execution.completedAt },
                     { label: t('workspaceRoute.resultPanel.executionInfo.labels.outcome'), value: execution.executionOutcome },
-                    { label: t('workspaceRoute.resultPanel.executionInfo.labels.snapshotSource'), value: execution.requestSourceLabel ?? t('workspaceRoute.resultPanel.executionInfo.values.runtimeRequestSnapshot') },
+                    { label: t('workspaceRoute.resultPanel.executionInfo.labels.snapshotSource'), value: getLocalizedExecutionSourceLabel(execution.requestSourceLabel, t) },
                     {
                       label: t('workspaceRoute.resultPanel.executionInfo.labels.linkedRequest'),
                       value: formatObservedLinkage(
@@ -971,6 +998,8 @@ export function RequestResultPanel({
     </div>
   );
 }
+
+
 
 
 

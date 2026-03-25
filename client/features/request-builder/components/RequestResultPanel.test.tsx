@@ -102,4 +102,18 @@ describe('RequestResultPanel batch mode', () => {
     await user.click(screen.getByRole('tab', { name: 'Tests' }));
     expect(screen.getByText('Health check: 1 assertion passed.')).toBeInTheDocument();
   });
+
+  it('renders localized batch chrome in Korean', async () => {
+    useWorkspaceBatchRunStore.getState().finishBatchRunSuccess(batchExecution, 'Batch run completed with failures.');
+    const user = userEvent.setup();
+    renderApp(<RequestResultPanel activeTab={null} />, { initialLocale: 'ko' });
+
+    expect(screen.getByText('컬렉션 배치 실행')).toBeInTheDocument();
+    expect(screen.getByText('배치 결과')).toBeInTheDocument();
+    expect(screen.getByText('배치 요약 · 응답')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: '실행 정보' }));
+    expect(within(screen.getByText('배치 실행 ID').closest('dl') ?? document.body).getByText('batch-1')).toBeInTheDocument();
+  });
 });
+
