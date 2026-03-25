@@ -1,22 +1,9 @@
-import { DEFAULT_WORKSPACE_ID, RequestBuilderApiError } from '@client/features/request-builder/request-builder.api';
+import { DEFAULT_WORKSPACE_ID, parseApiJsonResponse } from '@client/features/request-builder/request-builder.api';
 import type {
   SavedScriptInput,
   SavedScriptRecord,
   ScriptTemplateRecord,
 } from '@client/features/scripts/scripts.types';
-
-interface ApiEnvelope<TData> {
-  data: TData;
-}
-
-interface ApiErrorEnvelope {
-  error: {
-    code: string;
-    message: string;
-    details?: Record<string, unknown>;
-    retryable?: boolean;
-  };
-}
 
 export const workspaceScriptsQueryKey = ['workspace-scripts', DEFAULT_WORKSPACE_ID] as const;
 export const savedScriptDetailQueryKey = (scriptId: string | null) =>
@@ -52,38 +39,15 @@ export function sortSavedScripts(records: SavedScriptRecord[]) {
   return [...records].sort(compareSavedScripts);
 }
 
-async function parseJsonResponse<TData>(response: Response): Promise<TData> {
-  const responseText = await response.text();
-  const payload = responseText.length > 0
-    ? JSON.parse(responseText) as ApiEnvelope<TData> | ApiErrorEnvelope
-    : null;
-
-  if (!response.ok) {
-    const errorPayload = payload as ApiErrorEnvelope | null;
-
-    throw new RequestBuilderApiError({
-      message: errorPayload?.error?.message ?? `Request failed with status ${response.status}`,
-      status: response.status,
-      ...(errorPayload?.error?.code ? { code: errorPayload.error.code } : {}),
-      ...(errorPayload?.error?.details ? { details: errorPayload.error.details } : {}),
-      ...(typeof errorPayload?.error?.retryable === 'boolean'
-        ? { retryable: errorPayload.error.retryable }
-        : {}),
-    });
-  }
-
-  return (payload as ApiEnvelope<TData>).data;
-}
-
 export async function listWorkspaceScripts() {
   const response = await fetch(`/api/workspaces/${DEFAULT_WORKSPACE_ID}/scripts`);
-  return parseJsonResponse<{ items: SavedScriptRecord[] }>(response)
+  return parseApiJsonResponse<{ items: SavedScriptRecord[] }>(response)
     .then((payload) => sortSavedScripts(payload.items));
 }
 
 export async function readSavedScript(scriptId: string) {
   const response = await fetch(`/api/scripts/${scriptId}`);
-  return parseJsonResponse<{ script: SavedScriptRecord }>(response).then((payload) => payload.script);
+  return parseApiJsonResponse<{ script: SavedScriptRecord }>(response).then((payload) => payload.script);
 }
 
 export async function createSavedScript(script: SavedScriptInput) {
@@ -95,7 +59,7 @@ export async function createSavedScript(script: SavedScriptInput) {
     body: JSON.stringify({ script }),
   });
 
-  return parseJsonResponse<{ script: SavedScriptRecord }>(response).then((payload) => payload.script);
+  return parseApiJsonResponse<{ script: SavedScriptRecord }>(response).then((payload) => payload.script);
 }
 
 export async function updateSavedScript(scriptId: string, script: SavedScriptInput) {
@@ -107,7 +71,7 @@ export async function updateSavedScript(scriptId: string, script: SavedScriptInp
     body: JSON.stringify({ script }),
   });
 
-  return parseJsonResponse<{ script: SavedScriptRecord }>(response).then((payload) => payload.script);
+  return parseApiJsonResponse<{ script: SavedScriptRecord }>(response).then((payload) => payload.script);
 }
 
 export async function deleteSavedScript(scriptId: string) {
@@ -115,15 +79,15 @@ export async function deleteSavedScript(scriptId: string) {
     method: 'DELETE',
   });
 
-  return parseJsonResponse<{ deletedScriptId: string }>(response).then((payload) => payload.deletedScriptId);
+  return parseApiJsonResponse<{ deletedScriptId: string }>(response).then((payload) => payload.deletedScriptId);
 }
 
 export async function listScriptTemplates() {
   const response = await fetch('/api/script-templates');
-  return parseJsonResponse<{ items: ScriptTemplateRecord[] }>(response).then((payload) => payload.items);
+  return parseApiJsonResponse<{ items: ScriptTemplateRecord[] }>(response).then((payload) => payload.items);
 }
 
 export async function readScriptTemplate(templateId: string) {
   const response = await fetch(`/api/script-templates/${templateId}`);
-  return parseJsonResponse<{ template: ScriptTemplateRecord }>(response).then((payload) => payload.template);
+  return parseApiJsonResponse<{ template: ScriptTemplateRecord }>(response).then((payload) => payload.template);
 }

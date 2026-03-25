@@ -32,6 +32,7 @@
 23. `T095` Explorer Should + Accessibility Reinforcement is archived.
 24. `T096` Context Panel V2 + Inheritance Visualization is archived.
 25. `T097` Runner Capability Advancement is archived.
+26. `T098` API Transport Error Normalization is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.

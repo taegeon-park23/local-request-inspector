@@ -1,6 +1,6 @@
 import {
   DEFAULT_WORKSPACE_ID,
-  RequestBuilderApiError,
+  parseApiJsonResponse,
   type SavedRequestResourceRecord,
 } from '@client/features/request-builder/request-builder.api';
 import {
@@ -9,19 +9,6 @@ import {
 import type { MockRuleRecord } from '@client/features/mocks/mock-rule.types';
 import { sortSavedScripts } from '@client/features/scripts/scripts.api';
 import type { SavedScriptRecord } from '@client/features/scripts/scripts.types';
-
-interface ApiEnvelope<TData> {
-  data: TData;
-}
-
-interface ApiErrorEnvelope {
-  error: {
-    code: string;
-    message: string;
-    details?: Record<string, unknown>;
-    retryable?: boolean;
-  };
-}
 
 export const AUTHORED_RESOURCE_BUNDLE_KIND = 'local-request-inspector-authored-resource-bundle';
 export const AUTHORED_RESOURCE_BUNDLE_SCHEMA_VERSION = 3;
@@ -93,29 +80,6 @@ export interface AuthoredResourceBundleImportPreviewResult {
   summary: AuthoredResourceBundleImportSummary;
 }
 
-async function parseJsonResponse<TData>(response: Response): Promise<TData> {
-  const responseText = await response.text();
-  const payload = responseText.length > 0
-    ? JSON.parse(responseText) as ApiEnvelope<TData> | ApiErrorEnvelope
-    : null;
-
-  if (!response.ok) {
-    const errorPayload = payload as ApiErrorEnvelope | null;
-
-    throw new RequestBuilderApiError({
-      message: errorPayload?.error?.message ?? `Request failed with status ${response.status}`,
-      status: response.status,
-      ...(errorPayload?.error?.code ? { code: errorPayload.error.code } : {}),
-      ...(errorPayload?.error?.details ? { details: errorPayload.error.details } : {}),
-      ...(typeof errorPayload?.error?.retryable === 'boolean'
-        ? { retryable: errorPayload.error.retryable }
-        : {}),
-    });
-  }
-
-  return (payload as ApiEnvelope<TData>).data;
-}
-
 export function downloadAuthoredResourceBundle(
   bundle: AuthoredResourceBundleExport,
   fileNameBase = `local-request-inspector-${bundle.workspaceId}-resources`,
@@ -142,7 +106,7 @@ export function downloadAuthoredResourceBundle(
 
 export async function exportWorkspaceResources() {
   const response = await fetch(`/api/workspaces/${DEFAULT_WORKSPACE_ID}/resource-bundle`);
-  return parseJsonResponse<{ bundle: AuthoredResourceBundleExport }>(response).then((payload) => ({
+  return parseApiJsonResponse<{ bundle: AuthoredResourceBundleExport }>(response).then((payload) => ({
     ...payload.bundle,
     collections: [...(payload.bundle.collections ?? [])],
     requestGroups: [...(payload.bundle.requestGroups ?? [])],
@@ -154,7 +118,7 @@ export async function exportWorkspaceResources() {
 
 export async function exportSavedRequestResource(requestId: string) {
   const response = await fetch(`/api/requests/${requestId}/resource-bundle`);
-  return parseJsonResponse<{ bundle: AuthoredResourceBundleExport }>(response).then((payload) => ({
+  return parseApiJsonResponse<{ bundle: AuthoredResourceBundleExport }>(response).then((payload) => ({
     ...payload.bundle,
     collections: [...(payload.bundle.collections ?? [])],
     requestGroups: [...(payload.bundle.requestGroups ?? [])],
@@ -166,7 +130,7 @@ export async function exportSavedRequestResource(requestId: string) {
 
 export async function exportMockRuleResource(mockRuleId: string) {
   const response = await fetch(`/api/mock-rules/${mockRuleId}/resource-bundle`);
-  return parseJsonResponse<{ bundle: AuthoredResourceBundleExport }>(response).then((payload) => ({
+  return parseApiJsonResponse<{ bundle: AuthoredResourceBundleExport }>(response).then((payload) => ({
     ...payload.bundle,
     collections: [...(payload.bundle.collections ?? [])],
     requestGroups: [...(payload.bundle.requestGroups ?? [])],
@@ -185,7 +149,7 @@ export async function importWorkspaceResources(bundleText: string) {
     body: JSON.stringify({ bundleText }),
   });
 
-  return parseJsonResponse<{ result: AuthoredResourceBundleImportResult }>(response).then((payload) => ({
+  return parseApiJsonResponse<{ result: AuthoredResourceBundleImportResult }>(response).then((payload) => ({
     ...payload.result,
     acceptedCollections: [...(payload.result.acceptedCollections ?? [])],
     acceptedRequestGroups: [...(payload.result.acceptedRequestGroups ?? [])],
@@ -210,7 +174,7 @@ export async function previewWorkspaceResources(bundleText: string) {
     body: JSON.stringify({ bundleText }),
   });
 
-  return parseJsonResponse<{ preview: AuthoredResourceBundleImportPreviewResult }>(response).then((payload) => ({
+  return parseApiJsonResponse<{ preview: AuthoredResourceBundleImportPreviewResult }>(response).then((payload) => ({
     rejected: [...payload.preview.rejected],
     summary: {
       ...payload.preview.summary,

@@ -8,6 +8,7 @@
 
 ## Current Snapshot
 - There is no active bounded task. The next implementation slice must start from one newly promoted bounded task.
+- `T098` is archived after introducing shared frontend API response parsing, classifying backend-unavailable/proxy failures into deterministic actionable errors, and removing duplicated per-module parser seams.
 - `T097` is archived after expanding runner inputs (selection/order/environment/iteration/data-file), wiring run-history visibility, and aligning collection/request-group batch payload composition with CLI-friendly server run contracts.
 - `T096` is archived after shipping workspace context-panel tabs (`Overview/Inheritance/Runs`), effective-vs-override inheritance visualization, and collection/request-group/request detail continuity with existing result-panel flows.
 - `T095` is archived after shipping explorer always-reveal behavior for opened items, tree type-ahead focus navigation, and header command/shortcut entry points for major workspace actions.

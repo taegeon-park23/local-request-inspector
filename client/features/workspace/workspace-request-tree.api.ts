@@ -1,26 +1,13 @@
 import {
   DEFAULT_REQUEST_COLLECTION_NAME,
   DEFAULT_WORKSPACE_ID,
-  RequestBuilderApiError,
+  parseApiJsonResponse,
   type SavedRequestResourceRecord,
 } from '@client/features/request-builder/request-builder.api';
 import {
   DEFAULT_REQUEST_GROUP_NAME,
   readRequestGroupName as readRequestPlacementGroupName,
 } from '@client/features/request-builder/request-placement';
-
-interface ApiEnvelope<TData> {
-  data: TData;
-}
-
-interface ApiErrorEnvelope {
-  error: {
-    code: string;
-    message: string;
-    details?: Record<string, unknown>;
-    retryable?: boolean;
-  };
-}
 
 export interface WorkspaceScopedVariableRow {
   id?: string;
@@ -197,29 +184,6 @@ export interface WorkspaceBatchExecution {
   steps: WorkspaceBatchExecutionStep[];
 }
 
-async function parseJsonResponse<TData>(response: Response): Promise<TData> {
-  const responseText = await response.text();
-  const payload = responseText.length > 0
-    ? JSON.parse(responseText) as ApiEnvelope<TData> | ApiErrorEnvelope
-    : null;
-
-  if (!response.ok) {
-    const errorPayload = payload as ApiErrorEnvelope | null;
-
-    throw new RequestBuilderApiError({
-      message: errorPayload?.error?.message ?? `Request failed with status ${response.status}`,
-      status: response.status,
-      ...(errorPayload?.error?.code ? { code: errorPayload.error.code } : {}),
-      ...(errorPayload?.error?.details ? { details: errorPayload.error.details } : {}),
-      ...(typeof errorPayload?.error?.retryable === 'boolean'
-        ? { retryable: errorPayload.error.retryable }
-        : {}),
-    });
-  }
-
-  return (payload as ApiEnvelope<TData>).data;
-}
-
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
@@ -298,7 +262,7 @@ function normalizeWorkspaceRequestTreeResponse(response: WorkspaceRequestTreeRes
 
 export async function listWorkspaceRequestTree() {
   const response = await fetch(`/api/workspaces/${DEFAULT_WORKSPACE_ID}/request-tree`);
-  return parseJsonResponse<WorkspaceRequestTreeResponse>(response)
+  return parseApiJsonResponse<WorkspaceRequestTreeResponse>(response)
     .then((payload) => normalizeWorkspaceRequestTreeResponse(payload));
 }
 
@@ -313,7 +277,7 @@ export async function createWorkspaceCollection(
     body: JSON.stringify({ collection }),
   });
 
-  return parseJsonResponse<{ collection: WorkspaceCollectionRecord }>(response).then((payload) => payload.collection);
+  return parseApiJsonResponse<{ collection: WorkspaceCollectionRecord }>(response).then((payload) => payload.collection);
 }
 
 export async function updateWorkspaceCollection(
@@ -328,7 +292,7 @@ export async function updateWorkspaceCollection(
     body: JSON.stringify({ collection }),
   });
 
-  return parseJsonResponse<{ collection: WorkspaceCollectionRecord }>(response).then((payload) => payload.collection);
+  return parseApiJsonResponse<{ collection: WorkspaceCollectionRecord }>(response).then((payload) => payload.collection);
 }
 
 export async function deleteWorkspaceCollection(collectionId: string) {
@@ -336,19 +300,19 @@ export async function deleteWorkspaceCollection(collectionId: string) {
     method: 'DELETE',
   });
 
-  return parseJsonResponse<{ deletedCollectionId: string }>(response).then((payload) => payload.deletedCollectionId);
+  return parseApiJsonResponse<{ deletedCollectionId: string }>(response).then((payload) => payload.deletedCollectionId);
 }
 
 export async function readWorkspaceSavedRequestDetail(requestId: string) {
   const response = await fetch(`/api/requests/${requestId}`);
-  return parseJsonResponse<{ request: SavedRequestResourceRecord }>(response).then((payload) => payload.request);
+  return parseApiJsonResponse<{ request: SavedRequestResourceRecord }>(response).then((payload) => payload.request);
 }
 
 export async function deleteWorkspaceSavedRequest(requestId: string) {
   const response = await fetch(`/api/requests/${requestId}`, {
     method: 'DELETE',
   });
-  return parseJsonResponse<{ deletedRequestId: string }>(response).then((payload) => payload.deletedRequestId);
+  return parseApiJsonResponse<{ deletedRequestId: string }>(response).then((payload) => payload.deletedRequestId);
 }
 
 export async function createWorkspaceRequestGroup(
@@ -363,7 +327,7 @@ export async function createWorkspaceRequestGroup(
     body: JSON.stringify({ requestGroup }),
   });
 
-  return parseJsonResponse<{ requestGroup: WorkspaceRequestGroupRecord }>(response).then((payload) => payload.requestGroup);
+  return parseApiJsonResponse<{ requestGroup: WorkspaceRequestGroupRecord }>(response).then((payload) => payload.requestGroup);
 }
 
 export async function updateWorkspaceRequestGroup(
@@ -378,7 +342,7 @@ export async function updateWorkspaceRequestGroup(
     body: JSON.stringify({ requestGroup }),
   });
 
-  return parseJsonResponse<{ requestGroup: WorkspaceRequestGroupRecord }>(response).then((payload) => payload.requestGroup);
+  return parseApiJsonResponse<{ requestGroup: WorkspaceRequestGroupRecord }>(response).then((payload) => payload.requestGroup);
 }
 
 export async function deleteWorkspaceRequestGroup(requestGroupId: string) {
@@ -386,7 +350,7 @@ export async function deleteWorkspaceRequestGroup(requestGroupId: string) {
     method: 'DELETE',
   });
 
-  return parseJsonResponse<{ deletedRequestGroupId: string }>(response).then((payload) => payload.deletedRequestGroupId);
+  return parseApiJsonResponse<{ deletedRequestGroupId: string }>(response).then((payload) => payload.deletedRequestGroupId);
 }
 
 export async function runWorkspaceCollection(collectionId: string, runInput?: WorkspaceBatchRunInput) {
@@ -402,7 +366,7 @@ export async function runWorkspaceCollection(collectionId: string, runInput?: Wo
       : {}),
   });
 
-  return parseJsonResponse<{ batchExecution: WorkspaceBatchExecution }>(response).then((payload) => payload.batchExecution);
+  return parseApiJsonResponse<{ batchExecution: WorkspaceBatchExecution }>(response).then((payload) => payload.batchExecution);
 }
 
 export async function runWorkspaceRequestGroup(requestGroupId: string, runInput?: WorkspaceBatchRunInput) {
@@ -418,7 +382,7 @@ export async function runWorkspaceRequestGroup(requestGroupId: string, runInput?
       : {}),
   });
 
-  return parseJsonResponse<{ batchExecution: WorkspaceBatchExecution }>(response).then((payload) => payload.batchExecution);
+  return parseApiJsonResponse<{ batchExecution: WorkspaceBatchExecution }>(response).then((payload) => payload.batchExecution);
 }
 
 function compareSavedRequests(left: SavedRequestResourceRecord, right: SavedRequestResourceRecord) {

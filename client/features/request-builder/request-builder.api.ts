@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   RequestDraftAuthState,
   RequestDraftSeed,
   RequestDraftScriptsState,
@@ -164,6 +164,67 @@ export class RequestBuilderApiError extends Error {
   }
 }
 
+const BACKEND_UNAVAILABLE_ERROR_PATTERN = /(ECONNREFUSED|EHOSTUNREACH|ENOTFOUND|proxy error|socket hang up|fetch failed|Failed to fetch)/i;
+
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function parseJsonPayload(responseText: string) {
+  if (responseText.trim().length === 0) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(responseText) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+function readErrorEnvelope(payload: unknown): ApiErrorEnvelope | null {
+  if (!isObjectRecord(payload) || !isObjectRecord(payload.error)) {
+    return null;
+  }
+
+  const errorPayload = payload.error;
+  if (typeof errorPayload.message !== 'string') {
+    return null;
+  }
+
+  return {
+    error: {
+      code: typeof errorPayload.code === 'string' ? errorPayload.code : 'request_builder_api_error',
+      message: errorPayload.message,
+      ...(isObjectRecord(errorPayload.details) ? { details: errorPayload.details } : {}),
+      ...(typeof errorPayload.retryable === 'boolean' ? { retryable: errorPayload.retryable } : {}),
+    },
+  };
+}
+
+function hasDataEnvelope<TData>(payload: unknown): payload is ApiEnvelope<TData> {
+  return isObjectRecord(payload) && Object.prototype.hasOwnProperty.call(payload, 'data');
+}
+
+function createFallbackApiError(response: Response, responseText: string) {
+  const transportHintSource = `${response.statusText} ${responseText}`;
+  if (response.status >= 500 && BACKEND_UNAVAILABLE_ERROR_PATTERN.test(transportHintSource)) {
+    return new RequestBuilderApiError({
+      message: 'Backend API is unavailable. Start the local server (npm.cmd run dev:app or npm.cmd run dev:server) and retry.',
+      code: 'backend_unavailable',
+      details: {
+        statusText: response.statusText,
+      },
+      retryable: true,
+      status: response.status,
+    });
+  }
+
+  return new RequestBuilderApiError({
+    message: `Request failed with status ${response.status}`,
+    status: response.status,
+  });
+}
 function cloneRows(rows: RequestKeyValueRow[]) {
   return rows.map((row) => ({ ...row }));
 }
@@ -226,12 +287,16 @@ export function sortSavedRequestResources(records: SavedRequestResourceRecord[])
   return [...records].sort(compareSavedRequestResources);
 }
 
-async function parseJsonResponse<TData>(response: Response): Promise<TData> {
+export async function parseApiJsonResponse<TData>(response: Response): Promise<TData> {
   const responseText = await response.text();
-  const payload = responseText.length > 0 ? JSON.parse(responseText) as ApiEnvelope<TData> | ApiErrorEnvelope : null;
+  const payload = parseJsonPayload(responseText);
 
   if (!response.ok) {
-    const errorPayload = payload as ApiErrorEnvelope | null;
+    const errorPayload = readErrorEnvelope(payload);
+    if (!errorPayload) {
+      throw createFallbackApiError(response, responseText);
+    }
+
     const errorOptions = {
       message: errorPayload?.error?.message ?? `Request failed with status ${response.status}`,
       status: response.status,
@@ -245,7 +310,19 @@ async function parseJsonResponse<TData>(response: Response): Promise<TData> {
     throw new RequestBuilderApiError(errorOptions);
   }
 
-  return (payload as ApiEnvelope<TData>).data;
+  if (!hasDataEnvelope<TData>(payload)) {
+    throw new RequestBuilderApiError({
+      message: 'Server returned a non-JSON API payload.',
+      code: 'invalid_api_response',
+      details: {
+        statusText: response.statusText,
+      },
+      retryable: true,
+      status: response.status,
+    });
+  }
+
+  return payload.data;
 }
 
 export function createRequestDefinitionInput(
@@ -320,7 +397,7 @@ export function upsertSavedRequestResource(
 
 export async function listWorkspaceSavedRequests() {
   const response = await fetch(`/api/workspaces/${DEFAULT_WORKSPACE_ID}/requests`);
-  return parseJsonResponse<{ items: SavedRequestResourceRecord[] }>(response)
+  return parseApiJsonResponse<{ items: SavedRequestResourceRecord[] }>(response)
     .then((payload) => sortSavedRequestResources(payload.items.map(normalizeSavedRequestResourceRecord)));
 }
 
@@ -346,7 +423,7 @@ export async function saveRequestDefinition(input: RequestDefinitionInput) {
     },
   );
 
-  return parseJsonResponse<{ request: SavedRequestResourceRecord }>(response)
+  return parseApiJsonResponse<{ request: SavedRequestResourceRecord }>(response)
     .then((payload) => normalizeSavedRequestResourceRecord(payload.request));
 }
 
@@ -359,7 +436,7 @@ export async function runRequestDefinition(input: RequestDefinitionInput) {
     body: JSON.stringify({ request: input }),
   });
 
-  return parseJsonResponse<{ execution: RequestRunObservation }>(response).then((payload) => payload.execution);
+  return parseApiJsonResponse<{ execution: RequestRunObservation }>(response).then((payload) => payload.execution);
 }
 
 
