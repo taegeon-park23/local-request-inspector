@@ -1,12 +1,12 @@
 import type {
   RequestDraftAuthState,
+  RequestDraftSeed,
   RequestDraftScriptsState,
   RequestDraftState,
   RequestKeyValueRow,
 } from '@client/features/request-builder/request-draft.types';
-import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
+import type { RequestTabRecord, SavedWorkspaceRequestSeed } from '@client/features/request-builder/request-tab.types';
 import type { EnvironmentResolutionSummary } from '@client/shared/environment-resolution-summary';
-import type { WorkspaceSavedRequestSeed } from '@client/features/workspace/data/workspace-explorer-fixtures';
 import {
   createRequestPlacementFields,
   readRequestGroupName,
@@ -68,6 +68,11 @@ export interface SavedRequestResourceRecord extends RequestDefinitionInput {
   collectionName: string;
   createdAt: string;
   updatedAt: string;
+}
+
+interface WorkspaceSavedRequestResourceSeed extends SavedWorkspaceRequestSeed {
+  resourceKind: 'persisted' | 'starter';
+  draftSeed?: RequestDraftSeed;
 }
 
 export type RequestExecutionOutcome = 'Succeeded' | 'Failed' | 'Blocked' | 'Timed out';
@@ -258,7 +263,7 @@ export function createRequestDefinitionInput(
 
 export function mapSavedRequestResourceToWorkspaceSeed(
   record: SavedRequestResourceRecord,
-): WorkspaceSavedRequestSeed {
+): WorkspaceSavedRequestResourceSeed {
   const placement = createRequestPlacementFields(record);
 
   return {
@@ -329,6 +334,7 @@ export async function runRequestDefinition(input: RequestDefinitionInput) {
 
   return parseJsonResponse<{ execution: RequestRunObservation }>(response).then((payload) => payload.execution);
 }
+
 
 
 
