@@ -94,6 +94,15 @@ interface CreateSheetState {
   target: CreateSheetTarget;
 }
 
+const WORKSPACE_SHORTCUTS = {
+  openCommandMenu: 'Control+K',
+  newRequest: 'Alt+Shift+N',
+  quickRequest: 'Alt+Shift+Q',
+  newCollection: 'Alt+Shift+C',
+  newRequestGroup: 'Alt+Shift+G',
+  runSelected: 'Alt+Shift+R',
+} as const;
+
 function resolvePresentationTab(
   tab: RequestTabRecord,
   draft: ReturnType<typeof useRequestDraftStore.getState>['draftsByTabId'][string] | undefined,
@@ -346,6 +355,18 @@ function findRequestGroupById(
   return null;
 }
 
+function isEditableEventTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  const tagName = target.tagName.toLowerCase();
+  return target.isContentEditable
+    || tagName === 'input'
+    || tagName === 'textarea'
+    || tagName === 'select';
+}
+
 function flattenRequestGroups(
   groups: WorkspaceRequestGroupNode[],
   path: string[] = [],
@@ -447,6 +468,7 @@ export function WorkspaceRoute() {
   const [pendingImportPreview, setPendingImportPreview] = useState<PendingImportPreview | null>(null);
   const [createSheetState, setCreateSheetState] = useState<CreateSheetState | null>(null);
   const [isNewImportMenuOpen, setIsNewImportMenuOpen] = useState(false);
+  const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
   const openApiImportInputRef = useRef<HTMLInputElement | null>(null);
   const postmanImportInputRef = useRef<HTMLInputElement | null>(null);
   const tabs = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.tabs);
@@ -523,6 +545,11 @@ export function WorkspaceRoute() {
         [scope]: status,
       };
     });
+  };
+
+  const closeHeaderMenus = () => {
+    setIsNewImportMenuOpen(false);
+    setIsCommandMenuOpen(false);
   };
 
   const exportResourcesMutation = useMutation({
@@ -912,7 +939,7 @@ export function WorkspaceRoute() {
   };
 
   const handleCreateRequest = () => {
-    setIsNewImportMenuOpen(false);
+    closeHeaderMenus();
     const createTarget = selectedRequestGroupLocation?.requestGroup
       ?? selectedCollection
       ?? (activeDraft?.requestGroupId
@@ -925,7 +952,7 @@ export function WorkspaceRoute() {
   };
 
   const handleCreateQuickRequest = () => {
-    setIsNewImportMenuOpen(false);
+    closeHeaderMenus();
     void openDraftFromSeed(undefined, { source: 'quick' });
   };
 
@@ -1058,13 +1085,26 @@ export function WorkspaceRoute() {
   };
 
   const handleOpenCreateCollectionSheet = () => {
-    setIsNewImportMenuOpen(false);
+    closeHeaderMenus();
     openCreateSheet('collection');
   };
 
   const handleOpenCreateRequestGroupSheet = (target: WorkspaceCollectionNode | WorkspaceRequestGroupNode) => {
-    setIsNewImportMenuOpen(false);
+    closeHeaderMenus();
     openCreateSheet('request-group', target);
+  };
+
+  const handleRunSelectedContainer = () => {
+    closeHeaderMenus();
+
+    if (selectedRequestGroupLocation) {
+      void handleRunRequestGroup(selectedRequestGroupLocation.requestGroup);
+      return;
+    }
+
+    if (selectedCollection) {
+      void handleRunCollection(selectedCollection);
+    }
   };
 
   const handlePromptDeleteCollection = async (collection: WorkspaceCollectionNode) => {
@@ -1333,7 +1373,7 @@ export function WorkspaceRoute() {
         ...curlSeed,
         ...placementSeed,
       };
-      setIsNewImportMenuOpen(false);
+      closeHeaderMenus();
 
       void openDraftFromSeed(mergedSeed)
         .then(() => {
@@ -1368,7 +1408,7 @@ export function WorkspaceRoute() {
       return;
     }
 
-    setIsNewImportMenuOpen(false);
+    closeHeaderMenus();
     setManagerStatus('transfer', {
       tone: 'info',
       message: source === 'openapi'
@@ -1387,6 +1427,115 @@ export function WorkspaceRoute() {
     bridgeImportFromFile('postman', event.currentTarget.files?.[0] ?? null);
     event.currentTarget.value = '';
   };
+
+  const toggleNewImportMenu = () => {
+    setIsNewImportMenuOpen((open) => {
+      if (open) {
+        return false;
+      }
+
+      setIsCommandMenuOpen(false);
+      return true;
+    });
+  };
+
+  const toggleCommandMenu = () => {
+    setIsCommandMenuOpen((open) => {
+      if (open) {
+        return false;
+      }
+
+      setIsNewImportMenuOpen(false);
+      return true;
+    });
+  };
+
+  const shortcutContextRef = useRef({
+    toggleCommandMenu,
+    handleCreateRequest,
+    handleCreateQuickRequest,
+    handleOpenCreateCollectionSheet,
+    handleOpenCreateRequestGroupSheet,
+    handleRunSelectedContainer,
+    selectedCollection,
+    selectedRequestGroupLocation,
+  });
+
+  useEffect(() => {
+    shortcutContextRef.current = {
+      toggleCommandMenu,
+      handleCreateRequest,
+      handleCreateQuickRequest,
+      handleOpenCreateCollectionSheet,
+      handleOpenCreateRequestGroupSheet,
+      handleRunSelectedContainer,
+      selectedCollection,
+      selectedRequestGroupLocation,
+    };
+  });
+
+  useEffect(() => {
+    const handleWindowKeyDown = (event: KeyboardEvent) => {
+      const context = shortcutContextRef.current;
+      const key = event.key.toLowerCase();
+      const openCommandPalette = (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && key === 'k';
+
+      if (openCommandPalette) {
+        event.preventDefault();
+        context.toggleCommandMenu();
+        return;
+      }
+
+      if (isEditableEventTarget(event.target)) {
+        return;
+      }
+
+      const isWorkspaceShortcut = event.altKey && event.shiftKey && !event.metaKey && !event.ctrlKey;
+      if (!isWorkspaceShortcut) {
+        return;
+      }
+
+      switch (key) {
+        case 'n':
+          event.preventDefault();
+          context.handleCreateRequest();
+          return;
+        case 'q':
+          event.preventDefault();
+          context.handleCreateQuickRequest();
+          return;
+        case 'c':
+          event.preventDefault();
+          context.handleOpenCreateCollectionSheet();
+          return;
+        case 'g':
+          if (!context.selectedCollection && !context.selectedRequestGroupLocation) {
+            return;
+          }
+          event.preventDefault();
+          if (context.selectedRequestGroupLocation) {
+            context.handleOpenCreateRequestGroupSheet(context.selectedRequestGroupLocation.requestGroup);
+          } else if (context.selectedCollection) {
+            context.handleOpenCreateRequestGroupSheet(context.selectedCollection);
+          }
+          return;
+        case 'r':
+          if (!context.selectedCollection && !context.selectedRequestGroupLocation) {
+            return;
+          }
+          event.preventDefault();
+          context.handleRunSelectedContainer();
+          return;
+        default:
+          return;
+      }
+    };
+
+    window.addEventListener('keydown', handleWindowKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleWindowKeyDown);
+    };
+  }, []);
 
   return (
     <RoutePanelTabsLayout
@@ -1453,20 +1602,45 @@ export function WorkspaceRoute() {
         <div className="request-work-surface__future-actions" aria-label={t('workspaceRoute.a11y.headerActions')}>
           <button
             type="button"
+            className={`workspace-button workspace-button--secondary${isCommandMenuOpen ? ' workspace-button--ghost' : ''}`}
+            onClick={toggleCommandMenu}
+            aria-expanded={isCommandMenuOpen}
+            aria-controls="workspace-command-menu"
+            aria-keyshortcuts={WORKSPACE_SHORTCUTS.openCommandMenu}
+          >
+            <IconLabel icon="command">{t('workspaceRoute.commandMenu.actions.openMenu')}</IconLabel>
+          </button>
+          <button
+            type="button"
             className={`workspace-button workspace-button--secondary${isNewImportMenuOpen ? ' workspace-button--ghost' : ''}`}
-            onClick={() => setIsNewImportMenuOpen((open) => !open)}
+            onClick={toggleNewImportMenu}
             aria-expanded={isNewImportMenuOpen}
             aria-controls="workspace-new-import-menu"
           >
             <IconLabel icon="add">{t('workspaceRoute.newImport.actions.openMenu')}</IconLabel>
           </button>
-          <button type="button" className="workspace-button" onClick={handleCreateRequest}>
+          <button
+            type="button"
+            className="workspace-button"
+            onClick={handleCreateRequest}
+            aria-keyshortcuts={WORKSPACE_SHORTCUTS.newRequest}
+          >
             <IconLabel icon="new">{t('workspaceRoute.tabShell.newRequest')}</IconLabel>
           </button>
-          <button type="button" className="workspace-button workspace-button--secondary" onClick={handleCreateQuickRequest}>
+          <button
+            type="button"
+            className="workspace-button workspace-button--secondary"
+            onClick={handleCreateQuickRequest}
+            aria-keyshortcuts={WORKSPACE_SHORTCUTS.quickRequest}
+          >
             <IconLabel icon="new">{t('workspaceRoute.tabShell.quickRequest')}</IconLabel>
           </button>
-          <button type="button" className="workspace-button workspace-button--secondary" onClick={handleOpenCreateCollectionSheet}>
+          <button
+            type="button"
+            className="workspace-button workspace-button--secondary"
+            onClick={handleOpenCreateCollectionSheet}
+            aria-keyshortcuts={WORKSPACE_SHORTCUTS.newCollection}
+          >
             <IconLabel icon="add">{t('workspaceRoute.explorer.actions.createCollectionShort')}</IconLabel>
           </button>
           {selectedCollection || selectedRequestGroupLocation ? (
@@ -1480,22 +1654,87 @@ export function WorkspaceRoute() {
                   handleOpenCreateRequestGroupSheet(createTarget);
                 }
               }}
+              aria-keyshortcuts={WORKSPACE_SHORTCUTS.newRequestGroup}
             >
               <IconLabel icon="add">{t('workspaceRoute.explorer.actions.createRequestGroupShort')}</IconLabel>
             </button>
           ) : null}
           {selectedCollection || selectedRequestGroupLocation ? (
-            <button type="button" className="workspace-button workspace-button--secondary" onClick={() => {
-              if (selectedRequestGroupLocation) {
-                void handleRunRequestGroup(selectedRequestGroupLocation.requestGroup);
-              } else if (selectedCollection) {
-                void handleRunCollection(selectedCollection);
-              }
-            }}>
+            <button
+              type="button"
+              className="workspace-button workspace-button--secondary"
+              onClick={handleRunSelectedContainer}
+              aria-keyshortcuts={WORKSPACE_SHORTCUTS.runSelected}
+            >
               <IconLabel icon="run">{t('workspaceRoute.explorer.actions.runSelected')}</IconLabel>
             </button>
           ) : null}
         </div>
+
+        {isCommandMenuOpen ? (
+          <section
+            id="workspace-command-menu"
+            className="workspace-surface-card workspace-create-sheet"
+            aria-label={t('workspaceRoute.commandMenu.ariaLabel')}
+          >
+            <header className="request-editor-card__header">
+              <div>
+                <h3>{t('workspaceRoute.commandMenu.title')}</h3>
+                <p>{t('workspaceRoute.commandMenu.description')}</p>
+              </div>
+            </header>
+            <div className="request-work-surface__future-actions" aria-label={t('workspaceRoute.commandMenu.actions.menuAriaLabel')}>
+              <button type="button" className="workspace-button" onClick={handleCreateRequest}>
+                <IconLabel icon="new">
+                  {`${t('workspaceRoute.commandMenu.actions.newRequest')} (${t('workspaceRoute.commandMenu.shortcuts.newRequest')})`}
+                </IconLabel>
+              </button>
+              <button type="button" className="workspace-button workspace-button--secondary" onClick={handleCreateQuickRequest}>
+                <IconLabel icon="new">
+                  {`${t('workspaceRoute.commandMenu.actions.quickRequest')} (${t('workspaceRoute.commandMenu.shortcuts.quickRequest')})`}
+                </IconLabel>
+              </button>
+              <button type="button" className="workspace-button workspace-button--secondary" onClick={handleOpenCreateCollectionSheet}>
+                <IconLabel icon="add">
+                  {`${t('workspaceRoute.commandMenu.actions.newCollection')} (${t('workspaceRoute.commandMenu.shortcuts.newCollection')})`}
+                </IconLabel>
+              </button>
+              <button
+                type="button"
+                className="workspace-button workspace-button--secondary"
+                onClick={() => {
+                  if (selectedRequestGroupLocation) {
+                    handleOpenCreateRequestGroupSheet(selectedRequestGroupLocation.requestGroup);
+                  } else if (selectedCollection) {
+                    handleOpenCreateRequestGroupSheet(selectedCollection);
+                  }
+                }}
+                disabled={!selectedCollection && !selectedRequestGroupLocation}
+              >
+                <IconLabel icon="add">
+                  {`${t('workspaceRoute.commandMenu.actions.newRequestGroup')} (${t('workspaceRoute.commandMenu.shortcuts.newRequestGroup')})`}
+                </IconLabel>
+              </button>
+              <button
+                type="button"
+                className="workspace-button workspace-button--secondary"
+                onClick={handleRunSelectedContainer}
+                disabled={!selectedCollection && !selectedRequestGroupLocation}
+              >
+                <IconLabel icon="run">
+                  {`${t('workspaceRoute.commandMenu.actions.runSelected')} (${t('workspaceRoute.commandMenu.shortcuts.runSelected')})`}
+                </IconLabel>
+              </button>
+              <button
+                type="button"
+                className="workspace-button workspace-button--ghost"
+                onClick={() => setIsCommandMenuOpen(false)}
+              >
+                {t('workspaceRoute.commandMenu.actions.closeMenu')}
+              </button>
+            </div>
+          </section>
+        ) : null}
 
         {isNewImportMenuOpen ? (
           <section
@@ -1530,7 +1769,7 @@ export function WorkspaceRoute() {
               <button
                 type="button"
                 className="workspace-button workspace-button--ghost"
-                onClick={() => setIsNewImportMenuOpen(false)}
+                onClick={closeHeaderMenus}
               >
                 {t('workspaceRoute.newImport.actions.closeMenu')}
               </button>

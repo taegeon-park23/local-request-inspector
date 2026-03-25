@@ -7,7 +7,8 @@
 - **Update Rule:** Update after each active-task status change or verification-state change.
 
 ## Current Snapshot
-- `T094` is active (`doing`) to expose +New import entry points (cURL/OpenAPI/Postman), ship cURL command conversion into request draft opening, and bridge OpenAPI/Postman entry actions into the existing resource import flow.
+- `T095` is active (`doing`) to add explorer always-reveal behavior for opened items, tree type-ahead focus navigation, and shortcut/command entry paths for key workspace actions.
+- `T094` is archived after shipping +New import entry points (cURL/OpenAPI/Postman), cURL-to-draft conversion, and OpenAPI/Postman bridge wiring into the existing authored-resource import preview flow.
 - `T093` is archived after shipping central workbench tabs for collection overview/request-group overview/batch result plus close current/others/all tab actions while preserving request reopen flow.
 - `T092` is archived after unifying request creation into the thin create sheet (`type/parent/name`) and routing header/surface request-create actions through that single flow before opening seeded drafts.
 - `T081` is archived after shipping Explorer collapse persistence, search filter, WAI-ARIA tree semantics, and keyboard tree navigation.
@@ -32,5 +33,5 @@
 1. Read `../prd/overview.md`.
 2. Read `master-task-board.md` and `priority-roadmap.md`.
 3. Read `completed-work-summary.md` only when archived context is needed.
-4. Continue the single active bounded task (`T094`) until closure, then promote the next task.
+4. Continue the single active bounded task (`T095`) until closure, then promote the next task.
 

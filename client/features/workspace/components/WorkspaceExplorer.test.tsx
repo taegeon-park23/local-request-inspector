@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { WorkspaceExplorer } from '@client/features/workspace/components/WorkspaceExplorer';
 import {
@@ -187,6 +187,32 @@ describe('WorkspaceExplorer', () => {
     expect(onSelectRequestGroup).toHaveBeenCalledWith(expect.objectContaining({
       requestGroupId: 'request-group-login',
     }));
+  });
+
+  it('always reveals the selected opened item by expanding ancestor nodes', async () => {
+    useWorkspaceExplorerStore.getState().setNodeCollapsed('collection:collection-saved-requests', true);
+    useWorkspaceExplorerStore.getState().setNodeCollapsed('request-group:request-group-auth', true);
+    useWorkspaceExplorerStore.getState().setNodeCollapsed('request-group:request-group-login', true);
+
+    renderApp(createExplorer());
+
+    await waitFor(() => {
+      expect(screen.getByText('Create session')).toBeInTheDocument();
+    });
+    expect(useWorkspaceExplorerStore.getState().collapsedNodeIds).not.toContain('collection:collection-saved-requests');
+    expect(useWorkspaceExplorerStore.getState().collapsedNodeIds).not.toContain('request-group:request-group-auth');
+    expect(useWorkspaceExplorerStore.getState().collapsedNodeIds).not.toContain('request-group:request-group-login');
+  });
+
+  it('moves focus with type-ahead when a treeitem is focused', async () => {
+    const user = userEvent.setup();
+    renderApp(createExplorer({ selectedItemId: null, selectedItemKind: null }));
+
+    const rootTreeItem = screen.getByRole('treeitem', { name: /Saved Requests/i });
+    rootTreeItem.focus();
+    await user.keyboard('l');
+
+    expect(screen.getByRole('treeitem', { name: /Login/i })).toHaveFocus();
   });
 });
 

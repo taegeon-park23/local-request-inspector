@@ -14,17 +14,17 @@
 ## Active Register
 | ID | Title | Status | Notes |
 | --- | --- | --- | --- |
-| T094 | +New Import Entry Point | doing | `docs/tasks/task-t094-new-import-entrypoints.md` promoted as the active bounded task. |
+| T095 | Explorer Should + Accessibility Reinforcement | doing | `docs/tasks/task-t095-explorer-should-accessibility-reinforcement.md` promoted as the active bounded task. |
 
 ## Defined Queue
 | ID | Title | Status | Notes |
 | --- | --- | --- | --- |
-| - | No queued bounded task | - | Promote the next bounded task only after `T094` is closed and archived. |
+| - | No queued bounded task | - | Promote the next bounded task only after `T095` is closed and archived. |
 
 ## Current State
-- **Current bounded task:** `T094` +New Import Entry Point.
-- **Most recent archived implementation:** `T093` Workbench Tab Capability Reinforcement.
-- **Highest-priority next step:** complete `T094` by exposing cURL/OpenAPI/Postman entry points under +New and shipping cURL-to-draft MVP.
+- **Current bounded task:** `T095` Explorer Should + Accessibility Reinforcement.
+- **Most recent archived implementation:** `T094` +New Import Entry Point.
+- **Highest-priority next step:** complete `T095` by adding always-reveal-opened-item, tree type-ahead focus navigation, and shortcut/command entry for key explorer actions.
 - **Verification baseline:** `npm.cmd run lint`, `npm.cmd run typecheck`, and `npm.cmd run test:node` passed on 2026-03-26 after `T088/T089/T091` implementation updates.
 - **Closed UI-test rerun policy:** agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - **Codex UI verification lane:** use the Playwright skill workflow against the dev route or built shell when available.

@@ -35,6 +35,8 @@ interface TreeItemKeyboardMeta {
   expanded: boolean;
 }
 
+const TYPE_AHEAD_RESET_DELAY_MS = 800;
+
 function stopEvent(event: MouseEvent<HTMLButtonElement>) {
   event.preventDefault();
   event.stopPropagation();
@@ -108,6 +110,69 @@ function walkRequestGroupSelectionPath(
   return null;
 }
 
+function findSelectionRevealNodeIds(
+  tree: WorkspaceCollectionNode[],
+  selectedItemKind: WorkspaceExplorerItemKind | null,
+  selectedItemId: string | null,
+) {
+  if (!selectedItemKind || !selectedItemId) {
+    return [];
+  }
+
+  for (const collection of tree) {
+    const collectionNodeId = createCollectionNodeId(collection.collectionId);
+
+    if (selectedItemKind === 'collection' && collection.collectionId === selectedItemId) {
+      return [collectionNodeId];
+    }
+
+    const revealPath = walkRequestGroupRevealPath(
+      collection.childGroups,
+      selectedItemKind,
+      selectedItemId,
+      [collectionNodeId],
+    );
+
+    if (revealPath) {
+      return revealPath;
+    }
+  }
+
+  return [];
+}
+
+function walkRequestGroupRevealPath(
+  requestGroups: WorkspaceRequestGroupNode[],
+  selectedItemKind: WorkspaceExplorerItemKind,
+  selectedItemId: string,
+  currentPath: string[],
+): string[] | null {
+  for (const requestGroup of requestGroups) {
+    const nextPath = [...currentPath, createRequestGroupNodeId(requestGroup.requestGroupId)];
+
+    if (selectedItemKind === 'request-group' && requestGroup.requestGroupId === selectedItemId) {
+      return nextPath;
+    }
+
+    if (selectedItemKind === 'request' && requestGroup.requests.some((requestNode) => requestNode.request.id === selectedItemId)) {
+      return nextPath;
+    }
+
+    const nestedPath = walkRequestGroupRevealPath(
+      requestGroup.childGroups,
+      selectedItemKind,
+      selectedItemId,
+      nextPath,
+    );
+
+    if (nestedPath) {
+      return nestedPath;
+    }
+  }
+
+  return null;
+}
+
 
 function summarizeRequestGroupTree(
   requestGroups: WorkspaceRequestGroupNode[],
@@ -146,6 +211,26 @@ function createRequestGroupNodeId(requestGroupId: string) {
 
 function createRequestNodeId(requestId: string) {
   return `request:${requestId}`;
+}
+
+function createSelectionNodeId(
+  selectedItemKind: WorkspaceExplorerItemKind | null,
+  selectedItemId: string | null,
+) {
+  if (!selectedItemKind || !selectedItemId) {
+    return null;
+  }
+
+  switch (selectedItemKind) {
+    case 'collection':
+      return createCollectionNodeId(selectedItemId);
+    case 'request-group':
+      return createRequestGroupNodeId(selectedItemId);
+    case 'request':
+      return createRequestNodeId(selectedItemId);
+    default:
+      return null;
+  }
 }
 
 function normalizeSearchText(value: string) {
@@ -311,6 +396,48 @@ export function WorkspaceExplorer({
   const isSearchActive = normalizedSearchQuery.length > 0;
   const collapsedNodeIdSet = useMemo(() => new Set(collapsedNodeIds), [collapsedNodeIds]);
   const collapsedNodeIdsKey = collapsedNodeIds.join('|');
+  const typeAheadBufferRef = useRef('');
+  const typeAheadResetTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (typeAheadResetTimerRef.current !== null) {
+        window.clearTimeout(typeAheadResetTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isSearchActive) {
+      return;
+    }
+
+    const revealNodeIds = findSelectionRevealNodeIds(tree, selectedItemKind, selectedItemId);
+
+    for (const revealNodeId of revealNodeIds) {
+      if (collapsedNodeIdSet.has(revealNodeId)) {
+        setNodeCollapsed(revealNodeId, false);
+      }
+    }
+  }, [
+    collapsedNodeIdSet,
+    isSearchActive,
+    selectedItemId,
+    selectedItemKind,
+    setNodeCollapsed,
+    tree,
+  ]);
+
+  const selectedTreeNodeId = createSelectionNodeId(selectedItemKind, selectedItemId);
+
+  useEffect(() => {
+    if (!selectedTreeNodeId) {
+      return;
+    }
+
+    const selectedTreeItem = treeRootRef.current?.querySelector<HTMLButtonElement>(`[role="treeitem"][data-node-id="${selectedTreeNodeId}"]`) ?? null;
+    selectedTreeItem?.scrollIntoView({ block: 'nearest' });
+  }, [collapsedNodeIdsKey, filteredTree, selectedTreeNodeId]);
 
   useEffect(() => {
     const treeItems = readTreeItemElements(treeRootRef.current);
@@ -336,6 +463,50 @@ export function WorkspaceExplorer({
     const boundedIndex = Math.max(0, Math.min(nextIndex, treeItems.length - 1));
     setFocusedItemIndex(boundedIndex);
     treeItems[boundedIndex]?.focus();
+  };
+
+  const focusTreeItemByTypeAhead = (searchText: string, currentIndex: number) => {
+    if (searchText.length === 0) {
+      return false;
+    }
+
+    const treeItems = readTreeItemElements(treeRootRef.current);
+    if (treeItems.length === 0) {
+      return false;
+    }
+
+    const normalizedSearchText = searchText.toLowerCase();
+    const readNodeLabel = (treeItem: HTMLButtonElement) => (
+      (treeItem.dataset.typeaheadLabel ?? treeItem.textContent ?? '').trim().toLowerCase()
+    );
+
+    const searchOrders = ['startsWith', 'includes'] as const;
+
+    for (const searchOrder of searchOrders) {
+      for (let offset = 1; offset <= treeItems.length; offset += 1) {
+        const index = (currentIndex + offset) % treeItems.length;
+        const treeItem = treeItems[index];
+
+        if (!treeItem) {
+          continue;
+        }
+
+        const label = readNodeLabel(treeItem);
+        const matched = searchOrder === 'startsWith'
+          ? label.startsWith(normalizedSearchText)
+          : label.includes(normalizedSearchText);
+
+        if (!matched) {
+          continue;
+        }
+
+        setFocusedItemIndex(index);
+        treeItem.focus();
+        return true;
+      }
+    }
+
+    return false;
   };
 
   const findParentTreeItemIndex = (treeItemIndex: number) => {
@@ -443,8 +614,38 @@ export function WorkspaceExplorer({
         event.currentTarget.click();
         return;
       }
-      default:
+      default: {
+        if (
+          event.key.length === 1
+          && !event.altKey
+          && !event.ctrlKey
+          && !event.metaKey
+        ) {
+          event.preventDefault();
+
+          const normalizedKey = event.key.toLowerCase();
+          const nextBuffer = `${typeAheadBufferRef.current}${normalizedKey}`;
+          const hasMatchForBuffer = focusTreeItemByTypeAhead(nextBuffer, meta.treeItemIndex);
+          const resolvedBuffer = hasMatchForBuffer
+            ? nextBuffer
+            : focusTreeItemByTypeAhead(normalizedKey, meta.treeItemIndex)
+              ? normalizedKey
+              : '';
+
+          typeAheadBufferRef.current = resolvedBuffer;
+
+          if (typeAheadResetTimerRef.current !== null) {
+            window.clearTimeout(typeAheadResetTimerRef.current);
+          }
+
+          typeAheadResetTimerRef.current = window.setTimeout(() => {
+            typeAheadBufferRef.current = '';
+            typeAheadResetTimerRef.current = null;
+          }, TYPE_AHEAD_RESET_DELAY_MS);
+        }
+
         return;
+      }
     }
   };
 
@@ -489,6 +690,7 @@ export function WorkspaceExplorer({
               tabIndex={treeItemIndex === focusedItemIndex ? 0 : -1}
               data-level={treeLevel}
               data-node-id={nodeId}
+              data-typeahead-label={requestGroup.name}
               onFocus={() => setFocusedItemIndex(treeItemIndex)}
               onKeyDown={(event) => handleTreeItemKeyDown(event, {
                 treeItemIndex,
@@ -538,6 +740,7 @@ export function WorkspaceExplorer({
                         data-level={requestTreeLevel}
                         data-node-id={requestNodeId}
                         data-kind={requestNode.kind}
+                        data-typeahead-label={requestNode.request.name}
                         onFocus={() => setFocusedItemIndex(requestTreeItemIndex)}
                         onKeyDown={(event) => handleTreeItemKeyDown(event, {
                           treeItemIndex: requestTreeItemIndex,
@@ -643,6 +846,7 @@ export function WorkspaceExplorer({
                     tabIndex={treeItemIndex === focusedItemIndex ? 0 : -1}
                     data-level={1}
                     data-node-id={nodeId}
+                    data-typeahead-label={collection.name}
                     onFocus={() => setFocusedItemIndex(treeItemIndex)}
                     onKeyDown={(event) => handleTreeItemKeyDown(event, {
                       treeItemIndex,
