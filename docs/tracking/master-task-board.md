@@ -14,17 +14,17 @@
 ## Active Register
 | ID | Title | Status | Notes |
 | --- | --- | --- | --- |
-| T093 | Workbench Tab Capability Reinforcement | doing | `docs/tasks/task-t093-workbench-tab-capability-reinforcement.md` promoted as the active bounded task. |
+| T094 | +New Import Entry Point | doing | `docs/tasks/task-t094-new-import-entrypoints.md` promoted as the active bounded task. |
 
 ## Defined Queue
 | ID | Title | Status | Notes |
 | --- | --- | --- | --- |
-| - | No queued bounded task | - | Promote the next bounded task only after `T093` is closed and archived. |
+| - | No queued bounded task | - | Promote the next bounded task only after `T094` is closed and archived. |
 
 ## Current State
-- **Current bounded task:** `T093` Workbench Tab Capability Reinforcement.
-- **Most recent archived implementation:** `T092` Request Create Sheet Unification.
-- **Highest-priority next step:** complete `T093` and verify WB-01/WB-04 tab-workbench behaviors.
+- **Current bounded task:** `T094` +New Import Entry Point.
+- **Most recent archived implementation:** `T093` Workbench Tab Capability Reinforcement.
+- **Highest-priority next step:** complete `T094` by exposing cURL/OpenAPI/Postman entry points under +New and shipping cURL-to-draft MVP.
 - **Verification baseline:** `npm.cmd run lint`, `npm.cmd run typecheck`, and `npm.cmd run test:node` passed on 2026-03-26 after `T088/T089/T091` implementation updates.
 - **Closed UI-test rerun policy:** agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - **Codex UI verification lane:** use the Playwright skill workflow against the dev route or built shell when available.

@@ -27,7 +27,8 @@
 18. `T089` New Request Save Placement Mismatch Fix is archived.
 19. `T091` Collection/Request-Group Batch Run Timeout Hardening is archived.
 20. `T092` Request Create Sheet Unification is archived.
-21. `T093` Workbench Tab Capability Reinforcement is active (`doing`).
+21. `T093` Workbench Tab Capability Reinforcement is archived.
+22. `T094` +New Import Entry Point is active (`doing`).
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.
@@ -35,5 +36,5 @@
 - Keep Codex-side UI reruns closed; use Playwright smoke in Codex and reserve `npm.cmd run test:ui` for user-managed local verification.
 
 ## Immediate Next Step
-- Complete `T093` and archive it before promoting any subsequent bounded task.
+- Complete `T094` and archive it before promoting any subsequent bounded task.
 

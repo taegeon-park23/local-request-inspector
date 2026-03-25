@@ -101,6 +101,7 @@
 | T089 | New Request Save Placement Mismatch Fix | Updated placement resolution to avoid inheriting fallback `requestGroupId` across collection boundaries, removing first-save `request_group_collection_mismatch` failures for newly seeded drafts. | Codebase; master-task-board.md; priority-roadmap.md; progress-status.md |
 | T091 | Collection/Request-Group Batch Run Timeout Hardening | Added bounded transport timeout handling for batch-run execution with explicit `Timed out` stage mapping, and short-circuited empty container runs to immediate `Empty` results. | Codebase; master-task-board.md; priority-roadmap.md; progress-status.md |
 | T092 | Request Create Sheet Unification | Extended the thin create sheet to support request creation (`type/parent/name`) and routed surfaced `New Request` actions through the same sheet before opening placement-seeded drafts, with related UI/spec tests updated to submit through the unified flow. | Codebase; master-task-board.md; priority-roadmap.md; progress-status.md |
+| T093 | Workbench Tab Capability Reinforcement | Added central workbench tabs for collection overview/request-group overview/batch result, wired selection and batch-run flows to open/update those tabs, and shipped close current/others/all tab-strip actions with reopen flow preserved for request tabs. | Codebase; master-task-board.md; priority-roadmap.md; progress-status.md |
 
 ## Closed Tracking Decisions
 | Deleted Doc | Final Conclusion | Remaining Canonical Docs |

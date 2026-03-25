@@ -182,6 +182,33 @@ export const workspaceRouteMessagesEn = {
         none: 'No saved request is selected in the explorer.',
       },
     },
+    newImport: {
+      ariaLabel: 'New import entry points',
+      title: '+New import entry',
+      description:
+        'Use cURL/OpenAPI/Postman as import entry points. cURL opens a seeded draft immediately, and OpenAPI/Postman follow the existing authored-resource import pipeline.',
+      prompt: {
+        curl: 'Paste a cURL command to open as a draft request.',
+      },
+      actions: {
+        openMenu: '+ New',
+        menuAriaLabel: '+New import actions',
+        importCurl: 'Import cURL',
+        importOpenApi: 'Import OpenAPI',
+        importPostman: 'Import Postman',
+        importOpenApiInput: 'Import OpenAPI file',
+        importPostmanInput: 'Import Postman file',
+        closeMenu: 'Close',
+      },
+      status: {
+        curlOpened: 'Opened cURL draft: {method} {url}',
+        curlOpenFailed: 'Failed to open a draft from cURL import.',
+        curlInvalid: 'cURL import could not be parsed: {reason}',
+        curlInvalidUnknown: 'cURL import command could not be parsed.',
+        openApiBridge: 'OpenAPI import entry selected for {fileName}. Continuing with authored-resource preview pipeline.',
+        postmanBridge: 'Postman import entry selected for {fileName}. Continuing with authored-resource preview pipeline.',
+      },
+    },
     management: {
       ariaLabel: 'Saved resource manager',
       header: {
@@ -1135,6 +1162,33 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
       selection: {
         current: '현재 선택: {path}',
         none: '탐색기에서 선택된 저장 요청이 없습니다.',
+      },
+    },
+    newImport: {
+      ariaLabel: '새 가져오기 진입점',
+      title: '+New 가져오기 진입',
+      description:
+        'cURL/OpenAPI/Postman 진입점을 사용합니다. cURL은 즉시 seed draft를 열고, OpenAPI/Postman은 기존 authored-resource 가져오기 파이프라인으로 연결됩니다.',
+      prompt: {
+        curl: 'draft 요청으로 열 cURL 명령을 붙여 넣으세요.',
+      },
+      actions: {
+        openMenu: '+ New',
+        menuAriaLabel: '+New 가져오기 동작',
+        importCurl: 'cURL 가져오기',
+        importOpenApi: 'OpenAPI 가져오기',
+        importPostman: 'Postman 가져오기',
+        importOpenApiInput: 'OpenAPI 파일 가져오기',
+        importPostmanInput: 'Postman 파일 가져오기',
+        closeMenu: '닫기',
+      },
+      status: {
+        curlOpened: 'cURL draft를 열었습니다: {method} {url}',
+        curlOpenFailed: 'cURL 가져오기로 draft를 여는 데 실패했습니다.',
+        curlInvalid: 'cURL 가져오기 파싱에 실패했습니다: {reason}',
+        curlInvalidUnknown: 'cURL 가져오기 명령을 파싱할 수 없습니다.',
+        openApiBridge: '{fileName} OpenAPI 가져오기 진입을 선택했습니다. 기존 authored-resource 미리보기 파이프라인으로 계속합니다.',
+        postmanBridge: '{fileName} Postman 가져오기 진입을 선택했습니다. 기존 authored-resource 미리보기 파이프라인으로 계속합니다.',
       },
     },
     management: {

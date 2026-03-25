@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   listWorkspaceEnvironments,
   workspaceEnvironmentsQueryKey,
@@ -70,6 +70,10 @@ import {
   type WorkspaceRequestGroupNode,
   type WorkspaceTreeRequestLeaf,
 } from '@client/features/workspace/workspace-request-tree.api';
+import {
+  CurlImportParseError,
+  parseCurlCommandToDraftSeed,
+} from '@client/features/workspace/curl-import';
 import { useWorkspaceBatchRunStore } from '@client/features/workspace/state/workspace-batch-run-store';
 import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
 import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
@@ -442,6 +446,9 @@ export function WorkspaceRoute() {
   const [managerStatuses, setManagerStatuses] = useState<WorkspaceResourceManagerStatuses>({});
   const [pendingImportPreview, setPendingImportPreview] = useState<PendingImportPreview | null>(null);
   const [createSheetState, setCreateSheetState] = useState<CreateSheetState | null>(null);
+  const [isNewImportMenuOpen, setIsNewImportMenuOpen] = useState(false);
+  const openApiImportInputRef = useRef<HTMLInputElement | null>(null);
+  const postmanImportInputRef = useRef<HTMLInputElement | null>(null);
   const tabs = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.tabs);
   const activeTabId = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.activeTabId);
   const selectedExplorerItemId = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.selectedExplorerItemId);
@@ -458,7 +465,8 @@ export function WorkspaceRoute() {
   const pinTab = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.pinTab);
   const workspaceActivePanel = useWorkspaceUiStore((state) => state.routePanels.workspace.activePanel);
   const setWorkspaceActivePanel = useWorkspaceUiStore((state) => state.setRouteActivePanel);
-  const focusWorkspaceWorkSurface = useWorkspaceUiStore((state) => state.focusWorkspaceWorkSurface);  const closeTab = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.closeTab);
+  const focusWorkspaceWorkSurface = useWorkspaceUiStore((state) => state.focusWorkspaceWorkSurface);
+  const closeTab = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.closeTab);
   const reopenLastClosedTab = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.reopenLastClosedTab);
   const recentlyClosedTabs = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.recentlyClosedTabs);
   const setFloatingExplorerOpen = useShellStore((state) => state.setFloatingExplorerOpen);
@@ -874,36 +882,37 @@ export function WorkspaceRoute() {
     focusWorkspaceWorkSurface();
     deactivateBatchRun();
     setFloatingExplorerOpen('workspace', false);
-      let defaultEnvironmentId: string | null = null;
+    let defaultEnvironmentId: string | null = null;
 
-      try {
-        const environments = await queryClient.ensureQueryData({
-          queryKey: workspaceEnvironmentsQueryKey,
-          queryFn: listWorkspaceEnvironments,
-        });
-        defaultEnvironmentId = environments.find((environment) => environment.isDefault)?.id ?? null;
-      } catch {
-        defaultEnvironmentId = null;
-      }
-
-      const defaultPlacement = requestTreeQuery.data?.defaults;
-      const seededPlacement = createRequestPlacementFields({
-        ...resolveRequestPlacement(draftSeed, defaultPlacement),
-        collectionName: draftSeed?.collectionName ?? defaultPlacement?.collectionName ?? DEFAULT_REQUEST_COLLECTION_NAME,
-        requestGroupName: readRequestGroupName(draftSeed) ?? defaultPlacement?.requestGroupName ?? DEFAULT_REQUEST_GROUP_NAME,
+    try {
+      const environments = await queryClient.ensureQueryData({
+        queryKey: workspaceEnvironmentsQueryKey,
+        queryFn: listWorkspaceEnvironments,
       });
-      const nextTab = options.source === 'quick'
-        ? openQuickRequest({ placement: seededPlacement })
-        : openNewRequest({ source: 'detached', placement: seededPlacement });
+      defaultEnvironmentId = environments.find((environment) => environment.isDefault)?.id ?? null;
+    } catch {
+      defaultEnvironmentId = null;
+    }
 
-      ensureDraftForTab(nextTab, {
-        ...(draftSeed ?? {}),
-        ...seededPlacement,
-        selectedEnvironmentId: resolveSeededEnvironmentId(draftSeed, defaultEnvironmentId),
-      }, { replace: true });
+    const defaultPlacement = requestTreeQuery.data?.defaults;
+    const seededPlacement = createRequestPlacementFields({
+      ...resolveRequestPlacement(draftSeed, defaultPlacement),
+      collectionName: draftSeed?.collectionName ?? defaultPlacement?.collectionName ?? DEFAULT_REQUEST_COLLECTION_NAME,
+      requestGroupName: readRequestGroupName(draftSeed) ?? defaultPlacement?.requestGroupName ?? DEFAULT_REQUEST_GROUP_NAME,
+    });
+    const nextTab = options.source === 'quick'
+      ? openQuickRequest({ placement: seededPlacement })
+      : openNewRequest({ source: 'detached', placement: seededPlacement });
+
+    ensureDraftForTab(nextTab, {
+      ...(draftSeed ?? {}),
+      ...seededPlacement,
+      selectedEnvironmentId: resolveSeededEnvironmentId(draftSeed, defaultEnvironmentId),
+    }, { replace: true });
   };
 
   const handleCreateRequest = () => {
+    setIsNewImportMenuOpen(false);
     const createTarget = selectedRequestGroupLocation?.requestGroup
       ?? selectedCollection
       ?? (activeDraft?.requestGroupId
@@ -916,6 +925,7 @@ export function WorkspaceRoute() {
   };
 
   const handleCreateQuickRequest = () => {
+    setIsNewImportMenuOpen(false);
     void openDraftFromSeed(undefined, { source: 'quick' });
   };
 
@@ -1048,10 +1058,12 @@ export function WorkspaceRoute() {
   };
 
   const handleOpenCreateCollectionSheet = () => {
+    setIsNewImportMenuOpen(false);
     openCreateSheet('collection');
   };
 
   const handleOpenCreateRequestGroupSheet = (target: WorkspaceCollectionNode | WorkspaceRequestGroupNode) => {
+    setIsNewImportMenuOpen(false);
     openCreateSheet('request-group', target);
   };
 
@@ -1288,6 +1300,94 @@ export function WorkspaceRoute() {
     });
   };
 
+  const readSelectedPlacementSeed = (): RequestDraftSeed => {
+    if (selectedRequestGroupLocation) {
+      return createRequestPlacementFields({
+        collectionId: selectedRequestGroupLocation.collection.collectionId,
+        collectionName: selectedRequestGroupLocation.collection.name,
+        requestGroupId: selectedRequestGroupLocation.requestGroup.requestGroupId,
+        requestGroupName: selectedRequestGroupLocation.requestGroup.name,
+      });
+    }
+
+    if (selectedCollection) {
+      return createRequestPlacementFields({
+        collectionId: selectedCollection.collectionId,
+        collectionName: selectedCollection.name,
+      });
+    }
+
+    return {};
+  };
+
+  const handleImportCurl = () => {
+    const command = window.prompt(t('workspaceRoute.newImport.prompt.curl'));
+    if (!command || command.trim().length === 0) {
+      return;
+    }
+
+    try {
+      const curlSeed = parseCurlCommandToDraftSeed(command);
+      const placementSeed = readSelectedPlacementSeed();
+      const mergedSeed: RequestDraftSeed = {
+        ...curlSeed,
+        ...placementSeed,
+      };
+      setIsNewImportMenuOpen(false);
+
+      void openDraftFromSeed(mergedSeed)
+        .then(() => {
+          setManagerStatus('transfer', {
+            tone: 'info',
+            message: t('workspaceRoute.newImport.status.curlOpened', {
+              method: mergedSeed.method ?? 'GET',
+              url: mergedSeed.url ?? '',
+            }),
+          });
+        })
+        .catch((error) => {
+          setManagerStatus('transfer', {
+            tone: 'error',
+            message: error instanceof Error
+              ? error.message
+              : t('workspaceRoute.newImport.status.curlOpenFailed'),
+          });
+        });
+    } catch (error) {
+      setManagerStatus('transfer', {
+        tone: 'error',
+        message: error instanceof CurlImportParseError
+          ? t('workspaceRoute.newImport.status.curlInvalid', { reason: error.message })
+          : t('workspaceRoute.newImport.status.curlInvalidUnknown'),
+      });
+    }
+  };
+
+  const bridgeImportFromFile = (source: 'openapi' | 'postman', file: File | null) => {
+    if (!file) {
+      return;
+    }
+
+    setIsNewImportMenuOpen(false);
+    setManagerStatus('transfer', {
+      tone: 'info',
+      message: source === 'openapi'
+        ? t('workspaceRoute.newImport.status.openApiBridge', { fileName: file.name })
+        : t('workspaceRoute.newImport.status.postmanBridge', { fileName: file.name }),
+    });
+    void handleImportResources(file);
+  };
+
+  const handleOpenApiFileSelection = (event: { currentTarget: HTMLInputElement }) => {
+    bridgeImportFromFile('openapi', event.currentTarget.files?.[0] ?? null);
+    event.currentTarget.value = '';
+  };
+
+  const handlePostmanFileSelection = (event: { currentTarget: HTMLInputElement }) => {
+    bridgeImportFromFile('postman', event.currentTarget.files?.[0] ?? null);
+    event.currentTarget.value = '';
+  };
+
   return (
     <RoutePanelTabsLayout
       layoutMode="floating-explorer"
@@ -1351,6 +1451,15 @@ export function WorkspaceRoute() {
         ) : null}
 
         <div className="request-work-surface__future-actions" aria-label={t('workspaceRoute.a11y.headerActions')}>
+          <button
+            type="button"
+            className={`workspace-button workspace-button--secondary${isNewImportMenuOpen ? ' workspace-button--ghost' : ''}`}
+            onClick={() => setIsNewImportMenuOpen((open) => !open)}
+            aria-expanded={isNewImportMenuOpen}
+            aria-controls="workspace-new-import-menu"
+          >
+            <IconLabel icon="add">{t('workspaceRoute.newImport.actions.openMenu')}</IconLabel>
+          </button>
           <button type="button" className="workspace-button" onClick={handleCreateRequest}>
             <IconLabel icon="new">{t('workspaceRoute.tabShell.newRequest')}</IconLabel>
           </button>
@@ -1387,6 +1496,63 @@ export function WorkspaceRoute() {
             </button>
           ) : null}
         </div>
+
+        {isNewImportMenuOpen ? (
+          <section
+            id="workspace-new-import-menu"
+            className="workspace-surface-card workspace-create-sheet"
+            aria-label={t('workspaceRoute.newImport.ariaLabel')}
+          >
+            <header className="request-editor-card__header">
+              <div>
+                <h3>{t('workspaceRoute.newImport.title')}</h3>
+                <p>{t('workspaceRoute.newImport.description')}</p>
+              </div>
+            </header>
+            <div className="request-work-surface__future-actions" aria-label={t('workspaceRoute.newImport.actions.menuAriaLabel')}>
+              <button type="button" className="workspace-button" onClick={handleImportCurl}>
+                <IconLabel icon="import">{t('workspaceRoute.newImport.actions.importCurl')}</IconLabel>
+              </button>
+              <button
+                type="button"
+                className="workspace-button workspace-button--secondary"
+                onClick={() => openApiImportInputRef.current?.click()}
+              >
+                <IconLabel icon="import">{t('workspaceRoute.newImport.actions.importOpenApi')}</IconLabel>
+              </button>
+              <button
+                type="button"
+                className="workspace-button workspace-button--secondary"
+                onClick={() => postmanImportInputRef.current?.click()}
+              >
+                <IconLabel icon="import">{t('workspaceRoute.newImport.actions.importPostman')}</IconLabel>
+              </button>
+              <button
+                type="button"
+                className="workspace-button workspace-button--ghost"
+                onClick={() => setIsNewImportMenuOpen(false)}
+              >
+                {t('workspaceRoute.newImport.actions.closeMenu')}
+              </button>
+              <input
+                ref={openApiImportInputRef}
+                aria-label={t('workspaceRoute.newImport.actions.importOpenApiInput')}
+                type="file"
+                accept=".json,.yaml,.yml,application/json,text/yaml,application/x-yaml"
+                style={{ display: 'none' }}
+                onChange={handleOpenApiFileSelection}
+              />
+              <input
+                ref={postmanImportInputRef}
+                aria-label={t('workspaceRoute.newImport.actions.importPostmanInput')}
+                type="file"
+                accept=".json,application/json"
+                style={{ display: 'none' }}
+                onChange={handlePostmanFileSelection}
+              />
+            </div>
+          </section>
+        ) : null}
 
         <WorkspaceCreateSheet
           isOpen={Boolean(createSheetState)}
