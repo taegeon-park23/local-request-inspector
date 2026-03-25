@@ -32,6 +32,7 @@ import { StatusBadge } from '@client/shared/ui/StatusBadge';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 import { RoutePanelTabsLayout } from '@client/features/route-panel-tabs-layout';
 import { useReplayRunStore } from '@client/shared/replay-run-store';
+import { resolveApiErrorMessage } from '@client/shared/api-error-message';
 
 type Translate = ReturnType<typeof useI18n>['t'];
 
@@ -263,15 +264,15 @@ export function HistoryRoute() {
   const isDetailLoading = effectiveSelectedHistoryId !== null && historyDetailQuery.isPending && !historyDetailQuery.data;
   const isEmpty = !isListLoading && listItems.length === 0;
   const hasNoFilteredResults = !isListLoading && listItems.length > 0 && filteredHistory.length === 0;
-  const degradedReason = historyListQuery.error instanceof Error
-    ? historyListQuery.error.message
-    : historyDetailQuery.error instanceof Error
-      ? historyDetailQuery.error.message
-      : historyResultQuery.error instanceof Error
-        ? historyResultQuery.error.message
-        : historyTestResultsQuery.error instanceof Error
-          ? historyTestResultsQuery.error.message
-      : t('historyRoute.empty.degraded.fallbackDescription');
+  const degradedReason = historyListQuery.error
+    ? resolveApiErrorMessage(historyListQuery.error, t('historyRoute.empty.degraded.fallbackDescription'), t)
+    : historyDetailQuery.error
+      ? resolveApiErrorMessage(historyDetailQuery.error, t('historyRoute.empty.degraded.fallbackDescription'), t)
+      : historyResultQuery.error
+        ? resolveApiErrorMessage(historyResultQuery.error, t('historyRoute.empty.degraded.fallbackDescription'), t)
+        : historyTestResultsQuery.error
+          ? resolveApiErrorMessage(historyTestResultsQuery.error, t('historyRoute.empty.degraded.fallbackDescription'), t)
+          : t('historyRoute.empty.degraded.fallbackDescription');
   const selectedStageSummaries = selectedHistory?.stageSummaries ?? [];
   const persistedExecutionResult = historyResultQuery.data ?? null;
   const persistedTestResults = historyTestResultsQuery.data ?? [];

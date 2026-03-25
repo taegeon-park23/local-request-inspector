@@ -11,15 +11,12 @@ import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 import { localeStorageKey, type LocaleCode } from '@client/shared/i18n/messages';
 import { RoutePanelTabsLayout } from '@client/features/route-panel-tabs-layout';
+import { resolveApiErrorMessage } from '@client/shared/api-error-message';
 
 async function writeClipboardText(value: string) {
   if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
     await navigator.clipboard.writeText(value);
   }
-}
-
-function getErrorMessage(error: unknown, fallbackMessage: string) {
-  return error instanceof Error ? error.message : fallbackMessage;
 }
 
 export function SettingsRoute() {
@@ -85,7 +82,7 @@ export function SettingsRoute() {
           {runtimeStatusQuery.isError ? (
             <EmptyStateCallout
               title={t('settings.diagnosticsDegraded.title')}
-              description={getErrorMessage(runtimeStatusQuery.error, t('settings.diagnosticsDegraded.fallbackDescription'))}
+              description={resolveApiErrorMessage(runtimeStatusQuery.error, t('settings.diagnosticsDegraded.fallbackDescription'), t)}
             />
           ) : null}
           {copiedMessage ? <p className="workspace-explorer__status workspace-explorer__status--info">{copiedMessage}</p> : null}
@@ -129,7 +126,7 @@ export function SettingsRoute() {
           <div className="request-work-surface request-work-surface--empty">
             <EmptyStateCallout
               title={t('settings.empty.settingsDiagnosticsDegraded.title')}
-              description={getErrorMessage(runtimeStatusQuery.error, t('settings.empty.settingsDiagnosticsDegraded.fallbackDescription'))}
+              description={resolveApiErrorMessage(runtimeStatusQuery.error, t('settings.empty.settingsDiagnosticsDegraded.fallbackDescription'), t)}
             />
           </div>
         ) : (

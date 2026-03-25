@@ -7,7 +7,7 @@
 - **Update Rule:** Update after each active-task status change or verification-state change.
 
 ## Current Snapshot
-- There is no active bounded task. The next implementation slice must start from one newly promoted bounded task.
+- `T099` is archived after introducing shared localized transport-error messaging (`backend_unavailable`/`invalid_api_response`) across workspace, settings, environments, scripts, mocks, captures, history, and request-builder save/run status flows.
 - `T098` is archived after introducing shared frontend API response parsing, classifying backend-unavailable/proxy failures into deterministic actionable errors, and removing duplicated per-module parser seams.
 - `T097` is archived after expanding runner inputs (selection/order/environment/iteration/data-file), wiring run-history visibility, and aligning collection/request-group batch payload composition with CLI-friendly server run contracts.
 - `T096` is archived after shipping workspace context-panel tabs (`Overview/Inheritance/Runs`), effective-vs-override inheritance visualization, and collection/request-group/request detail continuity with existing result-panel flows.
@@ -37,5 +37,5 @@
 1. Read `../prd/overview.md`.
 2. Read `master-task-board.md` and `priority-roadmap.md`.
 3. Read `completed-work-summary.md` only when archived context is needed.
-4. Promote one new bounded task before starting additional implementation work.
+4. Promote exactly one new bounded task before starting implementation.
 

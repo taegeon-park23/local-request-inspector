@@ -24,6 +24,7 @@ import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { RoutePanelTabsLayout } from '@client/features/route-panel-tabs-layout';
 import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
 import { useShellStore } from '@client/app/providers/shell-store';
+import { resolveApiErrorMessage } from '@client/shared/api-error-message';
 
 type EnvironmentSortOrder = 'default' | 'name' | 'updated';
 
@@ -188,9 +189,11 @@ export function EnvironmentsRoute() {
           }
         : null))
     : null;
-  const detailDegradedReason = detailQuery.error instanceof Error
-    ? detailQuery.error.message
-    : t('environmentsRoute.empty.degraded.fallbackDescription');
+  const detailDegradedReason = resolveApiErrorMessage(
+    detailQuery.error,
+    t('environmentsRoute.empty.degraded.fallbackDescription'),
+    t,
+  );
   const selectedLegacySecretRowCount = !isCreatingDraft
     ? Math.max(detailQuery.data?.legacySecretRowCount ?? 0, selectedListEnvironment?.legacySecretRowCount ?? 0)
     : 0;
@@ -273,7 +276,7 @@ export function EnvironmentsRoute() {
             />
           ) : null}
           {listQuery.isPending && !listQuery.data ? <EmptyStateCallout title={t('environmentsRoute.empty.loadingList.title')} description={t('environmentsRoute.empty.loadingList.description')} /> : null}
-          {listQuery.isError ? <EmptyStateCallout title={t('environmentsRoute.empty.degraded.title')} description={listQuery.error instanceof Error ? listQuery.error.message : t('environmentsRoute.empty.degraded.fallbackDescription')} /> : null}
+          {listQuery.isError ? <EmptyStateCallout title={t('environmentsRoute.empty.degraded.title')} description={resolveApiErrorMessage(listQuery.error, t('environmentsRoute.empty.degraded.fallbackDescription'), t)} /> : null}
           {!listQuery.isPending && (listQuery.data ?? []).length === 0 ? <EmptyStateCallout title={t('environmentsRoute.empty.noItems.title')} description={t('environmentsRoute.empty.noItems.description')} /> : null}
           {!listQuery.isPending && (listQuery.data ?? []).length > 0 && sortedItems.length === 0 ? <EmptyStateCallout title={t('environmentsRoute.empty.noFilteredItems.title')} description={t('environmentsRoute.empty.noFilteredItems.description')} /> : null}
           {sortedItems.length > 0 ? <ul className="environments-list" aria-label={t('environmentsRoute.sidebar.listAriaLabel')}>{sortedItems.map((environment) => <li key={environment.id}><button type="button" className={environment.id === effectiveSelectedId && !isCreatingDraft ? 'workspace-request workspace-request--selected' : 'workspace-request'} aria-label={t('environmentsRoute.sidebar.openEnvironmentAction', { name: environment.name })} onClick={() => { setIsCreatingDraft(false); setSelectedEnvironmentId(environment.id); setFloatingExplorerOpen('environments', false); }}><span className="workspace-request__header"><span className="workspace-request__title">{environment.name}</span><span className="workspace-request__badges">{environment.isDefault ? <span className="workspace-chip">{t('environmentsRoute.list.defaultChip')}</span> : null}<span className="workspace-chip workspace-chip--secondary">{t('environmentsRoute.list.varsChip', { count: environment.variableCount })}</span></span></span><span className="workspace-request__meta">{environment.description || t('environmentsRoute.list.noDescription')}</span><span className="workspace-request__meta workspace-request__meta--support">{environment.resolutionSummary}</span></button></li>)}</ul> : null}

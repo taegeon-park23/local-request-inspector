@@ -21,6 +21,7 @@ import { StatusBadge } from '@client/shared/ui/StatusBadge';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 import { RoutePanelTabsLayout } from '@client/features/route-panel-tabs-layout';
 import { useReplayRunStore } from '@client/shared/replay-run-store';
+import { resolveApiErrorMessage } from '@client/shared/api-error-message';
 
 type TranslateFn = ReturnType<typeof useI18n>['t'];
 type CaptureDetailTabId = 'timeline' | 'deferred-detail';
@@ -196,13 +197,13 @@ export function CapturesRoute() {
   const isDetailLoading = effectiveSelectedCaptureId !== null && captureDetailQuery.isPending && !captureDetailQuery.data;
   const isEmpty = !isLoading && listItems.length === 0;
   const hasNoFilteredResults = !isLoading && listItems.length > 0 && filteredCaptures.length === 0;
-  const degradedReason = capturesListQuery.error instanceof Error
-    ? capturesListQuery.error.message
-    : captureDetailQuery.error instanceof Error
-      ? captureDetailQuery.error.message
+  const degradedReason = capturesListQuery.error
+    ? resolveApiErrorMessage(capturesListQuery.error, t('capturesRoute.empty.degraded.fallbackDescription'), t)
+    : captureDetailQuery.error
+      ? resolveApiErrorMessage(captureDetailQuery.error, t('capturesRoute.empty.degraded.fallbackDescription'), t)
       : connectionHealth === 'degraded'
         ? 'Runtime events are degraded, so new capture refreshes may lag behind persisted data.'
-        : 'Capture observation is temporarily unavailable.';
+        : t('capturesRoute.empty.degraded.fallbackDescription');
 
   const handleOpenReplayDraft = () => {
     if (!selectedCapture) {

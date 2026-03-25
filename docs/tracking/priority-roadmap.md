@@ -33,6 +33,7 @@
 24. `T096` Context Panel V2 + Inheritance Visualization is archived.
 25. `T097` Runner Capability Advancement is archived.
 26. `T098` API Transport Error Normalization is archived.
+27. `T099` Backend-Unavailable UI Message Normalization is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.
@@ -40,5 +41,5 @@
 - Keep Codex-side UI reruns closed; use Playwright smoke in Codex and reserve `npm.cmd run test:ui` for user-managed local verification.
 
 ## Immediate Next Step
-- Define and promote one new bounded task from remaining PRD Must/Should gaps before additional implementation starts.
+- Promote one new bounded task and execute it end-to-end before opening another.
 

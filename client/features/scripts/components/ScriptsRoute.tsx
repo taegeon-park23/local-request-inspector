@@ -27,6 +27,7 @@ import { SectionHeading } from '@client/shared/ui/SectionHeading';
 import { RoutePanelTabsLayout } from '@client/features/route-panel-tabs-layout';
 import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
 import { useShellStore } from '@client/app/providers/shell-store';
+import { resolveApiErrorMessage } from '@client/shared/api-error-message';
 
 type ScriptStageFilter = 'all' | ScriptType;
 
@@ -194,9 +195,11 @@ export function ScriptsRoute() {
     : null;
   const requestedStageLabel = requestedStageFilter === 'all' ? null : getScriptTypeLabel(requestedStageFilter, t);
   const requestedListScript = (listQuery.data ?? []).find((item) => item.id === requestedScriptId) ?? null;
-  const detailDegradedReason = detailQuery.error instanceof Error
-    ? detailQuery.error.message
-    : t('scriptsRoute.empty.degraded.fallbackDescription');
+  const detailDegradedReason = resolveApiErrorMessage(
+    detailQuery.error,
+    t('scriptsRoute.empty.degraded.fallbackDescription'),
+    t,
+  );
 
   const createMutation = useMutation({
     mutationFn: createSavedScript,
@@ -300,7 +303,7 @@ export function ScriptsRoute() {
               />
             ) : null}
             {listQuery.isPending && !listQuery.data ? <EmptyStateCallout title={t('scriptsRoute.empty.loadingList.title')} description={t('scriptsRoute.empty.loadingList.description')} /> : null}
-            {listQuery.isError ? <EmptyStateCallout title={t('scriptsRoute.empty.degraded.title')} description={listQuery.error instanceof Error ? listQuery.error.message : t('scriptsRoute.empty.degraded.fallbackDescription')} /> : null}
+            {listQuery.isError ? <EmptyStateCallout title={t('scriptsRoute.empty.degraded.title')} description={resolveApiErrorMessage(listQuery.error, t('scriptsRoute.empty.degraded.fallbackDescription'), t)} /> : null}
             {!listQuery.isPending && (listQuery.data ?? []).length === 0 ? <EmptyStateCallout title={t('scriptsRoute.empty.noItems.title')} description={t('scriptsRoute.empty.noItems.description')} /> : null}
             {!listQuery.isPending && (listQuery.data ?? []).length > 0 && sortedItems.length === 0 ? <EmptyStateCallout title={t('scriptsRoute.empty.noFilteredItems.title')} description={t('scriptsRoute.empty.noFilteredItems.description')} /> : null}
             {sortedItems.length > 0 ? (
@@ -555,7 +558,7 @@ export function ScriptsRoute() {
             {templatesQuery.isPending ? (
               <EmptyStateCallout title={t('scriptsRoute.empty.loadingTemplates.title')} description={t('scriptsRoute.empty.loadingTemplates.description')} />
             ) : templatesQuery.isError ? (
-              <EmptyStateCallout title={t('scriptsRoute.empty.templatesDegraded.title')} description={templatesQuery.error instanceof Error ? templatesQuery.error.message : t('scriptsRoute.empty.templatesDegraded.fallbackDescription')} />
+              <EmptyStateCallout title={t('scriptsRoute.empty.templatesDegraded.title')} description={resolveApiErrorMessage(templatesQuery.error, t('scriptsRoute.empty.templatesDegraded.fallbackDescription'), t)} />
             ) : (
               <ul className="scripts-template-list" aria-label={t('scriptsRoute.list.templatesListAriaLabel')}>
                 {(templatesQuery.data ?? []).map((template) => (

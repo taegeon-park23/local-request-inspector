@@ -81,6 +81,7 @@ import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-
 import { RoutePanelTabsLayout } from '@client/features/route-panel-tabs-layout';
 import { useShellStore } from '@client/app/providers/shell-store';
 import { useReplayRunStore } from '@client/shared/replay-run-store';
+import { resolveApiErrorMessage } from '@client/shared/api-error-message';
 
 type WorkspaceResourceManagerStatuses = Partial<Record<WorkspaceResourceManagerStatusScope, WorkspaceResourceManagerStatus>>;
 
@@ -109,6 +110,14 @@ const RUNNER_ENVIRONMENT_INHERIT = '__inherit__';
 const RUNNER_ENVIRONMENT_NONE = '__none__';
 const RUNNER_DEFAULT_EXECUTION_ORDER: NonNullable<WorkspaceBatchRunInput['executionOrder']> = 'depth-first-sequential';
 const RUNNER_MAX_ITERATION_COUNT = 25;
+
+function resolveWorkspaceErrorMessage(
+  error: unknown,
+  fallbackMessage: string,
+  t: ReturnType<typeof useI18n>['t'],
+) {
+  return resolveApiErrorMessage(error, fallbackMessage, t);
+}
 
 interface WorkspaceRunnerContainerSelection {
   containerType: 'collection' | 'request-group';
@@ -657,7 +666,7 @@ export function WorkspaceRoute() {
     onError: (error) => {
       setManagerStatus('transfer', {
         tone: 'error',
-        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.exportFailed'),
+        message: resolveWorkspaceErrorMessage(error, t('workspaceRoute.explorer.status.exportFailed'), t),
       });
     },
   });
@@ -686,7 +695,7 @@ export function WorkspaceRoute() {
     onError: (error) => {
       setManagerStatus('saved-request', {
         tone: 'error',
-        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.exportSingleFailed'),
+        message: resolveWorkspaceErrorMessage(error, t('workspaceRoute.explorer.status.exportSingleFailed'), t),
       });
     },
   });
@@ -707,7 +716,7 @@ export function WorkspaceRoute() {
       setPendingImportPreview(null);
       setManagerStatus('transfer', {
         tone: 'error',
-        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.fileReadFailed'),
+        message: resolveWorkspaceErrorMessage(error, t('workspaceRoute.explorer.status.fileReadFailed'), t),
       });
     },
   });
@@ -727,9 +736,7 @@ export function WorkspaceRoute() {
     onError: (error) => {
       setManagerStatus('transfer', {
         tone: 'error',
-        message: error instanceof Error
-          ? error.message
-          : t('workspaceRoute.explorer.status.importFailed'),
+        message: resolveWorkspaceErrorMessage(error, t('workspaceRoute.explorer.status.importFailed'), t),
       });
     },
   });
@@ -749,7 +756,7 @@ export function WorkspaceRoute() {
     onError: (error) => {
       setManagerStatus('collections', {
         tone: 'error',
-        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.collectionCreateFailed'),
+        message: resolveWorkspaceErrorMessage(error, t('workspaceRoute.explorer.status.collectionCreateFailed'), t),
       });
     },
   });
@@ -779,7 +786,7 @@ export function WorkspaceRoute() {
     onError: (error) => {
       setManagerStatus('collections', {
         tone: 'error',
-        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.collectionRenameFailed'),
+        message: resolveWorkspaceErrorMessage(error, t('workspaceRoute.explorer.status.collectionRenameFailed'), t),
       });
     },
   });
@@ -803,7 +810,7 @@ export function WorkspaceRoute() {
     onError: (error) => {
       setManagerStatus('collections', {
         tone: 'error',
-        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.collectionDeleteFailed'),
+        message: resolveWorkspaceErrorMessage(error, t('workspaceRoute.explorer.status.collectionDeleteFailed'), t),
       });
     },
   });
@@ -837,7 +844,7 @@ export function WorkspaceRoute() {
     onError: (error) => {
       setManagerStatus('request-groups', {
         tone: 'error',
-        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.requestGroupCreateFailed'),
+        message: resolveWorkspaceErrorMessage(error, t('workspaceRoute.explorer.status.requestGroupCreateFailed'), t),
       });
     },
   });
@@ -867,7 +874,7 @@ export function WorkspaceRoute() {
     onError: (error) => {
       setManagerStatus('request-groups', {
         tone: 'error',
-        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.requestGroupRenameFailed'),
+        message: resolveWorkspaceErrorMessage(error, t('workspaceRoute.explorer.status.requestGroupRenameFailed'), t),
       });
     },
   });
@@ -891,7 +898,7 @@ export function WorkspaceRoute() {
     onError: (error) => {
       setManagerStatus('request-groups', {
         tone: 'error',
-        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.requestGroupDeleteFailed'),
+        message: resolveWorkspaceErrorMessage(error, t('workspaceRoute.explorer.status.requestGroupDeleteFailed'), t),
       });
     },
   });
@@ -917,7 +924,7 @@ export function WorkspaceRoute() {
     onError: (error) => {
       setManagerStatus('saved-request', {
         tone: 'error',
-        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.requestDeleteFailed'),
+        message: resolveWorkspaceErrorMessage(error, t('workspaceRoute.explorer.status.requestDeleteFailed'), t),
       });
     },
   });
@@ -928,10 +935,10 @@ export function WorkspaceRoute() {
         message: t('workspaceRoute.explorer.status.workspaceResourcesDegraded'),
         details: [
           ...(requestTreeQuery.error instanceof Error
-            ? [t('workspaceRoute.explorer.status.requestTreeDegraded'), requestTreeQuery.error.message]
+            ? [t('workspaceRoute.explorer.status.requestTreeDegraded'), resolveWorkspaceErrorMessage(requestTreeQuery.error, t('workspaceRoute.explorer.status.requestTreeDegraded'), t)]
             : []),
           ...(savedRequestsQuery.error instanceof Error
-            ? [t('workspaceRoute.explorer.status.savedRequestsDegraded'), savedRequestsQuery.error.message]
+            ? [t('workspaceRoute.explorer.status.savedRequestsDegraded'), resolveWorkspaceErrorMessage(savedRequestsQuery.error, t('workspaceRoute.explorer.status.savedRequestsDegraded'), t)]
             : []),
         ],
       }
@@ -1363,7 +1370,7 @@ export function WorkspaceRoute() {
       });
       await queryClient.invalidateQueries({ queryKey: executionHistoryListQueryKey });
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('workspaceRoute.resultPanel.batch.status.collectionFailed');
+      const message = resolveWorkspaceErrorMessage(error, t('workspaceRoute.resultPanel.batch.status.collectionFailed'), t);
       finishBatchRunError(message);
       openBatchResult({
         containerType: 'collection',
@@ -1398,7 +1405,7 @@ export function WorkspaceRoute() {
       });
       await queryClient.invalidateQueries({ queryKey: executionHistoryListQueryKey });
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('workspaceRoute.resultPanel.batch.status.requestGroupFailed');
+      const message = resolveWorkspaceErrorMessage(error, t('workspaceRoute.resultPanel.batch.status.requestGroupFailed'), t);
       finishBatchRunError(message);
       openBatchResult({
         containerType: 'request-group',
@@ -1522,7 +1529,7 @@ export function WorkspaceRoute() {
       setPendingImportPreview(null);
       setManagerStatus('transfer', {
         tone: 'error',
-        message: error instanceof Error ? error.message : t('workspaceRoute.explorer.status.fileReadFailed'),
+        message: resolveWorkspaceErrorMessage(error, t('workspaceRoute.explorer.status.fileReadFailed'), t),
       });
     }
   };
@@ -1596,9 +1603,7 @@ export function WorkspaceRoute() {
         .catch((error) => {
           setManagerStatus('transfer', {
             tone: 'error',
-            message: error instanceof Error
-              ? error.message
-              : t('workspaceRoute.newImport.status.curlOpenFailed'),
+            message: resolveWorkspaceErrorMessage(error, t('workspaceRoute.newImport.status.curlOpenFailed'), t),
           });
         });
     } catch (error) {

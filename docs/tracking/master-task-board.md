@@ -14,18 +14,18 @@
 ## Active Register
 | ID | Title | Status | Notes |
 | --- | --- | --- | --- |
-| - | No active bounded task | - | Promote the next bounded task after reviewing PRD gaps and shipped scope. |
+| - | No active bounded task | - | Promote one bounded task from the roadmap before starting implementation changes. |
 
 ## Defined Queue
 | ID | Title | Status | Notes |
 | --- | --- | --- | --- |
-| - | No queued bounded task | - | Define one bounded task before starting further implementation work. |
+| - | No queued bounded task | - | Define the next bounded task when promotion criteria are agreed. |
 
 ## Current State
-- **Current bounded task:** none.
-- **Most recent archived implementation:** `T098` API Transport Error Normalization.
-- **Highest-priority next step:** define and promote one new bounded task from remaining PRD Must/Should gaps.
-- **Verification baseline:** `npm.cmd run lint`, `npm.cmd run typecheck`, and `npm.cmd run test:node` passed on 2026-03-26 after `T098` API transport-error normalization updates.
+- **Current bounded task:** None (`idle` until the next bounded task is promoted).
+- **Most recent archived implementation:** `T099` Backend-Unavailable UI Message Normalization.
+- **Highest-priority next step:** promote the next bounded task and keep single-task execution discipline.
+- **Verification baseline:** `npm.cmd run lint`, `npm.cmd run typecheck`, and `npm.cmd run test:node` passed on 2026-03-26 after `T099` backend-unavailable UI message normalization updates.
 - **Closed UI-test rerun policy:** agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - **Codex UI verification lane:** use the Playwright skill workflow against the dev route or built shell when available.
 - **User-managed local verification:** if UI full-suite verification is still needed, instruct the user to run `npm.cmd run test:ui` locally and treat that result as authoritative.

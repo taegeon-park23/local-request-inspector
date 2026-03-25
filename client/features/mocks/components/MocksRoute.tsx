@@ -38,6 +38,7 @@ import { IconLabel } from '@client/shared/ui/IconLabel';
 import { StatusBadge } from '@client/shared/ui/StatusBadge';
 import { downloadAuthoredResourceBundle } from '@client/features/workspace/resource-bundle.api';
 import { RoutePanelTabsLayout } from '@client/features/route-panel-tabs-layout';
+import { resolveApiErrorMessage } from '@client/shared/api-error-message';
 
 type Translate = ReturnType<typeof useI18n>['t'];
 
@@ -545,7 +546,7 @@ export function MocksRoute() {
     onError: (error) => {
       setResourceTransferStatus({
         tone: 'error',
-        message: error instanceof Error ? error.message : t('mocksRoute.helpers.exportFailure'),
+        message: resolveApiErrorMessage(error, t('mocksRoute.helpers.exportFailure'), t),
       });
     },
   });
@@ -554,10 +555,10 @@ export function MocksRoute() {
   const isDetailLoading = effectiveSelectedRuleId !== null && !isCreatingRule && detailQuery.isPending && !detailQuery.data;
   const isEmpty = !isListLoading && listItems.length === 0;
   const hasNoFilteredResults = !isListLoading && listItems.length > 0 && filteredRules.length === 0;
-  const degradedReason = listQuery.error instanceof Error
-    ? listQuery.error.message
-    : detailQuery.error instanceof Error
-      ? detailQuery.error.message
+  const degradedReason = listQuery.error
+    ? resolveApiErrorMessage(listQuery.error, t('mocksRoute.helpers.degradedReasonFallback'), t)
+    : detailQuery.error
+      ? resolveApiErrorMessage(detailQuery.error, t('mocksRoute.helpers.degradedReasonFallback'), t)
       : t('mocksRoute.helpers.degradedReasonFallback');
   const isSaving = createRuleMutation.isPending || updateRuleMutation.isPending;
   const saveDisabledReason = getSaveDisabledReason(draft, isSaving, t);

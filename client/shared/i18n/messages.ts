@@ -28,6 +28,10 @@ const enCatalog = {
       copied: '{label} copied.',
       unavailable: '{label} is visible but clipboard access is unavailable in this environment.',
     },
+    errors: {
+      backendUnavailable: 'Backend API is unavailable. Start the local server and retry.',
+      invalidApiResponse: 'Server returned an invalid API payload. Retry after restarting the backend.',
+    },
   },
   shell: {
     breadcrumb: {
@@ -377,6 +381,10 @@ const koCatalog: CatalogShape<typeof enCatalog> = {
     copy: {
       copied: '{label} 항목을 복사했습니다.',
       unavailable: '{label} 항목은 표시되지만 현재 환경에서는 클립보드를 사용할 수 없습니다.',
+    },
+    errors: {
+      backendUnavailable: '백엔드 API를 사용할 수 없습니다. 로컬 서버를 실행한 뒤 다시 시도하세요.',
+      invalidApiResponse: '서버가 올바르지 않은 API payload를 반환했습니다. 백엔드를 재시작한 뒤 다시 시도하세요.',
     },
   },
   shell: {

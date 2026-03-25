@@ -30,6 +30,7 @@ import {
 import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
 import { useWorkspaceBatchRunStore } from '@client/features/workspace/state/workspace-batch-run-store';
 import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
+import { resolveApiErrorMessage } from '@client/shared/api-error-message';
 
 function isJsonBodyMalformed(draft: RequestDraftState) {
   if (draft.bodyMode !== 'json') {
@@ -414,8 +415,9 @@ export function useRequestBuilderCommands(
         return;
       }
 
+      const errorMessage = resolveApiErrorMessage(error, t('workspaceRoute.requestBuilder.status.saveError'), t);
       setTabSaveState(activeTab.id, 'error');
-      finishSaveError(activeTab.id, error instanceof Error ? error.message : t('workspaceRoute.requestBuilder.status.saveError'));
+      finishSaveError(activeTab.id, errorMessage);
     },
   });
 
@@ -445,9 +447,10 @@ export function useRequestBuilderCommands(
         return;
       }
 
+      const errorMessage = resolveApiErrorMessage(error, t('workspaceRoute.requestBuilder.status.runError'), t);
       const failedExecution = createFailedExecutionObservation(
         draft,
-        error instanceof Error ? error : new Error(t('workspaceRoute.requestBuilder.status.runError')),
+        new Error(errorMessage),
         t,
       );
 
