@@ -823,7 +823,7 @@ export function WorkspaceRoute() {
 
   const openDraftFromSeed = async (
     draftSeed?: RequestDraftSeed,
-    options: { source?: 'draft' | 'quick' } = {},
+    options: { source?: 'detached' | 'quick' } = {},
   ) => {
     focusWorkspaceWorkSurface();
     deactivateBatchRun();
@@ -848,7 +848,7 @@ export function WorkspaceRoute() {
       });
       const nextTab = options.source === 'quick'
         ? openQuickRequest({ placement: seededPlacement })
-        : openNewRequest({ source: 'draft', placement: seededPlacement });
+        : openNewRequest({ source: 'detached', placement: seededPlacement });
 
       ensureDraftForTab(nextTab, {
         ...(draftSeed ?? {}),

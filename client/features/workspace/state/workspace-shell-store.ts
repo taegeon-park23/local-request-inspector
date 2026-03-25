@@ -27,7 +27,7 @@ interface WorkspaceShellState {
   selectedExplorerItemKind: WorkspaceExplorerItemKind | null;
   activeRoutePanel: RoutePanelTabId;
   nextDraftSequence: number;
-  openNewRequest: (options?: { source?: 'draft' | 'quick'; placement?: RequestPlacementValue }) => RequestTabRecord;
+  openNewRequest: (options?: { source?: 'detached' | 'quick'; placement?: RequestPlacementValue }) => RequestTabRecord;
   openQuickRequest: (options?: { placement?: RequestPlacementValue }) => RequestTabRecord;
   openSavedRequest: (request: SavedWorkspaceRequestSeed, options?: { tabMode?: 'preview' | 'pinned' }) => RequestTabRecord;
   openReplayRequest: (replaySeed: ReplayRequestTabSeed) => RequestTabRecord;
@@ -54,7 +54,7 @@ const initialWorkspaceShellState: Pick<
   nextDraftSequence: 1,
 };
 
-function createDraftTab(sequence: number, source: 'draft' | 'quick', placement?: RequestPlacementValue): RequestTabRecord {
+function createDraftTab(sequence: number, source: 'detached' | 'quick', placement?: RequestPlacementValue): RequestTabRecord {
   return {
     id: `${source}-${sequence}`,
     sourceKey: `${source}-${sequence}`,
@@ -147,7 +147,7 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
     set((state) => {
       const nextTab = createDraftTab(
         state.nextDraftSequence,
-        options.source ?? 'draft',
+        options.source ?? 'detached',
         options.placement,
       );
       createdTab = nextTab;

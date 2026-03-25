@@ -61,10 +61,6 @@ function getTabSourceCopy(activeTab: RequestTabRecord, t: TranslateFn) {
     return activeTab.replaySource?.label ?? t('workspaceRoute.resultPanel.source.replayDraft');
   }
 
-  if (activeTab.source === 'draft') {
-    return t('workspaceRoute.resultPanel.source.draftRequestTab');
-  }
-
   const requestGroupName = readRequestGroupName(activeTab);
 
   if (activeTab.collectionName && requestGroupName) {
