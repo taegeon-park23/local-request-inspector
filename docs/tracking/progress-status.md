@@ -7,6 +7,7 @@
 - **Update Rule:** Update after each active-task status change or verification-state change.
 
 ## Current Snapshot
+- `T100` is archived after adding backend-unavailable error classification and deduplicating repeated workspace degraded detail lines while preserving resource-specific diagnostics for non-transport failures.
 - `T099` is archived after introducing shared localized transport-error messaging (`backend_unavailable`/`invalid_api_response`) across workspace, settings, environments, scripts, mocks, captures, history, and request-builder save/run status flows.
 - `T098` is archived after introducing shared frontend API response parsing, classifying backend-unavailable/proxy failures into deterministic actionable errors, and removing duplicated per-module parser seams.
 - `T097` is archived after expanding runner inputs (selection/order/environment/iteration/data-file), wiring run-history visibility, and aligning collection/request-group batch payload composition with CLI-friendly server run contracts.

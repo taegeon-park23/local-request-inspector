@@ -34,6 +34,7 @@
 25. `T097` Runner Capability Advancement is archived.
 26. `T098` API Transport Error Normalization is archived.
 27. `T099` Backend-Unavailable UI Message Normalization is archived.
+28. `T100` Workspace Degraded Detail Deduplication is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.

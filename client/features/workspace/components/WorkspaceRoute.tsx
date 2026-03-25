@@ -81,7 +81,10 @@ import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-
 import { RoutePanelTabsLayout } from '@client/features/route-panel-tabs-layout';
 import { useShellStore } from '@client/app/providers/shell-store';
 import { useReplayRunStore } from '@client/shared/replay-run-store';
-import { resolveApiErrorMessage } from '@client/shared/api-error-message';
+import {
+  isBackendUnavailableApiError,
+  resolveApiErrorMessage,
+} from '@client/shared/api-error-message';
 
 type WorkspaceResourceManagerStatuses = Partial<Record<WorkspaceResourceManagerStatusScope, WorkspaceResourceManagerStatus>>;
 
@@ -933,14 +936,32 @@ export function WorkspaceRoute() {
     ? {
         tone: 'error' as const,
         message: t('workspaceRoute.explorer.status.workspaceResourcesDegraded'),
-        details: [
+        details: Array.from(new Set([
           ...(requestTreeQuery.error instanceof Error
-            ? [t('workspaceRoute.explorer.status.requestTreeDegraded'), resolveWorkspaceErrorMessage(requestTreeQuery.error, t('workspaceRoute.explorer.status.requestTreeDegraded'), t)]
+            ? [
+                t('workspaceRoute.explorer.status.requestTreeDegraded'),
+                isBackendUnavailableApiError(requestTreeQuery.error)
+                  ? t('common.errors.backendUnavailable')
+                  : resolveWorkspaceErrorMessage(
+                      requestTreeQuery.error,
+                      t('workspaceRoute.explorer.status.requestTreeDegraded'),
+                      t,
+                    ),
+              ]
             : []),
           ...(savedRequestsQuery.error instanceof Error
-            ? [t('workspaceRoute.explorer.status.savedRequestsDegraded'), resolveWorkspaceErrorMessage(savedRequestsQuery.error, t('workspaceRoute.explorer.status.savedRequestsDegraded'), t)]
+            ? [
+                t('workspaceRoute.explorer.status.savedRequestsDegraded'),
+                isBackendUnavailableApiError(savedRequestsQuery.error)
+                  ? t('common.errors.backendUnavailable')
+                  : resolveWorkspaceErrorMessage(
+                      savedRequestsQuery.error,
+                      t('workspaceRoute.explorer.status.savedRequestsDegraded'),
+                      t,
+                    ),
+              ]
             : []),
-        ],
+        ])),
       }
     : null;
   const mergedManagerStatuses = workspaceLoadStatus
