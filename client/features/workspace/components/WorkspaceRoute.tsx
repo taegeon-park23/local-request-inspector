@@ -7,6 +7,7 @@ import {
 import { workspaceScriptsQueryKey } from '@client/features/scripts/scripts.api';
 import { executionHistoryListQueryKey } from '@client/features/history/history.api';
 import {
+  DEFAULT_REQUEST_COLLECTION_NAME,
   listWorkspaceSavedRequests,
   type SavedRequestResourceRecord,
   workspaceSavedRequestsQueryKey,
@@ -234,6 +235,53 @@ function createExportStatusMessage(
   };
 }
 
+function createExportCountLabel(
+  count: number,
+  singularKey: Parameters<ReturnType<typeof useI18n>['t']>[0],
+  pluralKey: Parameters<ReturnType<typeof useI18n>['t']>[0],
+  t: ReturnType<typeof useI18n>['t'],
+) {
+  return t(count === 1 ? singularKey : pluralKey, { count });
+}
+
+function createBundleExportLabel(
+  bundle: AuthoredResourceBundleExport,
+  t: ReturnType<typeof useI18n>['t'],
+) {
+  const requestLabel = createExportCountLabel(
+    bundle.requests.length,
+    'workspaceRoute.explorer.status.exportBundleRequestLabelSingular',
+    'workspaceRoute.explorer.status.exportBundleRequestLabelPlural',
+    t,
+  );
+  const mockRuleLabel = createExportCountLabel(
+    bundle.mockRules.length,
+    'workspaceRoute.explorer.status.exportBundleMockRuleLabelSingular',
+    'workspaceRoute.explorer.status.exportBundleMockRuleLabelPlural',
+    t,
+  );
+
+  if (bundle.scripts.length === 0) {
+    return t('workspaceRoute.explorer.status.exportBundleLabelWithoutScripts', {
+      requestLabel,
+      mockRuleLabel,
+    });
+  }
+
+  const scriptLabel = createExportCountLabel(
+    bundle.scripts.length,
+    'workspaceRoute.explorer.status.exportBundleScriptLabelSingular',
+    'workspaceRoute.explorer.status.exportBundleScriptLabelPlural',
+    t,
+  );
+
+  return t('workspaceRoute.explorer.status.exportBundleLabelWithScripts', {
+    requestLabel,
+    mockRuleLabel,
+    scriptLabel,
+  });
+}
+
 function resolveSeededEnvironmentId(draftSeed: RequestDraftSeed | undefined, defaultEnvironmentId: string | null) {
   if (draftSeed && 'selectedEnvironmentId' in draftSeed) {
     return draftSeed.selectedEnvironmentId ?? null;
@@ -385,7 +433,7 @@ function findWorkspaceRequestById(
 
 export function WorkspaceRoute() {
   const queryClient = useQueryClient();
-  const { locale, t } = useI18n();
+  const { t } = useI18n();
   const [managerStatuses, setManagerStatuses] = useState<WorkspaceResourceManagerStatuses>({});
   const [pendingImportPreview, setPendingImportPreview] = useState<PendingImportPreview | null>(null);
   const tabs = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.tabs);
@@ -470,17 +518,7 @@ export function WorkspaceRoute() {
       setManagerStatus('transfer', 
         createExportStatusMessage(
           bundle,
-          (
-            locale === 'ko'
-              ? t('workspaceRoute.explorer.status.exportBundleLabel', {
-                  requestCount: bundle.requests.length,
-                  mockRuleCount: bundle.mockRules.length,
-                  scriptCount: bundle.scripts.length,
-                })
-              : bundle.scripts.length > 0
-                ? `${bundle.requests.length} saved request definition${bundle.requests.length === 1 ? '' : 's'}, ${bundle.mockRules.length} mock rule${bundle.mockRules.length === 1 ? '' : 's'}, and ${bundle.scripts.length} saved script${bundle.scripts.length === 1 ? '' : 's'}`
-                : `${bundle.requests.length} saved request definition${bundle.requests.length === 1 ? '' : 's'} and ${bundle.mockRules.length} mock rule${bundle.mockRules.length === 1 ? '' : 's'}`
-          ),
+          createBundleExportLabel(bundle, t),
           t,
         ),
       );
@@ -509,9 +547,7 @@ export function WorkspaceRoute() {
       setManagerStatus('saved-request', 
         createExportStatusMessage(
           bundle,
-          locale === 'ko'
-            ? t('workspaceRoute.explorer.status.exportSavedRequestLabel', { name: request.name })
-            : `saved request ${request.name}`,
+          t('workspaceRoute.explorer.status.exportSavedRequestLabel', { name: request.name }),
           t,
         ),
       );
@@ -844,7 +880,7 @@ export function WorkspaceRoute() {
       const defaultPlacement = requestTreeQuery.data?.defaults;
       const seededPlacement = createRequestPlacementFields({
         ...resolveRequestPlacement(draftSeed, defaultPlacement),
-        collectionName: draftSeed?.collectionName ?? defaultPlacement?.collectionName ?? 'Saved Requests',
+        collectionName: draftSeed?.collectionName ?? defaultPlacement?.collectionName ?? DEFAULT_REQUEST_COLLECTION_NAME,
         requestGroupName: readRequestGroupName(draftSeed) ?? defaultPlacement?.requestGroupName ?? DEFAULT_REQUEST_GROUP_NAME,
       });
       const nextTab = options.source === 'quick'
