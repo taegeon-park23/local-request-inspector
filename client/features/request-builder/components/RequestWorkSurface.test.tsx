@@ -163,4 +163,57 @@ describe('RequestWorkSurface localization', () => {
     await user.click(screen.getByRole('tab', { name: '테스트' }));
     expect(screen.getByLabelText('테스트 스크립트')).toBeInTheDocument();
   });
+  it('renders Korean replay source copy from semantic replay metadata', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/environments') {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/scripts') {
+        return createApiResponse({ items: [] });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    const replayTab = createTab({
+      id: 'replay-1',
+      sourceKey: 'replay-capture-1',
+      title: 'Replay of POST /webhooks/stripe',
+      methodLabel: 'POST',
+      source: 'replay',
+      summary: 'Replay draft',
+      replaySource: {
+        kind: 'capture',
+        label: 'Opened from capture',
+        description: 'POST localhost:5671/webhooks/stripe captured at 2026-03-25 09:15.',
+        methodLabel: 'POST',
+        targetLabel: 'localhost:5671/webhooks/stripe',
+        timestampLabel: '2026-03-25 09:15',
+      },
+    });
+
+    useRequestDraftStore.getState().ensureDraftForTab(replayTab, {
+      name: 'Replay of POST /webhooks/stripe',
+      method: 'POST',
+      url: 'http://localhost:5671/webhooks/stripe',
+    }, { replace: true });
+
+    renderApp(
+      <RequestWorkSurface
+        activeTab={replayTab}
+        onCreateRequest={vi.fn()}
+        placementOptions={[]}
+      />,
+      { initialLocale: 'ko' },
+    );
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Replay of POST /webhooks/stripe' })).toBeInTheDocument());
+    expect(screen.getAllByText('캡처에서 열림', { selector: '.workspace-chip--replay' }).length).toBeGreaterThan(0);
+    expect(screen.getByText('2026-03-25 09:15에 수신된 POST localhost:5671/webhooks/stripe 캡처에서 열었습니다.')).toBeInTheDocument();
+  });
 });

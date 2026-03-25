@@ -243,6 +243,12 @@ export const workspaceRouteMessagesEn = {
         description:
           'This tab owns editable request state only. Save updates the request definition, while Run creates separate observation in the right-hand panel without mutating history or captures.',
       },
+      replaySource: {
+        captureLabel: 'Opened from capture',
+        historyLabel: 'Opened from history',
+        captureDescription: 'Opened from the capture recorded at {time}: {method} {target}.',
+        historyDescription: 'Opened from the history entry executed at {time}: {method} {target}.',
+      },
       badges: {
         savedRequest: 'Saved request',
         detachedDraft: 'Detached draft',
@@ -1117,6 +1123,12 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         eyebrow: '요청 빌더 핵심',
         description:
           '이 탭은 편집 가능한 요청 상태만 소유합니다. Save는 요청 정의를 갱신하고, Run은 히스토리나 캡처를 바꾸지 않은 채 오른쪽 패널에 별도 관측을 만듭니다.',
+      },
+      replaySource: {
+        captureLabel: '캡처에서 열림',
+        historyLabel: '히스토리에서 열림',
+        captureDescription: '{time}에 수신된 {method} {target} 캡처에서 열었습니다.',
+        historyDescription: '{time}에 실행된 {method} {target} 히스토리에서 열었습니다.',
       },
       badges: {
         savedRequest: '저장된 요청',

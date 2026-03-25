@@ -8,7 +8,7 @@ import {
 import { useRequestBuilderCommands } from '@client/features/request-builder/hooks/useRequestBuilderCommands';
 import type { RequestDraftState, RequestScriptStageId } from '@client/features/request-builder/request-draft.types';
 import type { SavedScriptRecord } from '@client/features/scripts/scripts.types';
-import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
+import type { RequestReplaySourceCue, RequestTabRecord } from '@client/features/request-builder/request-tab.types';
 import { isDetachedRequestTab, isPreviewRequestTab } from '@client/features/request-builder/request-tab-state';
 import { RequestKeyValueEditor } from '@client/features/request-builder/components/RequestKeyValueEditor';
 import {
@@ -81,6 +81,36 @@ function formatSavedAt(
   }
 
   return savedAtMessage(formatDateTime(savedAt, { timeStyle: 'short' }));
+}
+
+function getReplaySourceLabel(
+  replaySource: RequestReplaySourceCue,
+  t: ReturnType<typeof useI18n>['t'],
+) {
+  return replaySource.kind === 'capture'
+    ? t('workspaceRoute.requestBuilder.replaySource.captureLabel')
+    : t('workspaceRoute.requestBuilder.replaySource.historyLabel');
+}
+
+function getReplaySourceDescription(
+  replaySource: RequestReplaySourceCue,
+  t: ReturnType<typeof useI18n>['t'],
+) {
+  if (replaySource.methodLabel && replaySource.targetLabel && replaySource.timestampLabel) {
+    return replaySource.kind === 'capture'
+      ? t('workspaceRoute.requestBuilder.replaySource.captureDescription', {
+        time: replaySource.timestampLabel,
+        method: replaySource.methodLabel,
+        target: replaySource.targetLabel,
+      })
+      : t('workspaceRoute.requestBuilder.replaySource.historyDescription', {
+        time: replaySource.timestampLabel,
+        method: replaySource.methodLabel,
+        target: replaySource.targetLabel,
+      });
+  }
+
+  return replaySource.description;
 }
 
 export function RequestWorkSurface({
@@ -157,7 +187,7 @@ export function RequestWorkSurface({
   const isDetachedDraft = isDetachedRequestTab(activeTab);
   const requestPlacementPath = formatRequestPlacementPath(draft);
   const locationSummary = replaySource
-    ? replaySource.description
+    ? getReplaySourceDescription(replaySource, t)
     : activeTab.source === 'saved'
       ? requestPlacementPath ?? t('workspaceRoute.requestBuilder.location.unsavedDraft')
       : requestPlacementPath
@@ -213,7 +243,7 @@ export function RequestWorkSurface({
         <div className="request-work-surface__badges">
           <span className="workspace-chip">{draft.method}</span>
           {replaySource ? (
-            <span className="workspace-chip workspace-chip--replay">{replaySource.label}</span>
+            <span className="workspace-chip workspace-chip--replay">{getReplaySourceLabel(replaySource, t)}</span>
           ) : (
             <span className="workspace-chip">{isDetachedDraft ? t('workspaceRoute.requestBuilder.badges.detachedDraft') : activeTab.source === 'saved' ? t('workspaceRoute.requestBuilder.badges.savedRequest') : t('workspaceRoute.requestBuilder.badges.newDraft')}</span>
           )}

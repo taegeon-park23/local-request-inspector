@@ -6,6 +6,9 @@ export interface RequestReplaySourceCue {
   kind: RequestReplaySourceKind;
   label: string;
   description: string;
+  methodLabel?: HttpMethodLabel;
+  targetLabel?: string;
+  timestampLabel?: string;
 }
 
 export interface ReplayRequestTabSeed {

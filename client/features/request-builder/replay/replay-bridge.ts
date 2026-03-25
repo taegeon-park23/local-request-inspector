@@ -112,6 +112,9 @@ function buildCaptureReplayPayload(capture: CaptureRecord): ReplayDraftBridgePay
         kind: 'capture',
         label: 'Opened from capture',
         description: `${methodLabel} ${capture.host}${capture.path} captured at ${capture.receivedAtLabel}.`,
+        methodLabel,
+        targetLabel: `${capture.host}${capture.path}`,
+        timestampLabel: capture.receivedAtLabel,
       },
     },
     draftSeed: {
@@ -145,6 +148,9 @@ function buildHistoryReplayPayload(history: HistoryRecord): ReplayDraftBridgePay
         kind: 'history',
         label: 'Opened from history',
         description: `${methodLabel} ${history.hostPathHint} executed at ${history.executedAtLabel}.`,
+        methodLabel,
+        targetLabel: history.hostPathHint,
+        timestampLabel: history.executedAtLabel,
       },
     },
     draftSeed: {
