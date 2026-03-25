@@ -87,4 +87,24 @@ describe('workspace-shell-store', () => {
     expect(detachedTab.requestGroupName).toBe('Auth');
     expect(detachedTab.title).toBe('Untitled Request');
   });
+  it('reopens the most recently closed tab from recent history', () => {
+    const firstTab = useWorkspaceShellStore.getState().openNewRequest();
+    const secondTab = useWorkspaceShellStore.getState().openQuickRequest();
+
+    expect(useWorkspaceShellStore.getState().tabs).toHaveLength(2);
+
+    useWorkspaceShellStore.getState().closeTab(secondTab.id);
+
+    const stateAfterClose = useWorkspaceShellStore.getState();
+    expect(stateAfterClose.tabs.map((tab) => tab.id)).toEqual([firstTab.id]);
+    expect(stateAfterClose.recentlyClosedTabs[0]?.id).toBe(secondTab.id);
+
+    const reopenedTab = useWorkspaceShellStore.getState().reopenLastClosedTab();
+
+    expect(reopenedTab?.id).toBe(secondTab.id);
+    expect(useWorkspaceShellStore.getState().tabs.map((tab) => tab.id)).toEqual([firstTab.id, secondTab.id]);
+    expect(useWorkspaceShellStore.getState().activeTabId).toBe(secondTab.id);
+    expect(useWorkspaceShellStore.getState().recentlyClosedTabs).toHaveLength(0);
+  });
 });
+

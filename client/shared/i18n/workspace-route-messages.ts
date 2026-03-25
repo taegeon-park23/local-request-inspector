@@ -264,6 +264,10 @@ export const workspaceRouteMessagesEn = {
       pinAction: 'Pin',
       pinTab: 'Pin {title}',
       closeTab: 'Close {title}',
+      searchLabel: 'Tab search',
+      searchPlaceholder: 'Search open tabs',
+      searchNoMatches: 'No tabs match the current search.',
+      reopenClosedTab: 'Reopen Closed Tab',
       sourcePreview: 'Preview',
       sourceQuick: 'Quick',
       sourceReplay: 'Replay',
@@ -1208,6 +1212,10 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
       pinAction: '고정',
       pinTab: '{title} 고정',
       closeTab: '{title} 닫기',
+      searchLabel: '탭 검색',
+      searchPlaceholder: '열린 탭 검색',
+      searchNoMatches: '현재 검색과 일치하는 탭이 없습니다.',
+      reopenClosedTab: '닫은 탭 다시 열기',
       sourcePreview: '미리보기',
       sourceQuick: '빠른',
       sourceReplay: '리플레이',
@@ -1882,4 +1890,5 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
     },
   },
 };
+
 

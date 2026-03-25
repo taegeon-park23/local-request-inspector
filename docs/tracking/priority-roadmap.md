@@ -22,6 +22,7 @@
 13. `T084` Inheritance Config Model V1 is archived.
 14. `T085` Result Contract Precision is archived.
 15. `T086` Workbench Duplicate Draft Flow is archived.
+16. `T087` Workbench Tab Search And Reopen Flow is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.

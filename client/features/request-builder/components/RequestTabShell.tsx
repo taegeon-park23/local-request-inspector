@@ -1,4 +1,5 @@
-﻿import { useI18n } from '@client/app/providers/useI18n';
+import { useMemo, useState } from 'react';
+import { useI18n } from '@client/app/providers/useI18n';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 
@@ -10,6 +11,8 @@ interface RequestTabShellProps {
   onSelectTab: (tabId: string) => void;
   onCloseTab: (tabId: string) => void;
   onPinTab: (tabId: string) => void;
+  onReopenClosedTab: () => void;
+  canReopenClosedTab: boolean;
 }
 
 function getTabSourceLabel(
@@ -69,6 +72,7 @@ function getTabStateLabel(
 
   return null;
 }
+
 export function RequestTabShell({
   tabs,
   activeTabId,
@@ -77,17 +81,55 @@ export function RequestTabShell({
   onSelectTab,
   onCloseTab,
   onPinTab,
+  onReopenClosedTab,
+  canReopenClosedTab,
 }: RequestTabShellProps) {
   const { t } = useI18n();
+  const [searchQuery, setSearchQuery] = useState('');
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredTabs = useMemo(() => {
+    if (normalizedQuery.length === 0) {
+      return tabs;
+    }
+
+    return tabs.filter((tab) => {
+      const sourceLabel = getTabSourceLabel(tab, t) ?? '';
+      const stateLabel = getTabStateLabel(tab, t) ?? '';
+      const haystack = `${tab.title} ${tab.methodLabel} ${tab.summary} ${sourceLabel} ${stateLabel}`.toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }, [normalizedQuery, t, tabs]);
 
   return (
     <div className="request-tab-shell">
       <div className="request-tab-shell__strip" role="tablist" aria-label={t('workspaceRoute.tabShell.ariaLabel')}>
+        <div className="request-tab-shell__controls">
+          <input
+            type="search"
+            className="request-tab-shell__search-input"
+            aria-label={t('workspaceRoute.tabShell.searchLabel')}
+            placeholder={t('workspaceRoute.tabShell.searchPlaceholder')}
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.currentTarget.value)}
+          />
+        </div>
+
+        <button
+          type="button"
+          className="request-tab-shell__new-tab"
+          onClick={onReopenClosedTab}
+          disabled={!canReopenClosedTab}
+        >
+          <IconLabel icon="replay">{t('workspaceRoute.tabShell.reopenClosedTab')}</IconLabel>
+        </button>
+
         {tabs.length === 0 ? (
           <p className="request-tab-shell__strip-empty">{t('workspaceRoute.tabShell.empty')}</p>
+        ) : normalizedQuery.length > 0 && filteredTabs.length === 0 ? (
+          <p className="request-tab-shell__search-empty">{t('workspaceRoute.tabShell.searchNoMatches')}</p>
         ) : null}
 
-        {tabs.map((tab) => {
+        {filteredTabs.map((tab) => {
           const isActive = tab.id === activeTabId;
           const tabSourceLabel = getTabSourceLabel(tab, t);
           const tabStateLabel = getTabStateLabel(tab, t);
@@ -151,6 +193,3 @@ export function RequestTabShell({
     </div>
   );
 }
-
-
-

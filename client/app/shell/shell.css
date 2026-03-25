@@ -167,6 +167,25 @@ body { margin: 0; background: #020617; overflow: hidden; }
   margin: 0;
   color: #64748b;
 }
+.request-tab-shell__controls {
+  display: flex;
+  align-items: center;
+  flex: 1 1 16rem;
+  min-width: min(100%, 16rem);
+}
+.request-tab-shell__search-input {
+  width: 100%;
+  border: 1px solid #334155;
+  border-radius: 999px;
+  padding: 0.55rem 0.8rem;
+  background: #020617;
+  color: #f8fafc;
+  font: inherit;
+}
+.request-tab-shell__search-empty {
+  margin: 0;
+  color: #64748b;
+}
 .request-tab {
   display: flex;
   align-items: stretch;
@@ -1130,3 +1149,4 @@ body { margin: 0; background: #020617; overflow: hidden; }
 .workspace-create-sheet {
   margin: 0 0 1rem;
 }
+

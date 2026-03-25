@@ -25,6 +25,7 @@ export interface WorkspaceExplorerSelection {
 
 interface WorkspaceShellState {
   tabs: RequestTabRecord[];
+  recentlyClosedTabs: RequestTabRecord[];
   activeTabId: string | null;
   selectedExplorerItemId: string | null;
   selectedExplorerItemKind: WorkspaceExplorerItemKind | null;
@@ -51,20 +52,24 @@ interface WorkspaceShellState {
   syncRequestGroupPlacement: (requestGroupId: string, placement: RequestPlacementValue) => void;
   setActiveRoutePanel: (panelId: RoutePanelTabId) => void;
   setActiveTab: (tabId: string) => void;
-  closeTab: (tabId: string) => void;
+  closeTab: (tabId: string) => string[];
+  reopenLastClosedTab: () => RequestTabRecord | null;
 }
 
 const initialWorkspaceShellState: Pick<
   WorkspaceShellState,
-  'tabs' | 'activeTabId' | 'selectedExplorerItemId' | 'selectedExplorerItemKind' | 'activeRoutePanel' | 'nextDraftSequence'
+  'tabs' | 'recentlyClosedTabs' | 'activeTabId' | 'selectedExplorerItemId' | 'selectedExplorerItemKind' | 'activeRoutePanel' | 'nextDraftSequence'
 > = {
   tabs: [],
+  recentlyClosedTabs: [],
   activeTabId: null,
   selectedExplorerItemId: null,
   selectedExplorerItemKind: null,
   activeRoutePanel: 'main',
   nextDraftSequence: 1,
 };
+
+const RECENTLY_CLOSED_TAB_LIMIT = 12;
 
 function createDraftTab(sequence: number, source: 'detached' | 'quick', placement?: RequestPlacementValue): RequestTabRecord {
   return {
@@ -466,13 +471,30 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
         activeRoutePanel: 'main',
       };
     }),
-  closeTab: (tabId) =>
+  closeTab: (tabId) => {
+    let evictedClosedTabIds: string[] = [];
+
     set((state) => {
+      const closingTab = state.tabs.find((tab) => tab.id === tabId);
+
+      if (!closingTab) {
+        return {};
+      }
+
       const nextTabs = state.tabs.filter((tab) => tab.id !== tabId);
+      const nextRecentlyClosedTabs = [
+        closingTab,
+        ...state.recentlyClosedTabs.filter((tab) => tab.id !== tabId),
+      ];
+      evictedClosedTabIds = nextRecentlyClosedTabs
+        .slice(RECENTLY_CLOSED_TAB_LIMIT)
+        .map((tab) => tab.id);
+      const keptRecentlyClosedTabs = nextRecentlyClosedTabs.slice(0, RECENTLY_CLOSED_TAB_LIMIT);
 
       if (state.activeTabId !== tabId) {
         return {
           tabs: nextTabs,
+          recentlyClosedTabs: keptRecentlyClosedTabs,
         };
       }
 
@@ -481,13 +503,66 @@ export const useWorkspaceShellStore = create<WorkspaceShellState>((set) => ({
 
       return {
         tabs: nextTabs,
+        recentlyClosedTabs: keptRecentlyClosedTabs,
         activeTabId: fallbackTabId,
         ...createRequestSelection(fallbackTab?.requestId ?? null),
         activeRoutePanel: fallbackTab ? 'main' : state.activeRoutePanel,
       };
-    }),
+    });
+
+    return evictedClosedTabIds;
+  },
+  reopenLastClosedTab: () => {
+    let reopenedTab: RequestTabRecord | null = null;
+
+    set((state) => {
+      const [lastClosedTab, ...remainingClosedTabs] = state.recentlyClosedTabs;
+
+      if (!lastClosedTab) {
+        return {};
+      }
+
+      const existingBySourceKey = state.tabs.find((tab) => tab.sourceKey === lastClosedTab.sourceKey);
+
+      if (existingBySourceKey) {
+        reopenedTab = existingBySourceKey;
+
+        return {
+          activeTabId: existingBySourceKey.id,
+          ...createRequestSelection(existingBySourceKey.requestId ?? null),
+          activeRoutePanel: 'main',
+          recentlyClosedTabs: remainingClosedTabs,
+        };
+      }
+
+      const savedPreviewSlotInUse = lastClosedTab.source === 'saved'
+        && lastClosedTab.tabMode === 'preview'
+        && state.tabs.some((tab) => tab.source === 'saved' && tab.tabMode === 'preview');
+      const nextReopenedTab = savedPreviewSlotInUse
+        ? {
+            ...lastClosedTab,
+            tabMode: 'pinned' as const,
+          }
+        : lastClosedTab;
+
+      reopenedTab = nextReopenedTab;
+
+      return {
+        tabs: [...state.tabs, nextReopenedTab],
+        activeTabId: nextReopenedTab.id,
+        ...createRequestSelection(nextReopenedTab.requestId ?? null),
+        activeRoutePanel: 'main',
+        recentlyClosedTabs: remainingClosedTabs,
+      };
+    });
+
+    return reopenedTab;
+  },
 }));
 
 export function resetWorkspaceShellStore() {
   useWorkspaceShellStore.setState(initialWorkspaceShellState);
 }
+
+
+

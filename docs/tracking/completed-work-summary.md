@@ -96,6 +96,7 @@
 | T084 | Inheritance Config Model V1 | Introduced inheritance fields on collection/request-group resources (ariables/authDefaults/scriptDefaults/runConfig), execution-time effective config resolver wiring, and precedence-focused unit/integration coverage for defaults and variable merge behavior. | Codebase; master-task-board.md; priority-roadmap.md; progress-status.md |
 | T085 | Result Contract Precision | Extended execution observation contract with structured assertion results/summary and updated single/batch result panel rendering to consume structured assertion metadata for summaries and previews. | Codebase; master-task-board.md; priority-roadmap.md; progress-status.md |
 | T086 | Workbench Duplicate Draft Flow | Enabled the request-header Duplicate action to open a new detached tab seeded from the active draft (method/url/params/headers/body/auth/scripts/environment/placement), kept the source tab untouched, and aligned support copy plus component tests with shipped duplicate behavior. | Codebase; master-task-board.md; priority-roadmap.md; progress-status.md |
+| T087 | Workbench Tab Search And Reopen Flow | Added tab-strip search/filter and reopen-closed-tab flow with recent closed tab history in workspace shell state, close-time eviction cleanup hooks, and localized tab-shell UI/test coverage for discovery and recovery interactions. | Codebase; master-task-board.md; priority-roadmap.md; progress-status.md |
 
 ## Closed Tracking Decisions
 | Deleted Doc | Final Conclusion | Remaining Canonical Docs |

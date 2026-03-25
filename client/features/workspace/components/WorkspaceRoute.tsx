@@ -463,6 +463,8 @@ export function WorkspaceRoute() {
   const focusWorkspaceWorkSurface = useWorkspaceUiStore((state) => state.focusWorkspaceWorkSurface);
   const focusWorkspaceResultPanel = useWorkspaceUiStore((state) => state.focusWorkspaceResultPanel);
   const closeTab = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.closeTab);
+  const reopenLastClosedTab = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.reopenLastClosedTab);
+  const recentlyClosedTabs = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.recentlyClosedTabs);
   const setFloatingExplorerOpen = useShellStore((state) => state.setFloatingExplorerOpen);
   const draftsByTabId = useRequestDraftStore((state) => state.draftsByTabId);
   const ensureDraftForTab = useRequestDraftStore((state) => state.ensureDraftForTab);
@@ -1173,9 +1175,24 @@ export function WorkspaceRoute() {
   };
 
   const handleCloseTab = (tabId: string) => {
-    removeDraft(tabId);
-    removeCommandState(tabId);
-    closeTab(tabId);
+    const evictedClosedTabIds = closeTab(tabId);
+
+    evictedClosedTabIds.forEach((evictedTabId) => {
+      removeDraft(evictedTabId);
+      removeCommandState(evictedTabId);
+    });
+  };
+
+  const handleReopenClosedTab = () => {
+    const reopenedTab = reopenLastClosedTab();
+
+    if (!reopenedTab) {
+      return;
+    }
+
+    deactivateBatchRun();
+    focusWorkspaceWorkSurface();
+    setFloatingExplorerOpen('workspace', false);
   };
 
   const handleImportResources = async (file: File) => {
@@ -1345,6 +1362,8 @@ export function WorkspaceRoute() {
           onSelectTab={handleSelectTab}
           onCloseTab={handleCloseTab}
           onPinTab={pinTab}
+          onReopenClosedTab={handleReopenClosedTab}
+          canReopenClosedTab={recentlyClosedTabs.length > 0}
         />
 
         <WorkspaceResourceManagerPanel
@@ -1393,4 +1412,6 @@ export function WorkspaceRoute() {
     />
   );
 }
+
+
 

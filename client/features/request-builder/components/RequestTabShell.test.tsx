@@ -1,4 +1,5 @@
 import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { RequestTabShell } from '@client/features/request-builder/components/RequestTabShell';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
@@ -13,7 +14,7 @@ function createTab(overrides: Partial<RequestTabRecord> & Pick<RequestTabRecord,
 }
 
 describe('RequestTabShell', () => {
-  it('renders localized quick-request and tab source labels', () => {
+  it('renders localized quick-request source labels and reopen action', () => {
     renderApp(
       <RequestTabShell
         tabs={[
@@ -48,16 +49,67 @@ describe('RequestTabShell', () => {
         onSelectTab={vi.fn()}
         onCloseTab={vi.fn()}
         onPinTab={vi.fn()}
+        onReopenClosedTab={vi.fn()}
+        canReopenClosedTab
       />,
       { initialLocale: 'ko' },
     );
 
     expect(screen.getByRole('tablist', { name: '요청 탭 스트립' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '빠른 요청' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '닫은 탭 다시 열기' })).toBeInTheDocument();
+    expect(screen.getByLabelText('탭 검색')).toBeInTheDocument();
     expect(screen.getByText('GET · 미리보기')).toBeInTheDocument();
     expect(screen.getByText('POST · 빠른')).toBeInTheDocument();
     expect(screen.getByText('PATCH · 분리됨')).toBeInTheDocument();
     expect(screen.getByLabelText('Health check 고정')).toBeInTheDocument();
     expect(screen.getByLabelText('Recovered 닫기')).toBeInTheDocument();
+  });
+
+  it('filters tabs by search query and shows empty search result copy', async () => {
+    const user = userEvent.setup();
+
+    renderApp(
+      <RequestTabShell
+        tabs={[
+          createTab({
+            id: 'tab-alpha',
+            title: 'Alpha Request',
+            methodLabel: 'GET',
+            source: 'saved',
+            tabMode: 'pinned',
+            summary: 'GET /alpha',
+          }),
+          createTab({
+            id: 'tab-beta',
+            title: 'Beta Request',
+            methodLabel: 'POST',
+            source: 'detached',
+            tabMode: 'pinned',
+            summary: 'POST /beta',
+          }),
+        ]}
+        activeTabId="tab-alpha"
+        onCreateRequest={vi.fn()}
+        onCreateQuickRequest={vi.fn()}
+        onSelectTab={vi.fn()}
+        onCloseTab={vi.fn()}
+        onPinTab={vi.fn()}
+        onReopenClosedTab={vi.fn()}
+        canReopenClosedTab={false}
+      />,
+    );
+
+    const searchInput = screen.getByLabelText('Tab search');
+    await user.type(searchInput, 'Alpha');
+
+    expect(screen.getByText('Alpha Request')).toBeInTheDocument();
+    expect(screen.queryByText('Beta Request')).not.toBeInTheDocument();
+
+    await user.clear(searchInput);
+    await user.type(searchInput, 'no-match');
+
+    expect(screen.getByText('No tabs match the current search.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reopen Closed Tab' })).toBeDisabled();
   });
 });

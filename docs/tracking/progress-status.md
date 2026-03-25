@@ -13,6 +13,7 @@
 - `T084` is archived after introducing Collection/RequestGroup inheritance config fields (`variables/authDefaults/scriptDefaults/runConfig`) and execution-time effective-config resolution with precedence-aligned tests.
 - `T085` is archived after adding structured assertion results/summary fields for single and batch execution surfaces and wiring right-panel rendering to the structured contract.
 - `T086` is archived after enabling one-click duplicate from the request header to branch the active draft into a new detached tab without mutating the source tab, plus localized support copy and component coverage.
+- `T087` is archived after shipping tab-strip search/filter and recently closed tab recovery flow, including workspace shell history state wiring and request-tab shell coverage updates.
 
 ## Verification
 - `npm.cmd run lint` passed on 2026-03-25.
