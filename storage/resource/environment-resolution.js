@@ -27,7 +27,7 @@ function buildEnvironmentValueLookup(environmentRecord) {
   const lookup = new Map();
 
   for (const row of Array.isArray(environmentRecord?.variables) ? environmentRecord.variables : []) {
-    if (!row || row.isEnabled === false) {
+    if (!row || row.isEnabled === false || row.isSecret === true) {
       continue;
     }
 

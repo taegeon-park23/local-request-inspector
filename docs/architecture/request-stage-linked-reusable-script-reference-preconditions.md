@@ -1,132 +1,96 @@
-﻿# Request-Stage Linked Reusable-Script Reference Preconditions
+# Request-Stage Linked Reusable-Script Reference Contract
 
-- **Purpose:** Define the minimum future contract boundary for request-stage linked reusable-script references so later work does not reopen copy-based attachment, discovery polish, and live linkage semantics as one blended scope.
+- **Purpose:** Record the landed request-stage linked saved-script baseline and the remaining bounded follow-up rules so contributors do not reopen copy attachment, linked execution, broken-link handling, and transfer semantics as one blended scope.
 - **Created:** 2026-03-24
-- **Last Updated:** 2026-03-24
+- **Last Updated:** 2026-03-25
 - **Related Documents:** `script-editor-and-automation-ux.md`, `request-builder-mvp.md`, `internal-api-contracts.md`
 - **Status:** active reference
-- **Update Rule:** Update when linked reusable-script references are promoted, when request-stage script binding shapes change, or when bundle/transfer behavior begins to include linked request-stage references.
+- **Update Rule:** Update when linked request-stage script bindings, broken-link behavior, or transfer/remap semantics materially change.
 
-## 1. Goal
-After `T064` and `T065`, the product already supports:
+## 1. Landed Baseline
+After `T072` and the follow-up work completed inside `T073`, the product now supports:
 - attach-by-copy from saved scripts into a request stage
-- stage-aware navigation from the request-stage editor into `/scripts`
+- explicit linked request-stage saved-script references
+- read-only linked-stage chrome inside the request builder
+- broken-link detection when the referenced saved script is missing or mismatched
+- run blocking when a linked stage is broken
+- authored-resource bundle export/import that serializes and remaps linked request-stage bindings instead of rejecting them
 
-What remains explicitly deferred is true linked reusable-script behavior. This note defines the minimum contract boundary that must exist before such a feature is implemented.
+This note is now the canonical summary of that landed baseline and the remaining follow-up boundaries.
 
-## 2. Current Baseline
-Today, request stages persist inline source only.
-- request-stage scripts are request-owned after copy
-- saved scripts are standalone workspace resources
-- `/scripts` manages standalone saved scripts
-- authored-resource bundle export/import preview/import includes standalone saved scripts but not request-stage shared-script references
-- execution and history contracts already treat script-stage diagnostics as bounded runtime observation, independent of reusable linkage semantics
-
-## 3. Future Contract Frame
-If linked reusable-script references are promoted, the first implementation should start from a discriminated binding model.
-
-### 3.1 Recommended stage binding shape
-A future request stage should use one of exactly two modes:
+## 2. Binding Model
+Request-stage saved-script bindings use one of exactly two modes:
 - `inline`
 - `linked`
 
-Recommended conceptual shape:
+Conceptual shape:
 
 ```ts
 interface InlineRequestStageScriptBinding {
   mode: 'inline';
-  scriptType: 'pre-request' | 'post-response' | 'tests';
   sourceCode: string;
 }
 
 interface LinkedRequestStageScriptBinding {
   mode: 'linked';
-  scriptType: 'pre-request' | 'post-response' | 'tests';
   savedScriptId: string;
   savedScriptNameSnapshot: string;
   linkedAt: string;
 }
 ```
 
-This note is intentionally conceptual. It does not yet promote any concrete DTO or persistence schema.
+The important invariant is that inline source and linked source never coexist in one hidden hybrid state.
 
-### 3.2 Why a discriminated model
-- It keeps inline and linked stages mutually exclusive.
-- It prevents the first linked-reference slice from silently mixing local override source with live linked source.
-- It makes broken-reference and detach flows easier to reason about later.
+## 3. Current Lifecycle Rules
+### 3.1 Attach
+- Linking happens through an explicit user action in the request-stage editor.
+- Linking switches the stage into `linked` mode.
+- Copy attachment keeps the stage in `inline` mode with request-owned source.
 
-## 4. Non-Goals For The First Linked Slice
-The first linked-reference slice should **not** include:
-- mixed `linked + local override` authoring state
-- live in-place editing of the saved script from the request-stage editor
-- automatic fallback to hidden inline snapshots after delete or import remap
-- bundle/export/import behavior for linked request-stage references
-- multi-request synchronization UI beyond the normal effects of linking by id
+### 3.2 Edit
+- Linked stages are read-only in the request-stage editor.
+- Users can jump to the standalone `/scripts` library for deeper review or edits.
+- The bounded request-stage escape hatch is `Detach to copy`, which converts the linked stage back to inline source using the current resolved saved-script source when available.
 
-## 5. Lifecycle Rules To Freeze Before Implementation
-### 5.1 Attach
-- linking should happen through an explicit user action
-- attaching a linked saved script should switch the stage to `linked` mode
-- the request-stage editor should show clear linked-state chrome, not ordinary inline editing affordances
+### 3.3 Rename and Delete
+- Rename preserves the link by id.
+- Request-stage chrome may show the latest saved-script name, while the snapshot name remains available as fallback context.
+- Delete does not silently inline old source. Broken links remain explicit until repaired or detached.
 
-### 5.2 Edit
-- linked source should be read-only in the request-stage editor
-- the user should be able to open the standalone saved-script detail and edit there
-- the only request-stage escape hatch should be an explicit future `Detach to copy` action
+### 3.4 Execution
+- Healthy links execute the current saved-script source for that linked id.
+- Broken links block `Run`; they are not silently skipped and do not fall back to a hidden inline snapshot.
+- Query degradation in the saved-script library is surfaced as degraded state, not as a broken-link claim.
 
-### 5.3 Rename
-- saved-script rename should preserve the link by id
-- request-stage chrome may refresh the display label from the latest saved script record
-- rename should not detach or duplicate the stage binding
-
-### 5.4 Delete
-- deleting the linked saved script should not silently inline the old source
-- the request stage should enter an explicit broken-reference state
-- future UI can then offer bounded repair actions such as:
-  - replace link
-  - detach to copy if a snapshot is intentionally introduced later
-  - remove linked stage binding
-
-### 5.5 Execution
-- when a link is healthy, execution should use the current saved-script source for that linked id
-- execution should not use a hidden stale snapshot while claiming the stage is linked
-- if the link is broken, the future product must decide whether run is blocked or whether the stage is skipped with an explicit warning; this remains **확실하지 않음**
-
-## 6. Result / History Boundaries
-Linked reusable-script references should not change the bounded result/history model by themselves.
+## 4. Result and History Boundaries
+Linked reusable-script references do not change the bounded result/history model by themselves.
 - execution summaries remain stage-oriented
 - response, console, tests, and `EnvironmentResolutionSummary` stay unchanged
-- any future linked-state indicator in history or result surfaces should be additive metadata only
+- linked-state metadata in request-stage chrome is separate from persisted execution observation payloads
 
-## 7. Bundle / Transfer Boundaries
-The current authored-resource bundle intentionally excludes request-stage shared-script references.
-If linked references are ever introduced later, a separate future task must decide whether bundle export/import:
-- includes referenced saved scripts automatically
-- rejects linked requests when referenced scripts are missing
-- remaps linked ids during import
+## 5. Transfer Boundary
+The proprietary authored-resource bundle lane now carries linked request-stage bindings.
+- export serializes linked request-stage metadata
+- import remaps linked saved-script ids to the newly imported authored-resource identities
+- the bounded transfer lane still remains proprietary; external formats are a separate future decision
 
-That decision is out of scope for the first linked-reference slice and should not be folded into it.
+## 6. Remaining Follow-Ups
+The current linked baseline still does **not** include:
+- mixed `linked + local override` authoring state
+- live in-place editing of the saved script from the request-stage editor
+- revision-aware diff/history for linked saved scripts
+- external import/export formats for linked request-stage bindings
 
-## 8. Explicit Uncertainties / 확실하지 않음
-- **확실하지 않음:** whether broken linked references should block `Run` or allow a degraded execution path.
-- **확실하지 않음:** whether the first detach flow should preserve a timestamped provenance hint after converting to `inline` mode.
-- **확실하지 않음:** whether linked references should expose saved-script updated timestamps or revision counters in request-stage chrome.
-- **확실하지 않음:** whether import/export support for linked request stages should reuse bundle v2 or require a future bundle revision.
+## 7. Explicit Uncertainties / 확실하지 않음
+- **확실하지 않음:** whether detach should preserve a timestamped provenance hint after converting to `inline` mode.
+- **확실하지 않음:** whether linked-stage chrome should expose saved-script updated timestamps or revision counters.
+- **확실하지 않음:** whether non-proprietary transfer formats should carry linked request-stage bindings directly or flatten them during export.
 
-## 9. First Promoted Slice Decision
-`T071` now promotes one bounded implementation candidate from this note.
+## 8. Practical Rule For Future Contributors
+Do not reopen linked reusable-script work from the older copy-only baseline. Start from this landed contract:
+- explicit copy-or-link stage modes
+- read-only linked-stage request-builder UI
+- broken-link run blocking
+- bundle export/import remap support
 
-That first slice should:
-- allow linked request-stage bindings to be saved and reloaded as part of request definitions
-- keep linked stages read-only in the request-stage editor until the user detaches to copy
-- treat saved-script delete as an explicit broken-reference state
-- block request export and workspace bundle export when linked request-stage bindings are present
-
-This keeps authored-resource transfer semantics out of the first linked-reference implementation while still making the feature useful for ordinary request authoring and execution.
-
-## 10. Practical Rule For Future Contributors
-Do not start linked reusable-script implementation from the current copy-based request-stage editor alone. Start from this contract note first, then use `T072` as the bounded implementation task that covers only:
-- discriminated stage binding shape
-- linked-state read-only request-stage UI
-- rename/delete broken-link rules
-- a clearly bounded detach or repair seam
+Any further slice should add one bounded follow-up on top of that baseline instead of re-deciding the core linkage model.

@@ -2,7 +2,7 @@
 
 - **Purpose:** Define the target architecture, module boundaries, responsibilities, data flow, and security boundaries for evolving Local Request Inspector into a local-first API workbench.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-24
+- **Last Updated:** 2026-03-25
 - **Related Documents:** `../prd/overview.md`, `domain-model.md`, `migration-plan.md`
 - **Status:** done
 - **Update Rule:** Update when architecture decisions, open questions, or module boundaries materially change.
@@ -20,29 +20,23 @@ This document intentionally avoids overcommitting on implementation framework ch
 
 ## 2. Current-State Findings From Codebase
 ### 2.1 Backend Structure Today
-Current backend is a single `server.js` file with mixed responsibilities:
-- static asset serving
-- SSE connection management (`/events`)
-- raw body capture middleware
-- global mock configuration mutation (`/__inspector/mock`)
-- asset metadata listing (`/__inspector/assets`)
-- outbound request execution (`/__inspector/execute`)
-- VM-based callback execution
-- wildcard request capture and response generation
+Current backend still boots from `server.js`, but that file is now primarily bootstrap and dependency wiring around bounded modules under `server/`:
+- modular route registrars for status, runtime, execution, resource CRUD, bundles, mocks, and legacy compatibility
+- shared services for request resources, execution flow, runtime presentation, capture observation, and execution observation
+- repository seams under `storage/repositories/` for authored resources and runtime queries
+- bounded child-process script execution with worker-thread fallback only for spawn-restricted sandbox environments
 
 ### 2.2 Frontend Structure Today
-Current frontend is a single `public/index.html` page with:
-- layout, styles, markup, and application logic in one file
-- Materialize CSS + Ace Editor loaded from CDN
-- a capture list panel
-- a global mock settings form
-- a request form + callback editor + execution log area
-- hard-coded script templates and DOM-driven state management
+Current frontend now includes a React + Vite + TypeScript app shell served at `/app`, while the legacy `/` page remains a bounded fallback/prototype lane:
+- route-backed workspace, captures, history, mocks, environments, scripts, and settings surfaces
+- TanStack Query + Zustand client-state seams around saved-resource, runtime observation, and shell layout concerns
+- request-stage saved-script copy/link flows, replay bridges, and degraded-state handling across runtime/resource routes
+- shared route-panel layout and i18n catalogs instead of a single DOM-driven page
 
 ### 2.3 Current Capture / Mock / Script Patterns
-- **Inbound capture:** all non-inspector routes pass through a wildcard handler, which pushes request snapshots over SSE to connected clients.
-- **Mocking:** one mutable global `mockConfig` object determines the same response for all captured routes.
-- **Script execution:** the server executes user-provided callback code via `vm.runInContext`, exposing `fetch`, `fs.promises`, `path`, `Blob`, `FormData`, `URLSearchParams`, and `response`.
+- **Inbound capture:** inbound requests are normalized, persisted through the runtime storage lane, and surfaced through SSE plus query endpoints.
+- **Mocking:** mock behavior is endpoint-oriented and persisted as workspace-scoped mock rules rather than one mutable global response toggle.
+- **Script execution:** outbound request scripts now execute through a bounded child-process runner contract with redacted observation persistence, while spawn-restricted sandbox environments can fall back to a worker-thread-compatible runner.
 
 ## 3. Architectural Direction
 ### 3.1 Proposed Top-Level Runtime Shape

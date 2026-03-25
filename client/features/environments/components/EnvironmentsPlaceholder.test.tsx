@@ -72,7 +72,7 @@ function buildEnvironmentRecord(input: EnvironmentInput, existing?: EnvironmentD
     variableCount: variables.length,
     enabledVariableCount: variables.filter((row) => row.isEnabled !== false).length,
     secretVariableCount: variables.filter((row) => row.isSecret === true).length,
-    resolutionSummary: `${variables.length} variables are managed here, including ${variables.filter((row) => row.isSecret === true).length} secret-backed entries. Runtime resolution stays deferred to a later slice.`,
+    resolutionSummary: `${variables.length} variables are managed here, including ${variables.filter((row) => row.isSecret === true).length} secret-backed entries. Plain placeholders resolve at run time, while secret rows stay write-only until a secure backend is available.`,
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
     variables,
@@ -165,7 +165,7 @@ describe('Environments MVP route', () => {
     expect(screen.getByRole('heading', { name: 'Where environment values resolve' })).toBeInTheDocument();
     expect(screen.getByText(/\{\{VARIABLE_NAME\}\} form/i)).toBeInTheDocument();
     expect(screen.getAllByText(/env\.get\('token'\)/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/replacementValue is the next write-only value to store on save/i)).toBeInTheDocument();
+    expect(screen.getByText(/replacementValue is reserved for a future secure backend/i)).toBeInTheDocument();
     expect(screen.getByLabelText('Secret replacement value 2')).toHaveValue('');
     expect(screen.queryByDisplayValue('secret-token')).not.toBeInTheDocument();
   }, 15000);

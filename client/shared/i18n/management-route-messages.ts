@@ -1,4 +1,4 @@
-export const managementRouteMessagesEn = {
+﻿export const managementRouteMessagesEn = {
   environmentsRoute: {
     sidebar: {
       eyebrow: 'Environment management',
@@ -91,7 +91,7 @@ export const managementRouteMessagesEn = {
         pendingSave: 'Persisting the environment resource.',
         draftDeleteGuard: 'Discard the draft instead of deleting it. Only persisted environments can be deleted.',
         pendingDelete: 'Deleting the persisted environment.',
-        readinessNote: 'Secret rows stay write-only. Save applies replacement or clear operations without echoing secret raw values back into the UI.',
+        readinessNote: 'Secret rows stay write-only. Save does not persist raw secret values back into environment JSON, and replacement now fails closed without a secure backend.',
         mutationFailedTitle: 'Environment mutation failed',
         mutationFailedFallbackDescription: 'Environment mutation failed.',
         validationListAriaLabel: 'Environment validation messages',
@@ -122,8 +122,8 @@ export const managementRouteMessagesEn = {
         values: {
           readModel: 'Masked write-only secret rows',
           storedIndicator: 'hasStoredValue only',
-          updatePolicy: 'Replacement value or explicit clear only',
-          runtimeLinkage: 'Handled by request-level runtime resolution',
+          updatePolicy: 'Explicit clear now; replacement requires secure backend',
+          runtimeLinkage: 'Server-owned runtime resolution; secret rows fail closed without secure storage',
         },
       },
       metadataCard: {
@@ -140,8 +140,8 @@ export const managementRouteMessagesEn = {
         description: 'This guide ties the route back to the request-level environment resolution contract from T029/T030.',
         replacementSyntaxNote: 'Runtime placeholder substitution uses the bounded {{VARIABLE_NAME}} form in URL, headers, and body inputs.',
         scriptSyntaxNote: "Script access currently follows the architecture recommendation for a controlled env getter API. Example: env.get('token'). If the final runtime contract changes, this note should be updated. **확실하지 않음**",
-        secretPolicyNote: 'Plain variables keep their authored value visible in this route. Secret variables stay write-only here: reads expose hasStoredValue, while runtime resolution stays server-owned so raw secret values are not echoed back to the client.',
-        replacementValueNote: 'For secret rows, replacementValue is the next write-only value to store on save. It replaces the server-held secret without revealing the stored value. hasStoredValue only indicates whether a secret is already stored.',
+        secretPolicyNote: 'Plain variables keep their authored value visible in this route. Secret variables stay write-only here, and runtime resolution treats secret placeholders as unavailable until a secure backend exists.',
+        replacementValueNote: 'For secret rows, replacementValue is reserved for a future secure backend. Until one exists, saves fail closed instead of persisting raw secret values into environment JSON. hasStoredValue only indicates whether a secret was previously stored.',
         labels: {
           url: 'URL example',
           header: 'Header example',
@@ -206,7 +206,7 @@ export const managementRouteMessagesEn = {
         description: 'Secret values stay write-only and are never re-hydrated into visible text inputs.',
         empty: {
           title: 'Secret rows remain masked',
-          description: 'Read responses expose only hasStoredValue. Save accepts replacementValue or clearStoredValue, and request-level runtime resolution still stays outside this route.',
+          description: 'Read responses expose only hasStoredValue. Clear remains available, but replacement saves fail closed until a secure backend is configured.',
         },
       },
     },
@@ -369,7 +369,7 @@ export const managementRouteMessagesKo: RouteCatalogShape<typeof managementRoute
     sidebar: {
       eyebrow: '환경 관리',
       title: '환경 목록',
-      summary: '여기서는 저장된 변수만 관리합니다. 요청 실행과 환경 선택 연결은 아직 유예된 범위입니다.',
+      summary: '여기서는 저장된 변수와 write-only secret 행을 관리합니다. 선택된 요청은 실행 시 서버 소유 환경 해상도를 사용합니다.',
       newButton: '새 환경',
       searchLabel: '환경 검색',
       sortLabel: '환경 정렬',
@@ -457,7 +457,7 @@ export const managementRouteMessagesKo: RouteCatalogShape<typeof managementRoute
         pendingSave: '환경 리소스를 저장하고 있습니다.',
         draftDeleteGuard: 'draft는 삭제 대신 취소하세요. 삭제는 저장된 환경에만 적용됩니다.',
         pendingDelete: '저장된 환경을 삭제하고 있습니다.',
-        readinessNote: 'secret 행은 write-only로 유지됩니다. Save는 secret raw value를 다시 표시하지 않고 replacement나 clear만 적용합니다.',
+        readinessNote: 'secret 행은 write-only로 유지됩니다. Save는 raw secret를 environment JSON에 다시 저장하지 않으며, secure backend가 없으면 replacement 대신 fail-closed로 동작합니다.',
         mutationFailedTitle: '환경 변경에 실패했습니다',
         mutationFailedFallbackDescription: '환경 변경에 실패했습니다.',
         validationListAriaLabel: '환경 검증 메시지',
@@ -488,8 +488,8 @@ export const managementRouteMessagesKo: RouteCatalogShape<typeof managementRoute
         values: {
           readModel: '마스킹된 write-only secret 행',
           storedIndicator: 'hasStoredValue만 사용',
-          updatePolicy: 'replacement 값 또는 명시적 clear만 허용',
-          runtimeLinkage: 'request-level runtime resolution에서 처리',
+          updatePolicy: '지금은 명시적 clear만 가능, replacement는 secure backend 필요',
+          runtimeLinkage: '서버 소유 runtime resolution, secure storage 없이는 secret 행 fail-closed',
         },
       },
       metadataCard: {
@@ -506,8 +506,8 @@ export const managementRouteMessagesKo: RouteCatalogShape<typeof managementRoute
         description: '이 안내는 T029/T030의 request-level environment resolution 계약과 이 route를 다시 연결합니다.',
         replacementSyntaxNote: '런타임 placeholder 치환은 URL, header, body 입력에서 제한된 {{VARIABLE_NAME}} 형태를 사용합니다.',
         scriptSyntaxNote: "스크립트 접근은 현재 architecture 문서가 권장하는 controlled env getter API를 따릅니다. 예: env.get('token'). 최종 runtime 계약이 바뀌면 이 안내도 함께 갱신해야 합니다. **확실하지 않음**",
-        secretPolicyNote: 'plain 변수는 이 route에서 작성한 값을 그대로 보여줍니다. secret 변수는 여기서 write-only로 유지됩니다. read는 hasStoredValue만 노출하고, runtime resolution은 서버가 소유하므로 secret raw value를 client에 다시 돌려주지 않습니다.',
-        replacementValueNote: 'secret 행에서 replacementValue는 save 시 저장할 다음 write-only 값입니다. 서버에 저장된 secret를 교체하지만 현재 저장값을 드러내지는 않습니다. hasStoredValue는 secret가 이미 저장되어 있는지만 나타냅니다.',
+        secretPolicyNote: 'plain 변수는 이 route에서 작성한 값을 그대로 보여줍니다. secret 변수는 여기서 write-only로 유지되며, secure backend가 없으면 runtime resolution도 secret placeholder를 사용할 수 없는 것으로 처리합니다.',
+        replacementValueNote: 'secret 행에서 replacementValue는 향후 secure backend용 예약 입력입니다. 현재는 raw secret를 environment JSON에 저장하지 않기 위해 save가 fail-closed로 막힙니다. hasStoredValue는 secret가 이전에 저장되었는지만 나타냅니다.',
         labels: {
           url: 'URL 예시',
           header: 'Header 예시',
@@ -572,7 +572,7 @@ export const managementRouteMessagesKo: RouteCatalogShape<typeof managementRoute
         description: 'secret 값은 write-only로 유지되며 보이는 텍스트 입력으로 다시 hydrate되지 않습니다.',
         empty: {
           title: 'Secret 행은 계속 마스킹됩니다',
-          description: 'read 응답은 hasStoredValue만 노출합니다. Save는 replacementValue 또는 clearStoredValue를 받고, request-level runtime resolution도 여전히 이 route 밖에 남아 있습니다.',
+          description: 'read 응답은 hasStoredValue만 노출합니다. clear는 계속 가능하지만 replacement save는 secure backend가 설정될 때까지 fail-closed로 막힙니다.',
         },
       },
     },
@@ -725,3 +725,4 @@ export const managementRouteMessagesKo: RouteCatalogShape<typeof managementRoute
     },
   },
 } as const;
+

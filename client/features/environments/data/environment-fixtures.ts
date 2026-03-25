@@ -12,7 +12,7 @@ const localEnvironment: EnvironmentDetailRecord = {
   variableCount: 3,
   enabledVariableCount: 3,
   secretVariableCount: 1,
-  resolutionSummary: '3 variables are managed here, including 1 secret-backed entry. Runtime resolution stays deferred to a later slice.',
+  resolutionSummary: '3 variables are managed here, including 1 secret-backed entry. Plain placeholders resolve at run time, while secret rows stay write-only until a secure backend is available.',
   createdAt: '2026-03-22T09:00:00.000Z',
   updatedAt: '2026-03-22T09:00:00.000Z',
   variables: [
@@ -64,7 +64,7 @@ const stagingEnvironment: EnvironmentDetailRecord = {
   variableCount: 2,
   enabledVariableCount: 1,
   secretVariableCount: 1,
-  resolutionSummary: '2 variables are managed here, including 1 secret-backed entry. Runtime resolution stays deferred to a later slice.',
+  resolutionSummary: '2 variables are managed here, including 1 secret-backed entry. Plain placeholders resolve at run time, while secret rows stay write-only until a secure backend is available.',
   createdAt: '2026-03-21T09:00:00.000Z',
   updatedAt: '2026-03-21T09:00:00.000Z',
   variables: [

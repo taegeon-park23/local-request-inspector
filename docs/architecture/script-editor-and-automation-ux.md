@@ -1,8 +1,8 @@
-﻿# T012 Script Editor and Automation UX Spec
+# T012 Script Editor and Automation UX Spec
 
 - **Purpose:** Define the MVP script editor surfaces, stage-aware automation workflow, and diagnostic/result UX for request-bound and reusable script authoring.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-24
+- **Last Updated:** 2026-03-25
 - **Related Documents:** `request-builder-mvp.md`, `script-execution-safety-model.md`, `internal-api-contracts.md`, `ux-information-architecture.md`, `workspace-flows.md`, `frontend-stack-and-shell.md`, `persistence-bootstrap.md`
 - **Status:** done
 - **Update Rule:** Update when script stages, capability policy, editor loading strategy, or diagnostic panel composition materially changes.
@@ -173,13 +173,17 @@ To avoid confusion:
 - **scripts library view** = manages saved script assets/templates independent of a single request run
 
 ### 8.5 Attachment semantics
-The exact persistence/reference semantics remain **확실하지 않음**, but the MVP UX should assume one of these safe patterns:
-1. **Attach by copy** from template/library into the request stage editor, or
-2. **Attach saved script reference** with an explicit `Linked reusable script` badge and an `Open library detail` action
+The current MVP baseline now supports two explicit request-stage attachment paths:
+1. **Attach by copy** from the template/library into the request-stage editor, or
+2. **Attach saved-script reference** with explicit linked-state chrome, a read-only stage surface, and an `Open Scripts library` action
 
-Until final persistence semantics are chosen, the UI copy must avoid implying transparent shared-live-edit behavior across many requests.
+The shipped model is intentionally explicit rather than transparent shared live editing:
+- inline stages remain request-owned source
+- linked stages resolve the current saved-script source by id at run time
+- broken links stay broken until the user repairs or detaches them
+- request-stage editing never silently mixes live linked source with local overrides
 
-After `T061B`, `T063` narrowed the next reusable-script follow-up to **attach by copy**, and `T064` has now landed that baseline through an inline stage-aware saved-script picker inside the request builder. `T065` then added the bounded library-assist route bridge into `/scripts`, so request-stage scripts can now copy compatible saved scripts into request-owned source and jump to the standalone library for deeper review without introducing linked reusable references. Linked reusable references remain deferred behind explicit rename/delete/versioning semantics.
+After `T061B`, `T063`, `T064`, and `T065`, `T072` landed linked reusable references as a bounded request-stage capability, and `T073` then completed transfer/remap handling plus degraded-state cleanup around linked saved-script queries. Request-stage scripts can now either copy compatible saved scripts into request-owned source or keep an explicit linked reference without implying transparent multi-request live-edit semantics.
 
 ## 9. Stage Context and Capability Messaging
 ### 9.1 Principle
@@ -400,7 +404,7 @@ If no saved reusable scripts exist, show:
 - editable stage pipeline composition beyond the fixed three product stages
 
 ## 19. 확실하지 않음
-1. Whether saved reusable scripts are true references, copied attachments, or a hybrid model is **확실하지 않음**.
+1. Whether request-stage scripts eventually need a third mixed mode beyond the current explicit copy-or-link model is **확실하지 않음**.
 2. Whether editor lint diagnostics come from Monaco only, a dedicated JS worker, or server validation is **확실하지 않음**.
 3. Whether running a request should temporarily lock the active script editor is **확실하지 않음**.
 4. Whether history detail later shows more granular live-console events than persisted summaries is **확실하지 않음**.
@@ -426,5 +430,8 @@ If no saved reusable scripts exist, show:
 - load editor code only after script intent is clear
 - ensure templates/snippets and diagnostics are stage-filtered
 - avoid IntelliSense claims that exceed injected runtime capabilities
+
+
+
 
 

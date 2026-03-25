@@ -1,4 +1,4 @@
-const assert = require('node:assert/strict');
+﻿const assert = require('node:assert/strict');
 const {
   buildEnvironmentValueLookup,
   createEnvironmentResolutionSummary,
@@ -43,7 +43,7 @@ const { createEnvironmentRecord, presentEnvironmentRecord } = require('./environ
 
   const lookup = buildEnvironmentValueLookup(environment);
   assert.equal(lookup.get('api_base'), 'http://localhost:5671');
-  assert.equal(lookup.get('api_token'), 'secret-token');
+  assert.equal(lookup.has('api_token'), false);
   assert.equal(lookup.has('disabled_flag'), false);
 
   const resolved = resolveExecutionRequestWithEnvironment({
@@ -68,12 +68,12 @@ const { createEnvironmentRecord, presentEnvironmentRecord } = require('./environ
   }, environment);
 
   assert.equal(resolved.request.url, 'http://localhost:5671/users');
-  assert.equal(resolved.request.params[0].value, 'secret-token');
-  assert.equal(resolved.request.headers[0].value, 'Bearer secret-token');
+  assert.equal(resolved.request.params[0].value, '{{api_token}}');
+  assert.equal(resolved.request.headers[0].value, 'Bearer {{API_TOKEN}}');
   assert.equal(resolved.request.bodyText, '{"base":"http://localhost:5671"}');
-  assert.equal(resolved.request.auth.apiKeyValue, 'secret-token');
-  assert.equal(resolved.unresolved.length, 0);
-  assert.equal(resolved.resolvedPlaceholderCount, 5);
+  assert.equal(resolved.request.auth.apiKeyValue, '{{api_token}}');
+  assert.equal(resolved.unresolved.length, 3);
+  assert.equal(resolved.resolvedPlaceholderCount, 2);
   assert.deepEqual(resolved.affectedInputAreas, ['url', 'params', 'headers', 'body', 'auth']);
 
   const resolvedSummary = createEnvironmentResolutionSummary({
@@ -84,10 +84,10 @@ const { createEnvironmentRecord, presentEnvironmentRecord } = require('./environ
   });
 
   assert.deepEqual(resolvedSummary, {
-    status: 'resolved',
-    summary: 'Resolved 5 environment placeholder(s) in url, params, headers, body, and auth.',
-    resolvedPlaceholderCount: 5,
-    unresolvedPlaceholderCount: 0,
+    status: 'blocked-unresolved-placeholders',
+    summary: 'Environment resolution left 3 unresolved placeholder(s) in url, params, headers, body, and auth.',
+    resolvedPlaceholderCount: 2,
+    unresolvedPlaceholderCount: 3,
     affectedInputAreas: ['url', 'params', 'headers', 'body', 'auth'],
   });
 
@@ -111,14 +111,14 @@ const { createEnvironmentRecord, presentEnvironmentRecord } = require('./environ
     },
   }, environment);
 
-  assert.equal(unresolved.unresolved.length, 3);
-  assert.equal(unresolved.resolvedPlaceholderCount, 1);
+  assert.equal(unresolved.unresolved.length, 4);
+  assert.equal(unresolved.resolvedPlaceholderCount, 0);
   assert.deepEqual(unresolved.affectedInputAreas, ['url', 'params', 'body', 'auth']);
   assert.equal(
     summarizeUnresolvedEnvironmentPlaceholders(unresolved.unresolved).includes('{{MISSING_BASE}} in url'),
     true,
   );
-  assert.equal(unresolved.request.auth.bearerToken, 'secret-token');
+  assert.equal(unresolved.request.auth.bearerToken, '{{API_TOKEN}}');
   assert.equal(unresolved.request.headers[0].value, '{{IGNORED}}');
 
   const unresolvedSummary = createEnvironmentResolutionSummary({
@@ -130,9 +130,9 @@ const { createEnvironmentRecord, presentEnvironmentRecord } = require('./environ
 
   assert.deepEqual(unresolvedSummary, {
     status: 'blocked-unresolved-placeholders',
-    summary: 'Environment resolution left 3 unresolved placeholder(s) in url, params, body, and auth.',
-    resolvedPlaceholderCount: 1,
-    unresolvedPlaceholderCount: 3,
+    summary: 'Environment resolution left 4 unresolved placeholder(s) in url, params, body, and auth.',
+    resolvedPlaceholderCount: 0,
+    unresolvedPlaceholderCount: 4,
     affectedInputAreas: ['url', 'params', 'body', 'auth'],
   });
 
@@ -182,3 +182,5 @@ const { createEnvironmentRecord, presentEnvironmentRecord } = require('./environ
   assert.equal(presented.variables.find((row) => row.key === 'API_TOKEN')?.value, '');
   assert.equal(presented.variables.find((row) => row.key === 'API_TOKEN')?.hasStoredValue, true);
 })();
+
+

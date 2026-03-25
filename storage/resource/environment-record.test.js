@@ -62,7 +62,12 @@ const {
   assert.equal(created.isDefault, true);
   assert.equal(created.variableCount, 2);
   assert.equal(created.secretVariableCount, 1);
-  assert.equal(created.variables[1].value, 'secret-token');
+  assert.equal(created.variables[1].value, '');
+  assert.equal(created.variables[1].hasStoredValue, true);
+  assert.equal(
+    created.resolutionSummary,
+    '2 variables are managed here, including 1 secret-backed entry. Plain placeholders resolve at run time, while secret rows stay write-only until a secure backend is available.',
+  );
 
   const presented = presentEnvironmentRecord(created);
   assert.equal(presented.variables[0].value, 'http://localhost:5671');

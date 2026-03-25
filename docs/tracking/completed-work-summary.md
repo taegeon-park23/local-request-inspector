@@ -1,8 +1,8 @@
-# Completed Work Summary
+﻿# Completed Work Summary
 
 - **Purpose:** Retain only compact historical summaries for finished work after completed task and closed tracking docs are pruned.
 - **Created:** 2026-03-24
-- **Last Updated:** 2026-03-24
+- **Last Updated:** 2026-03-25
 - **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `../prd/overview.md`
 - **Update Rule:** When a task becomes `done`, summarize it here, prune its completed task doc, remove closed tracking docs tied only to completed work, and clean stale references from live docs.
 
@@ -82,6 +82,7 @@
 | T070 | Shell Density Settings Preference | Shipped the described product, UX, or data-flow change in code; detailed step-by-step task history has been pruned. | Codebase; `master-task-board.md` |
 | T071 | Post-T070 Priority Review And Linked-Script Promotion | Captured a bounded decision or sequencing rule that later shipped work followed; detailed history has been pruned. | `completed-work-summary.md`; `master-task-board.md` |
 | T072 | Request-Stage Linked Reusable-Script Reference Baseline | Shipped linked request-stage saved-script bindings, linked read-only UI, detach-to-copy, blocked broken-link runs, and export blocking. | Codebase; `master-task-board.md`; `progress-status.md` |
+| T073 | Server Decomposition, Runtime Hardening, and Replay/Transfer Follow-Up | Decomposed the former monolithic `server.js` into bounded route/service seams, moved resource/runtime access onto repositories, completed replay-now and linked-script transfer remap flows, removed shipped false-success fallback paths, and aligned live architecture/docs with the shipped React/Vite plus runtime baseline. | Codebase; `completed-work-summary.md` |
 
 ## Closed Tracking Decisions
 | Deleted Doc | Final Conclusion | Remaining Canonical Docs |
@@ -91,3 +92,5 @@
 | `request-stage-script-linkage-lane-comparison.md` | The reusable-script lane comparison culminated in the shipped `T072` baseline and no separate linkage-comparison doc remains live. | `completed-work-summary.md`; `master-task-board.md` |
 | `resolved-preview-sub-lane-comparison.md` | No resolved-preview follow-up is active; future work must be reintroduced as a new bounded task if needed. | `master-task-board.md`; `priority-roadmap.md` |
 | `settings-mutation-lane-comparison.md` | Client-owned settings preference work is complete, and broader settings expansion remains deferred until a new task is defined. | `master-task-board.md`; `priority-roadmap.md` |
+
+

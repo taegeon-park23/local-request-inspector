@@ -1,4 +1,4 @@
-const assert = require('node:assert/strict');
+﻿const assert = require('node:assert/strict');
 const {
   createEnvironmentRecord,
   enforceEnvironmentDefaults,
@@ -17,6 +17,7 @@ const {
   readSystemScriptTemplate,
 } = require('../storage/resource/script-record');
 const { createEnvironmentScriptResourceService } = require('./environment-script-resource-service');
+const { createEnvironmentSecretPolicyService } = require('./environment-secret-policy-service');
 const { registerEnvironmentScriptRoutes } = require('./register-environment-script-routes');
 const {
   createRepositories,
@@ -46,6 +47,7 @@ function createRouteDependencies(repositories) {
     normalizePersistedEnvironmentRecord,
     presentEnvironmentRecord,
     summarizePresentedEnvironmentRecord,
+    validateEnvironmentSecretMutation: createEnvironmentSecretPolicyService().validateEnvironmentSecretMutation,
     validateSavedScriptInput,
     createSavedScriptRecord,
     normalizePersistedSavedScriptRecord,
@@ -181,8 +183,49 @@ async function testListingWorkspaceScriptsUsesServiceOrdering() {
   );
 }
 
+
+async function testCreatingEnvironmentWithSecretReplacementFailsClosed() {
+  const repositories = createRepositories();
+
+  await withServer(
+    (app) => registerEnvironmentScriptRoutes(app, createRouteDependencies(repositories)),
+    async ({ baseUrl }) => {
+      const response = await requestJson(baseUrl, '/api/workspaces/local-workspace/environments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          environment: {
+            name: 'Secrets',
+            description: 'Should fail closed without a secure backend',
+            isDefault: false,
+            variables: [
+              {
+                key: 'API_TOKEN',
+                description: 'Secret token',
+                isEnabled: true,
+                isSecret: true,
+                valueType: 'plain',
+                replacementValue: 'secret-token',
+              },
+            ],
+          },
+        }),
+      });
+
+      assert.equal(response.status, 409);
+      assert.equal(response.payload.error.code, 'secret_storage_unavailable');
+      assert.deepEqual(response.payload.error.details.secretKeys, ['API_TOKEN']);
+      assert.equal(repositories.resources.environments.listAll().length, 0);
+    },
+  );
+}
 (async function run() {
   await testCreatingDefaultEnvironmentDemotesPreviousDefault();
   await testDeletingDefaultEnvironmentPromotesRemainingFallback();
   await testListingWorkspaceScriptsUsesServiceOrdering();
+  await testCreatingEnvironmentWithSecretReplacementFailsClosed();
 })();
+
+

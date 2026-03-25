@@ -1,4 +1,4 @@
-function registerEnvironmentScriptRoutes(app, dependencies) {
+﻿function registerEnvironmentScriptRoutes(app, dependencies) {
   const {
     sendData,
     sendError,
@@ -12,6 +12,7 @@ function registerEnvironmentScriptRoutes(app, dependencies) {
     listWorkspaceEnvironmentRecords,
     upsertWorkspaceEnvironmentRecord,
     reconcileWorkspaceEnvironmentDefaults,
+    validateEnvironmentSecretMutation,
     validateSavedScriptInput,
     createSavedScriptRecord,
     normalizePersistedSavedScriptRecord,
@@ -44,6 +45,18 @@ function registerEnvironmentScriptRoutes(app, dependencies) {
       return sendError(res, 400, 'environment_create_requires_new_identity', 'Use the update route for an existing environment id.', {
         environmentId: input.id,
       });
+    }
+
+    const secretMutationError = validateEnvironmentSecretMutation(input);
+    if (secretMutationError) {
+      return sendError(
+        res,
+        secretMutationError.status,
+        secretMutationError.code,
+        secretMutationError.message,
+        secretMutationError.details,
+        secretMutationError.retryable,
+      );
     }
 
     try {
@@ -88,6 +101,21 @@ function registerEnvironmentScriptRoutes(app, dependencies) {
       return sendError(res, 400, 'invalid_environment', validationError, {
         environmentId: req.params.environmentId,
       });
+    }
+
+    const secretMutationError = validateEnvironmentSecretMutation(input);
+    if (secretMutationError) {
+      return sendError(
+        res,
+        secretMutationError.status,
+        secretMutationError.code,
+        secretMutationError.message,
+        {
+          environmentId: req.params.environmentId,
+          ...(secretMutationError.details || {}),
+        },
+        secretMutationError.retryable,
+      );
     }
 
     try {
@@ -284,4 +312,6 @@ function registerEnvironmentScriptRoutes(app, dependencies) {
 module.exports = {
   registerEnvironmentScriptRoutes,
 };
+
+
 

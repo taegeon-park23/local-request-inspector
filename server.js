@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const { randomUUID } = require('node:crypto');
@@ -85,6 +85,7 @@ const { createExecutionFlowService } = require('./server/execution-flow-service'
 const { createRuntimePresentationService } = require('./server/runtime-presentation-service');
 const { createRequestResourceService } = require('./server/request-resource-service');
 const { createEnvironmentScriptResourceService } = require('./server/environment-script-resource-service');
+const { createEnvironmentSecretPolicyService } = require('./server/environment-secret-policy-service');
 const { createMockRuleResourceService } = require('./server/mock-rule-resource-service');
 const { createResourceBundleImportService } = require('./server/resource-bundle-import-service');
 const { registerRequestResourceRoutes } = require('./server/register-request-resource-routes');
@@ -167,6 +168,7 @@ const {
   normalizePersistedSavedScriptRecord,
   compareSavedScriptRecords,
 });
+const { validateEnvironmentSecretMutation } = createEnvironmentSecretPolicyService();
 
 const {
   cloneRows,
@@ -442,6 +444,7 @@ registerEnvironmentScriptRoutes(app, {
   listWorkspaceEnvironmentRecords,
   upsertWorkspaceEnvironmentRecord,
   reconcileWorkspaceEnvironmentDefaults,
+  validateEnvironmentSecretMutation,
   validateSavedScriptInput,
   createSavedScriptRecord,
   normalizePersistedSavedScriptRecord,
@@ -560,6 +563,7 @@ app.listen(PORT, () => {
       : `[Ready] Built app shell unavailable at ${appShellStatus.appRoute}. Run "${appShellStatus.buildCommand}" or use ${appShellStatus.devClientUrl} for development.`,
   );
 });
+
 
 
 

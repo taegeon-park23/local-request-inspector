@@ -1,4 +1,4 @@
-# Master Task Board
+﻿# Master Task Board
 - **Purpose:** Provide the canonical live execution status for work that is still operationally relevant.
 - **Created:** 2026-03-18
 - **Last Updated:** 2026-03-25
@@ -14,13 +14,13 @@
 ## Active Register
 | ID | Title | Status | Notes |
 | --- | --- | --- | --- |
-| T073 | Server Decomposition, Runtime Hardening, and Replay/Transfer Follow-Up | doing | Active bounded task doc: `../tasks/task-t073-server-decomposition.md`. This task owns the server split, child-process runner, observation follow-up, replay completion, linked-script transfer follow-up, and live-doc cleanup. |
+| T074 | Secret Environment Fail-Closed Policy | doing | Active bounded task doc: `../tasks/task-t074-secret-environment-fail-closed.md`. This task owns the secret-storage seam, fail-closed environment mutation policy, write-only environment-record shape, and secret capability follow-up. |
 
 ## Current State
-- **Current active implementation:** `T073` server decomposition, runtime hardening, replay/transfer follow-up, and documentation cleanup.
-- **Most recent archived implementation:** `T072` request-stage linked reusable-script reference baseline.
-- **Highest-priority next step:** finish `T073` by closing the last live-doc wording cleanup and only continuing the false-success audit if another shipped route still masks degraded state after the environment/scripts/request-stage fixes.
-- **Verification baseline:** `npm.cmd run check` and `npm.cmd run test:node` passed on 2026-03-25, including the expanded `server/*.test.js` seam coverage for request-resource, environment/script, execution flow, runtime presentation, and resource-bundle routes. The targeted client Vitest rerun for the new degraded-state regressions remained sandbox-blocked by `spawn EPERM`.
+- **Current active implementation:** `T074` secret environment fail-closed policy.
+- **Most recent archived implementation:** `T073` server decomposition, runtime hardening, replay/transfer follow-up, and documentation cleanup.
+- **Highest-priority next step:** keep `T074` bounded to fail-closed secret handling: carry the new policy into diagnostics/status guidance and decide whether legacy secret-bearing records need an explicit migration/reporting seam.
+- **Verification baseline:** `npm.cmd run check` passed on 2026-03-25, including the updated environment record/resolution tests and the new `server/register-environment-script-routes.test.js` fail-closed coverage. `check:app` still reports the known `/app` built-shell gap plus sandbox `spawn EPERM` limits for `build:client` and `test:ui`.
 - **Codex smoke baseline:** Playwright smoke passed on 2026-03-24 for workspace run, history replay-now, capture replay-now, and settings route load.
 - **Closed UI-test rerun policy:** agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - **Codex UI verification lane:** use the Playwright skill workflow against the dev route or built shell when available.
@@ -30,6 +30,4 @@
 - Completed task history now lives only in `completed-work-summary.md`.
 - `docs/tasks/` is reserved for active or incomplete task docs only.
 - Future work must start from a newly defined bounded task, not from reopening archived task files.
-- `T073` explicitly owns the linked request-stage transfer follow-up, replay completion, and runtime API expansion that were previously deferred.
-
-
+- `T073` is archived; future work should build on its route/service and repository seams rather than reintroducing monolithic server patterns.

@@ -2,7 +2,7 @@
 
 - **Purpose:** Define an implementation-ready, review-friendly plan for replacing the legacy single-page frontend with a React + Vite + TypeScript workspace shell using small, testable slices.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-24
+- **Last Updated:** 2026-03-25
 - **Related Documents:** `frontend-stack-and-shell.md`, `request-builder-mvp.md`, `script-editor-and-automation-ux.md`, `mock-engine-rules-spec.md`, `history-and-inspector-behavior.md`, `testing-and-qa-strategy.md`, `developer-environment-and-tooling-baseline.md`
 - **Status:** done
 - **Update Rule:** Update when shell boundaries, route strategy, slice sequencing, or shared primitive assumptions materially change.
@@ -586,7 +586,7 @@ The following are intentionally deferred from early shell implementation slices:
 3. The exact point at which history detail becomes rich enough to justify a dedicated shared `ResultPanelShell` beyond placeholders remains **확실하지 않음**.
 4. Whether some shell panel sizing/docking state deserves global persistence in MVP remains **확실하지 않음**.
 5. The exact Monaco load boundary remains **확실하지 않음**.
-6. Whether `Environments`, `Scripts`, and `Settings` need more than placeholder shells before later MVP implementation phases remains **확실하지 않음**.
+6. How far `Environments`, `Scripts`, and `Settings` should expand beyond their current list/detail management baseline remains **확실하지 않음**.
 
 ## 24. Implementation Handoff for the First Real PR
 The first implementation task should be framed narrowly as:
@@ -597,3 +597,4 @@ The first implementation task should be framed narrowly as:
 - add minimal component tests proving route switching and shell-region presence
 
 If that PR tries to also solve request builder forms, SSE capture lists, Monaco integration, or replay logic, it is probably too large.
+

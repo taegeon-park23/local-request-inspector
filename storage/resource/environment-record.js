@@ -25,8 +25,8 @@ function createVariableId(index, id) {
 
 function createResolutionSummary(variableCount, secretVariableCount) {
   return variableCount === 0
-    ? 'No variables are stored yet. Runtime resolution wiring stays deferred until environment selection is connected to authoring and run lanes.'
-    : `${variableCount} variable${variableCount === 1 ? '' : 's'} are managed here, including ${secretVariableCount} secret-backed entr${secretVariableCount === 1 ? 'y' : 'ies'}. Runtime resolution stays deferred to a later slice.`;
+    ? 'No variables are stored yet. Saved requests can select this environment at run time.'
+    : `${variableCount} variable${variableCount === 1 ? '' : 's'} are managed here, including ${secretVariableCount} secret-backed entr${secretVariableCount === 1 ? 'y' : 'ies'}. Plain placeholders resolve at run time, while secret rows stay write-only until a secure backend is available.`;
 }
 
 function cloneVariablesForPersistence(rows, existingRecord) {
@@ -45,18 +45,17 @@ function cloneVariablesForPersistence(rows, existingRecord) {
       const isSecret = row?.isSecret === true;
       const replacementValue = normalizeValue(row?.replacementValue);
       const clearStoredValue = row?.clearStoredValue === true;
+      const existingHasStoredValue = existingVariable?.isSecret === true
+        ? existingVariable.hasStoredValue === true || normalizeValue(existingVariable.value).length > 0
+        : false;
 
       let storedValue = '';
+      let hasStoredValue = false;
       if (isSecret) {
-        if (clearStoredValue) {
-          storedValue = '';
-        } else if (replacementValue.length > 0) {
-          storedValue = replacementValue;
-        } else if (existingVariable) {
-          storedValue = normalizeValue(existingVariable.value);
-        } else {
-          storedValue = normalizeValue(row?.value);
-        }
+        storedValue = '';
+        hasStoredValue = clearStoredValue
+          ? false
+          : replacementValue.length > 0 || existingHasStoredValue;
       } else if (typeof row?.value === 'string') {
         storedValue = row.value;
       } else if (existingVariable && existingVariable.isSecret !== true) {
@@ -71,6 +70,7 @@ function cloneVariablesForPersistence(rows, existingRecord) {
         isSecret,
         valueType: ALLOWED_ENVIRONMENT_VALUE_TYPES.has(row?.valueType) ? row.valueType : 'plain',
         value: storedValue,
+        hasStoredValue,
         createdAt: existingVariable?.createdAt || now,
         updatedAt: now,
       };
@@ -164,7 +164,10 @@ function normalizePersistedEnvironmentRecord(record) {
       isEnabled: row?.isEnabled !== false,
       isSecret: row?.isSecret === true,
       valueType: ALLOWED_ENVIRONMENT_VALUE_TYPES.has(row?.valueType) ? row.valueType : 'plain',
-      value: normalizeValue(row?.value),
+      value: row?.isSecret === true ? '' : normalizeValue(row?.value),
+      hasStoredValue: row?.isSecret === true
+        ? row?.hasStoredValue === true || normalizeValue(row?.value).length > 0
+        : false,
       createdAt: typeof row?.createdAt === 'string' ? row.createdAt : record.createdAt,
       updatedAt: typeof row?.updatedAt === 'string' ? row.updatedAt : record.updatedAt,
     }))
@@ -204,7 +207,7 @@ function presentEnvironmentRecord(record) {
         isSecret: row.isSecret === true,
         valueType: ALLOWED_ENVIRONMENT_VALUE_TYPES.has(row.valueType) ? row.valueType : 'plain',
         value: row.isSecret === true ? '' : normalizeValue(row.value),
-        hasStoredValue: row.isSecret === true ? normalizeValue(row.value).length > 0 : false,
+        hasStoredValue: row.isSecret === true ? row.hasStoredValue === true : false,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
       }))

@@ -1,4 +1,4 @@
-import { managementRouteMessagesEn, managementRouteMessagesKo } from '@client/shared/i18n/management-route-messages';
+﻿import { managementRouteMessagesEn, managementRouteMessagesKo } from '@client/shared/i18n/management-route-messages';
 import { observationRouteMessagesEn, observationRouteMessagesKo } from '@client/shared/i18n/observation-route-messages';
 import { workspaceRouteMessagesEn, workspaceRouteMessagesKo } from '@client/shared/i18n/workspace-route-messages';
 
@@ -130,7 +130,7 @@ const enCatalog = {
     environments: {
       title: 'Environments',
       summary:
-        'Environments persist workspace-scoped variables and secret placeholders only. Runtime resolution and request binding remain deferred.',
+        'Environments persist workspace-scoped variables and write-only secret rows. Saved requests can select them for server-owned runtime resolution.',
     },
     scripts: {
       title: 'Scripts',
@@ -427,7 +427,7 @@ const koCatalog: CatalogShape<typeof enCatalog> = {
     environments: {
       label: '환경',
       breadcrumb: '환경',
-      summary: '기본 환경 규칙과 함께 저장된 환경 변수 및 secret placeholder를 관리합니다.',
+      summary: '기본 환경 규칙과 함께 저장된 환경 변수와 write-only secret 행을 관리합니다.',
     },
     scripts: {
       label: '스크립트',
@@ -468,7 +468,7 @@ const koCatalog: CatalogShape<typeof enCatalog> = {
     environments: {
       title: '환경',
       summary:
-        '환경은 workspace 범위 변수와 secret placeholder만 저장합니다. runtime resolution과 request binding은 아직 유예된 범위입니다.',
+        '환경은 workspace 범위 변수와 write-only secret 행을 저장합니다. 저장된 요청은 이를 선택해 서버 소유 runtime resolution을 사용합니다.',
     },
     scripts: {
       title: '스크립트',
@@ -734,3 +734,4 @@ export function formatMessage(template: string, values?: MessageValues) {
     return value === undefined ? token : String(value);
   });
 }
+
