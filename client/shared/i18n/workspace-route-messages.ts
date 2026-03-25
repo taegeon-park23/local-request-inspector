@@ -5,7 +5,7 @@ export const workspaceRouteMessagesEn = {
         eyebrow: 'Workspace explorer',
         title: 'Collections',
         summary:
-          'Persisted collections, request groups, and saved requests stay browsable here. Management actions now live in the main workspace surface so the saved tree stays navigation-first.',
+          'Persisted collections, nested request groups, and saved requests stay visible here. Explorer actions handle preview, pin, create, run, rename, and delete without leaving the tree.',
         authoringChip: 'Authoring',
         resourceLaneChip: 'Resource lane',
       },
@@ -46,7 +46,7 @@ export const workspaceRouteMessagesEn = {
         boundary:
           'Export and import stay limited to authored request definitions, mock rules, and standalone saved scripts. Runtime history, captures, and execution artifacts remain outside this bundle.',
         navigationOnly:
-          'This explorer is navigation-only. Create, rename, delete, import, and export now happen in the main workspace surface.',
+          'Explorer actions handle preview, pin, create, run, rename, and delete directly in the tree. Import and export stay in the companion workspace panel.',
         previewAdvisory:
           'Preview is advisory only. Workspace changes before confirm can still change imported names or validation outcomes for {fileName}.',
       },
@@ -136,7 +136,7 @@ export const workspaceRouteMessagesEn = {
         eyebrow: 'Saved resource manager',
         title: 'Manage saved workspace resources',
         summary:
-          'Collections, request groups, saved-request deletion, and authored-resource transfer now stay in the main surface so explorer traversal remains read-focused.',
+          'This companion panel keeps authored-resource transfer and focused rename/delete controls available while recursive explorer actions stay first-class in the tree.',
       },
       badges: {
         savedTree: 'Saved tree',
@@ -151,7 +151,7 @@ export const workspaceRouteMessagesEn = {
           'Create, rename, or delete empty collections here. Request placement copy stays aligned after successful mutation.',
         requestGroupTitle: 'Request groups',
         requestGroupDescription:
-          'Create, rename, or delete empty request groups from the same main-surface manager instead of inside the explorer tree.',
+          'Review, rename, or delete the currently selected request group here, including nested groups that appear with full tree paths.',
         requestTitle: 'Saved request actions',
         requestDescription:
           'Request creation stays in the tab strip and request editing stays in the builder. Export and delete the persisted saved request here when the active tab is saved-backed.',
@@ -188,7 +188,7 @@ export const workspaceRouteMessagesEn = {
         noActivePlacement: 'No active save placement is selected yet.',
         transferBoundary:
           'Import and export remain limited to authored request definitions, mock rules, and standalone saved scripts. Runtime history, captures, and execution artifacts remain excluded.',
-        collectionCount: '{count} request group(s) belong to the selected collection.',
+        collectionCount: '{count} request group(s) exist in the selected collection tree.',
         collectionUnavailable: 'No collection is available to manage yet.',
         requestCount: '{count} saved request(s) belong to the selected request group.',
         requestGroupUnavailable: 'Select a collection first to manage request groups.',
@@ -683,7 +683,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         eyebrow: '작업공간 탐색기',
         title: '컬렉션',
         summary:
-          '저장된 컬렉션, 요청 그룹, 요청은 여기서 탐색만 합니다. 관리 동작은 메인 작업공간 surface로 옮겨 저장 트리가 탐색 중심으로 유지됩니다.',
+          '지속된 컬렉션, 중첩 요청 그룹, 저장된 요청을 여기에서 함께 봅니다. explorer 액션으로 트리를 벗어나지 않고 preview, pin, 생성, 실행, 이름 변경, 삭제를 처리합니다.',
         authoringChip: '작성',
         resourceLaneChip: '리소스 레인',
       },
@@ -724,7 +724,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         boundary:
           '내보내기와 가져오기는 작성된 요청 정의, mock rule, 그리고 독립 저장 스크립트에만 한정됩니다. 런타임 히스토리, 캡처, 실행 artifact는 이 번들 범위 밖에 있습니다.',
         navigationOnly:
-          '이 탐색기는 탐색 전용입니다. 생성, 이름 변경, 삭제, 가져오기, 내보내기는 이제 메인 작업공간 surface에서 처리합니다.',
+          'explorer 액션으로 트리 안에서 preview, pin, 생성, 실행, 이름 변경, 삭제를 직접 처리합니다. 가져오기와 내보내기만 보조 workspace 패널에 남습니다.',
         previewAdvisory:
           '미리보기는 참고용입니다. 확정 전에 작업공간이 바뀌면 {fileName}의 가져오기 이름이나 검증 결과가 달라질 수 있습니다.',
       },
@@ -814,7 +814,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         eyebrow: '저장 리소스 관리자',
         title: '저장된 작업공간 리소스 관리',
         summary:
-          '컬렉션, 요청 그룹, 저장 요청 삭제, 작성 리소스 전송은 메인 surface에 남겨 탐색기가 읽기 중심의 저장 트리 탐색기로 유지되게 합니다.',
+          '이 보조 패널은 authored-resource 전송과 집중된 이름 변경/삭제 제어를 제공하고, 재귀 explorer 액션은 트리 안에서 1급 동작으로 유지됩니다.',
       },
       badges: {
         savedTree: '저장 트리',
@@ -829,7 +829,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
           '여기서 컬렉션을 생성, 이름 변경, 삭제합니다. 성공 후 요청 배치 문구도 함께 정렬됩니다.',
         requestGroupTitle: '요청 그룹',
         requestGroupDescription:
-          '요청 그룹 생성, 이름 변경, 빈 그룹 삭제를 탐색기 트리 안이 아니라 같은 메인 관리자에서 처리합니다.',
+          '현재 선택된 요청 그룹을 여기에서 검토, 이름 변경, 삭제할 수 있고, 중첩 그룹도 전체 경로와 함께 선택할 수 있습니다.',
         requestTitle: '저장 요청 동작',
         requestDescription:
           '요청 생성은 탭 스트립에 남고, 요청 편집은 빌더에 남습니다. 활성 탭이 저장 요청일 때만 여기서 내보내기와 삭제를 수행합니다.',
@@ -866,7 +866,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         noActivePlacement: '아직 선택된 활성 저장 위치가 없습니다.',
         transferBoundary:
           '가져오기와 내보내기는 작성된 요청 정의, mock rule, 그리고 독립 저장 스크립트에만 한정됩니다. 런타임 히스토리, 캡처, 실행 artifact는 계속 제외됩니다.',
-        collectionCount: '선택한 컬렉션에는 요청 그룹이 {count}개 있습니다.',
+        collectionCount: '선택한 컬렉션 트리에는 요청 그룹이 {count}개 있습니다.',
         collectionUnavailable: '아직 관리할 컬렉션이 없습니다.',
         requestCount: '선택한 요청 그룹에는 저장 요청이 {count}개 있습니다.',
         requestGroupUnavailable: '요청 그룹을 관리하려면 먼저 컬렉션을 선택하세요.',
