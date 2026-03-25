@@ -6,12 +6,12 @@
     defaultWorkspaceId,
     validateEnvironmentInput,
     createEnvironmentRecord,
-    normalizePersistedEnvironmentRecord,
     presentEnvironmentRecord,
     summarizePresentedEnvironmentRecord,
     listWorkspaceEnvironmentRecords,
     upsertWorkspaceEnvironmentRecord,
     reconcileWorkspaceEnvironmentDefaults,
+    readEnvironmentRecord,
     validateEnvironmentSecretMutation,
     validateSavedScriptInput,
     createSavedScriptRecord,
@@ -75,9 +75,7 @@
 
   app.get('/api/environments/:environmentId', (req, res) => {
     try {
-      const environment = normalizePersistedEnvironmentRecord(
-        environmentRepository.read(req.params.environmentId),
-      );
+      const environment = readEnvironmentRecord(req.params.environmentId);
 
       if (!environment) {
         return sendError(res, 404, 'environment_not_found', 'Environment was not found.', {
@@ -119,9 +117,7 @@
     }
 
     try {
-      const existingRecord = normalizePersistedEnvironmentRecord(
-        environmentRepository.read(req.params.environmentId),
-      );
+      const existingRecord = readEnvironmentRecord(req.params.environmentId);
 
       if (!existingRecord) {
         return sendError(res, 404, 'environment_not_found', 'Environment was not found.', {
@@ -153,9 +149,7 @@
 
   app.delete('/api/environments/:environmentId', (req, res) => {
     try {
-      const existingRecord = normalizePersistedEnvironmentRecord(
-        environmentRepository.read(req.params.environmentId),
-      );
+      const existingRecord = readEnvironmentRecord(req.params.environmentId);
 
       if (!existingRecord) {
         return sendError(res, 404, 'environment_not_found', 'Environment was not found.', {

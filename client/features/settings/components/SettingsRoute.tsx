@@ -34,6 +34,7 @@ export function SettingsRoute() {
   const [copiedMessage, setCopiedMessage] = useState<string | null>(null);
   const runtimeStatusQuery = useQuery({ queryKey: runtimeStatusQueryKey, queryFn: readRuntimeStatus });
   const runtimeStatus = runtimeStatusQuery.data;
+  const secretStorage = runtimeStatus?.secretStorage;
 
   const describeLocale = (localeCode: LocaleCode) => (
     localeCode === 'ko' ? t('common.locales.ko') : t('common.locales.en')
@@ -180,6 +181,27 @@ export function SettingsRoute() {
                 ]}
               />
             </DetailViewerSection>
+            {secretStorage ? (
+              <DetailViewerSection
+                icon="shield"
+                title={t('settings.cards.secretStoragePolicy.title')}
+                description={t('settings.cards.secretStoragePolicy.description')}
+                className="workspace-surface-card workspace-surface-card--muted"
+              >
+                <KeyValueMetaList
+                  items={[
+                    { label: t('settings.cards.secretStoragePolicy.labels.secureBackend'), value: secretStorage.secureBackendAvailable ? t('common.values.yes') : t('common.values.no') },
+                    { label: t('settings.cards.secretStoragePolicy.labels.backend'), value: secretStorage.backendLabel },
+                    { label: t('settings.cards.secretStoragePolicy.labels.replacementWrites'), value: secretStorage.replacementWritePolicy },
+                    { label: t('settings.cards.secretStoragePolicy.labels.runtimeResolution'), value: secretStorage.runtimeResolutionPolicy },
+                    { label: t('settings.cards.secretStoragePolicy.labels.readModel'), value: secretStorage.readModelPolicy },
+                    { label: t('settings.cards.secretStoragePolicy.labels.legacySanitizedRows'), value: secretStorage.sanitizedLegacySecretRowCount },
+                  ]}
+                />
+                <p className="shared-readiness-note">{secretStorage.note}</p>
+                <p className="shared-readiness-note">{secretStorage.legacySanitizationNote}</p>
+              </DetailViewerSection>
+            ) : null}
             <DetailViewerSection
               icon="summary"
               title={t('settings.cards.interfaceLanguage.title')}

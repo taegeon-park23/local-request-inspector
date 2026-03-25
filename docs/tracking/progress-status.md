@@ -7,16 +7,15 @@
 - **Update Rule:** Update after each active-task status change or verification-state change.
 
 ## Current Snapshot
-- `T074` is actively in progress.
-- `T073` is now archived after landing the server/runtime split, replay-now completion, linked-script transfer remap, shipped false-success cleanup, and live-doc alignment work.
-- Environment summaries and route copy now reflect the shipped request-level environment baseline instead of still claiming runtime resolution is deferred.
-- Secret-backed environment rows now persist only write-only metadata in the ordinary environment record shape, and runtime placeholder resolution skips those rows until a secure backend exists.
-- Environment create/update routes now fail closed with `secret_storage_unavailable` when secret replacement writes are attempted without a secure backend.
+- `T074` is now archived after landing fail-closed secret writes, write-only environment records, settings/runtime secret-storage diagnostics, and legacy secret-row sanitize/reporting on read.
+- `T075` is defined as the next bounded task and is not started yet.
+- Settings runtime diagnostics now expose secret-storage capability state, read-model policy, replacement-write policy, runtime-resolution policy, and legacy sanitization counts.
+- Environment list/detail reads sanitize legacy raw secret rows out of ordinary environment JSON when encountered and report bounded warning counts in the same pass.
 - The shared route-panel implementation remains at `client/features/route-panel-tabs-layout.tsx`, while environment/script/request-stage degraded-state regressions continue to have client coverage even though Codex cannot rerun the full Vitest UI lane.
 
 ## Verification
 - `npm.cmd run check` passed on 2026-03-25.
-- `npm.cmd run test:node` passed on 2026-03-25, including the new fail-closed environment route coverage and updated environment record/resolution assertions.
+- `npm.cmd run test:node` passed on 2026-03-25, including the new legacy secret sanitize/report coverage, fail-closed environment route coverage, and runtime-status secret-storage snapshot assertions.
 - `check:app` still reports the known `/app` built-shell gap and sandbox `spawn EPERM` limits for `build:client` and `test:ui`.
 - A targeted Vitest rerun for the degraded-state client regressions was attempted on 2026-03-25, but sandboxed esbuild transform startup failed with `spawn EPERM` before the client test runner could start.
 - Codex-side Playwright smoke passed on 2026-03-24 for workspace run, history replay-now, capture replay-now, and settings route load.
@@ -27,4 +26,4 @@
 1. Read `../prd/overview.md`.
 2. Read `master-task-board.md` and `priority-roadmap.md`.
 3. Read `completed-work-summary.md` only if archived context is actually needed.
-4. Continue `T074` until its fail-closed policy, verification, and capability-reporting scope is complete before introducing another bounded task.
+4. Start `T075` only after reading the shipped T074 diagnostics/status seam so the secure-backend contract extends it instead of replacing it ad hoc.

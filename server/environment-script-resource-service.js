@@ -1,6 +1,7 @@
 function createEnvironmentScriptResourceService(dependencies) {
   const {
     repositories,
+    countLegacySecretRows,
     enforceEnvironmentDefaults,
     normalizePersistedEnvironmentRecord,
     compareEnvironmentRecords,
@@ -10,10 +11,28 @@ function createEnvironmentScriptResourceService(dependencies) {
   const environmentRepository = repositories.resources.environments;
   const scriptRepository = repositories.resources.scripts;
 
+  function normalizeAndPersistEnvironmentRecord(record) {
+    const legacySecretRowCount = countLegacySecretRows(record?.variables);
+    const normalizedRecord = normalizePersistedEnvironmentRecord(record);
+
+    if (!normalizedRecord || typeof normalizedRecord !== 'object') {
+      return normalizedRecord;
+    }
+
+    if (legacySecretRowCount > 0) {
+      environmentRepository.save(normalizePersistedEnvironmentRecord(record));
+    }
+
+    return {
+      ...normalizedRecord,
+      legacySecretRowCount,
+    };
+  }
+
   function listWorkspaceEnvironmentRecords(workspaceId) {
     return environmentRepository
       .listByWorkspace(workspaceId)
-      .map((record) => normalizePersistedEnvironmentRecord(record))
+      .map((record) => normalizeAndPersistEnvironmentRecord(record))
       .filter(Boolean)
       .sort(compareEnvironmentRecords);
   }
@@ -52,9 +71,41 @@ function createEnvironmentScriptResourceService(dependencies) {
       return null;
     }
 
-    return normalizePersistedEnvironmentRecord(
+    return normalizeAndPersistEnvironmentRecord(
       environmentRepository.readByWorkspace(workspaceId, environmentId.trim()),
     );
+  }
+
+  function readEnvironmentRecord(environmentId) {
+    if (typeof environmentId !== 'string' || environmentId.trim().length === 0) {
+      return null;
+    }
+
+    return normalizeAndPersistEnvironmentRecord(environmentRepository.read(environmentId.trim()));
+  }
+
+  function collectEnvironmentSecretDiagnostics() {
+    const environmentRecords = environmentRepository.listAll();
+    let sanitizedLegacyEnvironmentCount = 0;
+    let sanitizedLegacySecretRowCount = 0;
+
+    for (const record of environmentRecords) {
+      const legacySecretRowCount = countLegacySecretRows(record?.variables);
+
+      if (legacySecretRowCount === 0) {
+        continue;
+      }
+
+      sanitizedLegacyEnvironmentCount += 1;
+      sanitizedLegacySecretRowCount += legacySecretRowCount;
+      environmentRepository.save(normalizePersistedEnvironmentRecord(record));
+    }
+
+    return {
+      environmentCount: environmentRecords.length,
+      sanitizedLegacyEnvironmentCount,
+      sanitizedLegacySecretRowCount,
+    };
   }
 
   return {
@@ -63,6 +114,8 @@ function createEnvironmentScriptResourceService(dependencies) {
     upsertWorkspaceEnvironmentRecord,
     reconcileWorkspaceEnvironmentDefaults,
     readWorkspaceEnvironmentReference,
+    readEnvironmentRecord,
+    collectEnvironmentSecretDiagnostics,
   };
 }
 

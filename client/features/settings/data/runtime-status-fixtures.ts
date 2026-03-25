@@ -23,6 +23,17 @@ export const defaultRuntimeStatusFixture: RuntimeStatusResponse = {
     resourceManifestAvailable: true,
     runtimeDbAvailable: true,
   },
+  secretStorage: {
+    secureBackendAvailable: false,
+    backendLabel: 'unavailable',
+    readModelPolicy: 'Secret rows remain write-only and expose only hasStoredValue in read responses.',
+    replacementWritePolicy: 'Secret replacement writes fail closed until a secure backend is configured.',
+    runtimeResolutionPolicy: 'Run time continues to resolve plain variables only. Secret-backed placeholders stay unavailable until a secure backend is configured.',
+    sanitizedLegacyEnvironmentCount: 1,
+    sanitizedLegacySecretRowCount: 2,
+    legacySanitizationNote: 'Sanitized 2 legacy secret row(s) across 1 environment(s) during this diagnostics pass.',
+    note: 'A secure backend is not configured in this runtime. Secret replacement writes remain blocked, while ordinary environment JSON stays free of raw secret values.',
+  },
   routes: [
     {
       label: 'Legacy prototype',

@@ -91,7 +91,8 @@
         pendingSave: 'Persisting the environment resource.',
         draftDeleteGuard: 'Discard the draft instead of deleting it. Only persisted environments can be deleted.',
         pendingDelete: 'Deleting the persisted environment.',
-        readinessNote: 'Secret rows stay write-only. Save does not persist raw secret values back into environment JSON, and replacement now fails closed without a secure backend.',
+        readinessNote: 'Secure backend is unavailable in this runtime. Secret rows stay write-only, save does not persist raw secret values back into environment JSON, and replacement now fails closed.',
+        legacySanitizedNote: 'Sanitized {count} legacy secret row(s) from ordinary environment JSON while loading this environment.',
         mutationFailedTitle: 'Environment mutation failed',
         mutationFailedFallbackDescription: 'Environment mutation failed.',
         validationListAriaLabel: 'Environment validation messages',
@@ -118,6 +119,7 @@
           storedIndicator: 'Stored indicator',
           updatePolicy: 'Update policy',
           runtimeLinkage: 'Runtime linkage',
+          legacySanitizedRows: 'Legacy sanitized rows',
         },
         values: {
           readModel: 'Masked write-only secret rows',
@@ -207,6 +209,10 @@
         empty: {
           title: 'Secret rows remain masked',
           description: 'Read responses expose only hasStoredValue. Clear remains available, but replacement saves fail closed until a secure backend is configured.',
+        },
+        sanitized: {
+          title: 'Legacy secret rows were sanitized',
+          description: 'Sanitized {count} legacy secret row(s) from ordinary environment JSON while loading this environment. Future saves keep the sanitized write-only shape.',
         },
       },
     },
@@ -457,7 +463,8 @@ export const managementRouteMessagesKo: RouteCatalogShape<typeof managementRoute
         pendingSave: '환경 리소스를 저장하고 있습니다.',
         draftDeleteGuard: 'draft는 삭제 대신 취소하세요. 삭제는 저장된 환경에만 적용됩니다.',
         pendingDelete: '저장된 환경을 삭제하고 있습니다.',
-        readinessNote: 'secret 행은 write-only로 유지됩니다. Save는 raw secret를 environment JSON에 다시 저장하지 않으며, secure backend가 없으면 replacement 대신 fail-closed로 동작합니다.',
+        readinessNote: 'Secure backend is unavailable in this runtime. Secret rows stay write-only, save does not persist raw secret values back into environment JSON, and replacement remains fail-closed.',
+        legacySanitizedNote: 'Sanitized {count} legacy secret row(s) from ordinary environment JSON while loading this environment.',
         mutationFailedTitle: '환경 변경에 실패했습니다',
         mutationFailedFallbackDescription: '환경 변경에 실패했습니다.',
         validationListAriaLabel: '환경 검증 메시지',
@@ -484,6 +491,7 @@ export const managementRouteMessagesKo: RouteCatalogShape<typeof managementRoute
           storedIndicator: '저장 표시',
           updatePolicy: '업데이트 정책',
           runtimeLinkage: '런타임 연결',
+          legacySanitizedRows: 'Legacy sanitized rows',
         },
         values: {
           readModel: '마스킹된 write-only secret 행',
@@ -573,6 +581,10 @@ export const managementRouteMessagesKo: RouteCatalogShape<typeof managementRoute
         empty: {
           title: 'Secret 행은 계속 마스킹됩니다',
           description: 'read 응답은 hasStoredValue만 노출합니다. clear는 계속 가능하지만 replacement save는 secure backend가 설정될 때까지 fail-closed로 막힙니다.',
+        },
+        sanitized: {
+          title: 'Legacy secret rows were sanitized',
+          description: 'Sanitized {count} legacy secret row(s) from ordinary environment JSON while loading this environment. Future saves keep the sanitized write-only shape.',
         },
       },
     },

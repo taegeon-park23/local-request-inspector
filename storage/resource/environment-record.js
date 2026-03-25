@@ -19,6 +19,20 @@ function normalizeValue(value) {
   return typeof value === 'string' ? value : '';
 }
 
+function countLegacySecretRows(rows) {
+  return Array.isArray(rows)
+    ? rows.filter((row) => row?.isSecret === true && normalizeValue(row?.value).length > 0).length
+    : 0;
+}
+
+function readLegacySecretRowCount(record) {
+  if (Number.isFinite(record?.legacySecretRowCount)) {
+    return Math.max(0, Math.trunc(record.legacySecretRowCount));
+  }
+
+  return countLegacySecretRows(record?.variables);
+}
+
 function createVariableId(index, id) {
   return typeof id === 'string' && id.length > 0 ? id : `environment-variable-${index}-${randomUUID()}`;
 }
@@ -174,7 +188,12 @@ function normalizePersistedEnvironmentRecord(record) {
     : [];
 
   const normalizedRecord = {
-    ...record,
+    id: typeof record.id === 'string' ? record.id : randomUUID(),
+    workspaceId: typeof record.workspaceId === 'string' && record.workspaceId.length > 0
+      ? record.workspaceId
+      : DEFAULT_WORKSPACE_ID,
+    createdAt: typeof record.createdAt === 'string' ? record.createdAt : new Date().toISOString(),
+    updatedAt: typeof record.updatedAt === 'string' ? record.updatedAt : new Date().toISOString(),
     resourceKind: RESOURCE_RECORD_KINDS.ENVIRONMENT,
     resourceSchemaVersion: ENVIRONMENT_RESOURCE_SCHEMA_VERSION,
     name: normalizeText(record.name),
@@ -191,6 +210,7 @@ function normalizePersistedEnvironmentRecord(record) {
 
 function presentEnvironmentRecord(record) {
   const normalizedRecord = normalizePersistedEnvironmentRecord(record);
+  const legacySecretRowCount = readLegacySecretRowCount(record);
 
   if (!normalizedRecord || typeof normalizedRecord !== 'object') {
     return normalizedRecord;
@@ -198,6 +218,7 @@ function presentEnvironmentRecord(record) {
 
   return {
     ...normalizedRecord,
+    legacySecretRowCount,
     variables: Array.isArray(normalizedRecord.variables)
       ? normalizedRecord.variables.map((row) => ({
         id: row.id,
@@ -295,6 +316,7 @@ function validateEnvironmentInput(input) {
 module.exports = {
   DEFAULT_WORKSPACE_ID,
   ALLOWED_ENVIRONMENT_VALUE_TYPES,
+  countLegacySecretRows,
   createEnvironmentRecord,
   enforceEnvironmentDefaults,
   normalizePersistedEnvironmentRecord,

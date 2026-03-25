@@ -4,6 +4,7 @@ function registerStatusRoutes(app, dependencies) {
     sendError,
     getClientShellStatus,
     createRuntimeStatusSnapshot,
+    getSecretStorageStatus,
     layout,
   } = dependencies;
 
@@ -19,6 +20,7 @@ function registerStatusRoutes(app, dependencies) {
         status: createRuntimeStatusSnapshot({
           appShell: getClientShellStatus(),
           layout,
+          secretStorage: typeof getSecretStorageStatus === 'function' ? getSecretStorageStatus() : null,
         }),
       });
     } catch (error) {

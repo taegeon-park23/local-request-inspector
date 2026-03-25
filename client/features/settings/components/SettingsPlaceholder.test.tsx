@@ -19,6 +19,7 @@ describe('Settings MVP route', () => {
     expect(await screen.findByRole('heading', { name: 'App shell availability' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Storage readiness' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Runtime connection health' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Secret storage policy' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Interface language' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Route explorer preference' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Shell density preference' })).toBeInTheDocument();

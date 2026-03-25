@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict');
 const {
+  countLegacySecretRows,
   createEnvironmentRecord,
   enforceEnvironmentDefaults,
   presentEnvironmentRecord,
@@ -73,6 +74,23 @@ const {
   assert.equal(presented.variables[0].value, 'http://localhost:5671');
   assert.equal(presented.variables[1].value, '');
   assert.equal(presented.variables[1].hasStoredValue, true);
+  assert.equal(presented.legacySecretRowCount, 0);
+
+  const legacyPresented = presentEnvironmentRecord({
+    ...created,
+    variables: [
+      created.variables[0],
+      {
+        ...created.variables[1],
+        value: 'legacy-secret',
+        hasStoredValue: false,
+      },
+    ],
+  });
+  assert.equal(countLegacySecretRows(legacyPresented.variables), 0);
+  assert.equal(legacyPresented.legacySecretRowCount, 1);
+  assert.equal(legacyPresented.variables[1].value, '');
+  assert.equal(legacyPresented.variables[1].hasStoredValue, true);
 
   const updated = createEnvironmentRecord({
     name: 'Local API',

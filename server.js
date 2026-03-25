@@ -31,6 +31,7 @@ const {
   DEFAULT_REQUEST_GROUP_NAME,
 } = require('./storage/resource/request-placement-record');
 const {
+  countLegacySecretRows,
   createEnvironmentRecord,
   enforceEnvironmentDefaults,
   normalizePersistedEnvironmentRecord,
@@ -160,15 +161,21 @@ const {
   upsertWorkspaceEnvironmentRecord,
   reconcileWorkspaceEnvironmentDefaults,
   readWorkspaceEnvironmentReference,
+  readEnvironmentRecord,
+  collectEnvironmentSecretDiagnostics,
 } = createEnvironmentScriptResourceService({
   repositories,
+  countLegacySecretRows,
   enforceEnvironmentDefaults,
   normalizePersistedEnvironmentRecord,
   compareEnvironmentRecords,
   normalizePersistedSavedScriptRecord,
   compareSavedScriptRecords,
 });
-const { validateEnvironmentSecretMutation } = createEnvironmentSecretPolicyService();
+const {
+  validateEnvironmentSecretMutation,
+  createSecretStorageStatusSnapshot,
+} = createEnvironmentSecretPolicyService();
 
 const {
   cloneRows,
@@ -401,6 +408,7 @@ registerStatusRoutes(app, {
   sendError,
   getClientShellStatus,
   createRuntimeStatusSnapshot,
+  getSecretStorageStatus: () => createSecretStorageStatusSnapshot(collectEnvironmentSecretDiagnostics()),
   layout: persistence.layout,
 });
 
@@ -444,6 +452,7 @@ registerEnvironmentScriptRoutes(app, {
   listWorkspaceEnvironmentRecords,
   upsertWorkspaceEnvironmentRecord,
   reconcileWorkspaceEnvironmentDefaults,
+  readEnvironmentRecord,
   validateEnvironmentSecretMutation,
   validateSavedScriptInput,
   createSavedScriptRecord,

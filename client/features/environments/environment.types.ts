@@ -23,6 +23,7 @@ export interface EnvironmentSummaryRecord {
   enabledVariableCount: number;
   secretVariableCount: number;
   resolutionSummary: string;
+  legacySecretRowCount?: number;
   createdAt: string;
   updatedAt: string;
 }

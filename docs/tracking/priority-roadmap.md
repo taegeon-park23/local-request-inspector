@@ -9,7 +9,8 @@
 ## Roadmap Snapshot
 1. Foundation, architecture, UX, QA, tooling, and shipped implementation history are archived in `completed-work-summary.md`.
 2. `T073` is archived into `completed-work-summary.md`.
-3. `T074` is the active bounded task and owns the current security/persistence hardening lane.
+3. `T074` is archived into `completed-work-summary.md`.
+4. `T075` is the live next bounded task and owns the secret-backend contract lane.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.
@@ -17,7 +18,7 @@
 - Keep Codex-side UI reruns closed; use the Playwright skill for Codex-side UI smoke and reserve `npm.cmd run test:ui` for user-managed local verification.
 
 ## Immediate Next Step
-- Execute `T074`:
-- keep secret replacement writes fail-closed until a secure backend exists
-- keep ordinary environment JSON free of raw secret values
-- decide whether diagnostics or migration/reporting should surface the new secret-backend limitation more explicitly
+- Execute `T075`:
+- freeze the first secure secret provider contract for `status`, `store`, `resolve`, and `clear`
+- define migration/reporting rules for sanitized legacy secret rows and future backend adoption
+- keep the shipped T074 fail-closed policy, runtime-status diagnostics, and environment sanitize/report seam intact until provider implementation lands

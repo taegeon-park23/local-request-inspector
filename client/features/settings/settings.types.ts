@@ -33,6 +33,17 @@ export interface RuntimeStatusResponse {
     resourceManifestAvailable: boolean;
     runtimeDbAvailable: boolean;
   };
+  secretStorage: {
+    secureBackendAvailable: boolean;
+    backendLabel: string;
+    readModelPolicy: string;
+    replacementWritePolicy: string;
+    runtimeResolutionPolicy: string;
+    sanitizedLegacyEnvironmentCount: number;
+    sanitizedLegacySecretRowCount: number;
+    legacySanitizationNote: string;
+    note: string;
+  } | null;
   routes: RuntimeStatusRouteHint[];
   commands: RuntimeStatusCommand[];
 }

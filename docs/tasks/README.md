@@ -1,8 +1,8 @@
-# Task Documents Index
+﻿# Task Documents Index
 
 - **Purpose:** Describe the active-task-only contract for `docs/tasks/`.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-24
+- **Last Updated:** 2026-03-25
 - **Related Documents:** `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/completed-work-summary.md`
 - **Update Rule:** Update when the task-document contract changes.
 
@@ -12,5 +12,5 @@
 - Completed task history is intentionally pruned so future agents do not accumulate an unbounded default reading set.
 
 ## Current State
-- No active task docs are present right now.
-- When the next bounded task is created, add it here under the `task-*.md` naming pattern and link it from the live tracking docs.
+- The active incomplete task doc is `task-t075-secret-backend-contract.md`.
+- When the next bounded task is created after `T075`, link it here and remove the completed task doc for the task that was archived.

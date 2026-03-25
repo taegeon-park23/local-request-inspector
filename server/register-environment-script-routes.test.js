@@ -1,5 +1,6 @@
 ﻿const assert = require('node:assert/strict');
 const {
+  countLegacySecretRows,
   createEnvironmentRecord,
   enforceEnvironmentDefaults,
   normalizePersistedEnvironmentRecord,
@@ -30,6 +31,7 @@ const {
 function createRouteDependencies(repositories) {
   const environmentScriptService = createEnvironmentScriptResourceService({
     repositories,
+    countLegacySecretRows,
     enforceEnvironmentDefaults,
     normalizePersistedEnvironmentRecord,
     compareEnvironmentRecords,
@@ -184,6 +186,52 @@ async function testListingWorkspaceScriptsUsesServiceOrdering() {
 }
 
 
+async function testReadingLegacySecretRowsSanitizesPersistedEnvironmentRecord() {
+  const repositories = createRepositories();
+  repositories.resources.environments.save({
+    id: 'env-legacy',
+    workspaceId: 'local-workspace',
+    name: 'Legacy secrets',
+    description: 'Contains a legacy raw secret value',
+    isDefault: false,
+    variables: [
+      {
+        id: 'env-legacy-token',
+        key: 'API_TOKEN',
+        description: 'Legacy token',
+        isEnabled: true,
+        isSecret: true,
+        valueType: 'plain',
+        value: 'legacy-secret',
+        hasStoredValue: false,
+        createdAt: '2026-03-25T00:00:00.000Z',
+        updatedAt: '2026-03-25T00:00:00.000Z',
+      },
+    ],
+    createdAt: '2026-03-25T00:00:00.000Z',
+    updatedAt: '2026-03-25T00:00:00.000Z',
+  });
+
+  await withServer(
+    (app) => registerEnvironmentScriptRoutes(app, createRouteDependencies(repositories)),
+    async ({ baseUrl }) => {
+      const listResponse = await requestJson(baseUrl, '/api/workspaces/local-workspace/environments');
+      const detailResponse = await requestJson(baseUrl, '/api/environments/env-legacy');
+
+      assert.equal(listResponse.status, 200);
+      assert.equal(detailResponse.status, 200);
+      assert.equal(listResponse.payload.data.items[0].legacySecretRowCount, 1);
+      assert.equal(detailResponse.payload.data.environment.legacySecretRowCount, 0);
+      assert.equal(detailResponse.payload.data.environment.variables[0].value, '');
+      assert.equal(detailResponse.payload.data.environment.variables[0].hasStoredValue, true);
+
+      const sanitizedRecord = repositories.resources.environments.read('env-legacy');
+      assert.equal(sanitizedRecord.variables[0].value, '');
+      assert.equal(sanitizedRecord.variables[0].hasStoredValue, true);
+    },
+  );
+}
+
 async function testCreatingEnvironmentWithSecretReplacementFailsClosed() {
   const repositories = createRepositories();
 
@@ -225,6 +273,7 @@ async function testCreatingEnvironmentWithSecretReplacementFailsClosed() {
   await testCreatingDefaultEnvironmentDemotesPreviousDefault();
   await testDeletingDefaultEnvironmentPromotesRemainingFallback();
   await testListingWorkspaceScriptsUsesServiceOrdering();
+  await testReadingLegacySecretRowsSanitizesPersistedEnvironmentRecord();
   await testCreatingEnvironmentWithSecretReplacementFailsClosed();
 })();
 

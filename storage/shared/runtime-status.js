@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-function createRuntimeStatusSnapshot({ appShell, layout }) {
+function createRuntimeStatusSnapshot({ appShell, layout, secretStorage = null }) {
   const versionManifestAvailable = fs.existsSync(layout.versionManifestPath);
   const resourceManifestAvailable = fs.existsSync(layout.resourceManifestPath);
   const runtimeDbAvailable = fs.existsSync(layout.runtimeDbPath);
@@ -17,6 +17,7 @@ function createRuntimeStatusSnapshot({ appShell, layout }) {
       resourceManifestAvailable,
       runtimeDbAvailable,
     },
+    secretStorage,
     routes: [
       { label: 'Legacy prototype', path: appShell.legacyRoute, note: 'Legacy route remains available for compatibility.' },
       { label: 'Built app shell', path: appShell.appRoute, note: 'Server-backed React shell when the client build is available.' },

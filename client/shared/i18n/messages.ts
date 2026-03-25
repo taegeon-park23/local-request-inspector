@@ -203,6 +203,18 @@ const enCatalog = {
           devCommand: 'Dev command',
         },
       },
+      secretStoragePolicy: {
+        title: 'Secret storage policy',
+        description: 'This card makes the current fail-closed secret boundary explicit and reports any legacy secret rows sanitized out of ordinary environment JSON.',
+        labels: {
+          secureBackend: 'Secure backend',
+          backend: 'Backend label',
+          replacementWrites: 'Replacement writes',
+          runtimeResolution: 'Runtime resolution',
+          readModel: 'Read model',
+          legacySanitizedRows: 'Legacy sanitized rows',
+        },
+      },
       localCommandCatalog: {
         title: 'Local command catalog',
         description: 'Commands are visible here so local verification and bootstrap work can be handed off cleanly.',
@@ -539,6 +551,18 @@ const koCatalog: CatalogShape<typeof enCatalog> = {
           connectionState: '연결 상태',
           serveCommand: 'Serve 명령',
           devCommand: '개발 명령',
+        },
+      },
+      secretStoragePolicy: {
+        title: 'Secret storage policy',
+        description: 'This card makes the current fail-closed secret boundary explicit and reports any legacy secret rows sanitized out of ordinary environment JSON.',
+        labels: {
+          secureBackend: 'Secure backend',
+          backend: 'Backend label',
+          replacementWrites: 'Replacement writes',
+          runtimeResolution: 'Runtime resolution',
+          readModel: 'Read model',
+          legacySanitizedRows: 'Legacy sanitized rows',
         },
       },
       localCommandCatalog: {
