@@ -127,6 +127,13 @@ export const workspaceRouteMessagesEn = {
         collectionName: 'Collection name',
         requestGroupName: 'Request group name',
       },
+      prompts: {
+        renameCollection: 'Rename collection "{name}"',
+        deleteCollection: 'Delete collection "{name}"?',
+        renameRequestGroup: 'Rename request group "{name}"',
+        deleteRequestGroup: 'Delete request group "{name}"?',
+        deleteSavedRequest: 'Delete saved request "{name}"?',
+      },
       selection: {
         current: 'Current selection: {path}',
         none: 'No saved request is selected in the explorer.',
@@ -217,6 +224,7 @@ export const workspaceRouteMessagesEn = {
       sourceDetached: 'Detached',
     },
     requestBuilder: {
+      defaultTitle: 'Untitled Request',
       empty: {
         noSelectionTitle: 'No request tab selected',
         noSelectionDescription:
@@ -522,6 +530,8 @@ export const workspaceRouteMessagesEn = {
       },
       common: {
         durationMs: '{durationMs} ms',
+        transportNoResponse: 'No response',
+        workspaceRoot: 'Workspace',
       },
       summary: {
         title: '{tabLabel} summary',
@@ -641,6 +651,8 @@ export const workspaceRouteMessagesEn = {
           requestInput: 'Request input',
         },
         values: {
+          savedRequestSnapshot: 'Saved request snapshot',
+          adHocRequestSnapshot: 'Ad hoc request snapshot',
           runtimeRequestSnapshot: 'Runtime request snapshot',
           noEnvironmentSelected: 'No environment selected',
           noExecutionErrorCode: 'No execution error code',
@@ -675,6 +687,133 @@ export const workspaceRouteMessagesEn = {
           title: 'No execution info yet',
           description:
             'Use Run to create a fresh execution record for this tab. Save success does not populate execution info in this observation panel.',
+        },
+      },
+      batch: {
+        header: {
+          eyebrow: 'Batch results',
+          titleFallback: 'Workspace batch run',
+          description:
+            'Collection and group runs reuse this panel to show sequential results without changing the current shell layout.',
+        },
+        containerLabels: {
+          collection: 'Collection batch run',
+          requestGroup: 'Request group batch run',
+        },
+        status: {
+          running: 'Running batch',
+          noRunYet: 'No batch run yet',
+          runningContainer: 'Running {name}...',
+          collectionFailed: 'Collection batch run failed.',
+          requestGroupFailed: 'Request group batch run failed.',
+          noRequestsFound: 'No saved requests were found in this container.',
+          noStepsRecorded: 'No batch steps were recorded.',
+          noExecutionSelected: 'No batch execution selected.',
+          noConsoleCaptured: 'No console output was captured for this batch run.',
+          noTestsCaptured: 'No test results were captured for this batch run.',
+          noOutputTitle: 'No console output',
+          noOutputDescription:
+            'This batch run completed without stored console entries or error summaries.',
+        },
+        badges: {
+          batchRun: 'Batch run',
+          latestAriaLabel: 'Latest batch run badges',
+          steps: 'Steps {count}',
+          issues: 'Issues {count}',
+          succeeded: 'Succeeded {count}',
+        },
+        summary: {
+          title: 'Batch summary · {tabLabel}',
+          description: 'Batch execution summaries stay in the existing result surface.',
+          labels: {
+            scope: 'Scope',
+            container: 'Container',
+            order: 'Order',
+            runLane: 'Run lane',
+            requests: 'Requests',
+          },
+          values: {
+            pendingSelection: 'Pending selection',
+            depthFirst: 'Depth-first',
+            executionInProgress: 'Batch execution in progress',
+            noExecutionYet: 'No batch execution yet',
+          },
+          preview: {
+            stepTitle: 'Step preview',
+            stepDescription: 'Ordered request steps for this batch run.',
+            stepAriaLabel: 'Batch step preview',
+            consoleTitle: 'Console preview',
+            consoleDescription: 'Console and failure highlights across the batch run.',
+            consoleAriaLabel: 'Batch console preview',
+          },
+        },
+        response: {
+          title: 'Batch response summary',
+          description: 'Aggregate outcomes and ordered request results.',
+          runningTitle: 'Batch run in progress',
+          runningDescription: 'Responses will appear here as each request completes.',
+          emptyTitle: 'No batch execution yet',
+          emptyDescription: 'Run a collection or request group to inspect aggregate results here.',
+          labels: {
+            started: 'Started',
+            completed: 'Completed',
+            succeeded: 'Succeeded',
+            failed: 'Failed',
+            blocked: 'Blocked',
+            timedOut: 'Timed out',
+          },
+          stepsAriaLabel: 'Batch response steps',
+        },
+        console: {
+          title: 'Batch console',
+          description: 'Console logs and error summaries across ordered steps.',
+          labels: {
+            requestsWithLogs: 'Requests with logs',
+            totalConsoleLines: 'Total console lines',
+            failedOrBlocked: 'Failed or blocked',
+            continueOnError: 'Continue on error',
+          },
+          values: {
+            enabled: 'Enabled',
+            disabled: 'Disabled',
+          },
+          emptyTitle: 'No batch execution yet',
+          emptyDescription: 'Run a collection or request group to inspect console details here.',
+        },
+        tests: {
+          title: 'Batch tests',
+          description: 'Per-step test summaries for the current batch run.',
+          labels: {
+            steps: 'Steps',
+            succeeded: 'Succeeded',
+            failed: 'Failed',
+            timedOut: 'Timed out',
+          },
+          emptyTitle: 'No batch execution yet',
+          emptyDescription: 'Run a collection or request group to inspect test summaries here.',
+        },
+        executionInfo: {
+          title: 'Batch execution info',
+          description: 'Container metadata and run identifiers for the latest batch execution.',
+          preparingTitle: 'Preparing batch execution',
+          preparingDescription: 'Execution metadata will appear here once the first request starts.',
+          emptyTitle: 'No batch execution yet',
+          emptyDescription: 'Run a collection or request group to inspect execution metadata here.',
+          labels: {
+            batchExecutionId: 'Batch execution ID',
+            containerType: 'Container type',
+            containerId: 'Container ID',
+            startedAt: 'Started at',
+            completedAt: 'Completed at',
+            duration: 'Duration',
+            executionOrder: 'Execution order',
+            continueOnError: 'Continue on error',
+          },
+          values: {
+            enabled: 'Enabled',
+            disabled: 'Disabled',
+          },
+          stepsAriaLabel: 'Batch execution steps',
         },
       },
     },
@@ -814,6 +953,13 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         collectionName: '컬렉션 이름',
         requestGroupName: '요청 그룹 이름',
       },
+      prompts: {
+        renameCollection: '컬렉션 "{name}" 이름 변경',
+        deleteCollection: '컬렉션 "{name}"을(를) 삭제할까요?',
+        renameRequestGroup: '요청 그룹 "{name}" 이름 변경',
+        deleteRequestGroup: '요청 그룹 "{name}"을(를) 삭제할까요?',
+        deleteSavedRequest: '저장 요청 "{name}"을(를) 삭제할까요?',
+      },
       selection: {
         current: '현재 선택: {path}',
         none: '탐색기에서 선택된 저장 요청이 없습니다.',
@@ -904,6 +1050,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
       sourceDetached: '분리됨',
     },
     requestBuilder: {
+      defaultTitle: '제목 없는 요청',
       empty: {
         noSelectionTitle: '선택된 요청 탭이 없습니다',
         noSelectionDescription:
@@ -1210,6 +1357,8 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
       },
       common: {
         durationMs: '{durationMs}ms',
+        transportNoResponse: '응답 없음',
+        workspaceRoot: '워크스페이스',
       },
       summary: {
         title: '{tabLabel} 요약',
@@ -1329,6 +1478,8 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
           requestInput: '요청 입력',
         },
         values: {
+          savedRequestSnapshot: '저장 요청 스냅샷',
+          adHocRequestSnapshot: '임시 요청 스냅샷',
           runtimeRequestSnapshot: '런타임 요청 스냅샷',
           noEnvironmentSelected: '선택된 환경이 없습니다',
           noExecutionErrorCode: '실행 오류 코드가 없습니다',
@@ -1363,6 +1514,133 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
           title: '아직 실행 정보가 없습니다',
           description:
             '이 탭에 대한 새 실행 기록을 만들려면 Run을 사용하세요. Save 성공만으로는 이 관측 패널의 실행 정보가 채워지지 않습니다.',
+        },
+      },
+      batch: {
+        header: {
+          eyebrow: '배치 결과',
+          titleFallback: '워크스페이스 배치 실행',
+          description:
+            '컬렉션과 그룹 실행은 현재 셸 레이아웃을 바꾸지 않고 이 패널에서 순차 결과를 보여줍니다.',
+        },
+        containerLabels: {
+          collection: '컬렉션 배치 실행',
+          requestGroup: '요청 그룹 배치 실행',
+        },
+        status: {
+          running: '배치 실행 중',
+          noRunYet: '아직 배치 실행이 없습니다',
+          runningContainer: '{name} 실행 중...',
+          collectionFailed: '컬렉션 배치 실행에 실패했습니다.',
+          requestGroupFailed: '요청 그룹 배치 실행에 실패했습니다.',
+          noRequestsFound: '이 컨테이너에서 저장 요청을 찾지 못했습니다.',
+          noStepsRecorded: '기록된 배치 단계가 없습니다.',
+          noExecutionSelected: '선택된 배치 실행이 없습니다.',
+          noConsoleCaptured: '이 배치 실행에서는 콘솔 출력이 기록되지 않았습니다.',
+          noTestsCaptured: '이 배치 실행에서는 테스트 결과가 기록되지 않았습니다.',
+          noOutputTitle: '콘솔 출력이 없습니다',
+          noOutputDescription:
+            '이 배치 실행은 저장된 콘솔 항목이나 오류 요약 없이 완료되었습니다.',
+        },
+        badges: {
+          batchRun: '배치 실행',
+          latestAriaLabel: '최신 배치 실행 배지',
+          steps: '단계 {count}개',
+          issues: '이슈 {count}개',
+          succeeded: '성공 {count}개',
+        },
+        summary: {
+          title: '배치 요약 · {tabLabel}',
+          description: '배치 실행 요약은 기존 결과 surface에 유지됩니다.',
+          labels: {
+            scope: '범위',
+            container: '컨테이너',
+            order: '순서',
+            runLane: '실행 레인',
+            requests: '요청 수',
+          },
+          values: {
+            pendingSelection: '선택 대기 중',
+            depthFirst: '깊이 우선',
+            executionInProgress: '배치 실행 진행 중',
+            noExecutionYet: '아직 배치 실행이 없습니다',
+          },
+          preview: {
+            stepTitle: '단계 미리보기',
+            stepDescription: '이 배치 실행의 순서화된 요청 단계입니다.',
+            stepAriaLabel: '배치 단계 미리보기',
+            consoleTitle: '콘솔 미리보기',
+            consoleDescription: '배치 실행 전반의 콘솔과 실패 하이라이트입니다.',
+            consoleAriaLabel: '배치 콘솔 미리보기',
+          },
+        },
+        response: {
+          title: '배치 응답 요약',
+          description: '집계 결과와 순서화된 요청 결과입니다.',
+          runningTitle: '배치 실행 진행 중',
+          runningDescription: '각 요청이 완료되면 응답이 여기에 표시됩니다.',
+          emptyTitle: '아직 배치 실행이 없습니다',
+          emptyDescription: '컬렉션이나 요청 그룹을 실행해 집계 결과를 여기서 확인하세요.',
+          labels: {
+            started: '시작',
+            completed: '완료',
+            succeeded: '성공',
+            failed: '실패',
+            blocked: '차단',
+            timedOut: '시간 초과',
+          },
+          stepsAriaLabel: '배치 응답 단계',
+        },
+        console: {
+          title: '배치 콘솔',
+          description: '순서화된 단계 전반의 콘솔 로그와 오류 요약입니다.',
+          labels: {
+            requestsWithLogs: '로그가 있는 요청 수',
+            totalConsoleLines: '총 콘솔 줄 수',
+            failedOrBlocked: '실패 또는 차단',
+            continueOnError: '오류 후 계속',
+          },
+          values: {
+            enabled: '사용',
+            disabled: '사용 안 함',
+          },
+          emptyTitle: '아직 배치 실행이 없습니다',
+          emptyDescription: '컬렉션이나 요청 그룹을 실행해 콘솔 세부를 여기서 확인하세요.',
+        },
+        tests: {
+          title: '배치 테스트',
+          description: '현재 배치 실행의 단계별 테스트 요약입니다.',
+          labels: {
+            steps: '단계',
+            succeeded: '성공',
+            failed: '실패',
+            timedOut: '시간 초과',
+          },
+          emptyTitle: '아직 배치 실행이 없습니다',
+          emptyDescription: '컬렉션이나 요청 그룹을 실행해 테스트 요약을 여기서 확인하세요.',
+        },
+        executionInfo: {
+          title: '배치 실행 정보',
+          description: '최신 배치 실행의 컨테이너 메타데이터와 실행 식별자입니다.',
+          preparingTitle: '배치 실행을 준비하는 중',
+          preparingDescription: '첫 요청이 시작되면 실행 메타데이터가 여기에 표시됩니다.',
+          emptyTitle: '아직 배치 실행이 없습니다',
+          emptyDescription: '컬렉션이나 요청 그룹을 실행해 실행 메타데이터를 여기서 확인하세요.',
+          labels: {
+            batchExecutionId: '배치 실행 ID',
+            containerType: '컨테이너 유형',
+            containerId: '컨테이너 ID',
+            startedAt: '시작 시각',
+            completedAt: '완료 시각',
+            duration: '소요 시간',
+            executionOrder: '실행 순서',
+            continueOnError: '오류 후 계속',
+          },
+          values: {
+            enabled: '사용',
+            disabled: '사용 안 함',
+          },
+          stepsAriaLabel: '배치 실행 단계',
         },
       },
     },

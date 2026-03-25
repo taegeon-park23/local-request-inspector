@@ -2621,7 +2621,7 @@ describe('Workspace request builder authoring shell', () => {
     await user.click(within(explorer).getByRole('button', { name: '새 요청' }));
 
     const detailPanel = screen.getByLabelText('컨텍스트 상세 패널');
-    expect(within(detailPanel).getByRole('heading', { name: 'Untitled Request에 대한 관측' })).toBeInTheDocument();
+    expect(within(detailPanel).getByRole('heading', { name: '제목 없는 요청에 대한 관측' })).toBeInTheDocument();
     expect(within(detailPanel).getByRole('tablist', { name: '결과 패널 탭' })).toBeInTheDocument();
     expect(within(detailPanel).getByRole('tab', { name: '응답' })).toBeInTheDocument();
     expect(within(detailPanel).getByRole('heading', { name: '응답 요약' })).toBeInTheDocument();
@@ -2631,6 +2631,7 @@ describe('Workspace request builder authoring shell', () => {
     expect(within(detailPanel).getByText('아직 실행 정보가 없습니다')).toBeInTheDocument();
   });
 });
+
 
 
 

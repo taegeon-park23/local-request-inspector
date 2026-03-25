@@ -163,7 +163,7 @@ export function RequestWorkSurface({
     );
   }
 
-  const displayTitle = draft.name.trim() || 'Untitled Request';
+  const displayTitle = draft.name.trim() || t('workspaceRoute.requestBuilder.defaultTitle');
   const replaySource = activeTab.source === 'replay' ? activeTab.replaySource ?? null : null;
   const isDetachedDraft = isDetachedRequestTab(activeTab);
   const requestPlacementPath = formatRequestPlacementPath(draft);

@@ -87,6 +87,7 @@ function promptForName(initialValue: string, message: string) {
 function resolvePresentationTab(
   tab: RequestTabRecord,
   draft: ReturnType<typeof useRequestDraftStore.getState>['draftsByTabId'][string] | undefined,
+  t: ReturnType<typeof useI18n>['t'],
 ): RequestTabRecord {
   if (!draft) {
     return tab;
@@ -94,7 +95,7 @@ function resolvePresentationTab(
 
   return {
     ...tab,
-    title: draft.draft.name.trim() || 'Untitled Request',
+    title: draft.draft.name.trim() || t('workspaceRoute.requestBuilder.defaultTitle'),
     methodLabel: draft.draft.method,
     hasUnsavedChanges: draft.draft.dirty,
   };
@@ -778,7 +779,7 @@ export function WorkspaceRoute() {
     : managerStatuses;
   const explorerTree = requestTreeQuery.data?.tree ?? [];
   const requestPlacementOptions = buildRequestPlacementOptions(explorerTree, requestTreeQuery.data?.defaults);
-  const resolvedTabs = tabs.map((tab: RequestTabRecord) => resolvePresentationTab(tab, draftsByTabId[tab.id]));
+  const resolvedTabs = tabs.map((tab: RequestTabRecord) => resolvePresentationTab(tab, draftsByTabId[tab.id], t));
   const activeTab = resolvedTabs.find((tab: RequestTabRecord) => tab.id === activeTabId) ?? null;
   const activeDraft = activeTab ? draftsByTabId[activeTab.id]?.draft ?? null : null;
   const activeSavedRequest = findWorkspaceRequestById(explorerTree, activeTab?.requestId);
@@ -955,7 +956,7 @@ export function WorkspaceRoute() {
   };
 
   const handlePromptCreateCollection = async () => {
-    const name = promptForName('', 'Collection name');
+    const name = promptForName('', t('workspaceRoute.explorer.fields.collectionName'));
 
     if (!name) {
       return;
@@ -965,7 +966,7 @@ export function WorkspaceRoute() {
   };
 
   const handlePromptCreateRequestGroup = async (target: WorkspaceCollectionNode | WorkspaceRequestGroupNode) => {
-    const name = promptForName('', 'Request group name');
+    const name = promptForName('', t('workspaceRoute.explorer.fields.requestGroupName'));
 
     if (!name) {
       return;
@@ -988,7 +989,7 @@ export function WorkspaceRoute() {
   };
 
   const handlePromptRenameCollection = async (collection: WorkspaceCollectionNode) => {
-    const name = promptForName(collection.name, `Rename collection "${collection.name}"`);
+    const name = promptForName(collection.name, t('workspaceRoute.explorer.prompts.renameCollection', { name: collection.name }));
 
     if (!name) {
       return;
@@ -998,7 +999,7 @@ export function WorkspaceRoute() {
   };
 
   const handlePromptDeleteCollection = async (collection: WorkspaceCollectionNode) => {
-    if (!window.confirm(`Delete collection "${collection.name}"?`)) {
+    if (!window.confirm(t('workspaceRoute.explorer.prompts.deleteCollection', { name: collection.name }))) {
       return;
     }
 
@@ -1006,7 +1007,7 @@ export function WorkspaceRoute() {
   };
 
   const handlePromptRenameRequestGroup = async (requestGroup: WorkspaceRequestGroupNode) => {
-    const name = promptForName(requestGroup.name, `Rename request group "${requestGroup.name}"`);
+    const name = promptForName(requestGroup.name, t('workspaceRoute.explorer.prompts.renameRequestGroup', { name: requestGroup.name }));
 
     if (!name) {
       return;
@@ -1016,7 +1017,7 @@ export function WorkspaceRoute() {
   };
 
   const handlePromptDeleteRequestGroup = async (requestGroup: WorkspaceRequestGroupNode) => {
-    if (!window.confirm(`Delete request group "${requestGroup.name}"?`)) {
+    if (!window.confirm(t('workspaceRoute.explorer.prompts.deleteRequestGroup', { name: requestGroup.name }))) {
       return;
     }
 
@@ -1024,7 +1025,7 @@ export function WorkspaceRoute() {
   };
 
   const handlePromptDeleteSavedRequest = async (request: WorkspaceTreeRequestLeaf) => {
-    if (!window.confirm(`Delete saved request "${request.name}"?`)) {
+    if (!window.confirm(t('workspaceRoute.explorer.prompts.deleteSavedRequest', { name: request.name }))) {
       return;
     }
 
@@ -1033,7 +1034,7 @@ export function WorkspaceRoute() {
 
   const handleRunCollection = async (collection: WorkspaceCollectionNode) => {
     setSelectedExplorerItem({ kind: 'collection', id: collection.collectionId });
-    startBatchRun(`Running ${collection.name}...`);
+    startBatchRun(t('workspaceRoute.resultPanel.batch.status.runningContainer', { name: collection.name }));
     focusWorkspaceResultPanel('response');
 
     try {
@@ -1041,13 +1042,13 @@ export function WorkspaceRoute() {
       finishBatchRunSuccess(batchExecution);
       await queryClient.invalidateQueries({ queryKey: executionHistoryListQueryKey });
     } catch (error) {
-      finishBatchRunError(error instanceof Error ? error.message : 'Collection batch run failed.');
+      finishBatchRunError(error instanceof Error ? error.message : t('workspaceRoute.resultPanel.batch.status.collectionFailed'));
     }
   };
 
   const handleRunRequestGroup = async (requestGroup: WorkspaceRequestGroupNode) => {
     setSelectedExplorerItem({ kind: 'request-group', id: requestGroup.requestGroupId });
-    startBatchRun(`Running ${requestGroup.name}...`);
+    startBatchRun(t('workspaceRoute.resultPanel.batch.status.runningContainer', { name: requestGroup.name }));
     focusWorkspaceResultPanel('response');
 
     try {
@@ -1055,7 +1056,7 @@ export function WorkspaceRoute() {
       finishBatchRunSuccess(batchExecution);
       await queryClient.invalidateQueries({ queryKey: executionHistoryListQueryKey });
     } catch (error) {
-      finishBatchRunError(error instanceof Error ? error.message : 'Request group batch run failed.');
+      finishBatchRunError(error instanceof Error ? error.message : t('workspaceRoute.resultPanel.batch.status.requestGroupFailed'));
     }
   };
 
