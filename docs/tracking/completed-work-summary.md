@@ -84,6 +84,7 @@
 | T072 | Request-Stage Linked Reusable-Script Reference Baseline | Shipped linked request-stage saved-script bindings, linked read-only UI, detach-to-copy, blocked broken-link runs, and export blocking. | Codebase; `master-task-board.md`; `progress-status.md` |
 | T073 | Server Decomposition, Runtime Hardening, and Replay/Transfer Follow-Up | Decomposed the former monolithic `server.js` into bounded route/service seams, moved resource/runtime access onto repositories, completed replay-now and linked-script transfer remap flows, removed shipped false-success fallback paths, and aligned live architecture/docs with the shipped React/Vite plus runtime baseline. | Codebase; `completed-work-summary.md` |
 | T074 | Secret Environment Fail-Closed Policy | Added the fail-closed secret mutation seam, kept ordinary environment JSON free of raw secret values, surfaced secret-storage capability diagnostics in Settings, and sanitized legacy secret-bearing environment rows with bounded reporting when they are encountered. | Codebase; `completed-work-summary.md`; `progress-status.md` |
+| T075 | Secret Backend Contract And Capability Surface | Locked the backend-agnostic secret provider contract (`status/store/resolve/clear`), added environment mutation planning (`store/clear/noop`) with unavailable-store fail-closed plus unavailable-clear metadata cleanup, wired execution-time secret resolution with `secret_provider_error` transport blocking, and extended runtime-status/settings compatibility with optional provider metadata while keeping raw secret values out of ordinary DTOs and runtime artifacts. | Codebase; `completed-work-summary.md`; `progress-status.md`; architecture docs |
 
 ## Closed Tracking Decisions
 | Deleted Doc | Final Conclusion | Remaining Canonical Docs |
@@ -93,3 +94,4 @@
 | `request-stage-script-linkage-lane-comparison.md` | The reusable-script lane comparison culminated in the shipped `T072` baseline and no separate linkage-comparison doc remains live. | `completed-work-summary.md`; `master-task-board.md` |
 | `resolved-preview-sub-lane-comparison.md` | No resolved-preview follow-up is active; future work must be reintroduced as a new bounded task if needed. | `master-task-board.md`; `priority-roadmap.md` |
 | `settings-mutation-lane-comparison.md` | Client-owned settings preference work is complete, and broader settings expansion remains deferred until a new task is defined. | `master-task-board.md`; `priority-roadmap.md` |
+

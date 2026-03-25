@@ -12,5 +12,5 @@
 - Completed task history is intentionally pruned so future agents do not accumulate an unbounded default reading set.
 
 ## Current State
-- The active incomplete task doc is `task-t075-secret-backend-contract.md`.
-- When the next bounded task is created after `T075`, link it here and remove the completed task doc for the task that was archived.
+- There is currently no active incomplete task doc in this folder.
+- When `T076` is promoted, create `task-t076-*.md` as the new single active bounded task doc.
