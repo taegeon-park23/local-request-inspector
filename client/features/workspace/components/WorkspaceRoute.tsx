@@ -1213,7 +1213,7 @@ export function WorkspaceRoute() {
             title={t('routes.workspace.title')}
             summary={t('routes.workspace.summary')}
           >
-            <div className="workspace-explorer__role-strip" aria-label="Workspace surface role">
+            <div className="workspace-explorer__role-strip" aria-label={t('workspaceRoute.a11y.surfaceRoleStrip')}>
               <span className="workspace-chip">{t('roles.authoring')}</span>
               <span className="workspace-chip workspace-chip--secondary">{t('routes.workspace.contextChip')}</span>
             </div>
@@ -1232,7 +1232,7 @@ export function WorkspaceRoute() {
           </div>
         ) : null}
 
-        <div className="request-work-surface__future-actions" aria-label="Workspace header actions">
+        <div className="request-work-surface__future-actions" aria-label={t('workspaceRoute.a11y.headerActions')}>
           <button type="button" className="workspace-button" onClick={handleCreateRequest}>
             <IconLabel icon="new">{t('workspaceRoute.tabShell.newRequest')}</IconLabel>
           </button>

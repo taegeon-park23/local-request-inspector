@@ -50,7 +50,7 @@ export function RequestKeyValueEditor({
             <label className="request-field request-field--toggle">
               <span>{t('workspaceRoute.keyValueEditor.labels.enabled', { rowLabel, index: index + 1 })}</span>
               <input
-                aria-label={`${accessibleRowLabel} row ${index + 1} enabled`}
+                aria-label={t('workspaceRoute.keyValueEditor.labels.enabled', { rowLabel: accessibleRowLabel, index: index + 1 })}
                 checked={row.enabled}
                 type="checkbox"
                 onChange={(event) => onUpdateRow(row.id, 'enabled', event.currentTarget.checked)}
@@ -59,7 +59,7 @@ export function RequestKeyValueEditor({
             <label className="request-field">
               <span>{t('workspaceRoute.keyValueEditor.labels.key', { rowLabel, index: index + 1 })}</span>
               <input
-                aria-label={`${accessibleRowLabel} row ${index + 1} key`}
+                aria-label={t('workspaceRoute.keyValueEditor.labels.key', { rowLabel: accessibleRowLabel, index: index + 1 })}
                 type="text"
                 value={row.key}
                 onChange={(event) => onUpdateRow(row.id, 'key', event.currentTarget.value)}
@@ -68,7 +68,7 @@ export function RequestKeyValueEditor({
             <label className="request-field">
               <span>{t('workspaceRoute.keyValueEditor.labels.value', { rowLabel, index: index + 1 })}</span>
               <input
-                aria-label={`${accessibleRowLabel} row ${index + 1} value`}
+                aria-label={t('workspaceRoute.keyValueEditor.labels.value', { rowLabel: accessibleRowLabel, index: index + 1 })}
                 type="text"
                 value={row.value}
                 onChange={(event) => onUpdateRow(row.id, 'value', event.currentTarget.value)}
@@ -77,7 +77,7 @@ export function RequestKeyValueEditor({
             <button
               type="button"
               className="workspace-button workspace-button--ghost"
-              aria-label={`Remove ${accessibleRowLabel.toLowerCase()} row ${index + 1}`}
+              aria-label={t('workspaceRoute.keyValueEditor.removeAriaLabel', { rowLabel: accessibleRowLabel, index: index + 1 })}
               onClick={() => onRemoveRow(row.id)}
             >
               <IconLabel icon="delete">{t('workspaceRoute.keyValueEditor.removeAction')}</IconLabel>

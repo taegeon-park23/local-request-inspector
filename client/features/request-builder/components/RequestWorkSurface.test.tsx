@@ -92,6 +92,22 @@ describe('RequestWorkSurface localization', () => {
       collectionName: '팀 API',
       requestGroupId: 'group-auth',
       requestGroupName: '인증',
+      params: [
+        {
+          id: 'param-env',
+          enabled: true,
+          key: 'env',
+          value: 'local',
+        },
+      ],
+      headers: [
+        {
+          id: 'header-trace',
+          enabled: true,
+          key: 'x-trace-id',
+          value: 'trace-1',
+        },
+      ],
       auth: {
         type: 'bearer',
         bearerToken: 'demo-token',
@@ -128,9 +144,23 @@ describe('RequestWorkSurface localization', () => {
     expect(screen.getByLabelText('요청 URL')).toHaveValue('https://api.example.com/auth-check');
     expect(screen.getByLabelText('요청 URL')).toHaveAttribute('placeholder', 'https://api.example.com/resource');
     expect(screen.getByLabelText('편집기 표면 탭')).toBeInTheDocument();
+    expect(screen.getByLabelText('파라미터 1행 키')).toHaveValue('env');
+    expect(screen.getByLabelText('파라미터 1행 값')).toHaveValue('local');
 
     const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: '헤더' }));
+    expect(screen.getByLabelText('헤더 1행 키')).toHaveValue('x-trace-id');
+    expect(screen.getByRole('button', { name: '헤더 1행 제거' })).toBeInTheDocument();
+
     await user.click(screen.getByRole('button', { name: '인증' }));
     expect(await screen.findByLabelText('Bearer 토큰')).toHaveValue('demo-token');
+
+    await user.click(screen.getByRole('button', { name: '스크립트' }));
+    expect(await screen.findByRole('tablist', { name: '스크립트 단계' })).toBeInTheDocument();
+    expect(screen.getByLabelText('사전 요청 스크립트')).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: '응답 후' }));
+    expect(screen.getByLabelText('응답 후 스크립트')).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: '테스트' }));
+    expect(screen.getByLabelText('테스트 스크립트')).toBeInTheDocument();
   });
 });

@@ -24,6 +24,7 @@ interface ScriptStageDefinition {
   label: string;
   ariaLabel: string;
   fieldAriaLabel: string;
+  guidanceAriaLabel: string;
   icon: AppIconName;
   eyebrow: string;
   title: string;
@@ -99,8 +100,9 @@ export default function RequestScriptsEditorSurface({
     {
       id: 'pre-request',
       label: t('workspaceRoute.scriptsEditor.stages.preRequest.label'),
-      ariaLabel: 'Pre-request',
-      fieldAriaLabel: 'Pre-request script',
+      ariaLabel: t('workspaceRoute.scriptsEditor.stages.preRequest.ariaLabel'),
+      fieldAriaLabel: t('workspaceRoute.scriptsEditor.stages.preRequest.fieldAriaLabel'),
+      guidanceAriaLabel: t('workspaceRoute.scriptsEditor.stages.preRequest.guidanceAriaLabel'),
       icon: 'code',
       eyebrow: t('workspaceRoute.scriptsEditor.stages.preRequest.eyebrow'),
       title: t('workspaceRoute.scriptsEditor.stages.preRequest.title'),
@@ -116,8 +118,9 @@ export default function RequestScriptsEditorSurface({
     {
       id: 'post-response',
       label: t('workspaceRoute.scriptsEditor.stages.postResponse.label'),
-      ariaLabel: 'Post-response',
-      fieldAriaLabel: 'Post-response script',
+      ariaLabel: t('workspaceRoute.scriptsEditor.stages.postResponse.ariaLabel'),
+      fieldAriaLabel: t('workspaceRoute.scriptsEditor.stages.postResponse.fieldAriaLabel'),
+      guidanceAriaLabel: t('workspaceRoute.scriptsEditor.stages.postResponse.guidanceAriaLabel'),
       icon: 'response',
       eyebrow: t('workspaceRoute.scriptsEditor.stages.postResponse.eyebrow'),
       title: t('workspaceRoute.scriptsEditor.stages.postResponse.title'),
@@ -133,8 +136,9 @@ export default function RequestScriptsEditorSurface({
     {
       id: 'tests',
       label: t('workspaceRoute.scriptsEditor.stages.tests.label'),
-      ariaLabel: 'Tests',
-      fieldAriaLabel: 'Tests script',
+      ariaLabel: t('workspaceRoute.scriptsEditor.stages.tests.ariaLabel'),
+      fieldAriaLabel: t('workspaceRoute.scriptsEditor.stages.tests.fieldAriaLabel'),
+      guidanceAriaLabel: t('workspaceRoute.scriptsEditor.stages.tests.guidanceAriaLabel'),
       icon: 'tests',
       eyebrow: t('workspaceRoute.scriptsEditor.stages.tests.eyebrow'),
       title: t('workspaceRoute.scriptsEditor.stages.tests.title'),
@@ -188,7 +192,7 @@ export default function RequestScriptsEditorSurface({
         </div>
       </header>
 
-      <div className="request-script-stage-tabs" role="tablist" aria-label="Script stages">
+      <div className="request-script-stage-tabs" role="tablist" aria-label={t('workspaceRoute.scriptsEditor.guidance.tabListAriaLabel')}>
         {scriptStageDefinitions.map((stage) => {
           const isActive = stage.id === activeStage;
 
@@ -215,7 +219,7 @@ export default function RequestScriptsEditorSurface({
           <p className="section-placeholder__eyebrow">{activeStageDefinition.eyebrow}</p>
           <h4 id={activeStageLabelId}>{activeStageDefinition.title}</h4>
           <p>{activeStageDefinition.description}</p>
-          <ul className="request-script-helper-list" aria-label={`${activeStageDefinition.ariaLabel} guidance`}>
+          <ul className="request-script-helper-list" aria-label={activeStageDefinition.guidanceAriaLabel}>
             {activeStageDefinition.helperItems.map((item) => (
               <li key={item}>{item}</li>
             ))}

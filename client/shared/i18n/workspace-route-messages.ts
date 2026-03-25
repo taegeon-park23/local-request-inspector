@@ -208,6 +208,10 @@ export const workspaceRouteMessagesEn = {
         requestUnavailable: 'Open a saved request tab to export or delete the persisted request definition.',
       },
     },
+    a11y: {
+      surfaceRoleStrip: 'Workspace surface role',
+      headerActions: 'Workspace header actions',
+    },
     tabShell: {
       empty:
         'No request tabs are open yet. Start a new draft or open a saved request from the workspace explorer.',
@@ -1078,6 +1082,10 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         requestDraft: '이 탭은 아직 작업 중 draft 또는 replay draft입니다. 정규 저장 트리에 다시 합류하려면 먼저 저장하세요.',
         requestUnavailable: '저장 요청 정의를 내보내거나 삭제하려면 저장 요청 탭을 여세요.',
       },
+    },
+    a11y: {
+      surfaceRoleStrip: '작업공간 표면 역할',
+      headerActions: '작업공간 헤더 작업',
     },
     tabShell: {
       empty:
