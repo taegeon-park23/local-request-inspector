@@ -33,6 +33,7 @@ export const workspaceRouteMessagesEn = {
         createRequestGroup: 'Create request group in {name}',
         createRequestGroupShort: 'New group',
         runContainerShort: 'Run',
+        runSelected: 'Run Selected',
         renameRequestGroup: 'Rename request group {name}',
         renameRequestGroupShort: 'Rename',
         deleteRequestGroup: 'Delete request group {name}',
@@ -204,9 +205,16 @@ export const workspaceRouteMessagesEn = {
       empty:
         'No request tabs are open yet. Start a new draft or open a saved request from the workspace explorer.',
       newRequest: 'New Request',
+      quickRequest: 'Quick Request',
       ariaLabel: 'Request tab strip',
       dirtyIndicator: '{title} has unsaved changes',
+      pinAction: 'Pin',
+      pinTab: 'Pin {title}',
       closeTab: 'Close {title}',
+      sourcePreview: 'Preview',
+      sourceQuick: 'Quick',
+      sourceReplay: 'Replay',
+      sourceDetached: 'Detached',
     },
     requestBuilder: {
       empty: {
@@ -712,6 +720,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         createRequestGroup: '{name}에 요청 그룹 생성',
         createRequestGroupShort: '새 그룹',
         runContainerShort: '실행',
+        runSelected: '선택 실행',
         renameRequestGroup: '요청 그룹 {name} 이름 변경',
         renameRequestGroupShort: '이름 변경',
         deleteRequestGroup: '요청 그룹 {name} 삭제',
@@ -883,9 +892,16 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
       empty:
         '아직 열린 요청 탭이 없습니다. 새 draft를 시작하거나 작업공간 탐색기에서 저장된 요청을 여세요.',
       newRequest: '새 요청',
+      quickRequest: '빠른 요청',
       ariaLabel: '요청 탭 스트립',
       dirtyIndicator: '{title}에 저장되지 않은 변경이 있습니다',
+      pinAction: '고정',
+      pinTab: '{title} 고정',
       closeTab: '{title} 닫기',
+      sourcePreview: '미리보기',
+      sourceQuick: '빠른',
+      sourceReplay: '리플레이',
+      sourceDetached: '분리됨',
     },
     requestBuilder: {
       empty: {
@@ -1352,19 +1368,4 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
     },
   },
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

@@ -1245,13 +1245,13 @@ export function WorkspaceRoute() {
 
         <div className="request-work-surface__future-actions" aria-label="Workspace header actions">
           <button type="button" className="workspace-button" onClick={handleCreateRequest}>
-            <IconLabel icon="new">New Request</IconLabel>
+            <IconLabel icon="new">{t('workspaceRoute.tabShell.newRequest')}</IconLabel>
           </button>
           <button type="button" className="workspace-button workspace-button--secondary" onClick={handleCreateQuickRequest}>
-            <IconLabel icon="new">Quick Request</IconLabel>
+            <IconLabel icon="new">{t('workspaceRoute.tabShell.quickRequest')}</IconLabel>
           </button>
           <button type="button" className="workspace-button workspace-button--secondary" onClick={() => { void handlePromptCreateCollection(); }}>
-            <IconLabel icon="add">New Collection</IconLabel>
+            <IconLabel icon="add">{t('workspaceRoute.explorer.actions.createCollectionShort')}</IconLabel>
           </button>
           {selectedCollection || selectedRequestGroupLocation ? (
             <button type="button" className="workspace-button workspace-button--secondary" onClick={() => {
@@ -1261,7 +1261,7 @@ export function WorkspaceRoute() {
                 void handleRunCollection(selectedCollection);
               }
             }}>
-              <IconLabel icon="run">Run Selected</IconLabel>
+              <IconLabel icon="run">{t('workspaceRoute.explorer.actions.runSelected')}</IconLabel>
             </button>
           ) : null}
         </div>
@@ -1323,17 +1323,4 @@ export function WorkspaceRoute() {
     />
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 

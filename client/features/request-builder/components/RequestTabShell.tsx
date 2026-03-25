@@ -12,18 +12,21 @@ interface RequestTabShellProps {
   onPinTab: (tabId: string) => void;
 }
 
-function getTabSourceLabel(tab: RequestTabRecord) {
+function getTabSourceLabel(
+  tab: RequestTabRecord,
+  t: ReturnType<typeof useI18n>['t'],
+) {
   if (tab.tabMode === 'preview') {
-    return 'Preview';
+    return t('workspaceRoute.tabShell.sourcePreview');
   }
 
   switch (tab.source) {
     case 'quick':
-      return 'Quick';
+      return t('workspaceRoute.tabShell.sourceQuick');
     case 'replay':
-      return 'Replay';
+      return t('workspaceRoute.tabShell.sourceReplay');
     case 'detached':
-      return 'Detached';
+      return t('workspaceRoute.tabShell.sourceDetached');
     default:
       return null;
   }
@@ -42,14 +45,14 @@ export function RequestTabShell({
 
   return (
     <div className="request-tab-shell">
-      <div className="request-tab-shell__strip" role="tablist" aria-label="Request tab strip">
+      <div className="request-tab-shell__strip" role="tablist" aria-label={t('workspaceRoute.tabShell.ariaLabel')}>
         {tabs.length === 0 ? (
           <p className="request-tab-shell__strip-empty">{t('workspaceRoute.tabShell.empty')}</p>
         ) : null}
 
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId;
-          const tabSourceLabel = getTabSourceLabel(tab);
+          const tabSourceLabel = getTabSourceLabel(tab, t);
 
           return (
             <div
@@ -67,7 +70,7 @@ export function RequestTabShell({
                 <span className="request-tab__title-row">
                   <span className="request-tab__title">{tab.title}</span>
                   {tab.hasUnsavedChanges ? (
-                    <span className="request-tab__dirty" aria-label={`${tab.title} has unsaved changes`}>
+                    <span className="request-tab__dirty" aria-label={t('workspaceRoute.tabShell.dirtyIndicator', { title: tab.title })}>
                       *
                     </span>
                   ) : null}
@@ -81,16 +84,16 @@ export function RequestTabShell({
                 <button
                   type="button"
                   className="request-tab__close"
-                  aria-label={`Pin ${tab.title}`}
+                  aria-label={t('workspaceRoute.tabShell.pinTab', { title: tab.title })}
                   onClick={() => onPinTab(tab.id)}
                 >
-                  pin
+                  {t('workspaceRoute.tabShell.pinAction')}
                 </button>
               ) : null}
               <button
                 type="button"
                 className="request-tab__close"
-                aria-label={`Close ${tab.title}`}
+                aria-label={t('workspaceRoute.tabShell.closeTab', { title: tab.title })}
                 onClick={() => onCloseTab(tab.id)}
               >
                 x
@@ -103,7 +106,7 @@ export function RequestTabShell({
           <IconLabel icon="new">{t('workspaceRoute.tabShell.newRequest')}</IconLabel>
         </button>
         <button type="button" className="request-tab-shell__new-tab" onClick={onCreateQuickRequest}>
-          <IconLabel icon="new">Quick Request</IconLabel>
+          <IconLabel icon="new">{t('workspaceRoute.tabShell.quickRequest')}</IconLabel>
         </button>
       </div>
     </div>
