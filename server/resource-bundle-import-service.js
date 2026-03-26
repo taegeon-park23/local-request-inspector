@@ -379,7 +379,7 @@ function createResourceBundleImportService(dependencies) {
         bodyMode: input.bodyMode || 'none',
         bodyText: input.bodyText || '',
         formBody: cloneRows(input.formBody),
-        multipartBody: cloneRows(input.multipartBody),
+        multipartBody: cloneRows(input.multipartBody, { allowFileValues: true, sanitizeFileValues: true }),
         auth: cloneAuth(input.auth),
         scripts: cloneScripts(remappedScripts.scripts),
         collectionId,
@@ -596,3 +596,4 @@ function createResourceBundleImportService(dependencies) {
 module.exports = {
   createResourceBundleImportService,
 };
+

@@ -8,6 +8,7 @@ import type {
   RequestDraftState,
   RequestEditorTabId,
   RequestKeyValueRow,
+  RequestRowValueType,
   RequestScriptStageId,
 } from '@client/features/request-builder/request-draft.types';
 import {
@@ -28,10 +29,11 @@ interface RequestDraftEntry {
 }
 
 type DraftRowTarget = 'params' | 'headers' | 'formBody' | 'multipartBody';
-type DraftRowField = 'key' | 'value' | 'enabled';
+type DraftRowField = 'key' | 'value' | 'enabled' | 'valueType';
 
 interface RequestDraftStoreState {
   draftsByTabId: Record<string, RequestDraftEntry>;
+  multipartFilesByTabId: Record<string, Record<string, File[]>>;
   nextRowSequence: number;
   ensureDraftForTab: (
     tab: RequestTabRecord,
@@ -54,6 +56,8 @@ interface RequestDraftStoreState {
   addRow: (tabId: string, target: DraftRowTarget) => void;
   updateRow: (tabId: string, target: DraftRowTarget, rowId: string, field: DraftRowField, value: string | boolean) => void;
   removeRow: (tabId: string, target: DraftRowTarget, rowId: string) => void;
+  setMultipartRowFiles: (tabId: string, rowId: string, files: File[]) => void;
+  clearMultipartRowFiles: (tabId: string, rowId?: string) => void;
   updateBodyMode: (tabId: string, bodyMode: RequestDraftState['bodyMode']) => void;
   updateBodyText: (tabId: string, bodyText: string) => void;
   updateAuthType: (tabId: string, authType: RequestDraftAuthState['type']) => void;
@@ -71,13 +75,26 @@ interface RequestDraftStoreState {
   ) => void;
 }
 
-const initialRequestDraftStoreState: Pick<RequestDraftStoreState, 'draftsByTabId' | 'nextRowSequence'> = {
+const initialRequestDraftStoreState: Pick<RequestDraftStoreState, 'draftsByTabId' | 'multipartFilesByTabId' | 'nextRowSequence'> = {
   draftsByTabId: {},
+  multipartFilesByTabId: {},
   nextRowSequence: 1,
 };
 
+function normalizeRowValueType(valueType: RequestKeyValueRow['valueType']): RequestRowValueType {
+  return valueType === 'file' ? 'file' : 'text';
+}
+
 function cloneRows(rows?: RequestKeyValueRow[]) {
-  return (rows ?? []).map((row) => ({ ...row }));
+  return (rows ?? []).map((row) => {
+    const valueType = normalizeRowValueType(row.valueType);
+
+    return {
+      ...row,
+      valueType,
+      value: valueType === 'file' ? '' : (typeof row.value === 'string' ? row.value : ''),
+    };
+  });
 }
 
 function createDefaultAuthState(seed?: RequestDraftSeed['auth']): RequestDraftAuthState {
@@ -222,6 +239,8 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
       }
 
       const draft = createDraftFromTab(tab, draftSeed);
+      const nextMultipartFilesByTabId = { ...state.multipartFilesByTabId };
+      delete nextMultipartFilesByTabId[tab.id];
 
       return {
         draftsByTabId: {
@@ -231,6 +250,7 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
             draft,
           },
         },
+        multipartFilesByTabId: nextMultipartFilesByTabId,
       };
     }),
   removeDraft: (tabId) =>
@@ -242,8 +262,12 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
       const nextDraftsByTabId = { ...state.draftsByTabId };
       delete nextDraftsByTabId[tabId];
 
+      const nextMultipartFilesByTabId = { ...state.multipartFilesByTabId };
+      delete nextMultipartFilesByTabId[tabId];
+
       return {
         draftsByTabId: nextDraftsByTabId,
+        multipartFilesByTabId: nextMultipartFilesByTabId,
       };
     }),
   commitSavedDraft: (tabId, placement) =>
@@ -347,6 +371,7 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
           key: '',
           value: '',
           enabled: true,
+          valueType: 'text',
         },
       ];
 
@@ -362,34 +387,139 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
       };
     }),
   updateRow: (tabId, target, rowId, field, value) =>
-    set((state) =>
-      updateDraftEntry(state, tabId, (entry) =>
-        withDirtyState(entry, {
-          ...entry.draft,
-          [target]: entry.draft[target].map((row) =>
-            row.id === rowId ? { ...row, [field]: value } : row,
-          ),
-        }),
-      ),
-    ),
+    set((state) => {
+      const entry = state.draftsByTabId[tabId];
+      if (!entry) {
+        return {};
+      }
+
+      const nextRows = entry.draft[target].map((row) => {
+        if (row.id !== rowId) {
+          return row;
+        }
+
+        if (field === 'valueType') {
+          const nextValueType = normalizeRowValueType(value as RequestKeyValueRow['valueType']);
+          return {
+            ...row,
+            valueType: nextValueType,
+            value: nextValueType === 'file' ? '' : row.value,
+          };
+        }
+
+        return {
+          ...row,
+          [field]: value,
+        };
+      });
+
+      const nextDraftEntry = withDirtyState(entry, {
+        ...entry.draft,
+        [target]: nextRows,
+      });
+
+      const nextState = {
+        draftsByTabId: {
+          ...state.draftsByTabId,
+          [tabId]: nextDraftEntry,
+        },
+      } as Partial<RequestDraftStoreState>;
+
+      if (target === 'multipartBody' && field === 'valueType' && value !== 'file') {
+        const nextMultipartRowMap = {
+          ...(state.multipartFilesByTabId[tabId] ?? {}),
+        };
+        delete nextMultipartRowMap[rowId];
+        const nextMultipartFilesByTabId = {
+          ...state.multipartFilesByTabId,
+          [tabId]: nextMultipartRowMap,
+        };
+        nextState.multipartFilesByTabId = nextMultipartFilesByTabId;
+      }
+
+      return nextState;
+    }),
   removeRow: (tabId, target, rowId) =>
-    set((state) =>
-      updateDraftEntry(state, tabId, (entry) =>
+    set((state) => {
+      const nextState = updateDraftEntry(state, tabId, (entry) =>
         withDirtyState(entry, {
           ...entry.draft,
           [target]: entry.draft[target].filter((row) => row.id !== rowId),
         }),
-      ),
-    ),
+      );
+
+      if (target !== 'multipartBody') {
+        return nextState;
+      }
+
+      const nextMultipartRowMap = {
+        ...(state.multipartFilesByTabId[tabId] ?? {}),
+      };
+      delete nextMultipartRowMap[rowId];
+      const nextMultipartFilesByTabId = {
+        ...state.multipartFilesByTabId,
+        [tabId]: nextMultipartRowMap,
+      };
+
+      return {
+        ...nextState,
+        multipartFilesByTabId: nextMultipartFilesByTabId,
+      };
+    }),
+  setMultipartRowFiles: (tabId, rowId, files) =>
+    set((state) => ({
+      multipartFilesByTabId: {
+        ...state.multipartFilesByTabId,
+        [tabId]: {
+          ...(state.multipartFilesByTabId[tabId] ?? {}),
+          [rowId]: [...files],
+        },
+      },
+    })),
+  clearMultipartRowFiles: (tabId, rowId) =>
+    set((state) => {
+      const nextByTabId = { ...state.multipartFilesByTabId };
+
+      if (!nextByTabId[tabId]) {
+        return {};
+      }
+
+      if (!rowId) {
+        delete nextByTabId[tabId];
+        return {
+          multipartFilesByTabId: nextByTabId,
+        };
+      }
+
+      const nextRowMap = { ...nextByTabId[tabId] };
+      delete nextRowMap[rowId];
+      nextByTabId[tabId] = nextRowMap;
+
+      return {
+        multipartFilesByTabId: nextByTabId,
+      };
+    }),
   updateBodyMode: (tabId, bodyMode) =>
-    set((state) =>
-      updateDraftEntry(state, tabId, (entry) =>
+    set((state) => {
+      const nextState = updateDraftEntry(state, tabId, (entry) =>
         withDirtyState(entry, {
           ...entry.draft,
           bodyMode,
         }),
-      ),
-    ),
+      );
+
+      if (bodyMode === 'multipart-form-data') {
+        return nextState;
+      }
+
+      const nextMultipartFilesByTabId = { ...state.multipartFilesByTabId };
+      delete nextMultipartFilesByTabId[tabId];
+
+      return {
+        ...nextState,
+        multipartFilesByTabId: nextMultipartFilesByTabId,
+      };
+    }),
   updateBodyText: (tabId, bodyText) =>
     set((state) =>
       updateDraftEntry(state, tabId, (entry) => withDirtyState(entry, { ...entry.draft, bodyText })),
@@ -461,6 +591,17 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
 export function resetRequestDraftStore() {
   useRequestDraftStore.setState(initialRequestDraftStoreState);
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 

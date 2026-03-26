@@ -18,7 +18,22 @@ function configureRuntimeStream(app, express) {
 
   app.use(express.json({ verify: captureRawBody }));
   app.use(express.urlencoded({ extended: true, verify: captureRawBody }));
-  app.use(express.text({ type: '*/*' }));
+  app.use(express.text({
+    type: (req) => {
+      const contentType = String(req.headers['content-type'] || '').toLowerCase();
+
+      if (contentType.includes('multipart/form-data')) {
+        return false;
+      }
+
+      if (contentType.includes('application/json') || contentType.includes('application/x-www-form-urlencoded')) {
+        return false;
+      }
+
+      return true;
+    },
+    verify: captureRawBody,
+  }));
 
   return {
     getEventClients: () => clients,

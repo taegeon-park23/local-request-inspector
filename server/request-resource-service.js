@@ -22,13 +22,27 @@ function createRequestResourceService(dependencies) {
     requestResourceSchemaVersion,
   } = dependencies;
 
-  function cloneRows(rows = []) {
-    return rows.map((row) => ({
-      id: row.id || randomUUID(),
-      key: typeof row.key === 'string' ? row.key : '',
-      value: typeof row.value === 'string' ? row.value : '',
-      enabled: row.enabled !== false,
-    }));
+  function normalizeRowValueType(valueType, allowFileValues) {
+    return allowFileValues && valueType === 'file' ? 'file' : 'text';
+  }
+
+  function cloneRows(rows = [], options = {}) {
+    const sourceRows = Array.isArray(rows) ? rows : [];
+    const allowFileValues = options.allowFileValues === true;
+    const sanitizeFileValues = options.sanitizeFileValues === true;
+
+    return sourceRows.map((row) => {
+      const valueType = normalizeRowValueType(row.valueType, allowFileValues);
+      const normalizedValue = typeof row.value === 'string' ? row.value : '';
+
+      return {
+        id: row.id || randomUUID(),
+        key: typeof row.key === 'string' ? row.key : '',
+        value: valueType === 'file' && sanitizeFileValues ? '' : normalizedValue,
+        enabled: row.enabled !== false,
+        valueType,
+      };
+    });
   }
 
   function cloneAuth(auth = {}) {
@@ -515,7 +529,7 @@ function createRequestResourceService(dependencies) {
       bodyMode: input.bodyMode || 'none',
       bodyText: input.bodyText || '',
       formBody: cloneRows(input.formBody),
-      multipartBody: cloneRows(input.multipartBody),
+      multipartBody: cloneRows(input.multipartBody, { allowFileValues: true, sanitizeFileValues: true }),
       auth: cloneAuth(input.auth),
       scripts: cloneScripts(input.scripts),
       collectionId: collectionRecord.id,
@@ -540,6 +554,10 @@ function createRequestResourceService(dependencies) {
       selectedEnvironmentId: typeof record.selectedEnvironmentId === 'string' && record.selectedEnvironmentId.trim().length > 0
         ? record.selectedEnvironmentId.trim()
         : null,
+      params: cloneRows(record.params),
+      headers: cloneRows(record.headers),
+      formBody: cloneRows(record.formBody),
+      multipartBody: cloneRows(record.multipartBody, { allowFileValues: true, sanitizeFileValues: true }),
       scripts: cloneScripts(record.scripts),
       collectionId: normalizeText(record.collectionId),
       requestGroupId: normalizeText(record.requestGroupId),
@@ -797,3 +815,6 @@ function createRequestResourceService(dependencies) {
 module.exports = {
   createRequestResourceService,
 };
+
+
+

@@ -1,11 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   RequestBuilderApiError,
   createRequestDefinitionInput,
   parseApiJsonResponse,
+  runRequestDefinitionWithUpload,
 } from '@client/features/request-builder/request-builder.api';
 import type { RequestDraftState } from '@client/features/request-builder/request-draft.types';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 function createTab(overrides?: Partial<RequestTabRecord>): RequestTabRecord {
   return {
@@ -79,6 +84,131 @@ describe('createRequestDefinitionInput', () => {
     const input = createRequestDefinitionInput(createTab(), createDraft());
 
     expect(input.name).toBe('Quick Request');
+  });
+
+  it('sanitizes multipart file row values while preserving row type metadata', () => {
+    const input = createRequestDefinitionInput(
+      createTab(),
+      createDraft({
+        name: 'Runtime probe',
+        method: 'POST',
+        bodyMode: 'multipart-form-data',
+        multipartBody: [
+          {
+            id: 'row-file',
+            key: 'attachment',
+            value: 'legacy-value',
+            enabled: true,
+            valueType: 'file',
+          },
+          {
+            id: 'row-text',
+            key: 'note',
+            value: 'keep me',
+            enabled: true,
+            valueType: 'text',
+          },
+        ],
+      }),
+    );
+
+    expect(input.multipartBody).toEqual([
+      {
+        id: 'row-file',
+        key: 'attachment',
+        value: '',
+        enabled: true,
+        valueType: 'file',
+      },
+      {
+        id: 'row-text',
+        key: 'note',
+        value: 'keep me',
+        enabled: true,
+        valueType: 'text',
+      },
+    ]);
+  });
+});
+
+describe('runRequestDefinitionWithUpload', () => {
+  it('posts request JSON and selected files to /api/executions/run-upload', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : input.url;
+      expect(url).toBe('/api/executions/run-upload');
+      expect(init?.method).toBe('POST');
+      expect(init?.body).toBeInstanceOf(FormData);
+
+      const body = init?.body as FormData;
+      const requestPayload = body.get('request');
+      expect(typeof requestPayload).toBe('string');
+      expect(JSON.parse(String(requestPayload))).toMatchObject({
+        name: 'Runtime probe',
+        method: 'POST',
+      });
+
+      const uploadedFiles = body.getAll('file:row-file');
+      expect(uploadedFiles).toHaveLength(2);
+
+      return new Response(JSON.stringify({
+        data: {
+          execution: {
+            executionId: 'execution-upload-1',
+            executionOutcome: 'Succeeded',
+            responseStatus: 200,
+            responseStatusLabel: '200 OK',
+            responseHeaders: [],
+            responseHeadersSummary: 'No headers',
+            responseBodyPreview: '',
+            responseBodyHint: '',
+            startedAt: '2026-03-26T00:00:00.000Z',
+            completedAt: '2026-03-26T00:00:00.000Z',
+            durationMs: 1,
+            consoleSummary: 'No console entries.',
+            consoleEntries: [],
+            testsSummary: 'No tests recorded.',
+            testEntries: [],
+          },
+        },
+      }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    const requestInput = createRequestDefinitionInput(
+      createTab(),
+      createDraft({
+        name: 'Runtime probe',
+        method: 'POST',
+        bodyMode: 'multipart-form-data',
+        multipartBody: [
+          {
+            id: 'row-file',
+            key: 'attachment',
+            value: '',
+            enabled: true,
+            valueType: 'file',
+          },
+        ],
+      }),
+    );
+
+    const execution = await runRequestDefinitionWithUpload(requestInput, {
+      'row-file': [
+        new File(['a'], 'a.txt', { type: 'text/plain' }),
+        new File(['b'], 'b.txt', { type: 'text/plain' }),
+      ],
+    });
+    expect(execution.executionId).toBe('execution-upload-1');
   });
 });
 

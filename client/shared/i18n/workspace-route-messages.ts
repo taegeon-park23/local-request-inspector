@@ -434,6 +434,8 @@ export const workspaceRouteMessagesEn = {
         runPending: 'Run is already in progress.',
         linkedScriptMissing: 'Repair or detach the missing linked saved script in the {stageLabel} stage before running.',
         linkedScriptMismatch: 'Repair or detach the mismatched linked saved script in the {stageLabel} stage before running.',
+        multipartFileMethodNotSupported: 'Multipart file fields can run only with POST or PUT methods.',
+        multipartFileSelectionRequired: 'Select at least one file for each enabled multipart file field before running.',
       },
       failedRun: {
         requestSnapshotUnavailableTarget: 'request snapshot unavailable',
@@ -549,11 +551,12 @@ export const workspaceRouteMessagesEn = {
         formRowLabel: 'Form field',
         multipartTitle: 'Multipart body',
         multipartDescription:
-          'Scaffold multipart rows only. Real file attachment UX is still deferred, but enabled rows are already preserved in the saved definition.',
+          'Compose multipart rows with text or file field types. File attachments stay run-only and are not persisted in saved request definitions.',
         multipartEmpty:
-          'No multipart rows yet. Add basic fields or file placeholders for later implementation.',
+          'No multipart rows yet. Add text fields or file fields for the next run.',
         multipartAddAction: 'Add multipart field',
         multipartRowLabel: 'Multipart field',
+        multipartFileSelectionDisabledByMethod: 'File selection is available only for POST or PUT requests.',
       },
       bodyModeOptions: {
         none: 'None',
@@ -599,6 +602,17 @@ export const workspaceRouteMessagesEn = {
         enabled: '{rowLabel} row {index} enabled',
         key: '{rowLabel} row {index} key',
         value: '{rowLabel} row {index} value',
+        valueType: '{rowLabel} row {index} field type',
+        files: '{rowLabel} row {index} files',
+      },
+      valueTypes: {
+        text: 'Text',
+        file: 'File',
+      },
+      file: {
+        noneSelected: 'No files selected.',
+        selected: '{count} file(s): {names}',
+        clearAction: 'Clear files',
       },
       removeAction: 'Remove',
       removeAriaLabel: 'Remove {rowLabel} row {index}',
@@ -1553,6 +1567,8 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         runPending: '실행이 이미 진행 중입니다.',
         linkedScriptMissing: '실행 전에 {stageLabel} 단계의 누락된 연결 저장 스크립트를 복구하거나 분리하세요.',
         linkedScriptMismatch: '실행 전에 {stageLabel} 단계의 유형이 맞지 않는 연결 저장 스크립트를 복구하거나 분리하세요.',
+        multipartFileMethodNotSupported: '멀티파트 파일 필드는 POST 또는 PUT 메서드에서만 실행할 수 있습니다.',
+        multipartFileSelectionRequired: '실행 전에 활성화된 각 멀티파트 파일 필드에 최소 1개 파일을 선택하세요.',
       },
       failedRun: {
         requestSnapshotUnavailableTarget: '요청 스냅샷을 사용할 수 없음',
@@ -1668,11 +1684,12 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         formRowLabel: '폼 필드',
         multipartTitle: '멀티파트 본문',
         multipartDescription:
-          '멀티파트 행만 작성합니다. 실제 파일 첨부 UX는 아직 유예되었지만, 활성 행은 저장된 정의에 이미 보존됩니다.',
+          '텍스트/파일 타입으로 멀티파트 행을 작성합니다. 파일 첨부 데이터는 실행 전용이며 저장 요청 정의에는 보관되지 않습니다.',
         multipartEmpty:
-          '아직 멀티파트 행이 없습니다. 이후 구현을 위해 기본 필드나 파일 placeholder를 추가하세요.',
+          '아직 멀티파트 행이 없습니다. 다음 실행을 위해 텍스트 또는 파일 필드를 추가하세요.',
         multipartAddAction: '멀티파트 필드 추가',
         multipartRowLabel: '멀티파트 필드',
+        multipartFileSelectionDisabledByMethod: '파일 선택은 POST 또는 PUT 요청에서만 사용할 수 있습니다.',
       },
       bodyModeOptions: {
         none: '없음',
@@ -1718,6 +1735,17 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         enabled: '{rowLabel} {index}행 사용',
         key: '{rowLabel} {index}행 키',
         value: '{rowLabel} {index}행 값',
+        valueType: '{rowLabel} {index}행 필드 타입',
+        files: '{rowLabel} {index}행 파일',
+      },
+      valueTypes: {
+        text: '텍스트',
+        file: '파일',
+      },
+      file: {
+        noneSelected: '선택된 파일이 없습니다.',
+        selected: '{count}개 파일: {names}',
+        clearAction: '파일 지우기',
       },
       removeAction: '제거',
       removeAriaLabel: '{rowLabel} {index}행 제거',
@@ -2232,4 +2260,8 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
     },
   },
 };
+
+
+
+
 

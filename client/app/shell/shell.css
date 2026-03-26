@@ -405,7 +405,20 @@ body { margin: 0; background: #020617; overflow: hidden; }
 .request-builder-core__identity,
 .request-builder-core__command-area,
 .request-editor-card,
-.request-script-placeholder-grid {
+.request-row-editor--multipart {
+  grid-template-columns: minmax(120px, .72fr) minmax(0, 1fr) minmax(140px, .64fr) minmax(0, 1fr) auto;
+}
+.request-field--file-picker {
+  align-self: stretch;
+}
+.request-field--file-picker input[type="file"] {
+  padding: .55rem .7rem;
+}
+.request-row-editor__file-summary {
+  margin: .25rem 0 0;
+  color: #94a3b8;
+  font-size: .8rem;
+}.request-script-placeholder-grid {
   display: grid;
   gap: 1rem;
 }
@@ -493,7 +506,20 @@ body { margin: 0; background: #020617; overflow: hidden; }
   padding: .85rem;
   background: #020617;
 }
-.request-script-placeholder-grid {
+.request-row-editor--multipart {
+  grid-template-columns: minmax(120px, .72fr) minmax(0, 1fr) minmax(140px, .64fr) minmax(0, 1fr) auto;
+}
+.request-field--file-picker {
+  align-self: stretch;
+}
+.request-field--file-picker input[type="file"] {
+  padding: .55rem .7rem;
+}
+.request-row-editor__file-summary {
+  margin: .25rem 0 0;
+  color: #94a3b8;
+  font-size: .8rem;
+}.request-script-placeholder-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .request-script-stage-tabs,
@@ -565,7 +591,20 @@ body { margin: 0; background: #020617; overflow: hidden; }
   }
   .request-editor-card__grid,
   .request-row-editor,
-  .request-script-placeholder-grid {
+  .request-row-editor--multipart {
+  grid-template-columns: minmax(120px, .72fr) minmax(0, 1fr) minmax(140px, .64fr) minmax(0, 1fr) auto;
+}
+.request-field--file-picker {
+  align-self: stretch;
+}
+.request-field--file-picker input[type="file"] {
+  padding: .55rem .7rem;
+}
+.request-row-editor__file-summary {
+  margin: .25rem 0 0;
+  color: #94a3b8;
+  font-size: .8rem;
+}.request-script-placeholder-grid {
     grid-template-columns: 1fr;
   }
   .workspace-request-row {
@@ -1302,4 +1341,5 @@ body { margin: 0; background: #020617; overflow: hidden; }
 .workspace-create-sheet {
   margin: 0 0 1rem;
 }
+
 

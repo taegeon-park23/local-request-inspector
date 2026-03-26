@@ -38,6 +38,7 @@ function createDraftRows(
     key: item.key,
     value: item.value,
     enabled: true,
+    valueType: 'text' as const,
   }));
 }
 
@@ -48,6 +49,7 @@ function splitUrlAndParams(url: string, prefix: string) {
     key,
     value,
     enabled: true,
+    valueType: 'text' as const,
   }));
 
   normalizedUrl.search = '';
@@ -188,3 +190,4 @@ export function buildReplayDraftSeedFromCapture(capture: CaptureRecord) {
 export function buildReplayDraftSeedFromHistory(history: HistoryRecord) {
   return buildHistoryReplayPayload(history);
 }
+

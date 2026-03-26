@@ -76,4 +76,77 @@ describe('request-draft-store', () => {
     expect(useRequestDraftStore.getState().draftsByTabId['saved-1']?.draft.name).toBe('Health check');
     expect(useRequestDraftStore.getState().draftsByTabId['replay-1']?.draft.name).toBe('Replay of Create user');
   });
+
+
+  it('tracks multipart row file selections per tab and clears them when the row type switches to text', () => {
+    const tab = createTab({
+      id: 'detached-multipart',
+      title: 'Multipart draft',
+      methodLabel: 'POST',
+      source: 'detached',
+      tabMode: 'pinned',
+      summary: 'Multipart upload draft.',
+    });
+
+    const store = useRequestDraftStore.getState();
+    store.ensureDraftForTab(tab, {
+      method: 'POST',
+      url: 'https://api.example.com/upload',
+      bodyMode: 'multipart-form-data',
+      multipartBody: [
+        {
+          id: 'row-file-1',
+          key: 'attachment',
+          value: '',
+          enabled: true,
+          valueType: 'file',
+        },
+      ],
+    }, { replace: true });
+
+    const selectedFile = new File(['hello'], 'demo.txt', { type: 'text/plain' });
+    store.setMultipartRowFiles(tab.id, 'row-file-1', [selectedFile]);
+
+    expect(useRequestDraftStore.getState().multipartFilesByTabId[tab.id]?.['row-file-1']).toHaveLength(1);
+
+    store.updateRow(tab.id, 'multipartBody', 'row-file-1', 'valueType', 'text');
+
+    expect(useRequestDraftStore.getState().multipartFilesByTabId[tab.id]?.['row-file-1']).toBeUndefined();
+  });
+
+  it('clears multipart file selections when body mode changes away from multipart', () => {
+    const tab = createTab({
+      id: 'detached-mode-switch',
+      title: 'Mode switch draft',
+      methodLabel: 'POST',
+      source: 'detached',
+      tabMode: 'pinned',
+      summary: 'Body mode switch draft.',
+    });
+
+    const store = useRequestDraftStore.getState();
+    store.ensureDraftForTab(tab, {
+      method: 'POST',
+      url: 'https://api.example.com/upload',
+      bodyMode: 'multipart-form-data',
+      multipartBody: [
+        {
+          id: 'row-file-2',
+          key: 'file',
+          value: '',
+          enabled: true,
+          valueType: 'file',
+        },
+      ],
+    }, { replace: true });
+
+    const selectedFile = new File(['hello'], 'demo.txt', { type: 'text/plain' });
+    store.setMultipartRowFiles(tab.id, 'row-file-2', [selectedFile]);
+    expect(useRequestDraftStore.getState().multipartFilesByTabId[tab.id]?.['row-file-2']).toHaveLength(1);
+
+    store.updateBodyMode(tab.id, 'json');
+
+    expect(useRequestDraftStore.getState().multipartFilesByTabId[tab.id]).toBeUndefined();
+  });
+
 });

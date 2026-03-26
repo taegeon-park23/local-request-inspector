@@ -320,7 +320,59 @@ function testPrepareWorkspaceResourceBundleImportScopesDuplicateGroupNamesByPare
   assert.notEqual(sharedGroups[0].parentRequestGroupId, sharedGroups[1].parentRequestGroupId);
 }
 
+
+function testPrepareWorkspaceResourceBundleImportSanitizesMultipartFileRows() {
+  const { service } = createBundleService();
+
+  const plan = service.prepareWorkspaceResourceBundleImport({
+    collections: [],
+    requestGroups: [],
+    requests: [
+      createFlatBundleRequest({
+        method: 'POST',
+        bodyMode: 'multipart-form-data',
+        multipartBody: [
+          {
+            id: 'multipart-row-file',
+            key: 'attachment',
+            value: 'legacy-value',
+            enabled: true,
+            valueType: 'file',
+          },
+          {
+            id: 'multipart-row-text',
+            key: 'note',
+            value: 'keep me',
+            enabled: true,
+            valueType: 'text',
+          },
+        ],
+      }),
+    ],
+    mockRules: [],
+    scripts: [],
+  }, 'local-workspace');
+
+  assert.equal(plan.acceptedRequests.length, 1);
+  assert.deepEqual(plan.acceptedRequests[0].multipartBody, [
+    {
+      id: 'multipart-row-file',
+      key: 'attachment',
+      value: '',
+      enabled: true,
+      valueType: 'file',
+    },
+    {
+      id: 'multipart-row-text',
+      key: 'note',
+      value: 'keep me',
+      enabled: true,
+      valueType: 'text',
+    },
+  ]);
+}
 (function run() {
   testPrepareWorkspaceResourceBundleImportSupportsLegacyFlatBundlesWithoutMutatingStorage();
   testPrepareWorkspaceResourceBundleImportScopesDuplicateGroupNamesByParent();
+  testPrepareWorkspaceResourceBundleImportSanitizesMultipartFileRows();
 })();

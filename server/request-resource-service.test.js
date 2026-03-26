@@ -262,8 +262,55 @@ function testNormalizeSavedRequestRejectsCollectionMismatchForRequestGroup() {
   );
 }
 
+
+function testNormalizeSavedRequestSanitizesMultipartFileRows() {
+  const { service } = createService();
+
+  const normalized = service.normalizeSavedRequest(
+    createSavedRequestInput({
+      method: 'POST',
+      bodyMode: 'multipart-form-data',
+      multipartBody: [
+        {
+          id: 'multipart-row-file',
+          key: 'attachment',
+          value: 'legacy-value',
+          enabled: true,
+          valueType: 'file',
+        },
+        {
+          id: 'multipart-row-text',
+          key: 'note',
+          value: 'keep me',
+          enabled: true,
+          valueType: 'text',
+        },
+      ],
+    }),
+    null,
+    'local-workspace',
+  );
+
+  assert.deepEqual(normalized.multipartBody, [
+    {
+      id: 'multipart-row-file',
+      key: 'attachment',
+      value: '',
+      enabled: true,
+      valueType: 'file',
+    },
+    {
+      id: 'multipart-row-text',
+      key: 'note',
+      value: 'keep me',
+      enabled: true,
+      valueType: 'text',
+    },
+  ]);
+}
 (function run() {
   testListWorkspaceRequestGroupRecordsBackfillsLegacyParentScope();
   testBuildWorkspaceRequestTreeCreatesRecursiveGroupBranches();
   testNormalizeSavedRequestRejectsCollectionMismatchForRequestGroup();
+  testNormalizeSavedRequestSanitizesMultipartFileRows();
 })();

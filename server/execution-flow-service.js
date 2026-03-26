@@ -32,6 +32,81 @@ function createExecutionFlowService(dependencies) {
     );
   }
 
+  function normalizeRowValueType(valueType) {
+    return valueType === 'file' ? 'file' : 'text';
+  }
+
+  function isMultipartFileMethodSupported(method) {
+    return method === 'POST' || method === 'PUT';
+  }
+
+  function createMultipartValidationError(code, message, details = {}) {
+    const error = new Error(message);
+    error.code = code;
+    error.details = details;
+    return error;
+  }
+
+  function cloneMultipartFilesByRowId(multipartFilesByRowId) {
+    if (!multipartFilesByRowId || typeof multipartFilesByRowId !== 'object') {
+      return {};
+    }
+
+    const cloned = {};
+
+    for (const [rowId, files] of Object.entries(multipartFilesByRowId)) {
+      if (!Array.isArray(files) || rowId.trim().length === 0) {
+        continue;
+      }
+
+      const nextFiles = files
+        .map((file) => {
+          if (!file || typeof file !== 'object') {
+            return null;
+          }
+
+          const normalizedBuffer = Buffer.isBuffer(file.buffer)
+            ? Buffer.from(file.buffer)
+            : file.buffer instanceof Uint8Array
+              ? Buffer.from(file.buffer)
+              : null;
+
+          if (!normalizedBuffer) {
+            return null;
+          }
+
+          return {
+            name: typeof file.name === 'string' ? file.name : 'upload.bin',
+            type: typeof file.type === 'string' && file.type.trim().length > 0
+              ? file.type.trim()
+              : 'application/octet-stream',
+            buffer: normalizedBuffer,
+          };
+        })
+        .filter(Boolean);
+
+      if (nextFiles.length > 0) {
+        cloned[rowId] = nextFiles;
+      }
+    }
+
+    return cloned;
+  }
+
+  function createMultipartBlobPart(file, rowId, fileIndex) {
+    const fileName = typeof file?.name === 'string' && file.name.trim().length > 0
+      ? file.name.trim()
+      : `${rowId || 'upload'}-${fileIndex + 1}.bin`;
+    const fileType = typeof file?.type === 'string' && file.type.trim().length > 0
+      ? file.type.trim()
+      : 'application/octet-stream';
+
+    return {
+      blob: new Blob([file.buffer], { type: fileType }),
+      fileName,
+    };
+  }
+
   function createExecutionRequestSeed(input) {
     return {
       id: input.id || null,
@@ -47,7 +122,8 @@ function createExecutionFlowService(dependencies) {
       bodyMode: input.bodyMode || 'none',
       bodyText: input.bodyText || '',
       formBody: cloneRows(input.formBody),
-      multipartBody: cloneRows(input.multipartBody),
+      multipartBody: cloneRows(input.multipartBody, { allowFileValues: true, sanitizeFileValues: true }),
+      multipartFilesByRowId: cloneMultipartFilesByRowId(input.multipartFilesByRowId),
       auth: cloneAuth(input.auth),
       scripts: cloneScripts(input.scripts),
       collectionId: input.collectionId || null,
@@ -451,7 +527,27 @@ function createExecutionFlowService(dependencies) {
   }
 
   function createExecutionBody(request, headers) {
-    if (request.method === 'GET' || request.method === 'DELETE') {
+    const method = typeof request?.method === 'string' ? request.method.toUpperCase() : '';
+
+    if (method === 'GET' || method === 'DELETE') {
+      const hasEnabledMultipartFileRows = request.bodyMode === 'multipart-form-data'
+        && Array.isArray(request.multipartBody)
+        && request.multipartBody.some((row) => (
+          row
+          && row.enabled !== false
+          && typeof row.key === 'string'
+          && row.key.trim().length > 0
+          && normalizeRowValueType(row.valueType) === 'file'
+        ));
+
+      if (hasEnabledMultipartFileRows) {
+        throw createMultipartValidationError(
+          'multipart_file_method_not_allowed',
+          'Multipart file fields can run only with POST or PUT methods.',
+          { method },
+        );
+      }
+
       return undefined;
     }
 
@@ -495,15 +591,56 @@ function createExecutionFlowService(dependencies) {
 
     if (request.bodyMode === 'multipart-form-data') {
       const formData = new FormData();
+      const multipartFilesByRowId = request?.multipartFilesByRowId || {};
+      const method = typeof request?.method === 'string' ? request.method.toUpperCase() : '';
+
       for (const row of request.multipartBody || []) {
-        if (row && row.enabled !== false && typeof row.key === 'string' && row.key.trim().length > 0) {
-          formData.append(row.key, typeof row.value === 'string' ? row.value : '');
+        if (!row || row.enabled === false || typeof row.key !== 'string') {
+          continue;
         }
+
+        const key = row.key.trim();
+        if (key.length === 0) {
+          continue;
+        }
+
+        if (normalizeRowValueType(row.valueType) === 'file') {
+          if (!isMultipartFileMethodSupported(method)) {
+            throw createMultipartValidationError(
+              'multipart_file_method_not_allowed',
+              'Multipart file fields can run only with POST or PUT methods.',
+              { method },
+            );
+          }
+
+          const rowId = typeof row.id === 'string' ? row.id.trim() : '';
+          const files = rowId && Array.isArray(multipartFilesByRowId[rowId])
+            ? multipartFilesByRowId[rowId]
+            : [];
+
+          if (files.length === 0) {
+            throw createMultipartValidationError(
+              'multipart_file_missing',
+              `Multipart file field "${key}" is enabled but no files were attached.`,
+              {
+                rowId: rowId || null,
+                key,
+              },
+            );
+          }
+
+          files.forEach((file, fileIndex) => {
+            const { blob, fileName } = createMultipartBlobPart(file, rowId, fileIndex);
+            formData.append(key, blob, fileName);
+          });
+          continue;
+        }
+
+        formData.append(key, typeof row.value === 'string' ? row.value : '');
       }
       headers.delete('Content-Type');
       return formData;
     }
-
     return undefined;
   }
 
@@ -538,3 +675,6 @@ function createExecutionFlowService(dependencies) {
 module.exports = {
   createExecutionFlowService,
 };
+
+
+

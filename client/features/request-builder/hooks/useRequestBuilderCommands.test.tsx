@@ -5,6 +5,7 @@ import { useRequestBuilderCommands } from '@client/features/request-builder/hook
 import type { RequestDraftState } from '@client/features/request-builder/request-draft.types';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
 import { resetRequestCommandStore } from '@client/features/request-builder/state/request-command-store';
+import { resetRequestDraftStore, useRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
 import { renderApp } from '@client/shared/test/render-app';
 
 function createApiResponse(data: unknown, status = 200) {
@@ -104,6 +105,7 @@ function HookHarness({ activeTab, draft }: { activeTab: RequestTabRecord | null;
 
 afterEach(() => {
   resetRequestCommandStore();
+  resetRequestDraftStore();
   vi.unstubAllGlobals();
 });
 
@@ -214,5 +216,155 @@ describe('useRequestBuilderCommands localization', () => {
     expect(screen.getByTestId('input-summary')).toHaveTextContent('파라미터 0개 · 헤더 0개 · 본문 없음 · 인증 없음');
     expect(screen.getByTestId('tests-summary')).toHaveTextContent('tests 단계가 완료되기 전에 실행 경로가 실패했기 때문에 테스트가 기록되지 않았습니다.');
     expect(screen.getByTestId('stage-label')).toHaveTextContent('전송');
+  });
+  it('renders multipart file method guidance when file rows are enabled on unsupported methods', () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/environments') {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/scripts') {
+        return createApiResponse({ items: [] });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(
+      <HookHarness
+        activeTab={createTab()}
+        draft={createDraft({
+          method: 'GET',
+          bodyMode: 'multipart-form-data',
+          multipartBody: [
+            {
+              id: 'multipart-file-row',
+              key: 'attachment',
+              value: '',
+              enabled: true,
+              valueType: 'file',
+            },
+          ],
+        })}
+      />,
+    );
+
+    expect(screen.getByTestId('run-disabled')).toHaveTextContent('Multipart file fields can run only with POST or PUT methods.');
+  });
+
+  it('blocks run when enabled multipart file rows have no selected files', () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/environments') {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/scripts') {
+        return createApiResponse({ items: [] });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(
+      <HookHarness
+        activeTab={createTab()}
+        draft={createDraft({
+          method: 'POST',
+          bodyMode: 'multipart-form-data',
+          multipartBody: [
+            {
+              id: 'multipart-file-row',
+              key: 'attachment',
+              value: '',
+              enabled: true,
+              valueType: 'file',
+            },
+          ],
+        })}
+      />,
+    );
+
+    expect(screen.getByTestId('run-disabled')).toHaveTextContent('Select at least one file for each enabled multipart file field before running.');
+  });
+  it('runs multipart file rows through run-upload when files are selected', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/environments') {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/scripts') {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/executions/run-upload' && init?.method === 'POST') {
+        return createApiResponse({
+          execution: {
+            executionId: 'execution-upload-1',
+            executionOutcome: 'Succeeded',
+            responseStatus: 200,
+            responseStatusLabel: '200 OK',
+            responseHeaders: [],
+            responseHeadersSummary: 'No headers',
+            responseBodyPreview: 'uploaded',
+            responseBodyHint: 'preview',
+            startedAt: '2026-03-26T00:00:00.000Z',
+            completedAt: '2026-03-26T00:00:00.000Z',
+            durationMs: 1,
+            consoleSummary: 'No console entries.',
+            consoleEntries: [],
+            testsSummary: 'No tests recorded.',
+            testEntries: [],
+            stageSummaries: [],
+          },
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    useRequestDraftStore.setState({
+      multipartFilesByTabId: {
+        'quick-1': {
+          'multipart-file-row': [new File(['hello'], 'demo.txt', { type: 'text/plain' })],
+        },
+      },
+    });
+
+    renderApp(
+      <HookHarness
+        activeTab={createTab()}
+        draft={createDraft({
+          method: 'POST',
+          bodyMode: 'multipart-form-data',
+          multipartBody: [
+            {
+              id: 'multipart-file-row',
+              key: 'attachment',
+              value: '',
+              enabled: true,
+              valueType: 'file',
+            },
+          ],
+        })}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'run' }));
+
+    await waitFor(() => expect(screen.getByTestId('response-status')).toHaveTextContent('200 OK'));
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/executions/run-upload',
+      expect.objectContaining({ method: 'POST' }),
+    );
   });
 });

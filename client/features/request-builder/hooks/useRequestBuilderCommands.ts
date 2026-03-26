@@ -7,6 +7,7 @@ import {
   DEFAULT_REQUEST_COLLECTION_NAME,
   RequestBuilderApiError,
   runRequestDefinition,
+  runRequestDefinitionWithUpload,
   saveRequestDefinition,
   type RequestDefinitionInput,
   type RequestRunObservation,
@@ -55,6 +56,47 @@ function countEnabledRows(rows: RequestDraftState['params']) {
   return rows.filter((row) => row.enabled !== false && row.key.trim().length > 0).length;
 }
 
+function normalizeRowValueType(valueType: RequestDraftState['multipartBody'][number]['valueType']) {
+  return valueType === 'file' ? 'file' : 'text';
+}
+
+function isMultipartFileMethodSupported(method: RequestDraftState['method']) {
+  return method === 'POST' || method === 'PUT';
+}
+
+function listEnabledMultipartFileRows(draft: RequestDraftState) {
+  return draft.multipartBody.filter((row) => (
+    row.enabled !== false
+    && row.key.trim().length > 0
+    && normalizeRowValueType(row.valueType) === 'file'
+  ));
+}
+
+function hasMissingMultipartFiles(
+  draft: RequestDraftState,
+  multipartFilesByRowId: Record<string, File[]>,
+) {
+  return listEnabledMultipartFileRows(draft).some((row) => {
+    const selectedFiles = multipartFilesByRowId[row.id] ?? [];
+    return selectedFiles.length === 0;
+  });
+}
+
+function createMultipartUploadFileMap(
+  draft: RequestDraftState,
+  multipartFilesByRowId: Record<string, File[]>,
+) {
+  const nextFileMap: Record<string, File[]> = {};
+
+  for (const row of listEnabledMultipartFileRows(draft)) {
+    const selectedFiles = multipartFilesByRowId[row.id] ?? [];
+    if (selectedFiles.length > 0) {
+      nextFileMap[row.id] = selectedFiles;
+    }
+  }
+
+  return nextFileMap;
+}
 function createBodyModeSummary(
   bodyMode: RequestDraftState['bodyMode'],
   t: ReturnType<typeof useI18n>['t'],
@@ -278,6 +320,9 @@ export function useRequestBuilderCommands(
   const finishRunSuccess = useRequestCommandStore((state) => state.finishRunSuccess);
   const finishRunError = useRequestCommandStore((state) => state.finishRunError);
   const commitSavedDraft = useRequestDraftStore((state) => state.commitSavedDraft);
+  const multipartFilesByRowId = useRequestDraftStore((state) =>
+    activeTab ? state.multipartFilesByTabId[activeTab.id] ?? {} : {},
+  );
   const markTabSaved = useWorkspaceShellStore((state) => state.markTabSaved);
   const setTabSaveState = useWorkspaceShellStore((state) => state.setTabSaveState);
   const setTabRunState = useWorkspaceShellStore((state) => state.setTabRunState);
@@ -340,11 +385,15 @@ export function useRequestBuilderCommands(
             ? t('workspaceRoute.requestBuilder.environment.degraded')
             : brokenLinkedScriptRunBlock
               ? brokenLinkedScriptRunBlock
-              : isJsonBodyMalformed(draft)
-                ? t('workspaceRoute.requestBuilder.disabledReasons.malformedJsonRun')
-                : runStatus.status === 'pending'
-                  ? t('workspaceRoute.requestBuilder.disabledReasons.runPending')
-                  : null;
+              : listEnabledMultipartFileRows(draft).length > 0 && !isMultipartFileMethodSupported(draft.method)
+                ? t('workspaceRoute.requestBuilder.disabledReasons.multipartFileMethodNotSupported')
+                : hasMissingMultipartFiles(draft, multipartFilesByRowId)
+                  ? t('workspaceRoute.requestBuilder.disabledReasons.multipartFileSelectionRequired')
+                  : isJsonBodyMalformed(draft)
+                    ? t('workspaceRoute.requestBuilder.disabledReasons.malformedJsonRun')
+                    : runStatus.status === 'pending'
+                      ? t('workspaceRoute.requestBuilder.disabledReasons.runPending')
+                      : null;
 
   const buildDefinitionInput = (intent: SaveIntent = 'default') => {
     if (!activeTab || !draft) {
@@ -422,7 +471,20 @@ export function useRequestBuilderCommands(
   });
 
   const runMutation = useMutation({
-    mutationFn: async () => runRequestDefinition(buildDefinitionInput()),
+    mutationFn: async () => {
+      if (!draft) {
+        throw new Error('No active request draft is available.');
+      }
+
+      const input = buildDefinitionInput();
+      const multipartFileMap = createMultipartUploadFileMap(draft, multipartFilesByRowId);
+
+      if (Object.keys(multipartFileMap).length > 0) {
+        return runRequestDefinitionWithUpload(input, multipartFileMap);
+      }
+
+      return runRequestDefinition(input);
+    },
     onMutate: () => {
       if (!activeTab) {
         return;
@@ -496,6 +558,12 @@ export function useRequestBuilderCommands(
     },
   };
 }
+
+
+
+
+
+
 
 
 

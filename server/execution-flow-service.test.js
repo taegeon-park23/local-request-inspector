@@ -7,6 +7,7 @@ function createCloneRows(rows = []) {
     key: typeof row?.key === 'string' ? row.key : '',
     value: typeof row?.value === 'string' ? row.value : '',
     enabled: row?.enabled !== false,
+    valueType: row?.valueType === 'file' ? 'file' : 'text',
   }));
 }
 
@@ -95,8 +96,120 @@ async function testExecuteScriptStageMapsBlockedChildResult() {
   assert.equal(result.executionRequest.method, 'POST');
 }
 
+async function testCreateExecutionBodyAppendsMultipartTextAndFiles() {
+  const service = createService();
+  const headers = new Headers();
+  const body = service.createExecutionBody(
+    {
+      method: 'POST',
+      bodyMode: 'multipart-form-data',
+      multipartBody: [
+        {
+          id: 'row-file',
+          key: 'attachment',
+          value: '',
+          enabled: true,
+          valueType: 'file',
+        },
+        {
+          id: 'row-note',
+          key: 'note',
+          value: 'hello',
+          enabled: true,
+          valueType: 'text',
+        },
+      ],
+      multipartFilesByRowId: {
+        'row-file': [
+          {
+            name: 'a.txt',
+            type: 'text/plain',
+            buffer: Buffer.from('file-a'),
+          },
+          {
+            name: 'b.txt',
+            type: 'text/plain',
+            buffer: Buffer.from('file-b'),
+          },
+        ],
+      },
+    },
+    headers,
+  );
+
+  assert.ok(body instanceof FormData);
+  assert.equal(body.get('note'), 'hello');
+
+  const uploadedFiles = body.getAll('attachment');
+  assert.equal(uploadedFiles.length, 2);
+  assert.equal(await uploadedFiles[0].text(), 'file-a');
+  assert.equal(await uploadedFiles[1].text(), 'file-b');
+  assert.equal(headers.has('Content-Type'), false);
+}
+
+function testCreateExecutionBodyRejectsMissingMultipartFiles() {
+  const service = createService();
+
+  assert.throws(
+    () => service.createExecutionBody(
+      {
+        method: 'POST',
+        bodyMode: 'multipart-form-data',
+        multipartBody: [
+          {
+            id: 'row-file',
+            key: 'attachment',
+            value: '',
+            enabled: true,
+            valueType: 'file',
+          },
+        ],
+        multipartFilesByRowId: {},
+      },
+      new Headers(),
+    ),
+    (error) => error.code === 'multipart_file_missing',
+  );
+}
+
+function testCreateExecutionBodyRejectsUnsupportedFileMethod() {
+  const service = createService();
+
+  assert.throws(
+    () => service.createExecutionBody(
+      {
+        method: 'GET',
+        bodyMode: 'multipart-form-data',
+        multipartBody: [
+          {
+            id: 'row-file',
+            key: 'attachment',
+            value: '',
+            enabled: true,
+            valueType: 'file',
+          },
+        ],
+        multipartFilesByRowId: {
+          'row-file': [
+            {
+              name: 'a.txt',
+              type: 'text/plain',
+              buffer: Buffer.from('file-a'),
+            },
+          ],
+        },
+      },
+      new Headers(),
+    ),
+    (error) => error.code === 'multipart_file_method_not_allowed',
+  );
+}
+
 (async function run() {
   testCreateExecutionRequestTargetAddsQueryAuth();
   testCreateLinkedScriptRunStageResultBlocksReferencedStage();
   await testExecuteScriptStageMapsBlockedChildResult();
+  await testCreateExecutionBodyAppendsMultipartTextAndFiles();
+  testCreateExecutionBodyRejectsMissingMultipartFiles();
+  testCreateExecutionBodyRejectsUnsupportedFileMethod();
 })();

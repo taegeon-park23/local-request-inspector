@@ -229,6 +229,11 @@ export function RequestWorkSurface({
   const linkScriptStageToSavedScript = useRequestDraftStore((state) => state.linkScriptStageToSavedScript);
   const updateSelectedEnvironmentId = useRequestDraftStore((state) => state.updateSelectedEnvironmentId);
   const updateDraftPlacement = useRequestDraftStore((state) => state.updateDraftPlacement);
+  const multipartFilesByRowId = useRequestDraftStore((state) =>
+    activeTab ? state.multipartFilesByTabId[activeTab.id] ?? {} : {},
+  );
+  const setMultipartRowFiles = useRequestDraftStore((state) => state.setMultipartRowFiles);
+  const clearMultipartRowFiles = useRequestDraftStore((state) => state.clearMultipartRowFiles);
   const pinTab = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.pinTab);
   const batchRunStatus = useWorkspaceBatchRunStore((state: ReturnType<typeof useWorkspaceBatchRunStore.getState>) => state.status);
   const batchRunMessage = useWorkspaceBatchRunStore((state: ReturnType<typeof useWorkspaceBatchRunStore.getState>) => state.message);
@@ -252,6 +257,11 @@ export function RequestWorkSurface({
     activeTab,
     draft,
   );
+
+  const multipartFileSelectionEnabled = draft ? (draft.method === 'POST' || draft.method === 'PUT') : false;
+  const multipartFileSelectionDisabledReason = multipartFileSelectionEnabled
+    ? null
+    : t('workspaceRoute.requestBuilder.bodyEditor.multipartFileSelectionDisabledByMethod');
 
   useEffect(() => {
     if (!activeTab || !draft?.dirty || !isPreviewRequestTab(activeTab)) {
@@ -773,9 +783,15 @@ export function RequestWorkSurface({
                 rowLabel={t('workspaceRoute.requestBuilder.bodyEditor.multipartRowLabel')}
                 rows={draft.multipartBody}
                 title={t('workspaceRoute.requestBuilder.bodyEditor.multipartTitle')}
+                allowRowValueTypeSelection
+                selectedFilesByRowId={multipartFilesByRowId}
+                fileSelectionEnabled={multipartFileSelectionEnabled}
+                fileSelectionDisabledReason={multipartFileSelectionDisabledReason}
                 onAddRow={() => addRow(draft.tabId, 'multipartBody')}
                 onRemoveRow={(rowId) => removeRow(draft.tabId, 'multipartBody', rowId)}
                 onUpdateRow={(rowId, field, value) => updateRow(draft.tabId, 'multipartBody', rowId, field, value)}
+                onSelectFiles={(rowId, files) => setMultipartRowFiles(draft.tabId, rowId, files)}
+                onClearFiles={(rowId) => clearMultipartRowFiles(draft.tabId, rowId)}
               />
             ) : null}
           </section>
@@ -947,6 +963,9 @@ export function RequestWorkSurface({
     </div>
   );
 }
+
+
+
 
 
 

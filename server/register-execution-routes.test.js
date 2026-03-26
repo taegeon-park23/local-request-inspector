@@ -1354,12 +1354,334 @@ async function testRequestGroupBatchRunReturnsNotFoundForUnknownGroup() {
     },
   );
 }
+
+async function testExecutionRunRejectsMultipartFileRowsWithoutUploadEndpoint() {
+  const runtimeState = {
+    histories: [],
+    results: [],
+    testResults: [],
+  };
+  const repositories = createRepositories({
+    runtime: {
+      queries: {
+        insertExecutionHistory(record) {
+          runtimeState.histories.push(record);
+        },
+        insertExecutionResult(record) {
+          runtimeState.results.push(record);
+        },
+        insertTestResults(records) {
+          runtimeState.testResults.push(records);
+        },
+      },
+    },
+  });
+
+  const dependencies = createExecutionDependencies(repositories, runtimeState);
+
+  await withServer(
+    (app) => registerExecutionRoutes(app, dependencies),
+    async ({ baseUrl }) => {
+      const response = await requestJson(baseUrl, '/api/executions/run', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          request: createBaseRequest(null, {
+            method: 'POST',
+            bodyMode: 'multipart-form-data',
+            multipartBody: [
+              {
+                id: 'row-file',
+                key: 'attachment',
+                value: '',
+                enabled: true,
+                valueType: 'file',
+              },
+            ],
+          }),
+        }),
+      });
+
+      assert.equal(response.status, 400);
+      assert.equal(response.payload.error.code, 'multipart_file_missing');
+      assert.deepEqual(response.payload.error.details.missingRowIds, ['row-file']);
+    },
+  );
+}
+
+async function testExecutionRunUploadExecutesMultipartRequest() {
+  const runtimeState = {
+    histories: [],
+    results: [],
+    testResults: [],
+  };
+  const repositories = createRepositories({
+    runtime: {
+      queries: {
+        insertExecutionHistory(record) {
+          runtimeState.histories.push(record);
+        },
+        insertExecutionResult(record) {
+          runtimeState.results.push(record);
+        },
+        insertTestResults(records) {
+          runtimeState.testResults.push(records);
+        },
+      },
+    },
+  });
+
+  const dependencies = createExecutionDependencies(repositories, runtimeState, {
+    createExecutionRequestTarget: (url) => new URL(url),
+    createExecutionBody: (request) => {
+      assert.equal(Array.isArray(request?.multipartFilesByRowId?.['row-file']), true);
+      assert.equal(request.multipartFilesByRowId['row-file'].length, 2);
+      return undefined;
+    },
+  });
+
+  const originalFetch = global.fetch;
+  let transportRunCount = 0;
+
+  global.fetch = async (input, init) => {
+    const url = String(input);
+
+    if (!url.startsWith('https://example.test/')) {
+      return originalFetch(input, init);
+    }
+
+    transportRunCount += 1;
+    assert.equal(init?.method, 'POST');
+
+    return new Response('{"ok":true}', {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  };
+
+  try {
+    await withServer(
+      (app) => registerExecutionRoutes(app, dependencies),
+      async ({ baseUrl }) => {
+        const formData = new FormData();
+        formData.append('request', JSON.stringify(createBaseRequest(null, {
+          method: 'POST',
+          url: 'https://example.test/upload',
+          bodyMode: 'multipart-form-data',
+          multipartBody: [
+            {
+              id: 'row-file',
+              key: 'attachment',
+              value: '',
+              enabled: true,
+              valueType: 'file',
+            },
+            {
+              id: 'row-note',
+              key: 'note',
+              value: 'hello world',
+              enabled: true,
+              valueType: 'text',
+            },
+          ],
+        })));
+        formData.append('file:row-file', new File(['a'], 'a.txt', { type: 'text/plain' }));
+        formData.append('file:row-file', new File(['b'], 'b.txt', { type: 'text/plain' }));
+
+        const response = await requestJson(baseUrl, '/api/executions/run-upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        assert.equal(response.status, 200);
+        assert.equal(response.payload.data.execution.executionOutcome, 'Succeeded');
+        assert.equal(transportRunCount, 1);
+      },
+    );
+  } finally {
+    global.fetch = originalFetch;
+  }
+}
+
+async function testExecutionRunUploadRejectsMissingFiles() {
+  const runtimeState = {
+    histories: [],
+    results: [],
+    testResults: [],
+  };
+  const repositories = createRepositories({
+    runtime: {
+      queries: {
+        insertExecutionHistory(record) {
+          runtimeState.histories.push(record);
+        },
+        insertExecutionResult(record) {
+          runtimeState.results.push(record);
+        },
+        insertTestResults(records) {
+          runtimeState.testResults.push(records);
+        },
+      },
+    },
+  });
+
+  const dependencies = createExecutionDependencies(repositories, runtimeState);
+
+  await withServer(
+    (app) => registerExecutionRoutes(app, dependencies),
+    async ({ baseUrl }) => {
+      const formData = new FormData();
+      formData.append('request', JSON.stringify(createBaseRequest(null, {
+        method: 'POST',
+        bodyMode: 'multipart-form-data',
+        multipartBody: [
+          {
+            id: 'row-file',
+            key: 'attachment',
+            value: '',
+            enabled: true,
+            valueType: 'file',
+          },
+        ],
+      })));
+
+      const response = await requestJson(baseUrl, '/api/executions/run-upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      assert.equal(response.status, 400);
+      assert.equal(response.payload.error.code, 'multipart_file_missing');
+      assert.deepEqual(response.payload.error.details.missingRowIds, ['row-file']);
+    },
+  );
+}
+
+async function testExecutionRunUploadRejectsUnsupportedMethod() {
+  const runtimeState = {
+    histories: [],
+    results: [],
+    testResults: [],
+  };
+  const repositories = createRepositories({
+    runtime: {
+      queries: {
+        insertExecutionHistory(record) {
+          runtimeState.histories.push(record);
+        },
+        insertExecutionResult(record) {
+          runtimeState.results.push(record);
+        },
+        insertTestResults(records) {
+          runtimeState.testResults.push(records);
+        },
+      },
+    },
+  });
+
+  const dependencies = createExecutionDependencies(repositories, runtimeState);
+
+  await withServer(
+    (app) => registerExecutionRoutes(app, dependencies),
+    async ({ baseUrl }) => {
+      const formData = new FormData();
+      formData.append('request', JSON.stringify(createBaseRequest(null, {
+        method: 'GET',
+        bodyMode: 'multipart-form-data',
+        multipartBody: [
+          {
+            id: 'row-file',
+            key: 'attachment',
+            value: '',
+            enabled: true,
+            valueType: 'file',
+          },
+        ],
+      })));
+      formData.append('file:row-file', new File(['a'], 'a.txt', { type: 'text/plain' }));
+
+      const response = await requestJson(baseUrl, '/api/executions/run-upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      assert.equal(response.status, 400);
+      assert.equal(response.payload.error.code, 'multipart_file_method_not_allowed');
+    },
+  );
+}
+
+async function testExecutionRunUploadRejectsMultipartFileLimitExceeded() {
+  const runtimeState = {
+    histories: [],
+    results: [],
+    testResults: [],
+  };
+  const repositories = createRepositories({
+    runtime: {
+      queries: {
+        insertExecutionHistory(record) {
+          runtimeState.histories.push(record);
+        },
+        insertExecutionResult(record) {
+          runtimeState.results.push(record);
+        },
+        insertTestResults(records) {
+          runtimeState.testResults.push(records);
+        },
+      },
+    },
+  });
+
+  const dependencies = createExecutionDependencies(repositories, runtimeState);
+
+  await withServer(
+    (app) => registerExecutionRoutes(app, dependencies),
+    async ({ baseUrl }) => {
+      const formData = new FormData();
+      formData.append('request', JSON.stringify(createBaseRequest(null, {
+        method: 'POST',
+        bodyMode: 'multipart-form-data',
+        multipartBody: [
+          {
+            id: 'row-file',
+            key: 'attachment',
+            value: '',
+            enabled: true,
+            valueType: 'file',
+          },
+        ],
+      })));
+
+      for (let index = 0; index < 6; index += 1) {
+        formData.append('file:row-file', new File([`f-${index}`], `file-${index}.txt`, { type: 'text/plain' }));
+      }
+
+      const response = await requestJson(baseUrl, '/api/executions/run-upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      assert.equal(response.status, 400);
+      assert.equal(response.payload.error.code, 'multipart_file_limit_exceeded');
+    },
+  );
+}
 (async function run() {
   await testMissingLinkedScriptBlocksExecutionAndPersistsError();
   await testUnresolvedEnvironmentPlaceholderBlocksExecution();
   await testResolvedSecretValuesArePassedIntoEnvironmentResolution();
   await testSecretProviderErrorBlocksExecution();
   await testExecutionRouteAppliesInheritedDefaultsBeforeEnvironmentResolution();
+  await testExecutionRunRejectsMultipartFileRowsWithoutUploadEndpoint();
+  await testExecutionRunUploadExecutesMultipartRequest();
+  await testExecutionRunUploadRejectsMissingFiles();
+  await testExecutionRunUploadRejectsUnsupportedMethod();
+  await testExecutionRunUploadRejectsMultipartFileLimitExceeded();
   await testCollectionBatchRunTraversesNestedGroupsDepthFirstAndContinuesOnError();
   await testCollectionBatchRunAppliesRunInputFilterIterationAndStopPolicy();
   await testCollectionBatchRunRejectsInvalidRunInput();

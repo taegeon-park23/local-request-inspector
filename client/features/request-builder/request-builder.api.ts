@@ -4,6 +4,7 @@ import type {
   RequestDraftScriptsState,
   RequestDraftState,
   RequestKeyValueRow,
+  RequestRowValueType,
 } from '@client/features/request-builder/request-draft.types';
 import type { RequestTabRecord, SavedWorkspaceRequestSeed } from '@client/features/request-builder/request-tab.types';
 import type { EnvironmentResolutionSummary } from '@client/shared/environment-resolution-summary';
@@ -225,8 +226,33 @@ function createFallbackApiError(response: Response, responseText: string) {
     status: response.status,
   });
 }
-function cloneRows(rows: RequestKeyValueRow[]) {
-  return rows.map((row) => ({ ...row }));
+function normalizeRowValueType(
+  valueType: RequestKeyValueRow['valueType'],
+  allowFileValues: boolean,
+): RequestRowValueType {
+  return allowFileValues && valueType === 'file' ? 'file' : 'text';
+}
+
+function cloneRows(
+  rows: RequestKeyValueRow[] | undefined,
+  options: {
+    allowFileValues?: boolean;
+    sanitizeFileValues?: boolean;
+  } = {},
+) {
+  const allowFileValues = options.allowFileValues === true;
+  const sanitizeFileValues = options.sanitizeFileValues === true;
+
+  return (rows ?? []).map((row) => {
+    const valueType = normalizeRowValueType(row.valueType, allowFileValues);
+    const normalizedValue = typeof row.value === 'string' ? row.value : '';
+
+    return {
+      ...row,
+      valueType,
+      value: valueType === 'file' && sanitizeFileValues ? '' : normalizedValue,
+    };
+  });
 }
 
 function cloneAuth(auth: RequestDraftAuthState): RequestDraftAuthState {
@@ -242,6 +268,10 @@ function cloneScripts(scripts: RequestDraftScriptsState): RequestDraftScriptsSta
 function normalizeSavedRequestResourceRecord(record: SavedRequestResourceRecord): SavedRequestResourceRecord {
   return {
     ...record,
+    params: cloneRows(record.params),
+    headers: cloneRows(record.headers),
+    formBody: cloneRows(record.formBody),
+    multipartBody: cloneRows(record.multipartBody, { allowFileValues: true, sanitizeFileValues: true }),
     scripts: normalizeRequestScriptsState(record.scripts),
   };
 }
@@ -345,7 +375,7 @@ export function createRequestDefinitionInput(
     bodyMode: draft.bodyMode,
     bodyText: draft.bodyText,
     formBody: cloneRows(draft.formBody),
-    multipartBody: cloneRows(draft.multipartBody),
+    multipartBody: cloneRows(draft.multipartBody, { allowFileValues: true, sanitizeFileValues: true }),
     auth: cloneAuth(draft.auth),
     scripts: cloneScripts(draft.scripts),
     ...createRequestPlacementFields({
@@ -379,7 +409,7 @@ export function mapSavedRequestResourceToWorkspaceSeed(
       bodyMode: record.bodyMode,
       bodyText: record.bodyText,
       formBody: cloneRows(record.formBody),
-      multipartBody: cloneRows(record.multipartBody),
+      multipartBody: cloneRows(record.multipartBody, { allowFileValues: true, sanitizeFileValues: true }),
       auth: cloneAuth(record.auth),
       scripts: cloneScripts(record.scripts),
       ...placement,
@@ -438,6 +468,34 @@ export async function runRequestDefinition(input: RequestDefinitionInput) {
 
   return parseApiJsonResponse<{ execution: RequestRunObservation }>(response).then((payload) => payload.execution);
 }
+
+export async function runRequestDefinitionWithUpload(
+  input: RequestDefinitionInput,
+  multipartFilesByRowId: Record<string, File[]>,
+) {
+  const formData = new FormData();
+  formData.append('request', JSON.stringify(input));
+
+  for (const [rowId, files] of Object.entries(multipartFilesByRowId)) {
+    for (const file of files) {
+      formData.append(`file:${rowId}`, file);
+    }
+  }
+
+  const response = await fetch('/api/executions/run-upload', {
+    method: 'POST',
+    body: formData,
+  });
+
+  return parseApiJsonResponse<{ execution: RequestRunObservation }>(response).then((payload) => payload.execution);
+}
+
+
+
+
+
+
+
 
 
 

@@ -1,4 +1,5 @@
 const { randomUUID } = require('node:crypto');
+const { Readable } = require('node:stream');
 
 function registerExecutionRoutes(app, dependencies) {
   const {
@@ -63,6 +64,9 @@ function registerExecutionRoutes(app, dependencies) {
   const MAX_TRANSPORT_TIMEOUT_MS = 120000;
   const BATCH_EXECUTION_ORDER_DEPTH_FIRST = 'depth-first-sequential';
   const MAX_BATCH_ITERATION_COUNT = 25;
+  const MULTIPART_MAX_FILE_COUNT = 5;
+  const MULTIPART_MAX_FILE_BYTES = 20 * 1024 * 1024;
+  const MULTIPART_MAX_TOTAL_BYTES = 50 * 1024 * 1024;
 
   function createInvalidBatchRunInputError(message) {
     const error = new Error(message);
@@ -216,6 +220,241 @@ function registerExecutionRoutes(app, dependencies) {
       : 'resolve';
 
     return `Secret provider ${action} failed while preparing environment placeholders.`;
+  }
+
+  function normalizeMultipartRowValueType(valueType) {
+    return valueType === 'file' ? 'file' : 'text';
+  }
+
+  function isMultipartFileMethodSupported(method) {
+    return method === 'POST' || method === 'PUT';
+  }
+
+  function createMultipartExecutionError(code, message, details = {}) {
+    const error = new Error(message);
+    error.code = code;
+    error.details = details;
+    return error;
+  }
+
+  function listEnabledMultipartFileRows(request) {
+    if (request?.bodyMode !== 'multipart-form-data' || !Array.isArray(request?.multipartBody)) {
+      return [];
+    }
+
+    return request.multipartBody
+      .filter((row) => (
+        row
+        && row.enabled !== false
+        && typeof row.id === 'string'
+        && row.id.trim().length > 0
+        && typeof row.key === 'string'
+        && row.key.trim().length > 0
+        && normalizeMultipartRowValueType(row.valueType) === 'file'
+      ))
+      .map((row) => ({
+        id: row.id.trim(),
+        key: row.key.trim(),
+      }));
+  }
+
+  function validateMultipartExecutionMethod(requestInput) {
+    const method = typeof requestInput?.method === 'string' ? requestInput.method.trim().toUpperCase() : '';
+
+    if (!isMultipartFileMethodSupported(method)) {
+      throw createMultipartExecutionError(
+        'multipart_file_method_not_allowed',
+        'Multipart file fields can run only with POST or PUT methods.',
+        { method: method || requestInput?.method || null },
+      );
+    }
+  }
+
+  function validateMultipartUploadLimits(multipartFilesByRowId) {
+    const fileEntries = Object.entries(multipartFilesByRowId)
+      .flatMap(([rowId, files]) => files.map((file) => ({ rowId, file })));
+
+    if (fileEntries.length > MULTIPART_MAX_FILE_COUNT) {
+      throw createMultipartExecutionError(
+        'multipart_file_limit_exceeded',
+        `Multipart upload supports up to ${MULTIPART_MAX_FILE_COUNT} files per run.`,
+        {
+          fileCount: fileEntries.length,
+          maxFileCount: MULTIPART_MAX_FILE_COUNT,
+        },
+      );
+    }
+
+    let totalBytes = 0;
+
+    for (const { rowId, file } of fileEntries) {
+      const fileBytes = Buffer.isBuffer(file.buffer) ? file.buffer.byteLength : 0;
+
+      if (fileBytes > MULTIPART_MAX_FILE_BYTES) {
+        throw createMultipartExecutionError(
+          'multipart_file_limit_exceeded',
+          `Each multipart upload file must be ${Math.floor(MULTIPART_MAX_FILE_BYTES / (1024 * 1024))} MB or smaller.`,
+          {
+            rowId,
+            fileName: file.name,
+            fileBytes,
+            maxFileBytes: MULTIPART_MAX_FILE_BYTES,
+          },
+        );
+      }
+
+      totalBytes += fileBytes;
+      if (totalBytes > MULTIPART_MAX_TOTAL_BYTES) {
+        throw createMultipartExecutionError(
+          'multipart_file_limit_exceeded',
+          `Total multipart upload size must stay within ${Math.floor(MULTIPART_MAX_TOTAL_BYTES / (1024 * 1024))} MB.`,
+          {
+            totalBytes,
+            maxTotalBytes: MULTIPART_MAX_TOTAL_BYTES,
+          },
+        );
+      }
+    }
+  }
+
+  async function parseExecutionUploadPayload(req) {
+    const contentType = String(req.headers['content-type'] || '');
+
+    if (!contentType.toLowerCase().includes('multipart/form-data')) {
+      throw createMultipartExecutionError(
+        'invalid_request_execution',
+        'Multipart form-data payload is required.',
+      );
+    }
+
+    let formData;
+
+    try {
+      const formRequest = new Request('http://localhost/api/executions/run-upload', {
+        method: 'POST',
+        headers: { 'content-type': contentType },
+        body: Readable.toWeb(req),
+        duplex: 'half',
+      });
+      formData = await formRequest.formData();
+    } catch (error) {
+      throw createMultipartExecutionError(
+        'invalid_request_execution',
+        'Failed to parse multipart upload payload.',
+        { cause: error?.message || String(error) },
+      );
+    }
+
+    const requestPart = formData.get('request');
+
+    if (typeof requestPart !== 'string' || requestPart.trim().length === 0) {
+      throw createMultipartExecutionError(
+        'invalid_request_execution',
+        'Multipart payload must include a non-empty request JSON field.',
+      );
+    }
+
+    let requestInput;
+
+    try {
+      requestInput = JSON.parse(requestPart);
+    } catch {
+      throw createMultipartExecutionError(
+        'invalid_request_execution',
+        'Multipart request field must contain valid JSON.',
+      );
+    }
+
+    const multipartFilesByRowId = {};
+
+    for (const [fieldName, fieldValue] of formData.entries()) {
+      if (!fieldName.startsWith('file:')) {
+        continue;
+      }
+
+      const rowId = fieldName.slice('file:'.length).trim();
+      if (rowId.length === 0) {
+        throw createMultipartExecutionError(
+          'invalid_request_execution',
+          'Multipart file field names must follow the file:<rowId> format.',
+        );
+      }
+
+      if (typeof fieldValue === 'string') {
+        throw createMultipartExecutionError(
+          'invalid_request_execution',
+          'Multipart file fields must include binary file parts.',
+          { rowId },
+        );
+      }
+
+      const arrayBuffer = await fieldValue.arrayBuffer();
+      const fileBuffer = Buffer.from(arrayBuffer);
+      const fileRecord = {
+        name: typeof fieldValue.name === 'string' && fieldValue.name.trim().length > 0
+          ? fieldValue.name.trim()
+          : 'upload.bin',
+        type: typeof fieldValue.type === 'string' && fieldValue.type.trim().length > 0
+          ? fieldValue.type.trim()
+          : 'application/octet-stream',
+        buffer: fileBuffer,
+      };
+
+      if (!Array.isArray(multipartFilesByRowId[rowId])) {
+        multipartFilesByRowId[rowId] = [];
+      }
+
+      multipartFilesByRowId[rowId].push(fileRecord);
+    }
+
+    validateMultipartUploadLimits(multipartFilesByRowId);
+
+    return { requestInput, multipartFilesByRowId };
+  }
+
+  function validateMultipartExecutionRequest(requestInput, multipartFilesByRowId) {
+    const enabledFileRows = listEnabledMultipartFileRows(requestInput);
+
+    if (enabledFileRows.length === 0) {
+      if (Object.keys(multipartFilesByRowId).length > 0) {
+        throw createMultipartExecutionError(
+          'invalid_request_execution',
+          'Uploaded files were provided but no enabled multipart file fields were found in the request definition.',
+        );
+      }
+
+      return;
+    }
+
+    validateMultipartExecutionMethod(requestInput);
+
+    const enabledRowIdSet = new Set(enabledFileRows.map((row) => row.id));
+
+    for (const rowId of Object.keys(multipartFilesByRowId)) {
+      if (!enabledRowIdSet.has(rowId)) {
+        throw createMultipartExecutionError(
+          'invalid_request_execution',
+          'Multipart upload payload includes file rows that are not enabled in the request definition.',
+          { rowId },
+        );
+      }
+    }
+
+    const missingRows = enabledFileRows.filter((row) => {
+      const files = multipartFilesByRowId[row.id] || [];
+      return files.length === 0;
+    });
+
+    if (missingRows.length > 0) {
+      throw createMultipartExecutionError(
+        'multipart_file_missing',
+        'Select at least one file for each enabled multipart file field before running.',
+        {
+          missingRowIds: missingRows.map((row) => row.id),
+          missingFieldKeys: missingRows.map((row) => row.key),
+        },
+      );
+    }
   }
 
   function createObservationAssertionResults(stageResults) {
@@ -935,6 +1174,33 @@ function registerExecutionRoutes(app, dependencies) {
       return sendError(res, 400, 'invalid_request_execution', validationError);
     }
 
+    const enabledMultipartFileRows = listEnabledMultipartFileRows(input);
+
+    if (enabledMultipartFileRows.length > 0) {
+      try {
+        validateMultipartExecutionMethod(input);
+      } catch (error) {
+        return sendError(
+          res,
+          400,
+          error.code || 'multipart_file_method_not_allowed',
+          error.message || 'Multipart file fields can run only with POST or PUT methods.',
+          error.details || {},
+        );
+      }
+
+      return sendError(
+        res,
+        400,
+        'multipart_file_missing',
+        'Multipart file fields require the /api/executions/run-upload endpoint with selected files.',
+        {
+          missingRowIds: enabledMultipartFileRows.map((row) => row.id),
+          missingFieldKeys: enabledMultipartFileRows.map((row) => row.key),
+        },
+      );
+    }
+
     try {
       const execution = await executeSingleRun(input);
       return sendData(res, { execution });
@@ -943,6 +1209,50 @@ function registerExecutionRoutes(app, dependencies) {
     }
   });
 
+  app.post('/api/executions/run-upload', async (req, res) => {
+    let uploadPayload;
+
+    try {
+      uploadPayload = await parseExecutionUploadPayload(req);
+    } catch (error) {
+      return sendError(
+        res,
+        400,
+        error.code || 'invalid_request_execution',
+        error.message || 'Failed to parse multipart upload payload.',
+        error.details || {},
+      );
+    }
+
+    const { requestInput, multipartFilesByRowId } = uploadPayload;
+    const validationError = validateRequestDefinition(requestInput);
+
+    if (validationError) {
+      return sendError(res, 400, 'invalid_request_execution', validationError);
+    }
+
+    try {
+      validateMultipartExecutionRequest(requestInput, multipartFilesByRowId);
+    } catch (error) {
+      return sendError(
+        res,
+        400,
+        error.code || 'invalid_request_execution',
+        error.message || 'Multipart execution request is invalid.',
+        error.details || {},
+      );
+    }
+
+    try {
+      const execution = await executeSingleRun({
+        ...requestInput,
+        multipartFilesByRowId,
+      });
+      return sendData(res, { execution });
+    } catch (error) {
+      return sendError(res, 500, 'execution_run_failed', error.message);
+    }
+  });
   app.post('/api/collections/:collectionId/run', async (req, res) => {
     try {
       const batchExecution = await runBatch('collection', req.params.collectionId, defaultWorkspaceId, req.body?.run);

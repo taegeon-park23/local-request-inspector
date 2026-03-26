@@ -14,12 +14,14 @@ export type RequestBodyMode =
 export type RequestAuthType = 'none' | 'bearer' | 'basic' | 'api-key';
 
 export type ApiKeyPlacement = 'header' | 'query';
+export type RequestRowValueType = 'text' | 'file';
 
 export interface RequestKeyValueRow {
   id: string;
   key: string;
   value: string;
   enabled: boolean;
+  valueType?: RequestRowValueType;
 }
 
 export interface RequestDraftAuthState {
@@ -101,3 +103,4 @@ export interface RequestDraftSeed {
   requestGroupId?: string;
   requestGroupName?: string;
 }
+
