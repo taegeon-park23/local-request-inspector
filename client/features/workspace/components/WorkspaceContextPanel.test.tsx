@@ -169,7 +169,6 @@ describe('WorkspaceContextPanel', () => {
     renderApp(
       <WorkspaceContextPanel
         activeTab={collectionOverviewTab}
-        activeDraft={null}
         workspaceContext={workspaceContext}
       />,
     );
@@ -187,7 +186,6 @@ describe('WorkspaceContextPanel', () => {
     renderApp(
       <WorkspaceContextPanel
         activeTab={collectionOverviewTab}
-        activeDraft={null}
         workspaceContext={workspaceContext}
       />,
     );
@@ -204,7 +202,6 @@ describe('WorkspaceContextPanel', () => {
     renderApp(
       <WorkspaceContextPanel
         activeTab={requestTab}
-        activeDraft={null}
         workspaceContext={workspaceContext}
       />,
     );

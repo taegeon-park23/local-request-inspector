@@ -73,7 +73,6 @@ function createProps(
   return {
     tree: createTree(),
     activeTab: null,
-    activeDraft: null,
     activeSavedRequest: null,
     onRenameCollection: vi.fn(),
     onDeleteCollection: vi.fn(),

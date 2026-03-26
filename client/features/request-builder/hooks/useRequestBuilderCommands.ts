@@ -343,66 +343,111 @@ export function useRequestBuilderCommands(
     activeResultTab: 'response' as const,
   };
 
-  const selectedEnvironmentId = typeof draft?.selectedEnvironmentId === 'string' && draft.selectedEnvironmentId.trim().length > 0
-    ? draft.selectedEnvironmentId.trim()
-    : null;
   const availableEnvironments = environmentsQuery.data ?? [];
-  const selectedEnvironmentExists = selectedEnvironmentId === null
-    ? true
-    : availableEnvironments.some((environment) => environment.id === selectedEnvironmentId);
-  const missingSelectedEnvironment = selectedEnvironmentId !== null
-    && environmentsQuery.isSuccess
-    && !selectedEnvironmentExists;
-  const environmentLoadingBlock = selectedEnvironmentId !== null && environmentsQuery.isPending;
-  const environmentDegradedBlock = selectedEnvironmentId !== null && environmentsQuery.isError;
-  const brokenLinkedScriptRunBlock = draft && savedScriptsQuery.isSuccess
-    ? readBrokenLinkedScriptRunBlock(draft, savedScriptsQuery.data, t)
-    : null;
 
-  const saveDisabledReason = !draft
-    ? t('workspaceRoute.requestBuilder.disabledReasons.noDraftSave')
-    : draft.name.trim().length === 0
-      ? t('workspaceRoute.requestBuilder.disabledReasons.nameRequiredSave')
-      : draft.url.trim().length === 0
-        ? t('workspaceRoute.requestBuilder.disabledReasons.urlRequiredSave')
+  function readEnvironmentValidationState(candidateDraft: RequestDraftState | null) {
+    const selectedEnvironmentId = typeof candidateDraft?.selectedEnvironmentId === 'string'
+      && candidateDraft.selectedEnvironmentId.trim().length > 0
+      ? candidateDraft.selectedEnvironmentId.trim()
+      : null;
+    const selectedEnvironmentExists = selectedEnvironmentId === null
+      ? true
+      : availableEnvironments.some((environment) => environment.id === selectedEnvironmentId);
+
+    return {
+      missingSelectedEnvironment: selectedEnvironmentId !== null
+        && environmentsQuery.isSuccess
+        && !selectedEnvironmentExists,
+      environmentLoadingBlock: selectedEnvironmentId !== null && environmentsQuery.isPending,
+      environmentDegradedBlock: selectedEnvironmentId !== null && environmentsQuery.isError,
+    };
+  }
+
+  function resolveSaveDisabledReason(candidateDraft: RequestDraftState | null) {
+    const {
+      missingSelectedEnvironment,
+      environmentLoadingBlock,
+      environmentDegradedBlock,
+    } = readEnvironmentValidationState(candidateDraft);
+
+    return !candidateDraft
+      ? t('workspaceRoute.requestBuilder.disabledReasons.noDraftSave')
+      : candidateDraft.name.trim().length === 0
+        ? t('workspaceRoute.requestBuilder.disabledReasons.nameRequiredSave')
+        : candidateDraft.url.trim().length === 0
+          ? t('workspaceRoute.requestBuilder.disabledReasons.urlRequiredSave')
+          : missingSelectedEnvironment
+            ? t('workspaceRoute.requestBuilder.environment.missing')
+            : environmentLoadingBlock
+              ? t('workspaceRoute.requestBuilder.environment.loading')
+              : environmentDegradedBlock
+                ? t('workspaceRoute.requestBuilder.environment.degraded')
+                : saveStatus.status === 'pending'
+                  ? t('workspaceRoute.requestBuilder.disabledReasons.savePending')
+                  : null;
+  }
+
+  function resolveRunDisabledReason(
+    candidateDraft: RequestDraftState | null,
+    candidateMultipartFilesByRowId: Record<string, File[]>,
+  ) {
+    const {
+      missingSelectedEnvironment,
+      environmentLoadingBlock,
+      environmentDegradedBlock,
+    } = readEnvironmentValidationState(candidateDraft);
+    const brokenLinkedScriptRunBlock = candidateDraft && savedScriptsQuery.isSuccess
+      ? readBrokenLinkedScriptRunBlock(candidateDraft, savedScriptsQuery.data, t)
+      : null;
+
+    return !candidateDraft
+      ? t('workspaceRoute.requestBuilder.disabledReasons.noDraftRun')
+      : candidateDraft.url.trim().length === 0
+        ? t('workspaceRoute.requestBuilder.disabledReasons.urlRequiredRun')
         : missingSelectedEnvironment
           ? t('workspaceRoute.requestBuilder.environment.missing')
           : environmentLoadingBlock
             ? t('workspaceRoute.requestBuilder.environment.loading')
             : environmentDegradedBlock
               ? t('workspaceRoute.requestBuilder.environment.degraded')
-              : saveStatus.status === 'pending'
-                ? t('workspaceRoute.requestBuilder.disabledReasons.savePending')
-                : null;
+              : brokenLinkedScriptRunBlock
+                ? brokenLinkedScriptRunBlock
+                : listEnabledMultipartFileRows(candidateDraft).length > 0 && !isMultipartFileMethodSupported(candidateDraft.method)
+                  ? t('workspaceRoute.requestBuilder.disabledReasons.multipartFileMethodNotSupported')
+                  : hasMissingMultipartFiles(candidateDraft, candidateMultipartFilesByRowId)
+                    ? t('workspaceRoute.requestBuilder.disabledReasons.multipartFileSelectionRequired')
+                    : isJsonBodyMalformed(candidateDraft)
+                      ? t('workspaceRoute.requestBuilder.disabledReasons.malformedJsonRun')
+                      : runStatus.status === 'pending'
+                        ? t('workspaceRoute.requestBuilder.disabledReasons.runPending')
+                        : null;
+  }
 
-  const runDisabledReason = !draft
-    ? t('workspaceRoute.requestBuilder.disabledReasons.noDraftRun')
-    : draft.url.trim().length === 0
-      ? t('workspaceRoute.requestBuilder.disabledReasons.urlRequiredRun')
-      : missingSelectedEnvironment
-        ? t('workspaceRoute.requestBuilder.environment.missing')
-        : environmentLoadingBlock
-          ? t('workspaceRoute.requestBuilder.environment.loading')
-          : environmentDegradedBlock
-            ? t('workspaceRoute.requestBuilder.environment.degraded')
-            : brokenLinkedScriptRunBlock
-              ? brokenLinkedScriptRunBlock
-              : listEnabledMultipartFileRows(draft).length > 0 && !isMultipartFileMethodSupported(draft.method)
-                ? t('workspaceRoute.requestBuilder.disabledReasons.multipartFileMethodNotSupported')
-                : hasMissingMultipartFiles(draft, multipartFilesByRowId)
-                  ? t('workspaceRoute.requestBuilder.disabledReasons.multipartFileSelectionRequired')
-                  : isJsonBodyMalformed(draft)
-                    ? t('workspaceRoute.requestBuilder.disabledReasons.malformedJsonRun')
-                    : runStatus.status === 'pending'
-                      ? t('workspaceRoute.requestBuilder.disabledReasons.runPending')
-                      : null;
+  const saveDisabledReason = resolveSaveDisabledReason(draft);
+  const runDisabledReason = resolveRunDisabledReason(draft, multipartFilesByRowId);
 
-  const buildDefinitionInput = (intent: SaveIntent = 'default') => {
-    if (!activeTab || !draft) {
+  const readLatestDraftSnapshot = () => {
+    if (!activeTab) {
+      return draft;
+    }
+
+    return useRequestDraftStore.getState().draftsByTabId[activeTab.id]?.draft ?? draft;
+  };
+
+  const readLatestMultipartFilesByRowId = () => {
+    if (!activeTab) {
+      return multipartFilesByRowId;
+    }
+
+    return useRequestDraftStore.getState().multipartFilesByTabId[activeTab.id] ?? multipartFilesByRowId;
+  };
+
+  const buildDefinitionInput = (sourceDraft: RequestDraftState, intent: SaveIntent = 'default') => {
+    if (!activeTab) {
       throw new Error('No active request draft is available.');
     }
 
-    const input = createRequestDefinitionInput(activeTab, draft, {
+    const input = createRequestDefinitionInput(activeTab, sourceDraft, {
       fallbackTitle: t('workspaceRoute.requestBuilder.defaultTitle'),
     });
 
@@ -429,7 +474,9 @@ export function useRequestBuilderCommands(
   };
 
   const saveMutation = useMutation({
-    mutationFn: async (intent: SaveIntent) => saveRequestDefinition(buildDefinitionInput(intent)),
+    mutationFn: async (variables: { intent: SaveIntent; sourceDraft: RequestDraftState }) => (
+      saveRequestDefinition(buildDefinitionInput(variables.sourceDraft, variables.intent))
+    ),
     onMutate: () => {
       if (!activeTab) {
         return;
@@ -473,13 +520,15 @@ export function useRequestBuilderCommands(
   });
 
   const runMutation = useMutation({
-    mutationFn: async () => {
-      if (!draft) {
-        throw new Error('No active request draft is available.');
-      }
-
-      const input = buildDefinitionInput();
-      const multipartFileMap = createMultipartUploadFileMap(draft, multipartFilesByRowId);
+    mutationFn: async (variables: {
+      sourceDraft: RequestDraftState;
+      sourceMultipartFilesByRowId: Record<string, File[]>;
+    }) => {
+      const input = buildDefinitionInput(variables.sourceDraft);
+      const multipartFileMap = createMultipartUploadFileMap(
+        variables.sourceDraft,
+        variables.sourceMultipartFilesByRowId,
+      );
 
       if (Object.keys(multipartFileMap).length > 0) {
         return runRequestDefinitionWithUpload(input, multipartFileMap);
@@ -506,14 +555,14 @@ export function useRequestBuilderCommands(
       focusWorkspaceResultPanel('response');
       queryClient.invalidateQueries({ queryKey: executionHistoryListQueryKey });
     },
-    onError: (error) => {
-      if (!activeTab || !draft) {
+    onError: (error, variables) => {
+      if (!activeTab) {
         return;
       }
 
       const errorMessage = resolveApiErrorMessage(error, t('workspaceRoute.requestBuilder.status.runError'), t);
       const failedExecution = createFailedExecutionObservation(
-        draft,
+        variables.sourceDraft,
         new Error(errorMessage),
         t,
       );
@@ -528,11 +577,14 @@ export function useRequestBuilderCommands(
   const conflictUpdatedAt = hasSaveConflict ? (activeTab?.statusMeta?.conflictUpdatedAt ?? null) : null;
 
   const triggerSave = (intent: SaveIntent) => {
-    if (saveDisabledReason) {
+    const latestDraft = readLatestDraftSnapshot();
+    const latestSaveDisabledReason = resolveSaveDisabledReason(latestDraft);
+
+    if (latestSaveDisabledReason || !latestDraft) {
       return;
     }
 
-    saveMutation.mutate(intent);
+    saveMutation.mutate({ intent, sourceDraft: latestDraft });
   };
 
   return {
@@ -552,11 +604,18 @@ export function useRequestBuilderCommands(
       triggerSave('save-as-new');
     },
     handleRun: () => {
-      if (runDisabledReason) {
+      const latestDraft = readLatestDraftSnapshot();
+      const latestMultipartFilesByRowId = readLatestMultipartFilesByRowId();
+      const latestRunDisabledReason = resolveRunDisabledReason(latestDraft, latestMultipartFilesByRowId);
+
+      if (latestRunDisabledReason || !latestDraft) {
         return;
       }
 
-      runMutation.mutate();
+      runMutation.mutate({
+        sourceDraft: latestDraft,
+        sourceMultipartFilesByRowId: latestMultipartFilesByRowId,
+      });
     },
   };
 }

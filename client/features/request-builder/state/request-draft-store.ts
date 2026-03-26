@@ -9,6 +9,7 @@ import type {
   RequestEditorTabId,
   RequestKeyValueRow,
   RequestRowValueType,
+  RequestScriptStageBinding,
   RequestScriptStageId,
 } from '@client/features/request-builder/request-draft.types';
 import {
@@ -23,8 +24,41 @@ import {
   setRequestScriptStageBinding,
 } from '@client/features/request-builder/request-script-binding';
 
+interface RequestDraftScriptStageBaseline {
+  mode: 'inline' | 'linked';
+  sourceCode?: string;
+  savedScriptId?: string;
+  savedScriptNameSnapshot?: string;
+  linkedAt?: string;
+}
+
+interface RequestDraftScriptsBaseline {
+  preRequest: RequestDraftScriptStageBaseline;
+  postResponse: RequestDraftScriptStageBaseline;
+  tests: RequestDraftScriptStageBaseline;
+}
+
+interface RequestDraftBaseline {
+  name: string;
+  method: RequestDraftState['method'];
+  url: string;
+  selectedEnvironmentId: string | null;
+  params: RequestKeyValueRow[];
+  headers: RequestKeyValueRow[];
+  bodyMode: RequestDraftState['bodyMode'];
+  bodyText: string;
+  formBody: RequestKeyValueRow[];
+  multipartBody: RequestKeyValueRow[];
+  auth: RequestDraftAuthState;
+  scripts: RequestDraftScriptsBaseline;
+  collectionId: string | null;
+  collectionName: string | null;
+  requestGroupId: string | null;
+  requestGroupName: string | null;
+}
+
 interface RequestDraftEntry {
-  baseline: string;
+  baseline: RequestDraftBaseline;
   draft: RequestDraftState;
 }
 
@@ -113,8 +147,32 @@ function createDefaultScriptsState(seed?: RequestDraftScriptsSeed): RequestDraft
   return normalizeRequestScriptsState(seed);
 }
 
-function createDraftSnapshotString(draft: RequestDraftState) {
-  return JSON.stringify({
+function createScriptStageBaseline(stage: RequestScriptStageBinding): RequestDraftScriptStageBaseline {
+  if (stage.mode === 'inline') {
+    return {
+      mode: 'inline',
+      sourceCode: stage.sourceCode,
+    };
+  }
+
+  return {
+    mode: 'linked',
+    savedScriptId: stage.savedScriptId,
+    savedScriptNameSnapshot: stage.savedScriptNameSnapshot,
+    linkedAt: stage.linkedAt,
+  };
+}
+
+function createDraftScriptsBaseline(scripts: RequestDraftScriptsState): RequestDraftScriptsBaseline {
+  return {
+    preRequest: createScriptStageBaseline(scripts.preRequest),
+    postResponse: createScriptStageBaseline(scripts.postResponse),
+    tests: createScriptStageBaseline(scripts.tests),
+  };
+}
+
+function createDraftBaseline(draft: RequestDraftState): RequestDraftBaseline {
+  return {
     name: draft.name,
     method: draft.method,
     url: draft.url,
@@ -126,23 +184,110 @@ function createDraftSnapshotString(draft: RequestDraftState) {
     formBody: draft.formBody,
     multipartBody: draft.multipartBody,
     auth: draft.auth,
-    scripts: {
-      preRequest: draft.scripts.preRequest,
-      postResponse: draft.scripts.postResponse,
-      tests: draft.scripts.tests,
-    },
+    scripts: createDraftScriptsBaseline(draft.scripts),
     collectionId: draft.collectionId ?? null,
     collectionName: draft.collectionName ?? null,
     requestGroupId: draft.requestGroupId ?? null,
     requestGroupName: readRequestGroupName(draft) ?? null,
-  });
+  };
+}
+
+function areRowsEqual(left: RequestKeyValueRow[], right: RequestKeyValueRow[]) {
+  if (left === right) {
+    return true;
+  }
+
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  for (let index = 0; index < left.length; index += 1) {
+    const leftRow = left[index];
+    const rightRow = right[index];
+
+    if (!leftRow || !rightRow) {
+      return false;
+    }
+
+    if (leftRow.id !== rightRow.id
+      || leftRow.key !== rightRow.key
+      || leftRow.value !== rightRow.value
+      || leftRow.enabled !== rightRow.enabled
+      || normalizeRowValueType(leftRow.valueType) !== normalizeRowValueType(rightRow.valueType)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function isAuthEqual(left: RequestDraftAuthState, right: RequestDraftAuthState) {
+  if (left === right) {
+    return true;
+  }
+
+  return left.type === right.type
+    && left.bearerToken === right.bearerToken
+    && left.basicUsername === right.basicUsername
+    && left.basicPassword === right.basicPassword
+    && left.apiKeyName === right.apiKeyName
+    && left.apiKeyValue === right.apiKeyValue
+    && left.apiKeyPlacement === right.apiKeyPlacement;
+}
+
+function isScriptStageEqual(stage: RequestScriptStageBinding, baseline: RequestDraftScriptStageBaseline) {
+  if (stage.mode !== baseline.mode) {
+    return false;
+  }
+
+  if (stage.mode === 'inline') {
+    return stage.sourceCode === (baseline.sourceCode ?? '');
+  }
+
+  return stage.savedScriptId === (baseline.savedScriptId ?? '')
+    && stage.savedScriptNameSnapshot === (baseline.savedScriptNameSnapshot ?? '')
+    && stage.linkedAt === (baseline.linkedAt ?? '');
+}
+
+function isScriptsEqual(scripts: RequestDraftScriptsState, baseline: RequestDraftScriptsBaseline) {
+  return isScriptStageEqual(scripts.preRequest, baseline.preRequest)
+    && isScriptStageEqual(scripts.postResponse, baseline.postResponse)
+    && isScriptStageEqual(scripts.tests, baseline.tests);
+}
+
+function isDraftMatchingBaseline(draft: RequestDraftState, baseline: RequestDraftBaseline) {
+  if (draft.name !== baseline.name
+    || draft.method !== baseline.method
+    || draft.url !== baseline.url
+    || (draft.selectedEnvironmentId ?? null) !== baseline.selectedEnvironmentId
+    || draft.bodyMode !== baseline.bodyMode
+    || draft.bodyText !== baseline.bodyText
+    || (draft.collectionId ?? null) !== baseline.collectionId
+    || (draft.collectionName ?? null) !== baseline.collectionName
+    || (draft.requestGroupId ?? null) !== baseline.requestGroupId
+    || (readRequestGroupName(draft) ?? null) !== baseline.requestGroupName) {
+    return false;
+  }
+
+  if (!areRowsEqual(draft.params, baseline.params)
+    || !areRowsEqual(draft.headers, baseline.headers)
+    || !areRowsEqual(draft.formBody, baseline.formBody)
+    || !areRowsEqual(draft.multipartBody, baseline.multipartBody)) {
+    return false;
+  }
+
+  if (!isAuthEqual(draft.auth, baseline.auth)) {
+    return false;
+  }
+
+  return isScriptsEqual(draft.scripts, baseline.scripts);
 }
 
 function withDirtyState(entry: RequestDraftEntry, draft: RequestDraftState): RequestDraftEntry {
   const baseline = entry.baseline;
   const nextDraft = {
     ...draft,
-    dirty: createDraftSnapshotString(draft) !== baseline,
+    dirty: !isDraftMatchingBaseline(draft, baseline),
   };
 
   return {
@@ -151,17 +296,50 @@ function withDirtyState(entry: RequestDraftEntry, draft: RequestDraftState): Req
   };
 }
 
+
+function createPlacementValueSnapshot(source: {
+  collectionId: string | null;
+  collectionName: string | null;
+  requestGroupId: string | null;
+  requestGroupName: string | null;
+}): RequestPlacementValue {
+  const placement: RequestPlacementValue = {};
+
+  if (source.collectionId) {
+    placement.collectionId = source.collectionId;
+  }
+
+  if (source.collectionName) {
+    placement.collectionName = source.collectionName;
+  }
+
+  if (source.requestGroupId) {
+    placement.requestGroupId = source.requestGroupId;
+  }
+
+  if (source.requestGroupName) {
+    placement.requestGroupName = source.requestGroupName;
+  }
+
+  return placement;
+}
 function syncPlacementBaseline(
-  baseline: string,
+  baseline: RequestDraftBaseline,
   placement: RequestPlacementValue,
-) {
-  const baselineSnapshot = JSON.parse(baseline) as Record<string, unknown> & RequestPlacementValue;
-  return JSON.stringify(
-    replaceRequestPlacement(
-      baselineSnapshot,
-      resolveRequestPlacement(placement, baselineSnapshot),
-    ),
+): RequestDraftBaseline {
+  const baselinePlacement = createPlacementValueSnapshot(baseline);
+  const nextPlacement = replaceRequestPlacement(
+    baselinePlacement,
+    resolveRequestPlacement(placement, baselinePlacement),
   );
+
+  return {
+    ...baseline,
+    collectionId: nextPlacement.collectionId ?? null,
+    collectionName: nextPlacement.collectionName ?? null,
+    requestGroupId: nextPlacement.requestGroupId ?? null,
+    requestGroupName: readRequestGroupName(nextPlacement) ?? null,
+  };
 }
 
 function syncEntryPlacement(entry: RequestDraftEntry, placement: RequestPlacementValue): RequestDraftEntry {
@@ -175,7 +353,7 @@ function syncEntryPlacement(entry: RequestDraftEntry, placement: RequestPlacemen
     baseline: nextBaseline,
     draft: {
       ...nextDraft,
-      dirty: createDraftSnapshotString(nextDraft) !== nextBaseline,
+      dirty: !isDraftMatchingBaseline(nextDraft, nextBaseline),
     },
   };
 }
@@ -246,7 +424,7 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
         draftsByTabId: {
           ...state.draftsByTabId,
           [tab.id]: {
-            baseline: createDraftSnapshotString(draft),
+            baseline: createDraftBaseline(draft),
             draft,
           },
         },
@@ -282,7 +460,7 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
         );
 
         return {
-          baseline: createDraftSnapshotString(nextDraft),
+          baseline: createDraftBaseline(nextDraft),
           draft: nextDraft,
         };
       }),
@@ -588,24 +766,72 @@ export const useRequestDraftStore = create<RequestDraftStoreState>((set) => ({
     ),
 }));
 
+export function selectRequestDraftByTabId(
+  state: Pick<RequestDraftStoreState, 'draftsByTabId'>,
+  tabId: string | null | undefined,
+): RequestDraftState | null {
+  if (!tabId) {
+    return null;
+  }
+
+  return state.draftsByTabId[tabId]?.draft ?? null;
+}
+
+export interface RequestTabDraftPresentation {
+  title: string;
+  methodLabel: RequestDraftState['method'];
+  hasUnsavedChanges: boolean;
+}
+
+export function selectRequestTabDraftPresentation(
+  state: Pick<RequestDraftStoreState, 'draftsByTabId'>,
+  tabId: string | null | undefined,
+): RequestTabDraftPresentation | null {
+  const draft = selectRequestDraftByTabId(state, tabId);
+
+  if (!draft) {
+    return null;
+  }
+
+  return {
+    title: draft.name,
+    methodLabel: draft.method,
+    hasUnsavedChanges: draft.dirty,
+  };
+}
+
+export interface RequestDraftPlacementSnapshot {
+  collectionId: string | null;
+  collectionName: string | null;
+  requestGroupId: string | null;
+  requestGroupName: string | null;
+}
+
+export function selectRequestDraftPlacementSnapshot(
+  state: Pick<RequestDraftStoreState, 'draftsByTabId'>,
+  tabId: string | null | undefined,
+): RequestDraftPlacementSnapshot | null {
+  const draft = selectRequestDraftByTabId(state, tabId);
+
+  if (!draft) {
+    return null;
+  }
+
+  return {
+    collectionId: draft.collectionId ?? null,
+    collectionName: draft.collectionName ?? null,
+    requestGroupId: draft.requestGroupId ?? null,
+    requestGroupName: readRequestGroupName(draft) ?? null,
+  };
+}
+
+export function selectRequestDraftDirtyByTabId(
+  state: Pick<RequestDraftStoreState, 'draftsByTabId'>,
+  tabId: string | null | undefined,
+): boolean {
+  return selectRequestDraftByTabId(state, tabId)?.dirty ?? false;
+}
+
 export function resetRequestDraftStore() {
   useRequestDraftStore.setState(initialRequestDraftStoreState);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

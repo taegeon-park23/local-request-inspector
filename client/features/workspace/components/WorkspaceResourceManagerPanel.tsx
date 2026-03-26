@@ -1,7 +1,12 @@
 import { useId, useMemo, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useI18n } from '@client/app/providers/useI18n';
-import type { RequestDraftState } from '@client/features/request-builder/request-draft.types';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
+import {
+  selectRequestDraftDirtyByTabId,
+  selectRequestDraftPlacementSnapshot,
+  useRequestDraftStore,
+} from '@client/features/request-builder/state/request-draft-store';
 import { isDetachedRequestTab } from '@client/features/request-builder/request-tab-state';
 import {
   formatRequestPlacementPath,
@@ -37,7 +42,6 @@ interface WorkspaceRequestGroupOption {
 interface WorkspaceResourceManagerPanelProps {
   tree: WorkspaceCollectionNode[];
   activeTab: RequestTabRecord | null;
-  activeDraft: RequestDraftState | null;
   activeSavedRequest: WorkspaceTreeRequestLeaf | null;
   onRenameCollection: (collection: WorkspaceCollectionNode, name: string) => Promise<{ id: string; name: string } | void> | void;
   onDeleteCollection: (collection: WorkspaceCollectionNode) => Promise<void> | void;
@@ -119,7 +123,6 @@ function collectRequestGroupOptions(
 export function WorkspaceResourceManagerPanel({
   tree,
   activeTab,
-  activeDraft,
   activeSavedRequest,
   onRenameCollection,
   onDeleteCollection,
@@ -158,9 +161,19 @@ export function WorkspaceResourceManagerPanel({
     value: '',
   });
 
-  const activePlacementPath = formatRequestPlacementPath(activeDraft ?? activeTab);
+  const activeDraftPlacement = useRequestDraftStore(useShallow((state): ReturnType<typeof selectRequestDraftPlacementSnapshot> => selectRequestDraftPlacementSnapshot(state, activeTab?.id ?? null)));
+  const activeDraftDirty = useRequestDraftStore(
+    (state) => selectRequestDraftDirtyByTabId(state, activeTab?.id ?? null),
+  );
+  const activeDraftPlacementPathValue = activeDraftPlacement
+    ? {
+        ...(activeDraftPlacement.collectionName ? { collectionName: activeDraftPlacement.collectionName } : {}),
+        ...(activeDraftPlacement.requestGroupName ? { requestGroupName: activeDraftPlacement.requestGroupName } : {}),
+      }
+    : null;
+  const activePlacementPath = formatRequestPlacementPath(activeDraftPlacementPathValue ?? activeTab);
   const isDetachedDraft = isDetachedRequestTab(activeTab);
-  const defaultCollectionId = activeDraft?.collectionId
+  const defaultCollectionId = activeDraftPlacement?.collectionId
     ?? activeTab?.collectionId
     ?? tree[0]?.collectionId
     ?? '';
@@ -190,8 +203,8 @@ export function WorkspaceResourceManagerPanel({
       return '';
     }
 
-    const preferredRequestGroupId = activeDraft?.collectionId === selectedCollection.collectionId
-      ? (activeDraft?.requestGroupId ?? '')
+    const preferredRequestGroupId = activeDraftPlacement?.collectionId === selectedCollection.collectionId
+      ? (activeDraftPlacement?.requestGroupId ?? '')
       : activeTab?.collectionId === selectedCollection.collectionId
         ? (activeTab?.requestGroupId ?? '')
         : '';
@@ -200,8 +213,8 @@ export function WorkspaceResourceManagerPanel({
       ? selectedRequestGroupId
       : (preferredRequestGroupId || selectedCollectionRequestGroupOptions[0]?.requestGroup.requestGroupId || '');
   }, [
-    activeDraft?.collectionId,
-    activeDraft?.requestGroupId,
+    activeDraftPlacement?.collectionId,
+    activeDraftPlacement?.requestGroupId,
     activeTab?.collectionId,
     activeTab?.requestGroupId,
     selectedCollection,
@@ -250,7 +263,7 @@ export function WorkspaceResourceManagerPanel({
         ? t('workspaceRoute.tabShell.states.saving')
         : activeTab.statusMeta?.runState === 'pending'
           ? t('workspaceRoute.tabShell.states.running')
-          : activeTab.hasUnsavedChanges
+          : activeDraftDirty
             ? t('workspaceRoute.tabShell.states.dirty')
             : activeTab.statusMeta?.saveState === 'saved'
               ? t('workspaceRoute.tabShell.states.saved')
@@ -668,5 +681,3 @@ export function WorkspaceResourceManagerPanel({
     </section>
   );
 }
-
-

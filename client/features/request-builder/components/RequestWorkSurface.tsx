@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Suspense, lazy, useEffect, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
 import {
   listWorkspaceEnvironments,
@@ -25,6 +25,7 @@ import {
 import { useRequestDraftStore } from '@client/features/request-builder/state/request-draft-store';
 import { useWorkspaceShellStore } from '@client/features/workspace/state/workspace-shell-store';
 import { useWorkspaceBatchRunStore } from '@client/features/workspace/state/workspace-batch-run-store';
+import { useReplayRunStore } from '@client/shared/replay-run-store';
 import type { WorkspaceCollectionNode, WorkspaceRequestGroupNode } from '@client/features/workspace/workspace-request-tree.api';
 import type { AppIconName } from '@client/shared/ui/AppIcon';
 import { IconLabel } from '@client/shared/ui/IconLabel';
@@ -66,6 +67,101 @@ const httpMethodOptions: RequestDraftState['method'][] = ['GET', 'POST', 'PUT', 
 const EMPTY_MULTIPART_FILES_BY_ROW_ID: Record<string, File[]> = {};
 const bodyModeOptions: RequestDraftState['bodyMode'][] = ['none', 'json', 'text', 'form-urlencoded', 'multipart-form-data'];
 const authTypeOptions: RequestDraftState['auth']['type'][] = ['none', 'bearer', 'basic', 'api-key'];
+const HOT_INPUT_SYNC_DELAY_MS = 180;
+
+interface DebouncedDraftTextFieldOptions {
+  scopeKey: string;
+  value: string;
+  delayMs?: number;
+  onCommit: (nextValue: string) => void;
+}
+
+interface DebouncedDraftTextFieldController {
+  value: string;
+  setValue: (nextValue: string) => void;
+  flush: () => void;
+}
+
+function useDebouncedDraftTextField({
+  scopeKey,
+  value,
+  delayMs = HOT_INPUT_SYNC_DELAY_MS,
+  onCommit,
+}: DebouncedDraftTextFieldOptions): DebouncedDraftTextFieldController {
+  const [localValue, setLocalValue] = useState(value);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingValueRef = useRef<string | null>(null);
+  const scopeRef = useRef(scopeKey);
+  const latestExternalValueRef = useRef(value);
+  const latestCommitRef = useRef(onCommit);
+
+  useEffect(() => {
+    latestCommitRef.current = onCommit;
+  }, [onCommit]);
+
+  const clearPendingTimer = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }, []);
+
+  const flush = useCallback(() => {
+    if (pendingValueRef.current === null) {
+      return;
+    }
+
+    const nextValue = pendingValueRef.current;
+    pendingValueRef.current = null;
+    clearPendingTimer();
+
+    if (nextValue === latestExternalValueRef.current) {
+      return;
+    }
+
+    latestCommitRef.current(nextValue);
+  }, [clearPendingTimer]);
+
+  useEffect(() => {
+    if (scopeRef.current !== scopeKey) {
+      scopeRef.current = scopeKey;
+      clearPendingTimer();
+      pendingValueRef.current = null;
+      latestExternalValueRef.current = value;
+      queueMicrotask(() => {
+        setLocalValue(value);
+      });
+      return;
+    }
+
+    latestExternalValueRef.current = value;
+
+    if (pendingValueRef.current === null) {
+      queueMicrotask(() => {
+        setLocalValue(value);
+      });
+    }
+  }, [clearPendingTimer, scopeKey, value]);
+
+  useEffect(() => () => {
+    flush();
+  }, [flush]);
+
+  const setValue = useCallback((nextValue: string) => {
+    setLocalValue(nextValue);
+    pendingValueRef.current = nextValue;
+    clearPendingTimer();
+    timeoutRef.current = setTimeout(() => {
+      flush();
+    }, delayMs);
+  }, [clearPendingTimer, delayMs, flush]);
+
+  return {
+    value: localValue,
+    setValue,
+    flush,
+  };
+}
 
 interface RequestWorkSurfaceProps {
   activeTab: RequestTabRecord | null;
@@ -235,6 +331,8 @@ export function RequestWorkSurface({
   ));
   const setMultipartRowFiles = useRequestDraftStore((state) => state.setMultipartRowFiles);
   const clearMultipartRowFiles = useRequestDraftStore((state) => state.clearMultipartRowFiles);
+  const pendingReplayRunTabId = useReplayRunStore((state) => state.pendingReplayRunTabId);
+  const consumeReplayRun = useReplayRunStore((state) => state.consumeReplayRun);
   const pinTab = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.pinTab);
   const batchRunStatus = useWorkspaceBatchRunStore((state: ReturnType<typeof useWorkspaceBatchRunStore.getState>) => state.status);
   const batchRunMessage = useWorkspaceBatchRunStore((state: ReturnType<typeof useWorkspaceBatchRunStore.getState>) => state.message);
@@ -258,7 +356,253 @@ export function RequestWorkSurface({
     activeTab,
     draft,
   );
+  const activeDraftTabId = draft?.tabId ?? activeTab?.id ?? 'none';
+  const editableDraftTabId = draft?.tabId ?? null;
 
+  const commitDraftName = useCallback((nextValue: string) => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    updateDraftName(editableDraftTabId, nextValue);
+  }, [editableDraftTabId, updateDraftName]);
+  const commitDraftUrl = useCallback((nextValue: string) => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    updateDraftUrl(editableDraftTabId, nextValue);
+  }, [editableDraftTabId, updateDraftUrl]);
+  const commitDraftBodyText = useCallback((nextValue: string) => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    updateBodyText(editableDraftTabId, nextValue);
+  }, [editableDraftTabId, updateBodyText]);
+  const commitDraftBearerToken = useCallback((nextValue: string) => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    updateAuthField(editableDraftTabId, 'bearerToken', nextValue);
+  }, [editableDraftTabId, updateAuthField]);
+  const commitDraftBasicUsername = useCallback((nextValue: string) => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    updateAuthField(editableDraftTabId, 'basicUsername', nextValue);
+  }, [editableDraftTabId, updateAuthField]);
+  const commitDraftBasicPassword = useCallback((nextValue: string) => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    updateAuthField(editableDraftTabId, 'basicPassword', nextValue);
+  }, [editableDraftTabId, updateAuthField]);
+  const commitDraftApiKeyName = useCallback((nextValue: string) => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    updateAuthField(editableDraftTabId, 'apiKeyName', nextValue);
+  }, [editableDraftTabId, updateAuthField]);
+  const commitDraftApiKeyValue = useCallback((nextValue: string) => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    updateAuthField(editableDraftTabId, 'apiKeyValue', nextValue);
+  }, [editableDraftTabId, updateAuthField]);
+
+  const requestNameField = useDebouncedDraftTextField({
+    scopeKey: `${activeDraftTabId}:request-name`,
+    value: draft?.name ?? '',
+    onCommit: commitDraftName,
+  });
+  const requestUrlField = useDebouncedDraftTextField({
+    scopeKey: `${activeDraftTabId}:request-url`,
+    value: draft?.url ?? '',
+    onCommit: commitDraftUrl,
+  });
+  const requestBodyTextField = useDebouncedDraftTextField({
+    scopeKey: `${activeDraftTabId}:request-body-text`,
+    value: draft?.bodyText ?? '',
+    onCommit: commitDraftBodyText,
+  });
+  const bearerTokenField = useDebouncedDraftTextField({
+    scopeKey: `${activeDraftTabId}:auth-bearer-token`,
+    value: draft?.auth.bearerToken ?? '',
+    onCommit: commitDraftBearerToken,
+  });
+  const basicUsernameField = useDebouncedDraftTextField({
+    scopeKey: `${activeDraftTabId}:auth-basic-username`,
+    value: draft?.auth.basicUsername ?? '',
+    onCommit: commitDraftBasicUsername,
+  });
+  const basicPasswordField = useDebouncedDraftTextField({
+    scopeKey: `${activeDraftTabId}:auth-basic-password`,
+    value: draft?.auth.basicPassword ?? '',
+    onCommit: commitDraftBasicPassword,
+  });
+  const apiKeyNameField = useDebouncedDraftTextField({
+    scopeKey: `${activeDraftTabId}:auth-api-key-name`,
+    value: draft?.auth.apiKeyName ?? '',
+    onCommit: commitDraftApiKeyName,
+  });
+  const apiKeyValueField = useDebouncedDraftTextField({
+    scopeKey: `${activeDraftTabId}:auth-api-key-value`,
+    value: draft?.auth.apiKeyValue ?? '',
+    onCommit: commitDraftApiKeyValue,
+  });
+
+  const flushHotInputFields = useCallback(() => {
+    requestNameField.flush();
+    requestUrlField.flush();
+    requestBodyTextField.flush();
+    bearerTokenField.flush();
+    basicUsernameField.flush();
+    basicPasswordField.flush();
+    apiKeyNameField.flush();
+    apiKeyValueField.flush();
+  }, [
+    apiKeyNameField,
+    apiKeyValueField,
+    basicPasswordField,
+    basicUsernameField,
+    bearerTokenField,
+    requestBodyTextField,
+    requestNameField,
+    requestUrlField,
+  ]);
+
+  const handleSaveWithFlush = useCallback(() => {
+    flushHotInputFields();
+    handleSave();
+  }, [flushHotInputFields, handleSave]);
+  const handleOverwriteSaveWithFlush = useCallback(() => {
+    flushHotInputFields();
+    handleOverwriteSave();
+  }, [flushHotInputFields, handleOverwriteSave]);
+  const handleSaveAsNewWithFlush = useCallback(() => {
+    flushHotInputFields();
+    handleSaveAsNew();
+  }, [flushHotInputFields, handleSaveAsNew]);
+  const handleRunWithFlush = useCallback(() => {
+    flushHotInputFields();
+    handleRun();
+  }, [flushHotInputFields, handleRun]);
+
+  const handleSetActiveEditorTab = useCallback((editorTab: RequestDraftState['activeEditorTab']) => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    setActiveEditorTab(editableDraftTabId, editorTab);
+  }, [editableDraftTabId, setActiveEditorTab]);
+
+  const handleAddParamsRow = useCallback(() => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    addRow(editableDraftTabId, 'params');
+  }, [addRow, editableDraftTabId]);
+  const handleUpdateParamsRow = useCallback((rowId: string, field: 'key' | 'value' | 'enabled' | 'valueType', value: string | boolean) => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    updateRow(editableDraftTabId, 'params', rowId, field, value);
+  }, [editableDraftTabId, updateRow]);
+  const handleRemoveParamsRow = useCallback((rowId: string) => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    removeRow(editableDraftTabId, 'params', rowId);
+  }, [editableDraftTabId, removeRow]);
+
+  const handleAddHeadersRow = useCallback(() => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    addRow(editableDraftTabId, 'headers');
+  }, [addRow, editableDraftTabId]);
+  const handleUpdateHeadersRow = useCallback((rowId: string, field: 'key' | 'value' | 'enabled' | 'valueType', value: string | boolean) => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    updateRow(editableDraftTabId, 'headers', rowId, field, value);
+  }, [editableDraftTabId, updateRow]);
+  const handleRemoveHeadersRow = useCallback((rowId: string) => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    removeRow(editableDraftTabId, 'headers', rowId);
+  }, [editableDraftTabId, removeRow]);
+
+  const handleAddFormBodyRow = useCallback(() => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    addRow(editableDraftTabId, 'formBody');
+  }, [addRow, editableDraftTabId]);
+  const handleUpdateFormBodyRow = useCallback((rowId: string, field: 'key' | 'value' | 'enabled' | 'valueType', value: string | boolean) => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    updateRow(editableDraftTabId, 'formBody', rowId, field, value);
+  }, [editableDraftTabId, updateRow]);
+  const handleRemoveFormBodyRow = useCallback((rowId: string) => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    removeRow(editableDraftTabId, 'formBody', rowId);
+  }, [editableDraftTabId, removeRow]);
+
+  const handleAddMultipartRow = useCallback(() => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    addRow(editableDraftTabId, 'multipartBody');
+  }, [addRow, editableDraftTabId]);
+  const handleUpdateMultipartRow = useCallback((rowId: string, field: 'key' | 'value' | 'enabled' | 'valueType', value: string | boolean) => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    updateRow(editableDraftTabId, 'multipartBody', rowId, field, value);
+  }, [editableDraftTabId, updateRow]);
+  const handleRemoveMultipartRow = useCallback((rowId: string) => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    removeRow(editableDraftTabId, 'multipartBody', rowId);
+  }, [editableDraftTabId, removeRow]);
+  const handleSelectMultipartFiles = useCallback((rowId: string, files: File[]) => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    setMultipartRowFiles(editableDraftTabId, rowId, files);
+  }, [editableDraftTabId, setMultipartRowFiles]);
+  const handleClearMultipartFiles = useCallback((rowId: string) => {
+    if (!editableDraftTabId) {
+      return;
+    }
+
+    clearMultipartRowFiles(editableDraftTabId, rowId);
+  }, [clearMultipartRowFiles, editableDraftTabId]);
   const multipartFileSelectionEnabled = draft ? (draft.method === 'POST' || draft.method === 'PUT') : false;
   const multipartFileSelectionDisabledReason = multipartFileSelectionEnabled
     ? null
@@ -271,6 +615,30 @@ export function RequestWorkSurface({
 
     pinTab(activeTab.id);
   }, [activeTab, draft?.dirty, pinTab]);
+
+  useEffect(() => {
+    if (!activeTab || !draft || pendingReplayRunTabId !== activeTab.id) {
+      return;
+    }
+
+    if (runDisabledReason || runStatus.status === 'pending') {
+      return;
+    }
+
+    if (!consumeReplayRun(activeTab.id)) {
+      return;
+    }
+
+    handleRunWithFlush();
+  }, [
+    activeTab,
+    consumeReplayRun,
+    draft,
+    handleRunWithFlush,
+    pendingReplayRunTabId,
+    runDisabledReason,
+    runStatus.status,
+  ]);
 
   if (!activeTab) {
     return (
@@ -469,8 +837,9 @@ export function RequestWorkSurface({
             <input
               aria-label={t('workspaceRoute.requestBuilder.fields.requestName')}
               type="text"
-              value={draft.name}
-              onChange={(event) => updateDraftName(draft.tabId, event.currentTarget.value)}
+              value={requestNameField.value}
+              onChange={(event) => requestNameField.setValue(event.currentTarget.value)}
+              onBlur={requestNameField.flush}
             />
           </label>
           <div className="request-builder-core__identity-support">
@@ -568,7 +937,7 @@ export function RequestWorkSurface({
             <button
               type="button"
               className="workspace-button workspace-button--secondary"
-              onClick={handleSave}
+              onClick={handleSaveWithFlush}
               disabled={Boolean(saveDisabledReason)}
             >
               <IconLabel icon="save">{saveStatus.status === 'pending' ? t('workspaceRoute.requestBuilder.commands.saving') : t('workspaceRoute.requestBuilder.commands.save')}</IconLabel>
@@ -576,14 +945,17 @@ export function RequestWorkSurface({
             <button
               type="button"
               className="workspace-button workspace-button--secondary"
-              onClick={onDuplicateRequest}
+              onClick={() => {
+                flushHotInputFields();
+                onDuplicateRequest();
+              }}
             >
               <IconLabel icon="duplicate">{t('workspaceRoute.requestBuilder.commands.duplicate')}</IconLabel>
             </button>
             <button
               type="button"
               className="workspace-button workspace-button--secondary"
-              onClick={handleRun}
+              onClick={handleRunWithFlush}
               disabled={Boolean(runDisabledReason)}
             >
               <IconLabel icon="run">{runStatus.status === 'pending' ? t('workspaceRoute.requestBuilder.commands.running') : t('workspaceRoute.requestBuilder.commands.run')}</IconLabel>
@@ -608,7 +980,7 @@ export function RequestWorkSurface({
                     <button
                       type="button"
                       className="workspace-button workspace-button--secondary"
-                      onClick={handleOverwriteSave}
+                      onClick={handleOverwriteSaveWithFlush}
                       disabled={saveStatus.status === 'pending'}
                     >
                       {t('workspaceRoute.requestBuilder.commands.overwrite')}
@@ -616,7 +988,7 @@ export function RequestWorkSurface({
                     <button
                       type="button"
                       className="workspace-button workspace-button--secondary"
-                      onClick={handleSaveAsNew}
+                      onClick={handleSaveAsNewWithFlush}
                       disabled={saveStatus.status === 'pending'}
                     >
                       {t('workspaceRoute.requestBuilder.commands.saveAsNew')}
@@ -668,8 +1040,9 @@ export function RequestWorkSurface({
               aria-label={t('workspaceRoute.requestBuilder.fields.requestUrl')}
               placeholder={t('workspaceRoute.requestBuilder.fields.requestUrlPlaceholder')}
               type="text"
-              value={draft.url}
-              onChange={(event) => updateDraftUrl(draft.tabId, event.currentTarget.value)}
+              value={requestUrlField.value}
+              onChange={(event) => requestUrlField.setValue(event.currentTarget.value)}
+              onBlur={requestUrlField.flush}
             />
           </label>
         </div>
@@ -682,7 +1055,7 @@ export function RequestWorkSurface({
             type="button"
             className={draft.activeEditorTab === tab.id ? 'workspace-subtab workspace-subtab--active' : 'workspace-subtab'}
             aria-pressed={draft.activeEditorTab === tab.id}
-            onClick={() => setActiveEditorTab(draft.tabId, tab.id)}
+            onClick={() => handleSetActiveEditorTab(tab.id)}
           >
             <span className="workspace-subtab__content">
               <IconLabel icon={tab.icon}>{getLocalizedRequestEditorTabLabel(tab.id, t)}</IconLabel>
@@ -700,9 +1073,9 @@ export function RequestWorkSurface({
             rowLabel={t('workspaceRoute.requestBuilder.paramsEditor.rowLabel')}
             rows={draft.params}
             title={t('workspaceRoute.requestBuilder.paramsEditor.title')}
-            onAddRow={() => addRow(draft.tabId, 'params')}
-            onRemoveRow={(rowId) => removeRow(draft.tabId, 'params', rowId)}
-            onUpdateRow={(rowId, field, value) => updateRow(draft.tabId, 'params', rowId, field, value)}
+            onAddRow={handleAddParamsRow}
+            onRemoveRow={handleRemoveParamsRow}
+            onUpdateRow={handleUpdateParamsRow}
           />
         ) : null}
 
@@ -714,9 +1087,9 @@ export function RequestWorkSurface({
             rowLabel={t('workspaceRoute.requestBuilder.headersEditor.rowLabel')}
             rows={draft.headers}
             title={t('workspaceRoute.requestBuilder.headersEditor.title')}
-            onAddRow={() => addRow(draft.tabId, 'headers')}
-            onRemoveRow={(rowId) => removeRow(draft.tabId, 'headers', rowId)}
-            onUpdateRow={(rowId, field, value) => updateRow(draft.tabId, 'headers', rowId, field, value)}
+            onAddRow={handleAddHeadersRow}
+            onRemoveRow={handleRemoveHeadersRow}
+            onUpdateRow={handleUpdateHeadersRow}
           />
         ) : null}
 
@@ -756,8 +1129,9 @@ export function RequestWorkSurface({
                 </span>
                 <textarea
                   rows={10}
-                  value={draft.bodyText}
-                  onChange={(event) => updateBodyText(draft.tabId, event.currentTarget.value)}
+                  value={requestBodyTextField.value}
+                  onChange={(event) => requestBodyTextField.setValue(event.currentTarget.value)}
+                  onBlur={requestBodyTextField.flush}
                 />
               </label>
             ) : null}
@@ -770,9 +1144,9 @@ export function RequestWorkSurface({
                 rowLabel={t('workspaceRoute.requestBuilder.bodyEditor.formRowLabel')}
                 rows={draft.formBody}
                 title={t('workspaceRoute.requestBuilder.bodyEditor.formTitle')}
-                onAddRow={() => addRow(draft.tabId, 'formBody')}
-                onRemoveRow={(rowId) => removeRow(draft.tabId, 'formBody', rowId)}
-                onUpdateRow={(rowId, field, value) => updateRow(draft.tabId, 'formBody', rowId, field, value)}
+                onAddRow={handleAddFormBodyRow}
+                onRemoveRow={handleRemoveFormBodyRow}
+                onUpdateRow={handleUpdateFormBodyRow}
               />
             ) : null}
 
@@ -788,11 +1162,11 @@ export function RequestWorkSurface({
                 selectedFilesByRowId={multipartFilesByRowId}
                 fileSelectionEnabled={multipartFileSelectionEnabled}
                 fileSelectionDisabledReason={multipartFileSelectionDisabledReason}
-                onAddRow={() => addRow(draft.tabId, 'multipartBody')}
-                onRemoveRow={(rowId) => removeRow(draft.tabId, 'multipartBody', rowId)}
-                onUpdateRow={(rowId, field, value) => updateRow(draft.tabId, 'multipartBody', rowId, field, value)}
-                onSelectFiles={(rowId, files) => setMultipartRowFiles(draft.tabId, rowId, files)}
-                onClearFiles={(rowId) => clearMultipartRowFiles(draft.tabId, rowId)}
+                onAddRow={handleAddMultipartRow}
+                onRemoveRow={handleRemoveMultipartRow}
+                onUpdateRow={handleUpdateMultipartRow}
+                onSelectFiles={handleSelectMultipartFiles}
+                onClearFiles={handleClearMultipartFiles}
               />
             ) : null}
           </section>
@@ -831,8 +1205,9 @@ export function RequestWorkSurface({
                 <input
                   aria-label={t('workspaceRoute.requestBuilder.authEditor.bearerToken')}
                   type="text"
-                  value={draft.auth.bearerToken}
-                  onChange={(event) => updateAuthField(draft.tabId, 'bearerToken', event.currentTarget.value)}
+                  value={bearerTokenField.value}
+                  onChange={(event) => bearerTokenField.setValue(event.currentTarget.value)}
+                  onBlur={bearerTokenField.flush}
                 />
               </label>
             ) : null}
@@ -844,8 +1219,9 @@ export function RequestWorkSurface({
                   <input
                     aria-label={t('workspaceRoute.requestBuilder.authEditor.username')}
                     type="text"
-                    value={draft.auth.basicUsername}
-                    onChange={(event) => updateAuthField(draft.tabId, 'basicUsername', event.currentTarget.value)}
+                    value={basicUsernameField.value}
+                    onChange={(event) => basicUsernameField.setValue(event.currentTarget.value)}
+                    onBlur={basicUsernameField.flush}
                   />
                 </label>
                 <label className="request-field">
@@ -853,8 +1229,9 @@ export function RequestWorkSurface({
                   <input
                     aria-label={t('workspaceRoute.requestBuilder.authEditor.password')}
                     type="password"
-                    value={draft.auth.basicPassword}
-                    onChange={(event) => updateAuthField(draft.tabId, 'basicPassword', event.currentTarget.value)}
+                    value={basicPasswordField.value}
+                    onChange={(event) => basicPasswordField.setValue(event.currentTarget.value)}
+                    onBlur={basicPasswordField.flush}
                   />
                 </label>
               </div>
@@ -867,8 +1244,9 @@ export function RequestWorkSurface({
                   <input
                     aria-label={t('workspaceRoute.requestBuilder.authEditor.apiKeyName')}
                     type="text"
-                    value={draft.auth.apiKeyName}
-                    onChange={(event) => updateAuthField(draft.tabId, 'apiKeyName', event.currentTarget.value)}
+                    value={apiKeyNameField.value}
+                    onChange={(event) => apiKeyNameField.setValue(event.currentTarget.value)}
+                    onBlur={apiKeyNameField.flush}
                   />
                 </label>
                 <label className="request-field">
@@ -876,8 +1254,9 @@ export function RequestWorkSurface({
                   <input
                     aria-label={t('workspaceRoute.requestBuilder.authEditor.apiKeyValue')}
                     type="text"
-                    value={draft.auth.apiKeyValue}
-                    onChange={(event) => updateAuthField(draft.tabId, 'apiKeyValue', event.currentTarget.value)}
+                    value={apiKeyValueField.value}
+                    onChange={(event) => apiKeyValueField.setValue(event.currentTarget.value)}
+                    onBlur={apiKeyValueField.flush}
                   />
                 </label>
                 <label className="request-field request-field--compact">
@@ -964,18 +1343,3 @@ export function RequestWorkSurface({
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

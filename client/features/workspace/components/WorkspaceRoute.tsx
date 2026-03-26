@@ -12,7 +12,6 @@ import {
   type SavedRequestResourceRecord,
   workspaceSavedRequestsQueryKey,
 } from '@client/features/request-builder/request-builder.api';
-import { useRequestBuilderCommands } from '@client/features/request-builder/hooks/useRequestBuilderCommands';
 import { WorkspaceContextPanel } from '@client/features/workspace/components/WorkspaceContextPanel';
 import { useI18n } from '@client/app/providers/useI18n';
 import { RequestTabShell } from '@client/features/request-builder/components/RequestTabShell';
@@ -80,7 +79,6 @@ import { useWorkspaceShellStore } from '@client/features/workspace/state/workspa
 import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
 import { RoutePanelTabsLayout } from '@client/features/route-panel-tabs-layout';
 import { useShellStore } from '@client/app/providers/shell-store';
-import { useReplayRunStore } from '@client/shared/replay-run-store';
 import {
   isBackendUnavailableApiError,
   resolveApiErrorMessage,
@@ -187,23 +185,6 @@ function normalizeRunnerIterationCount(rawValue: string) {
   }
 
   return Math.min(parsed, RUNNER_MAX_ITERATION_COUNT);
-}
-
-function resolvePresentationTab(
-  tab: RequestTabRecord,
-  draft: ReturnType<typeof useRequestDraftStore.getState>['draftsByTabId'][string] | undefined,
-  t: ReturnType<typeof useI18n>['t'],
-): RequestTabRecord {
-  if (!draft) {
-    return tab;
-  }
-
-  return {
-    ...tab,
-    title: draft.draft.name.trim() || t('workspaceRoute.requestBuilder.defaultTitle'),
-    methodLabel: draft.draft.method,
-    hasUnsavedChanges: draft.draft.dirty,
-  };
 }
 
 function createImportStatusMessage(
@@ -587,7 +568,6 @@ export function WorkspaceRoute() {
   const reopenLastClosedTab = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.reopenLastClosedTab);
   const recentlyClosedTabs = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.recentlyClosedTabs);
   const setFloatingExplorerOpen = useShellStore((state) => state.setFloatingExplorerOpen);
-  const draftsByTabId = useRequestDraftStore((state) => state.draftsByTabId);
   const ensureDraftForTab = useRequestDraftStore((state) => state.ensureDraftForTab);
   const removeDraft = useRequestDraftStore((state) => state.removeDraft);
   const syncDraftCollectionPlacement = useRequestDraftStore((state) => state.syncCollectionPlacement);
@@ -974,9 +954,12 @@ export function WorkspaceRoute() {
     : managerStatuses;
   const explorerTree = requestTreeQuery.data?.tree ?? [];
   const requestPlacementOptions = buildRequestPlacementOptions(explorerTree, requestTreeQuery.data?.defaults);
-  const resolvedTabs = tabs.map((tab: RequestTabRecord) => resolvePresentationTab(tab, draftsByTabId[tab.id], t));
-  const activeTab = resolvedTabs.find((tab: RequestTabRecord) => tab.id === activeTabId) ?? null;
-  const activeDraft = activeTab ? draftsByTabId[activeTab.id]?.draft ?? null : null;
+  const activeTab = tabs.find((tab: RequestTabRecord) => tab.id === activeTabId) ?? null;
+  const readActiveDraft = () => (
+    activeTab
+      ? useRequestDraftStore.getState().draftsByTabId[activeTab.id]?.draft ?? null
+      : null
+  );
   const activeSavedRequest = findWorkspaceRequestById(explorerTree, activeTab?.requestId);
   const selectedCollection = selectedExplorerItemKind === 'collection'
     ? findCollectionById(explorerTree, selectedExplorerItemId)
@@ -1044,37 +1027,6 @@ export function WorkspaceRoute() {
   const runnerHasRequestSelection = runnerContainerRequestIds.length === 0 || runnerOrderedSelectedRequestIds.length > 0;
   const runnerCanRunSelectedContainer = Boolean(selectedRunnerContainer) && runnerHasRequestSelection;
   const activeTabKey = activeTab?.id ?? 'empty';
-  const pendingReplayRunTabId = useReplayRunStore((state) => state.pendingReplayRunTabId);
-  const consumeReplayRun = useReplayRunStore((state) => state.consumeReplayRun);
-  const {
-    handleRun: handleReplayAutoRun,
-    runDisabledReason: replayRunDisabledReason,
-    runStatus: replayRunStatus,
-  } = useRequestBuilderCommands(activeTab, activeDraft);
-
-  useEffect(() => {
-    if (!activeTab || !activeDraft || pendingReplayRunTabId !== activeTab.id) {
-      return;
-    }
-
-    if (replayRunDisabledReason || replayRunStatus.status === 'pending') {
-      return;
-    }
-
-    if (!consumeReplayRun(activeTab.id)) {
-      return;
-    }
-
-    handleReplayAutoRun();
-  }, [
-    activeDraft,
-    activeTab,
-    consumeReplayRun,
-    handleReplayAutoRun,
-    pendingReplayRunTabId,
-    replayRunDisabledReason,
-    replayRunStatus.status,
-  ]);
 
   const openDraftFromSeed = async (
     draftSeed?: RequestDraftSeed,
@@ -1114,6 +1066,7 @@ export function WorkspaceRoute() {
 
   const handleCreateRequest = () => {
     closeHeaderMenus();
+    const activeDraft = readActiveDraft();
     const createTarget = selectedRequestGroupLocation?.requestGroup
       ?? selectedCollection
       ?? (activeDraft?.requestGroupId
@@ -1131,6 +1084,8 @@ export function WorkspaceRoute() {
   };
 
   const handleDuplicateRequest = () => {
+    const activeDraft = readActiveDraft();
+
     if (!activeDraft) {
       return;
     }
@@ -2179,7 +2134,7 @@ export function WorkspaceRoute() {
         />
 
         <RequestTabShell
-          tabs={resolvedTabs}
+          tabs={tabs}
           activeTabId={activeTabId}
           onSelectTab={handleSelectTab}
           onCloseTab={handleCloseTab}
@@ -2206,7 +2161,6 @@ export function WorkspaceRoute() {
         <WorkspaceResourceManagerPanel
           tree={explorerTree}
           activeTab={activeTab}
-          activeDraft={activeDraft}
           activeSavedRequest={activeSavedRequest}
           onRenameCollection={handleRenameCollection}
           onDeleteCollection={handleDeleteCollection}
@@ -2238,7 +2192,6 @@ export function WorkspaceRoute() {
           <WorkspaceContextPanel
             key={`detail-${activeTabKey}`}
             activeTab={activeTab}
-            activeDraft={activeDraft}
             workspaceContext={requestTreeQuery.data ?? null}
           />
         </aside>
@@ -2246,4 +2199,3 @@ export function WorkspaceRoute() {
     />
   );
 }
-

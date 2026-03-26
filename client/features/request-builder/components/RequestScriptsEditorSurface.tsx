@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '@client/app/providers/useI18n';
 import type {
@@ -48,6 +48,8 @@ interface LinkedStageResolution {
   status: 'healthy' | 'missing' | 'mismatched';
   savedScript: SavedScriptRecord | null;
 }
+
+const SCRIPT_INPUT_SYNC_DELAY_MS = 180;
 
 function isScriptCompatibleWithStage(script: SavedScriptRecord, stage: RequestScriptStageId) {
   return script.scriptType === stage;
@@ -183,6 +185,97 @@ export default function RequestScriptsEditorSurface({
         ? t('workspaceRoute.scriptsEditor.attach.linkedMismatchSummary')
         : t('workspaceRoute.scriptsEditor.attach.linkedResolvedHint', { name: linkedScriptName });
 
+  const scriptsRef = useRef(draft.scripts);
+  const pendingInlineContentRef = useRef<string | null>(null);
+  const pendingInlineStageRef = useRef<RequestScriptStageId | null>(null);
+  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [activeInlineContent, setActiveInlineContent] = useState(activeStageContent);
+
+  useEffect(() => {
+    scriptsRef.current = draft.scripts;
+  }, [draft.scripts]);
+
+  const clearPendingSyncTimer = useCallback(() => {
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+      syncTimeoutRef.current = null;
+    }
+  }, []);
+
+  const flushPendingInlineContent = useCallback(() => {
+    const pendingStage = pendingInlineStageRef.current;
+    const pendingContent = pendingInlineContentRef.current;
+
+    if (!pendingStage || pendingContent === null) {
+      return;
+    }
+
+    pendingInlineStageRef.current = null;
+    pendingInlineContentRef.current = null;
+    clearPendingSyncTimer();
+
+    const currentContent = getInlineRequestScriptStageSourceCode(scriptsRef.current, pendingStage);
+
+    if (currentContent === pendingContent) {
+      return;
+    }
+
+    onContentChange(pendingStage, pendingContent);
+  }, [clearPendingSyncTimer, onContentChange]);
+
+  const queueInlineContentSync = useCallback((stage: RequestScriptStageId, nextContent: string) => {
+    pendingInlineStageRef.current = stage;
+    pendingInlineContentRef.current = nextContent;
+    clearPendingSyncTimer();
+    syncTimeoutRef.current = setTimeout(() => {
+      flushPendingInlineContent();
+    }, SCRIPT_INPUT_SYNC_DELAY_MS);
+  }, [clearPendingSyncTimer, flushPendingInlineContent]);
+
+  useEffect(() => () => {
+    flushPendingInlineContent();
+  }, [flushPendingInlineContent]);
+
+  useEffect(() => {
+    if (activeStageBinding.mode !== 'inline') {
+      clearPendingSyncTimer();
+      pendingInlineStageRef.current = null;
+      pendingInlineContentRef.current = null;
+      queueMicrotask(() => {
+        setActiveInlineContent(activeStageContent);
+      });
+      return;
+    }
+
+    const hasPendingForActiveStage = pendingInlineStageRef.current === activeStage
+      && pendingInlineContentRef.current !== null;
+
+    if (!hasPendingForActiveStage) {
+      queueMicrotask(() => {
+        setActiveInlineContent(activeStageContent);
+      });
+    }
+  }, [
+    activeStage,
+    activeStageBinding.mode,
+    activeStageContent,
+    clearPendingSyncTimer,
+  ]);
+
+  const handleStageTabChange = useCallback((stage: RequestScriptStageId) => {
+    flushPendingInlineContent();
+    onStageChange(stage);
+  }, [flushPendingInlineContent, onStageChange]);
+
+  const handleInlineContentChange = useCallback((nextContent: string) => {
+    setActiveInlineContent(nextContent);
+    queueInlineContentSync(activeStage, nextContent);
+  }, [activeStage, queueInlineContentSync]);
+
+  const handleInlineBlur = useCallback(() => {
+    flushPendingInlineContent();
+  }, [flushPendingInlineContent]);
+
   return (
     <section className="workspace-surface-card request-editor-card request-editor-card--scripts" data-testid="script-editor-surface">
       <header className="request-editor-card__header">
@@ -206,7 +299,7 @@ export default function RequestScriptsEditorSurface({
               aria-selected={isActive}
               aria-controls={`script-stage-panel-${draft.tabId}-${stage.id}`}
               className={isActive ? 'workspace-subtab workspace-subtab--active' : 'workspace-subtab'}
-              onClick={() => onStageChange(stage.id)}
+              onClick={() => handleStageTabChange(stage.id)}
             >
               <span className="workspace-subtab__content"><IconLabel icon={stage.icon}>{stage.label}</IconLabel></span>
             </button>
@@ -239,8 +332,9 @@ export default function RequestScriptsEditorSurface({
                 aria-label={activeStageDefinition.fieldAriaLabel}
                 rows={14}
                 placeholder={activeStageDefinition.exampleSnippet}
-                value={activeStageContent}
-                onChange={(event) => onContentChange(activeStage, event.currentTarget.value)}
+                value={activeInlineContent}
+                onChange={(event) => handleInlineContentChange(event.currentTarget.value)}
+                onBlur={handleInlineBlur}
               />
             </label>
           ) : (
@@ -321,7 +415,10 @@ export default function RequestScriptsEditorSurface({
                     <button
                       type="button"
                       className="workspace-button workspace-button--secondary"
-                      onClick={() => onAttachSavedScript(activeStage, selectedSavedScript.name, selectedSavedScript.sourceCode)}
+                      onClick={() => {
+                        flushPendingInlineContent();
+                        onAttachSavedScript(activeStage, selectedSavedScript.name, selectedSavedScript.sourceCode);
+                      }}
                     >
                       {hasStageContent
                         ? t('workspaceRoute.scriptsEditor.attach.replaceAction')
@@ -330,7 +427,10 @@ export default function RequestScriptsEditorSurface({
                     <button
                       type="button"
                       className="workspace-button workspace-button--secondary"
-                      onClick={() => onLinkSavedScript(activeStage, selectedSavedScript)}
+                      onClick={() => {
+                        flushPendingInlineContent();
+                        onLinkSavedScript(activeStage, selectedSavedScript);
+                      }}
                     >
                       {activeStageBinding.mode === 'linked'
                         ? t('workspaceRoute.scriptsEditor.attach.relinkAction')
@@ -340,7 +440,10 @@ export default function RequestScriptsEditorSurface({
                       <button
                         type="button"
                         className="workspace-button workspace-button--ghost"
-                        onClick={() => onDetachSavedScript(activeStage, linkedScriptName, linkedSourcePreview)}
+                        onClick={() => {
+                          flushPendingInlineContent();
+                          onDetachSavedScript(activeStage, linkedScriptName, linkedSourcePreview);
+                        }}
                       >
                         {t('workspaceRoute.scriptsEditor.attach.detachAction')}
                       </button>
@@ -394,5 +497,3 @@ export default function RequestScriptsEditorSurface({
     </section>
   );
 }
-
-

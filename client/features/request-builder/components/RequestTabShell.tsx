@@ -1,7 +1,12 @@
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useI18n } from '@client/app/providers/useI18n';
-import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
 import { isRequestWorkbenchTab } from '@client/features/request-builder/request-tab-state';
+import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
+import {
+  selectRequestTabDraftPresentation,
+  useRequestDraftStore,
+} from '@client/features/request-builder/state/request-draft-store';
 import { AppIcon } from '@client/shared/ui/AppIcon';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 
@@ -19,6 +24,20 @@ interface RequestTabShellProps {
   canCloseCurrentTab: boolean;
   canCloseOtherTabs: boolean;
   canCloseAllTabs: boolean;
+}
+
+interface ResolvedTabPresentation {
+  title: string;
+  methodLabel: RequestTabRecord['methodLabel'];
+  hasUnsavedChanges: boolean;
+}
+
+interface RequestTabShellItemProps {
+  tab: RequestTabRecord;
+  isActive: boolean;
+  onSelectTab: (tabId: string) => void;
+  onCloseTab: (tabId: string) => void;
+  onPinTab: (tabId: string) => void;
 }
 
 function getTabSourceLabel(
@@ -85,6 +104,106 @@ function getTabStateLabel(
   return null;
 }
 
+function resolvePresentedTab(
+  tab: RequestTabRecord,
+  presentation: ResolvedTabPresentation | null,
+  defaultTitle: string,
+): RequestTabRecord {
+  if (!presentation) {
+    return tab;
+  }
+
+  return {
+    ...tab,
+    title: presentation.title.trim() || defaultTitle,
+    methodLabel: presentation.methodLabel,
+    hasUnsavedChanges: presentation.hasUnsavedChanges,
+  };
+}
+
+const RequestTabShellItem = memo(function RequestTabShellItem({
+  tab,
+  isActive,
+  onSelectTab,
+  onCloseTab,
+  onPinTab,
+}: RequestTabShellItemProps) {
+  const { t } = useI18n();
+  const draftPresentation = useRequestDraftStore(
+    useShallow((state): ReturnType<typeof selectRequestTabDraftPresentation> => selectRequestTabDraftPresentation(state, tab.id)),
+  );
+
+  const presentedTab = resolvePresentedTab(
+    tab,
+    draftPresentation,
+    t('workspaceRoute.requestBuilder.defaultTitle'),
+  );
+  const tabSourceLabel = getTabSourceLabel(presentedTab, t);
+  const tabStateLabel = getTabStateLabel(presentedTab, t);
+  const isRequestTab = isRequestWorkbenchTab(presentedTab);
+  const tabMeta = [
+    ...(isRequestTab ? [presentedTab.methodLabel] : []),
+    ...(tabSourceLabel ? [tabSourceLabel] : []),
+    ...(tabStateLabel ? [tabStateLabel] : []),
+  ].join(' · ');
+
+  return (
+    <div
+      key={presentedTab.id}
+      className={isActive ? 'request-tab request-tab--active' : 'request-tab'}
+      data-active={isActive}
+    >
+      {presentedTab.tabMode === 'preview' ? (
+        <button
+          type="button"
+          className="request-tab__pin request-tab__pin--interactive"
+          aria-label={t('workspaceRoute.tabShell.pinTab', { title: presentedTab.title })}
+          onClick={() => onPinTab(presentedTab.id)}
+        >
+          <AppIcon name="pin" size={14} />
+        </button>
+      ) : (
+        <button
+          type="button"
+          className="request-tab__pin request-tab__pin--pinned"
+          aria-label={t('workspaceRoute.tabShell.pinnedTab', { title: presentedTab.title })}
+          disabled
+        >
+          <AppIcon name="pin" size={14} />
+        </button>
+      )}
+
+      <button
+        type="button"
+        role="tab"
+        className="request-tab__button"
+        aria-selected={isActive}
+        title={tabMeta.length > 0 ? `${presentedTab.title} · ${tabMeta}` : presentedTab.title}
+        onClick={() => onSelectTab(presentedTab.id)}
+      >
+        <span className="request-tab__label">
+          {isRequestTab ? <span className="request-tab__method">{presentedTab.methodLabel}</span> : null}
+          <span className="request-tab__title">{presentedTab.title}</span>
+          {presentedTab.hasUnsavedChanges ? (
+            <span className="request-tab__dirty" aria-label={t('workspaceRoute.tabShell.dirtyIndicator', { title: presentedTab.title })}>
+              *
+            </span>
+          ) : null}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        className="request-tab__close"
+        aria-label={t('workspaceRoute.tabShell.closeTab', { title: presentedTab.title })}
+        onClick={() => onCloseTab(presentedTab.id)}
+      >
+        <AppIcon name="disable" size={14} />
+      </button>
+    </div>
+  );
+});
+
 export function RequestTabShell({
   tabs,
   activeTabId,
@@ -103,18 +222,47 @@ export function RequestTabShell({
   const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState('');
   const normalizedQuery = searchQuery.trim().toLowerCase();
+  const searchPresentationsByTabId = useRequestDraftStore(useShallow((state): Record<string, ResolvedTabPresentation | null> | null => {
+      if (normalizedQuery.length === 0) {
+        return null;
+      }
+
+      const nextEntries = tabs.map((tab) => {
+        const presentation = selectRequestTabDraftPresentation(state, tab.id);
+
+        if (!presentation) {
+          return [tab.id, null] as const;
+        }
+
+        return [
+          tab.id,
+          {
+            ...presentation,
+            title: presentation.title.trim() || t('workspaceRoute.requestBuilder.defaultTitle'),
+          } satisfies ResolvedTabPresentation,
+        ] as const;
+      });
+
+      return Object.fromEntries(nextEntries) as Record<string, ResolvedTabPresentation | null>;
+    }));
+
   const filteredTabs = useMemo(() => {
     if (normalizedQuery.length === 0) {
       return tabs;
     }
 
     return tabs.filter((tab) => {
-      const sourceLabel = getTabSourceLabel(tab, t) ?? '';
-      const stateLabel = getTabStateLabel(tab, t) ?? '';
-      const haystack = `${tab.title} ${tab.methodLabel} ${tab.summary} ${sourceLabel} ${stateLabel}`.toLowerCase();
+      const presentedTab = resolvePresentedTab(
+        tab,
+        searchPresentationsByTabId?.[tab.id] ?? null,
+        t('workspaceRoute.requestBuilder.defaultTitle'),
+      );
+      const sourceLabel = getTabSourceLabel(presentedTab, t) ?? '';
+      const stateLabel = getTabStateLabel(presentedTab, t) ?? '';
+      const haystack = `${presentedTab.title} ${presentedTab.methodLabel} ${presentedTab.summary} ${sourceLabel} ${stateLabel}`.toLowerCase();
       return haystack.includes(normalizedQuery);
     });
-  }, [normalizedQuery, t, tabs]);
+  }, [normalizedQuery, searchPresentationsByTabId, t, tabs]);
 
   return (
     <div className="request-tab-shell">
@@ -173,73 +321,16 @@ export function RequestTabShell({
           <p className="request-tab-shell__search-empty">{t('workspaceRoute.tabShell.searchNoMatches')}</p>
         ) : null}
 
-        {filteredTabs.map((tab) => {
-          const isActive = tab.id === activeTabId;
-          const tabSourceLabel = getTabSourceLabel(tab, t);
-          const tabStateLabel = getTabStateLabel(tab, t);
-          const isRequestTab = isRequestWorkbenchTab(tab);
-          const tabMeta = [
-            ...(isRequestTab ? [tab.methodLabel] : []),
-            ...(tabSourceLabel ? [tabSourceLabel] : []),
-            ...(tabStateLabel ? [tabStateLabel] : []),
-          ].join(' · ');
-
-          return (
-            <div
-              key={tab.id}
-              className={isActive ? 'request-tab request-tab--active' : 'request-tab'}
-              data-active={isActive}
-            >
-              {tab.tabMode === 'preview' ? (
-                <button
-                  type="button"
-                  className="request-tab__pin request-tab__pin--interactive"
-                  aria-label={t('workspaceRoute.tabShell.pinTab', { title: tab.title })}
-                  onClick={() => onPinTab(tab.id)}
-                >
-                  <AppIcon name="pin" size={14} />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="request-tab__pin request-tab__pin--pinned"
-                  aria-label={t('workspaceRoute.tabShell.pinnedTab', { title: tab.title })}
-                  disabled
-                >
-                  <AppIcon name="pin" size={14} />
-                </button>
-              )}
-
-              <button
-                type="button"
-                role="tab"
-                className="request-tab__button"
-                aria-selected={isActive}
-                title={tabMeta.length > 0 ? `${tab.title} · ${tabMeta}` : tab.title}
-                onClick={() => onSelectTab(tab.id)}
-              >
-                <span className="request-tab__label">
-                  {isRequestTab ? <span className="request-tab__method">{tab.methodLabel}</span> : null}
-                  <span className="request-tab__title">{tab.title}</span>
-                  {tab.hasUnsavedChanges ? (
-                    <span className="request-tab__dirty" aria-label={t('workspaceRoute.tabShell.dirtyIndicator', { title: tab.title })}>
-                      *
-                    </span>
-                  ) : null}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                className="request-tab__close"
-                aria-label={t('workspaceRoute.tabShell.closeTab', { title: tab.title })}
-                onClick={() => onCloseTab(tab.id)}
-              >
-                <AppIcon name="disable" size={14} />
-              </button>
-            </div>
-          );
-        })}
+        {filteredTabs.map((tab) => (
+          <RequestTabShellItem
+            key={tab.id}
+            tab={tab}
+            isActive={tab.id === activeTabId}
+            onSelectTab={onSelectTab}
+            onCloseTab={onCloseTab}
+            onPinTab={onPinTab}
+          />
+        ))}
       </div>
     </div>
   );

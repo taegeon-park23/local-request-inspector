@@ -1,7 +1,14 @@
 import { useMemo, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useI18n } from '@client/app/providers/useI18n';
 import { RequestResultPanel } from '@client/features/request-builder/components/RequestResultPanel';
 import type { RequestDraftState } from '@client/features/request-builder/request-draft.types';
+import {
+  selectRequestDraftByTabId,
+  selectRequestDraftPlacementSnapshot,
+  selectRequestTabDraftPresentation,
+  useRequestDraftStore,
+} from '@client/features/request-builder/state/request-draft-store';
 import {
   formatRequestPlacementPath,
   readRequestGroupName,
@@ -29,7 +36,6 @@ type ContextTabId = 'overview' | 'inheritance' | 'runs';
 
 interface WorkspaceContextPanelProps {
   activeTab: RequestTabRecord | null;
-  activeDraft: RequestDraftState | null;
   workspaceContext: Pick<WorkspaceRequestTreeResponse, 'collections' | 'requestGroups' | 'tree'> | null;
 }
 
@@ -237,17 +243,17 @@ function readRequestScriptOverrideValue(
   return summarizeScriptOverrideValue(binding.sourceCode);
 }
 
-function readRequestScriptOverrides(activeDraft: RequestDraftState | null | undefined): WorkspaceScriptDefaults {
-  if (!activeDraft) {
+function readRequestScriptOverrides(requestDraft: Pick<RequestDraftState, 'scripts'> | null | undefined): WorkspaceScriptDefaults {
+  if (!requestDraft) {
     return {
       ...DEFAULT_SCRIPT_DEFAULTS,
     };
   }
 
   return {
-    preRequest: readRequestScriptOverrideValue(activeDraft.scripts.preRequest),
-    postResponse: readRequestScriptOverrideValue(activeDraft.scripts.postResponse),
-    tests: readRequestScriptOverrideValue(activeDraft.scripts.tests),
+    preRequest: readRequestScriptOverrideValue(requestDraft.scripts.preRequest),
+    postResponse: readRequestScriptOverrideValue(requestDraft.scripts.postResponse),
+    tests: readRequestScriptOverrideValue(requestDraft.scripts.tests),
   };
 }
 
@@ -400,7 +406,6 @@ function createTabPlacementValue(activeTab: RequestTabRecord): RequestPlacementV
 
 export function WorkspaceContextPanel({
   activeTab,
-  activeDraft,
   workspaceContext,
 }: WorkspaceContextPanelProps) {
   const { t } = useI18n();
@@ -424,6 +429,24 @@ export function WorkspaceContextPanel({
   const isCollectionOverviewTab = activeTab?.source === 'collection-overview';
   const isRequestGroupOverviewTab = activeTab?.source === 'request-group-overview';
   const isContainerOverviewTab = isCollectionOverviewTab || isRequestGroupOverviewTab;
+  const activeDraftPresentation = useRequestDraftStore(useShallow((state): ReturnType<typeof selectRequestTabDraftPresentation> => selectRequestTabDraftPresentation(state, activeTab?.id ?? null)));
+  const activeDraftPlacement = useRequestDraftStore(useShallow((state): ReturnType<typeof selectRequestDraftPlacementSnapshot> => selectRequestDraftPlacementSnapshot(state, activeTab?.id ?? null)));
+  const activeDraftInheritance = useRequestDraftStore(useShallow((state): { auth: RequestDraftState['auth']; scripts: RequestDraftState['scripts'] } | null => {
+      if (activeContextTab !== 'inheritance' || !activeTab || isCollectionOverviewTab || isRequestGroupOverviewTab) {
+        return null;
+      }
+
+      const draft = selectRequestDraftByTabId(state, activeTab.id);
+
+      if (!draft) {
+        return null;
+      }
+
+      return {
+        auth: draft.auth,
+        scripts: draft.scripts,
+      };
+    }));
   const requestGroupRecord = findRequestGroupRecord(requestGroups, activeTab?.requestGroupId);
   const collectionRecord = findCollectionRecord(collections, activeTab?.collectionId)
     ?? (requestGroupRecord ? findCollectionRecord(collections, requestGroupRecord.collectionId) : null);
@@ -471,6 +494,10 @@ export function WorkspaceContextPanel({
   const matchingContainerExecution = matchingContainerExecutions[0] ?? null;
 
   const inheritanceSnapshot = useMemo(() => {
+    if (activeContextTab !== 'inheritance') {
+      return null;
+    }
+
     const collectionVariables = toVariableMap(normalizeScopeVariables(collectionRecord?.variables));
     const requestGroupVariables = toVariableMap(normalizeScopeVariables(requestGroupRecord?.variables));
     const collectionAuth = normalizeAuthDefaults(collectionRecord?.authDefaults);
@@ -531,8 +558,8 @@ export function WorkspaceContextPanel({
 
     const mergedVariableMap = mergeVariableMaps(collectionVariables, requestGroupVariables);
     const inheritedAuth = mergeAuthDefaults(collectionAuth, requestGroupAuth);
-    const requestAuth = normalizeAuthDefaults(activeDraft?.auth);
-    const requestScriptOverrides = readRequestScriptOverrides(activeDraft);
+    const requestAuth = normalizeAuthDefaults(activeDraftInheritance?.auth);
+    const requestScriptOverrides = readRequestScriptOverrides(activeDraftInheritance);
     const inheritedScripts = mergeScriptDefaults(collectionScripts, requestGroupScripts);
 
     return {
@@ -556,8 +583,23 @@ export function WorkspaceContextPanel({
         override: {},
       },
     };
-  }, [activeDraft, collectionRecord, isCollectionOverviewTab, isRequestGroupOverviewTab, requestGroupRecord]);
+  }, [
+    activeContextTab,
+    activeDraftInheritance,
+    collectionRecord,
+    isCollectionOverviewTab,
+    isRequestGroupOverviewTab,
+    requestGroupRecord,
+  ]);
 
+  const activeDraftPlacementPathValue = useMemo(() => (
+    activeDraftPlacement
+      ? {
+          ...(activeDraftPlacement.collectionName ? { collectionName: activeDraftPlacement.collectionName } : {}),
+          ...(activeDraftPlacement.requestGroupName ? { requestGroupName: activeDraftPlacement.requestGroupName } : {}),
+        }
+      : null
+  ), [activeDraftPlacement]);
   const contextOverviewItems = useMemo(() => {
     if (!activeTab) {
       return [];
@@ -589,20 +631,27 @@ export function WorkspaceContextPanel({
 
     return [
       { label: t('workspaceRoute.resultPanel.context.overview.labels.scope'), value: t('workspaceRoute.resultPanel.context.overview.values.request') },
-      { label: t('workspaceRoute.resultPanel.context.overview.labels.name'), value: activeTab.title },
-      { label: t('workspaceRoute.resultPanel.context.overview.labels.method'), value: activeTab.methodLabel },
+      {
+        label: t('workspaceRoute.resultPanel.context.overview.labels.name'),
+        value: activeDraftPresentation?.title.trim() || activeTab.title,
+      },
+      {
+        label: t('workspaceRoute.resultPanel.context.overview.labels.method'),
+        value: activeDraftPresentation?.methodLabel ?? activeTab.methodLabel,
+      },
       { label: t('workspaceRoute.resultPanel.context.overview.labels.tabSource'), value: activeTab.source },
       {
         label: t('workspaceRoute.resultPanel.context.overview.labels.placement'),
         value: formatRequestPlacementPath(
-          activeDraft
-            ? activeDraft
+          activeDraftPlacementPathValue
+            ? activeDraftPlacementPathValue
             : createTabPlacementValue(activeTab),
         ) ?? t('workspaceRoute.resultPanel.context.overview.values.notAvailable'),
       },
     ];
   }, [
-    activeDraft,
+    activeDraftPlacementPathValue,
+    activeDraftPresentation,
     activeTab,
     collectionRecord,
     collectionSummary.requestCount,
@@ -640,7 +689,7 @@ export function WorkspaceContextPanel({
         </DetailViewerSection>
       ) : null}
 
-      {activeContextTab === 'inheritance' ? (
+      {activeContextTab === 'inheritance' && inheritanceSnapshot ? (
         <>
           <DetailViewerSection
             icon="paths"
@@ -803,5 +852,3 @@ export function WorkspaceContextPanel({
     </div>
   );
 }
-
-

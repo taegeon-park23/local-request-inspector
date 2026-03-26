@@ -149,4 +149,63 @@ describe('request-draft-store', () => {
     expect(useRequestDraftStore.getState().multipartFilesByTabId[tab.id]).toBeUndefined();
   });
 
+  it('reverts dirty state when name and url are restored to the baseline values', () => {
+    const tab = createTab({
+      id: 'saved-dirty-revert',
+      sourceKey: 'saved-dirty-revert',
+      title: 'Health check',
+      methodLabel: 'GET',
+      source: 'saved',
+      tabMode: 'pinned',
+      summary: 'GET /health',
+      requestId: 'request-health',
+    });
+
+    const store = useRequestDraftStore.getState();
+    store.ensureDraftForTab(tab, {
+      name: 'Health check',
+      method: 'GET',
+      url: 'https://api.example.com/health',
+    }, { replace: true });
+
+    store.updateDraftName(tab.id, 'Health check copy');
+    expect(useRequestDraftStore.getState().draftsByTabId[tab.id]?.draft.dirty).toBe(true);
+
+    store.updateDraftName(tab.id, 'Health check');
+    expect(useRequestDraftStore.getState().draftsByTabId[tab.id]?.draft.dirty).toBe(false);
+
+    store.updateDraftUrl(tab.id, 'https://api.example.com/health?verbose=1');
+    expect(useRequestDraftStore.getState().draftsByTabId[tab.id]?.draft.dirty).toBe(true);
+
+    store.updateDraftUrl(tab.id, 'https://api.example.com/health');
+    expect(useRequestDraftStore.getState().draftsByTabId[tab.id]?.draft.dirty).toBe(false);
+  });
+
+  it('reverts dirty state when body text is restored to baseline content', () => {
+    const tab = createTab({
+      id: 'saved-body-revert',
+      sourceKey: 'saved-body-revert',
+      title: 'Create session',
+      methodLabel: 'POST',
+      source: 'saved',
+      tabMode: 'pinned',
+      summary: 'POST /sessions',
+      requestId: 'request-create-session',
+    });
+
+    const store = useRequestDraftStore.getState();
+    store.ensureDraftForTab(tab, {
+      name: 'Create session',
+      method: 'POST',
+      url: 'https://api.example.com/sessions',
+      bodyMode: 'json',
+      bodyText: '{"email":"dev@example.com"}',
+    }, { replace: true });
+
+    store.updateBodyText(tab.id, '{"email":"dev@example.com","role":"admin"}');
+    expect(useRequestDraftStore.getState().draftsByTabId[tab.id]?.draft.dirty).toBe(true);
+
+    store.updateBodyText(tab.id, '{"email":"dev@example.com"}');
+    expect(useRequestDraftStore.getState().draftsByTabId[tab.id]?.draft.dirty).toBe(false);
+  });
 });
