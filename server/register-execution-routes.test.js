@@ -410,6 +410,158 @@ async function testSecretProviderErrorBlocksExecution() {
     },
   );
 }
+
+async function testPostResponseScriptThrowKeepsTransportSucceededAndSurfacesScriptFailure() {
+  const runtimeState = {
+    histories: [],
+    results: [],
+    testResults: [],
+  };
+  const repositories = createRepositories({
+    runtime: {
+      queries: {
+        insertExecutionHistory(record) {
+          runtimeState.histories.push(record);
+        },
+        insertExecutionResult(record) {
+          runtimeState.results.push(record);
+        },
+        insertTestResults(records) {
+          runtimeState.testResults.push(records);
+        },
+      },
+    },
+  });
+
+  const spreadMessage = 'Spread syntax requires ...iterable[Symbol.iterator] to be a function';
+  let testsStageRan = false;
+  const dependencies = createExecutionDependencies(repositories, runtimeState, {
+    executeScriptStage: async (stageId, _script, options = {}) => {
+      if (stageId === 'pre-request') {
+        return {
+          stageResult: {
+            stageId,
+            status: 'succeeded',
+            summary: 'pre-request succeeded.',
+          },
+          executionRequest: options.executionRequest,
+        };
+      }
+
+      if (stageId === 'post-response') {
+        throw {
+          code: 'script_stage_failed',
+          message: spreadMessage,
+        };
+      }
+
+      if (stageId === 'tests') {
+        testsStageRan = true;
+      }
+
+      return {
+        stageResult: {
+          stageId,
+          status: 'succeeded',
+          summary: `${stageId} succeeded.`,
+        },
+      };
+    },
+    deriveExecutionOutcome: (stageResults) => {
+      const normalizedResults = Object.values(stageResults || {}).filter(Boolean);
+
+      if (normalizedResults.some((result) => result.status === 'blocked')) {
+        return 'Blocked';
+      }
+
+      if (normalizedResults.some((result) => result.status === 'timed_out')) {
+        return 'Timed out';
+      }
+
+      if (normalizedResults.some((result) => result.status === 'failed')) {
+        return 'Failed';
+      }
+
+      return 'Succeeded';
+    },
+    createExecutionErrorMetadata: (stageResults) => {
+      const failedStage = [
+        stageResults['pre-request'],
+        stageResults['post-response'],
+        stageResults.tests,
+        stageResults.transport,
+      ].find((result) => (
+        result
+        && (result.status === 'failed' || result.status === 'blocked' || result.status === 'timed_out')
+        && typeof result.errorCode === 'string'
+      ));
+
+      return {
+        errorCode: failedStage?.errorCode || null,
+        errorSummary: failedStage?.errorSummary || null,
+      };
+    },
+    createExecutionRequestTarget: (url) => new URL(url),
+  });
+
+  const originalFetch = global.fetch;
+  global.fetch = async (input, init) => {
+    const url = String(input);
+
+    if (!url.startsWith('https://example.test/')) {
+      return originalFetch(input, init);
+    }
+
+    return new Response('{"ok":true}', {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  };
+
+  try {
+    await withServer(
+      (app) => registerExecutionRoutes(app, dependencies),
+      async ({ baseUrl }) => {
+        const response = await requestJson(baseUrl, '/api/executions/run', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ request: createBaseRequest() }),
+        });
+
+        assert.equal(response.status, 200);
+        assert.equal(response.payload.data.execution.responseStatus, 200);
+        assert.equal(response.payload.data.execution.executionOutcome, 'Failed');
+        assert.equal(response.payload.data.execution.errorCode, 'script_stage_failed');
+        assert.equal(response.payload.data.execution.errorSummary, spreadMessage);
+
+        const stageSummariesById = Object.fromEntries(
+          response.payload.data.execution.stageSummaries.map((stage) => [stage.stageId, stage]),
+        );
+
+        assert.equal(stageSummariesById.transport.status, 'succeeded');
+        assert.equal(stageSummariesById['post-response'].status, 'failed');
+        assert.equal(stageSummariesById['post-response'].summary, spreadMessage);
+        assert.equal(stageSummariesById['post-response'].errorCode, 'script_stage_failed');
+        assert.equal(stageSummariesById.tests.status, 'skipped');
+        assert.equal(
+          stageSummariesById.tests.summary,
+          'Tests did not run because Post-response failed before completion.',
+        );
+        assert.equal(testsStageRan, false);
+
+        assert.equal(runtimeState.histories.length, 1);
+        assert.equal(runtimeState.histories[0].errorCode, 'script_stage_failed');
+        assert.equal(runtimeState.results.length, 1);
+      },
+    );
+  } finally {
+    global.fetch = originalFetch;
+  }
+}
 async function testExecutionRouteAppliesInheritedDefaultsBeforeEnvironmentResolution() {
   const runtimeState = {
     histories: [],
@@ -1676,6 +1828,7 @@ async function testExecutionRunUploadRejectsMultipartFileLimitExceeded() {
   await testUnresolvedEnvironmentPlaceholderBlocksExecution();
   await testResolvedSecretValuesArePassedIntoEnvironmentResolution();
   await testSecretProviderErrorBlocksExecution();
+  await testPostResponseScriptThrowKeepsTransportSucceededAndSurfacesScriptFailure();
   await testExecutionRouteAppliesInheritedDefaultsBeforeEnvironmentResolution();
   await testExecutionRunRejectsMultipartFileRowsWithoutUploadEndpoint();
   await testExecutionRunUploadExecutesMultipartRequest();
@@ -1690,6 +1843,9 @@ async function testExecutionRunUploadRejectsMultipartFileLimitExceeded() {
   await testRequestGroupBatchRunTraversesSelectedSubtreeDepthFirst();
   await testRequestGroupBatchRunReturnsNotFoundForUnknownGroup();
 })();
+
+
+
 
 
 

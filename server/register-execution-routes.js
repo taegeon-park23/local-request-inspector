@@ -510,6 +510,26 @@ function registerExecutionRoutes(app, dependencies) {
     };
   }
 
+  function createUnhandledScriptStageFailureResult(stageId, error) {
+    const stageLabel = stageId === 'tests' ? 'Tests' : 'Post-response';
+    const fallbackSummary = `${stageLabel} failed before a bounded stage result was returned.`;
+    const summary = typeof error?.message === 'string' && error.message.trim().length > 0
+      ? error.message
+      : fallbackSummary;
+
+    return {
+      stageId,
+      status: 'failed',
+      summary,
+      errorCode: error?.code || error?.cause?.code || 'script_stage_failed',
+      errorSummary: summary,
+      consoleEntries: [],
+      consoleLogCount: 0,
+      consoleWarningCount: 0,
+      testResults: [],
+    };
+  }
+
   async function executeSingleRun(input) {
     const executionId = randomUUID();
     const startedAt = new Date().toISOString();
@@ -783,28 +803,6 @@ function registerExecutionRoutes(app, dependencies) {
               response.status,
               createHostPathHint(target.toString()),
             );
-            const postResponseStage = await executeScriptStage(
-              'post-response',
-              resolvedExecutionRequest.scripts.postResponse,
-              {
-                executionRequest: resolvedExecutionRequest,
-                target,
-                responseStatus,
-                responseHeaders,
-                responseBodyText,
-                signal: executionSignal,
-              },
-            );
-            stageResults['post-response'] = postResponseStage.stageResult;
-            const testsStage = await executeScriptStage('tests', resolvedExecutionRequest.scripts.tests, {
-              executionRequest: resolvedExecutionRequest,
-              target,
-              responseStatus,
-              responseHeaders,
-              responseBodyText,
-              signal: executionSignal,
-            });
-            stageResults.tests = testsStage.stageResult;
           } catch (error) {
             stageResults.transport = executionSignal.aborted
               ? createTransportCancelledStageResult('Transport was cancelled before a response snapshot was available.')
@@ -826,6 +824,42 @@ function registerExecutionRoutes(app, dependencies) {
 
             if (transportAbortListener) {
               executionSignal.removeEventListener('abort', transportAbortListener);
+            }
+          }
+          if (stageResults.transport?.status === 'succeeded') {
+            try {
+              const postResponseStage = await executeScriptStage(
+                'post-response',
+                resolvedExecutionRequest.scripts.postResponse,
+                {
+                  executionRequest: resolvedExecutionRequest,
+                  target,
+                  responseStatus,
+                  responseHeaders,
+                  responseBodyText,
+                  signal: executionSignal,
+                },
+              );
+              stageResults['post-response'] = postResponseStage.stageResult;
+              const testsStage = await executeScriptStage('tests', resolvedExecutionRequest.scripts.tests, {
+                executionRequest: resolvedExecutionRequest,
+                target,
+                responseStatus,
+                responseHeaders,
+                responseBodyText,
+                signal: executionSignal,
+              });
+              stageResults.tests = testsStage.stageResult;
+            } catch (error) {
+              if (!stageResults['post-response']) {
+                stageResults['post-response'] = createUnhandledScriptStageFailureResult('post-response', error);
+                stageResults.tests = createSkippedScriptStageAfterTransport(
+                  'tests',
+                  'Tests did not run because Post-response failed before completion.',
+                );
+              } else {
+                stageResults.tests = createUnhandledScriptStageFailureResult('tests', error);
+              }
             }
           }
         }

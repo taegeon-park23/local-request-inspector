@@ -604,11 +604,15 @@ async function executeScriptStageInProcess(payload = {}) {
       };
     }
 
+    const errorMessage = typeof error?.message === 'string' && error.message.trim().length > 0
+      ? error.message
+      : `${stageLabel} failed.`;
+
     return {
       outcome: 'failed',
-      summary: error instanceof Error ? error.message : `${stageLabel} failed.`,
+      summary: errorMessage,
       errorCode: error?.code || 'script_stage_failed',
-      errorSummary: error instanceof Error ? error.message : `${stageLabel} failed.`,
+      errorSummary: errorMessage,
       consoleEntries: consoleSink.previewEntries,
       consoleLogCount: consoleSink.entryCount,
       consoleWarningCount: consoleSink.warningCount,
@@ -672,3 +676,4 @@ module.exports = {
   SCRIPT_TIMEOUT_MS,
   executeScriptStageInProcess,
 };
+
