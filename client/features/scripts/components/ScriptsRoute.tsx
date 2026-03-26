@@ -73,55 +73,6 @@ function getScriptTypeLabel(scriptType: ScriptType, t: ReturnType<typeof useI18n
   }
 }
 
-function ScriptsExplorerSummaryCard({
-  draft,
-  selectedTemplate,
-  summary,
-  t,
-}: {
-  draft: SavedScriptInput;
-  selectedTemplate: ScriptTemplateRecord | null;
-  summary: {
-    updatedAt: string;
-    capabilitySummary: string;
-    sourcePreview: string;
-  } | null;
-  t: ReturnType<typeof useI18n>['t'];
-}) {
-  return (
-    <DetailViewerSection
-      title={t('scriptsRoute.selectedSummary.title')}
-      description={draft.name.trim() || t('scriptsRoute.detail.summaryCard.values.untitled')}
-      className="management-explorer-summary"
-    >
-      <div className="request-work-surface__badges management-explorer-summary__badges">
-        <span className="workspace-chip">{getScriptTypeLabel(draft.scriptType, t)}</span>
-        {selectedTemplate ? <span className="workspace-chip workspace-chip--secondary">{t('scriptsRoute.detail.templateSeededChip')}</span> : null}
-      </div>
-      <KeyValueMetaList
-        items={[
-          {
-            label: t('scriptsRoute.selectedSummary.labels.templateSource'),
-            value: selectedTemplate?.name ?? t('scriptsRoute.detail.summaryCard.values.directAuthoring'),
-          },
-          {
-            label: t('scriptsRoute.selectedSummary.labels.updatedAt'),
-            value: summary?.updatedAt ?? t('scriptsRoute.detail.fallbackSummary'),
-          },
-          {
-            label: t('scriptsRoute.selectedSummary.labels.capabilitySummary'),
-            value: summary?.capabilitySummary ?? t('scriptsRoute.detail.capabilityCard.values.capabilitySummaryFallback'),
-          },
-          {
-            label: t('scriptsRoute.selectedSummary.labels.sourcePreview'),
-            value: summary?.sourcePreview || draft.sourceCode || t('scriptsRoute.list.emptySource'),
-          },
-        ]}
-      />
-    </DetailViewerSection>
-  );
-}
-
 export function ScriptsRoute() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -174,24 +125,6 @@ export function ScriptsRoute() {
 
   const selectedTemplate = typeof activeDraft.templateId === 'string'
     ? (templatesQuery.data ?? []).find((template) => template.id === activeDraft.templateId) ?? null
-    : null;
-  const selectedListScript = !isCreatingDraft
-    ? sortedItems.find((item) => item.id === effectiveSelectedId) ?? null
-    : null;
-  const selectedScriptSummary = !isCreatingDraft
-    ? (detailQuery.data
-      ? {
-          updatedAt: detailQuery.data.updatedAt,
-          capabilitySummary: detailQuery.data.capabilitySummary,
-          sourcePreview: detailQuery.data.sourcePreview,
-        }
-      : (selectedListScript
-        ? {
-            updatedAt: selectedListScript.updatedAt,
-            capabilitySummary: selectedListScript.capabilitySummary,
-            sourcePreview: selectedListScript.sourcePreview,
-          }
-        : null))
     : null;
   const requestedStageLabel = requestedStageFilter === 'all' ? null : getScriptTypeLabel(requestedStageFilter, t);
   const requestedListScript = (listQuery.data ?? []).find((item) => item.id === requestedScriptId) ?? null;
@@ -294,14 +227,6 @@ export function ScriptsRoute() {
                 </select>
               </label>
             </div>
-            {(isCreatingDraft || selectedScriptSummary) ? (
-              <ScriptsExplorerSummaryCard
-                draft={activeDraft}
-                selectedTemplate={selectedTemplate}
-                summary={selectedScriptSummary}
-                t={t}
-              />
-            ) : null}
             {listQuery.isPending && !listQuery.data ? <EmptyStateCallout title={t('scriptsRoute.empty.loadingList.title')} description={t('scriptsRoute.empty.loadingList.description')} /> : null}
             {listQuery.isError ? <EmptyStateCallout title={t('scriptsRoute.empty.degraded.title')} description={resolveApiErrorMessage(listQuery.error, t('scriptsRoute.empty.degraded.fallbackDescription'), t)} /> : null}
             {!listQuery.isPending && (listQuery.data ?? []).length === 0 ? <EmptyStateCallout title={t('scriptsRoute.empty.noItems.title')} description={t('scriptsRoute.empty.noItems.description')} /> : null}

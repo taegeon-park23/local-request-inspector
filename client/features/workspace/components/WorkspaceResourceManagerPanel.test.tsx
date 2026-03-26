@@ -106,6 +106,24 @@ function getRequestGroupSection() {
 }
 
 describe('WorkspaceResourceManagerPanel', () => {
+  it('starts collapsed and toggles manager visibility state from the header control', async () => {
+    const user = userEvent.setup();
+
+    renderApp(
+      <WorkspaceResourceManagerPanel
+        {...createProps({
+          activeTab: createActiveTab(),
+        })}
+      />,
+    );
+
+    const toggleButton = screen.getByRole('button', { name: 'Expand manager panel' });
+    expect(toggleButton).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(toggleButton);
+    expect(screen.getByRole('button', { name: 'Collapse manager panel' })).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('shows nested request groups with full path labels and recursive counts', () => {
     renderApp(
       <WorkspaceResourceManagerPanel

@@ -14,7 +14,9 @@ function createTab(overrides: Partial<RequestTabRecord> & Pick<RequestTabRecord,
 }
 
 describe('RequestTabShell', () => {
-  it('renders localized source labels and bulk-close actions', () => {
+  it('renders localized bulk actions and pin controls for all tab sources', async () => {
+    const user = userEvent.setup();
+    const onPinTab = vi.fn();
     renderApp(
       <RequestTabShell
         tabs={[
@@ -44,11 +46,9 @@ describe('RequestTabShell', () => {
           }),
         ]}
         activeTabId="tab-preview"
-        onCreateRequest={vi.fn()}
-        onCreateQuickRequest={vi.fn()}
         onSelectTab={vi.fn()}
         onCloseTab={vi.fn()}
-        onPinTab={vi.fn()}
+        onPinTab={onPinTab}
         onReopenClosedTab={vi.fn()}
         onCloseCurrentTab={vi.fn()}
         onCloseOtherTabs={vi.fn()}
@@ -62,17 +62,26 @@ describe('RequestTabShell', () => {
     );
 
     expect(screen.getByRole('tablist', { name: '요청 탭 스트립' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '빠른 요청' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '닫은 탭 다시 열기' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '현재 탭 닫기' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '다른 탭 닫기' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '모든 탭 닫기' })).toBeInTheDocument();
     expect(screen.getByLabelText('탭 검색')).toBeInTheDocument();
-    expect(screen.getByText('GET · 미리보기')).toBeInTheDocument();
-    expect(screen.getByText('POST · 빠른')).toBeInTheDocument();
-    expect(screen.getByText('컬렉션 개요')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '새 요청' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '빠른 요청' })).not.toBeInTheDocument();
+
+    expect(screen.getByRole('tab', { name: /Health check/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Scratch/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Saved Requests/i })).toBeInTheDocument();
+
     expect(screen.getByLabelText('Health check 고정')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Scratch 고정됨' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Saved Requests 고정됨' })).toBeDisabled();
     expect(screen.getByLabelText('Saved Requests 닫기')).toBeInTheDocument();
+
+    await user.click(screen.getByLabelText('Health check 고정'));
+    expect(onPinTab).toHaveBeenCalledWith('tab-preview');
+    expect(onPinTab).toHaveBeenCalledTimes(1);
   });
 
   it('filters tabs by search query and shows empty search result copy', async () => {
@@ -99,8 +108,6 @@ describe('RequestTabShell', () => {
           }),
         ]}
         activeTabId="tab-alpha"
-        onCreateRequest={vi.fn()}
-        onCreateQuickRequest={vi.fn()}
         onSelectTab={vi.fn()}
         onCloseTab={vi.fn()}
         onPinTab={vi.fn()}
@@ -118,8 +125,8 @@ describe('RequestTabShell', () => {
     const searchInput = screen.getByLabelText('Tab search');
     await user.type(searchInput, 'Alpha');
 
-    expect(screen.getByText('Alpha Request')).toBeInTheDocument();
-    expect(screen.queryByText('Batch Result')).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Alpha Request/i })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /Batch Result/i })).not.toBeInTheDocument();
 
     await user.clear(searchInput);
     await user.type(searchInput, 'no-match');
@@ -128,3 +135,4 @@ describe('RequestTabShell', () => {
     expect(screen.getByRole('button', { name: 'Reopen Closed Tab' })).toBeDisabled();
   });
 });
+

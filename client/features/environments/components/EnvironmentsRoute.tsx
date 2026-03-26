@@ -92,42 +92,6 @@ function validateDraft(draft: EnvironmentInput, t: ReturnType<typeof useI18n>['t
   return messages;
 }
 
-function EnvironmentExplorerSummaryCard({
-  draft,
-  summary,
-  t,
-}: {
-  draft: EnvironmentInput;
-  summary: {
-    updatedAt: string;
-    resolutionSummary: string;
-  } | null;
-  t: ReturnType<typeof useI18n>['t'];
-}) {
-  return (
-    <DetailViewerSection
-      title={t('environmentsRoute.selectedSummary.title')}
-      description={draft.name.trim() || t('environmentsRoute.detail.summaryCard.values.untitled')}
-      className="management-explorer-summary"
-    >
-      <div className="request-work-surface__badges management-explorer-summary__badges">
-        {draft.isDefault ? <span className="workspace-chip">{t('environmentsRoute.list.defaultChip')}</span> : null}
-        <span className="workspace-chip workspace-chip--secondary">{t('environmentsRoute.list.varsChip', { count: draft.variables.length })}</span>
-      </div>
-      <KeyValueMetaList
-        items={[
-          { label: t('environmentsRoute.selectedSummary.labels.default'), value: draft.isDefault ? t('common.values.yes') : t('common.values.no') },
-          { label: t('environmentsRoute.selectedSummary.labels.variableCount'), value: draft.variables.length },
-          { label: t('environmentsRoute.selectedSummary.labels.enabledVariables'), value: draft.variables.filter((row) => row.isEnabled !== false).length },
-          { label: t('environmentsRoute.selectedSummary.labels.secretVariables'), value: draft.variables.filter((row) => row.isSecret === true).length },
-          { label: t('environmentsRoute.selectedSummary.labels.updatedAt'), value: summary?.updatedAt ?? t('environmentsRoute.detail.fallbackSummary') },
-          { label: t('environmentsRoute.selectedSummary.labels.resolutionSummary'), value: summary?.resolutionSummary ?? t('environmentsRoute.detail.fallbackSummary') },
-        ]}
-      />
-    </DetailViewerSection>
-  );
-}
-
 export function EnvironmentsRoute() {
   const queryClient = useQueryClient();
   const { t } = useI18n();
@@ -178,16 +142,6 @@ export function EnvironmentsRoute() {
       : draft;
   const selectedListEnvironment = !isCreatingDraft
     ? sortedItems.find((item) => item.id === effectiveSelectedId) ?? null
-    : null;
-  const selectedEnvironmentSummary = !isCreatingDraft
-    ? (detailQuery.data
-      ? { updatedAt: detailQuery.data.updatedAt, resolutionSummary: detailQuery.data.resolutionSummary }
-      : (selectedListEnvironment
-        ? {
-            updatedAt: selectedListEnvironment.updatedAt,
-            resolutionSummary: selectedListEnvironment.resolutionSummary,
-          }
-        : null))
     : null;
   const detailDegradedReason = resolveApiErrorMessage(
     detailQuery.error,
@@ -268,13 +222,6 @@ export function EnvironmentsRoute() {
               </select>
             </label>
           </div>
-          {(isCreatingDraft || selectedEnvironmentSummary) ? (
-            <EnvironmentExplorerSummaryCard
-              draft={activeDraft}
-              summary={selectedEnvironmentSummary}
-              t={t}
-            />
-          ) : null}
           {listQuery.isPending && !listQuery.data ? <EmptyStateCallout title={t('environmentsRoute.empty.loadingList.title')} description={t('environmentsRoute.empty.loadingList.description')} /> : null}
           {listQuery.isError ? <EmptyStateCallout title={t('environmentsRoute.empty.degraded.title')} description={resolveApiErrorMessage(listQuery.error, t('environmentsRoute.empty.degraded.fallbackDescription'), t)} /> : null}
           {!listQuery.isPending && (listQuery.data ?? []).length === 0 ? <EmptyStateCallout title={t('environmentsRoute.empty.noItems.title')} description={t('environmentsRoute.empty.noItems.description')} /> : null}

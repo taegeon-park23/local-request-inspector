@@ -2181,8 +2181,6 @@ export function WorkspaceRoute() {
         <RequestTabShell
           tabs={resolvedTabs}
           activeTabId={activeTabId}
-          onCreateRequest={handleCreateRequest}
-          onCreateQuickRequest={handleCreateQuickRequest}
           onSelectTab={handleSelectTab}
           onCloseTab={handleCloseTab}
           onPinTab={pinTab}
@@ -2194,6 +2192,15 @@ export function WorkspaceRoute() {
           canCloseCurrentTab={Boolean(activeTabId)}
           canCloseOtherTabs={Boolean(activeTabId) && tabs.length > 1}
           canCloseAllTabs={tabs.length > 0}
+        />
+
+        <RequestWorkSurface
+          key={`work-${activeTabKey}`}
+          activeTab={activeTab}
+          onCreateRequest={handleCreateRequest}
+          onDuplicateRequest={handleDuplicateRequest}
+          placementOptions={requestPlacementOptions}
+          workspaceTree={explorerTree}
         />
 
         <WorkspaceResourceManagerPanel
@@ -2224,15 +2231,6 @@ export function WorkspaceRoute() {
           isRenamingRequestGroup={renameRequestGroupMutation.isPending}
           isDeletingRequestGroup={deleteRequestGroupMutation.isPending}
         />
-
-        <RequestWorkSurface
-          key={`work-${activeTabKey}`}
-          activeTab={activeTab}
-          onCreateRequest={handleCreateRequest}
-          onDuplicateRequest={handleDuplicateRequest}
-          placementOptions={requestPlacementOptions}
-          workspaceTree={explorerTree}
-        />
         </section>
       )}
       detail={(
@@ -2248,34 +2246,4 @@ export function WorkspaceRoute() {
     />
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

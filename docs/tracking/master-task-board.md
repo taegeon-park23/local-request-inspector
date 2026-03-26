@@ -23,9 +23,9 @@
 
 ## Current State
 - **Current bounded task:** None (`idle` until the next bounded task is promoted).
-- **Most recent archived implementation:** `T100` Workspace Degraded Detail Deduplication.
+- **Most recent archived implementation:** `T102` Browser-Style One-Line Tab Rail + Horizontal Scroll Conversion.
 - **Highest-priority next step:** promote the next bounded task and keep single-task execution discipline.
-- **Verification baseline:** `npm.cmd run lint`, `npm.cmd run typecheck`, and `npm.cmd run test:node` passed on 2026-03-26 after `T100` workspace degraded-detail deduplication updates.
+- **Verification baseline:** `npm.cmd run lint`, `npm.cmd run typecheck`, and `npm.cmd run test:node` passed on 2026-03-26 after `T102` tab-shell browser-rail and pin-icon updates.
 - **Closed UI-test rerun policy:** agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - **Codex UI verification lane:** use the Playwright skill workflow against the dev route or built shell when available.
 - **User-managed local verification:** if UI full-suite verification is still needed, instruct the user to run `npm.cmd run test:ui` locally and treat that result as authoritative.

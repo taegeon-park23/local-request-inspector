@@ -382,49 +382,6 @@ function MatcherEditor({
   );
 }
 
-function MocksExplorerSummaryCard({
-  title,
-  name,
-  ruleState,
-  methodSummary,
-  pathSummary,
-  responseSummary,
-  priorityLabel,
-  fixedDelayLabel,
-  t,
-}: {
-  title: string;
-  name: string;
-  ruleState: MockRuleStateLabel;
-  methodSummary: string;
-  pathSummary: string;
-  responseSummary: string;
-  priorityLabel: string;
-  fixedDelayLabel: string;
-  t: Translate;
-}) {
-  return (
-    <DetailViewerSection
-      title={title}
-      description={name}
-      className="observation-explorer-summary observation-explorer-summary--mocks"
-    >
-      <div className="request-work-surface__badges observation-explorer-summary__badges">
-        <StatusBadge kind="neutral" value={ruleState} />
-        <span className="workspace-chip">{priorityLabel}</span>
-      </div>
-      <KeyValueMetaList
-        items={[
-          { label: t('mocksRoute.sidebar.selectedSummary.labels.methodSummary'), value: methodSummary },
-          { label: t('mocksRoute.sidebar.selectedSummary.labels.pathSummary'), value: pathSummary },
-          { label: t('mocksRoute.sidebar.selectedSummary.labels.responseSummary'), value: responseSummary },
-          { label: t('mocksRoute.sidebar.selectedSummary.labels.fixedDelay'), value: fixedDelayLabel },
-        ]}
-      />
-    </DetailViewerSection>
-  );
-}
-
 export function MocksRoute() {
   const queryClient = useQueryClient();
   const { t } = useI18n();
@@ -577,10 +534,6 @@ export function MocksRoute() {
     isCreatingRule ? t('mocksRoute.helpers.sourceLabels.unsaved') : t('mocksRoute.helpers.sourceLabels.persisted'),
     t,
   );
-  const explorerSelectedRule = !isCreatingRule ? selectedRule : null;
-  const explorerSelectedPresentation = explorerSelectedRule
-    ? presentDraft(createDraft(explorerSelectedRule), t('mocksRoute.helpers.sourceLabels.persisted'), t)
-    : null;
   const currentError = mutationMessage([
     createRuleMutation.error as Error | null,
     updateRuleMutation.error as Error | null,
@@ -676,32 +629,6 @@ export function MocksRoute() {
               </select>
             </label>
           </div>
-
-          {isCreatingRule ? (
-            <MocksExplorerSummaryCard
-              title={t('mocksRoute.detail.header.createTitle')}
-              name={draft.name || t('mocksRoute.helpers.untitledRule')}
-              ruleState={currentPresentation.ruleState}
-              methodSummary={currentPresentation.methodSummary}
-              pathSummary={currentPresentation.pathSummary}
-              responseSummary={currentPresentation.responseSummary}
-              priorityLabel={t('mocksRoute.helpers.priorityChip', { priority: draft.priority })}
-              fixedDelayLabel={currentPresentation.fixedDelayLabel}
-              t={t}
-            />
-          ) : explorerSelectedPresentation && explorerSelectedRule ? (
-            <MocksExplorerSummaryCard
-              title={t('mocksRoute.sidebar.selectedSummary.title')}
-              name={explorerSelectedRule.name}
-              ruleState={explorerSelectedPresentation.ruleState}
-              methodSummary={explorerSelectedPresentation.methodSummary}
-              pathSummary={explorerSelectedPresentation.pathSummary}
-              responseSummary={explorerSelectedPresentation.responseSummary}
-              priorityLabel={t('mocksRoute.helpers.priorityChip', { priority: explorerSelectedRule.priority })}
-              fixedDelayLabel={explorerSelectedPresentation.fixedDelayLabel}
-              t={t}
-            />
-          ) : null}
 
           {isListLoading ? <EmptyStateCallout title={t('mocksRoute.empty.loadingList.title')} description={t('mocksRoute.empty.loadingList.description')} className="mocks-empty-state" /> : null}
           {listQuery.isError ? <EmptyStateCallout title={t('mocksRoute.empty.degraded.title')} description={t('mocksRoute.empty.degraded.description', { reason: degradedReason })} /> : null}

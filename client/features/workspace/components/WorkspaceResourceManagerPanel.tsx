@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
 import type { RequestDraftState } from '@client/features/request-builder/request-draft.types';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
@@ -61,6 +61,7 @@ interface WorkspaceResourceManagerPanelProps {
   isCreatingRequestGroup: boolean;
   isRenamingRequestGroup: boolean;
   isDeletingRequestGroup: boolean;
+  initiallyExpanded?: boolean;
 }
 
 function findCollectionById(tree: WorkspaceCollectionNode[], collectionId: string | null) {
@@ -142,8 +143,10 @@ export function WorkspaceResourceManagerPanel({
   isCreatingRequestGroup,
   isRenamingRequestGroup,
   isDeletingRequestGroup,
+  initiallyExpanded = false,
 }: WorkspaceResourceManagerPanelProps) {
   const { t } = useI18n();
+  const [isExpanded, setIsExpanded] = useState(initiallyExpanded);
   const [selectedCollectionId, setSelectedCollectionId] = useState<string>('');
   const [selectedRequestGroupId, setSelectedRequestGroupId] = useState<string>('');
   const [collectionEditorState, setCollectionEditorState] = useState<{ targetId: string; value: string }>({
@@ -255,27 +258,55 @@ export function WorkspaceResourceManagerPanel({
   const activeTabState = activeTabStateTag
     ? `${baseActiveTabState} · ${activeTabStateTag}`
     : baseActiveTabState;
+  const panelBodyId = useId();
+  const toggleLabel = isExpanded
+    ? t('workspaceRoute.management.actions.collapsePanel')
+    : t('workspaceRoute.management.actions.expandPanel');
 
   return (
-    <section className="workspace-resource-manager workspace-surface-card" aria-label={t('workspaceRoute.management.ariaLabel')}>
+    <section
+      className="workspace-resource-manager workspace-surface-card"
+      aria-label={t('workspaceRoute.management.ariaLabel')}
+      data-expanded={isExpanded ? 'true' : 'false'}
+    >
       <header className="workspace-resource-manager__header management-detail__header">
         <div className="workspace-resource-manager__header-copy">
           <p className="section-placeholder__eyebrow">{t('workspaceRoute.management.header.eyebrow')}</p>
           <h2>{t('workspaceRoute.management.header.title')}</h2>
-          <p className="management-detail__header-meta">{t('workspaceRoute.management.header.summary')}</p>
-          <p className="shared-readiness-note workspace-resource-manager__placement-note">
-            {activePlacementPath
-              ? t('workspaceRoute.management.state.activePlacement', { path: activePlacementPath })
-              : t('workspaceRoute.management.state.noActivePlacement')}
-          </p>
         </div>
+        <div className="workspace-resource-manager__header-actions">
+          <button
+            type="button"
+            className="workspace-button workspace-button--secondary workspace-resource-manager__header-toggle"
+            aria-expanded={isExpanded}
+            aria-controls={panelBodyId}
+            onClick={() => setIsExpanded((current) => !current)}
+          >
+            <IconLabel icon="overview">{toggleLabel}</IconLabel>
+          </button>
+        </div>
+      </header>
+
+      <div
+        id={panelBodyId}
+        className={
+          isExpanded
+            ? 'workspace-resource-manager__content workspace-resource-manager__content--expanded'
+            : 'workspace-resource-manager__content workspace-resource-manager__content--collapsed'
+        }
+      >
+        <p className="management-detail__header-meta">{t('workspaceRoute.management.header.summary')}</p>
+        <p className="shared-readiness-note workspace-resource-manager__placement-note">
+          {activePlacementPath
+            ? t('workspaceRoute.management.state.activePlacement', { path: activePlacementPath })
+            : t('workspaceRoute.management.state.noActivePlacement')}
+        </p>
         <div className="workspace-resource-manager__badge-rail management-detail__badge-rail request-work-surface__badges">
           <span className="workspace-chip">{t('workspaceRoute.management.badges.savedTree')}</span>
           <span className="workspace-chip workspace-chip--secondary">{t('workspaceRoute.management.badges.mainSurface')}</span>
         </div>
-      </header>
 
-      <div className="workspace-resource-manager__grid">
+        <div className="workspace-resource-manager__grid">
         <section className="workspace-resource-manager__section workspace-resource-manager__section--transfer">
           <div className="workspace-resource-manager__section-copy">
             <h3>{t('workspaceRoute.management.sections.transferTitle')}</h3>
@@ -633,7 +664,9 @@ export function WorkspaceResourceManagerPanel({
           ) : null}
         </section>
       </div>
+      </div>
     </section>
   );
 }
+
 

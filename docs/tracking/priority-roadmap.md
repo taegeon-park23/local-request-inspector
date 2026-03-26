@@ -35,6 +35,8 @@
 26. `T098` API Transport Error Normalization is archived.
 27. `T099` Backend-Unavailable UI Message Normalization is archived.
 28. `T100` Workspace Degraded Detail Deduplication is archived.
+29. `T101` Explorer Selected-Summary Card Removal is archived.
+30. `T102` Browser-Style One-Line Tab Rail + Horizontal Scroll Conversion is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.

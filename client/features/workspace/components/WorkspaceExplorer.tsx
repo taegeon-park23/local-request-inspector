@@ -42,74 +42,6 @@ function stopEvent(event: MouseEvent<HTMLButtonElement>) {
   event.stopPropagation();
 }
 
-function findSelectionPath(
-  tree: WorkspaceCollectionNode[],
-  selectedItemKind: WorkspaceExplorerItemKind | null,
-  selectedItemId: string | null,
-): string | null {
-  if (!selectedItemKind || !selectedItemId) {
-    return null;
-  }
-
-  for (const collection of tree) {
-    if (selectedItemKind === 'collection' && collection.collectionId === selectedItemId) {
-      return collection.name;
-    }
-
-    const groupPath = findRequestGroupSelectionPath(collection, selectedItemKind, selectedItemId, [collection.name]);
-    if (groupPath) {
-      return groupPath;
-    }
-  }
-
-  return null;
-}
-
-function findRequestGroupSelectionPath(
-  collection: WorkspaceCollectionNode,
-  selectedItemKind: WorkspaceExplorerItemKind,
-  selectedItemId: string,
-  path: string[],
-): string | null {
-  for (const requestGroup of collection.childGroups) {
-    const foundPath = walkRequestGroupSelectionPath(requestGroup, selectedItemKind, selectedItemId, path);
-    if (foundPath) {
-      return foundPath;
-    }
-  }
-
-  return null;
-}
-
-function walkRequestGroupSelectionPath(
-  requestGroup: WorkspaceRequestGroupNode,
-  selectedItemKind: WorkspaceExplorerItemKind,
-  selectedItemId: string,
-  path: string[],
-): string | null {
-  const nextPath = [...path, requestGroup.name];
-
-  if (selectedItemKind === 'request-group' && requestGroup.requestGroupId === selectedItemId) {
-    return nextPath.join(' / ');
-  }
-
-  if (selectedItemKind === 'request') {
-    const selectedRequest = requestGroup.requests.find((requestNode) => requestNode.request.id === selectedItemId) ?? null;
-    if (selectedRequest) {
-      return [...nextPath, selectedRequest.request.name].join(' / ');
-    }
-  }
-
-  for (const childGroup of requestGroup.childGroups) {
-    const childPath = walkRequestGroupSelectionPath(childGroup, selectedItemKind, selectedItemId, nextPath);
-    if (childPath) {
-      return childPath;
-    }
-  }
-
-  return null;
-}
-
 function findSelectionRevealNodeIds(
   tree: WorkspaceCollectionNode[],
   selectedItemKind: WorkspaceExplorerItemKind | null,
@@ -387,7 +319,6 @@ export function WorkspaceExplorer({
   const setNodeCollapsed = useWorkspaceExplorerStore((state) => state.setNodeCollapsed);
   const treeRootRef = useRef<HTMLUListElement | null>(null);
 
-  const selectionPathLabel = findSelectionPath(tree, selectedItemKind, selectedItemId);
   const normalizedSearchQuery = normalizeSearchText(searchQuery);
   const filteredTree = useMemo(
     () => filterCollections(tree, normalizedSearchQuery),
@@ -790,11 +721,6 @@ export function WorkspaceExplorer({
             onChange={(event) => setSearchQuery(event.currentTarget.value)}
           />
         </label>
-        <p className="workspace-explorer__selection-line">
-          {selectionPathLabel
-            ? t('workspaceRoute.explorer.selection.current', { path: selectionPathLabel })
-            : t('workspaceRoute.explorer.selection.none')}
-        </p>
       </header>
       <ul
         ref={treeRootRef}

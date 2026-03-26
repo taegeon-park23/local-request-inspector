@@ -2,13 +2,12 @@ import { useMemo, useState } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
 import { isRequestWorkbenchTab } from '@client/features/request-builder/request-tab-state';
+import { AppIcon } from '@client/shared/ui/AppIcon';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 
 interface RequestTabShellProps {
   tabs: RequestTabRecord[];
   activeTabId: string | null;
-  onCreateRequest: () => void;
-  onCreateQuickRequest: () => void;
   onSelectTab: (tabId: string) => void;
   onCloseTab: (tabId: string) => void;
   onPinTab: (tabId: string) => void;
@@ -89,8 +88,6 @@ function getTabStateLabel(
 export function RequestTabShell({
   tabs,
   activeTabId,
-  onCreateRequest,
-  onCreateQuickRequest,
   onSelectTab,
   onCloseTab,
   onPinTab,
@@ -121,7 +118,7 @@ export function RequestTabShell({
 
   return (
     <div className="request-tab-shell">
-      <div className="request-tab-shell__strip" role="tablist" aria-label={t('workspaceRoute.tabShell.ariaLabel')}>
+      <div className="request-tab-shell__toolbar">
         <div className="request-tab-shell__controls">
           <input
             type="search"
@@ -133,39 +130,43 @@ export function RequestTabShell({
           />
         </div>
 
-        <button
-          type="button"
-          className="request-tab-shell__new-tab"
-          onClick={onReopenClosedTab}
-          disabled={!canReopenClosedTab}
-        >
-          <IconLabel icon="replay">{t('workspaceRoute.tabShell.reopenClosedTab')}</IconLabel>
-        </button>
-        <button
-          type="button"
-          className="request-tab-shell__new-tab"
-          onClick={onCloseCurrentTab}
-          disabled={!canCloseCurrentTab}
-        >
-          {t('workspaceRoute.tabShell.closeCurrentTab')}
-        </button>
-        <button
-          type="button"
-          className="request-tab-shell__new-tab"
-          onClick={onCloseOtherTabs}
-          disabled={!canCloseOtherTabs}
-        >
-          {t('workspaceRoute.tabShell.closeOtherTabs')}
-        </button>
-        <button
-          type="button"
-          className="request-tab-shell__new-tab"
-          onClick={onCloseAllTabs}
-          disabled={!canCloseAllTabs}
-        >
-          {t('workspaceRoute.tabShell.closeAllTabs')}
-        </button>
+        <div className="request-tab-shell__bulk-actions">
+          <button
+            type="button"
+            className="request-tab-shell__new-tab"
+            onClick={onReopenClosedTab}
+            disabled={!canReopenClosedTab}
+          >
+            <IconLabel icon="replay">{t('workspaceRoute.tabShell.reopenClosedTab')}</IconLabel>
+          </button>
+          <button
+            type="button"
+            className="request-tab-shell__new-tab"
+            onClick={onCloseCurrentTab}
+            disabled={!canCloseCurrentTab}
+          >
+            {t('workspaceRoute.tabShell.closeCurrentTab')}
+          </button>
+          <button
+            type="button"
+            className="request-tab-shell__new-tab"
+            onClick={onCloseOtherTabs}
+            disabled={!canCloseOtherTabs}
+          >
+            {t('workspaceRoute.tabShell.closeOtherTabs')}
+          </button>
+          <button
+            type="button"
+            className="request-tab-shell__new-tab"
+            onClick={onCloseAllTabs}
+            disabled={!canCloseAllTabs}
+          >
+            {t('workspaceRoute.tabShell.closeAllTabs')}
+          </button>
+        </div>
+      </div>
 
+      <div className="request-tab-shell__rail" role="tablist" aria-label={t('workspaceRoute.tabShell.ariaLabel')}>
         {tabs.length === 0 ? (
           <p className="request-tab-shell__strip-empty">{t('workspaceRoute.tabShell.empty')}</p>
         ) : normalizedQuery.length > 0 && filteredTabs.length === 0 ? (
@@ -189,14 +190,36 @@ export function RequestTabShell({
               className={isActive ? 'request-tab request-tab--active' : 'request-tab'}
               data-active={isActive}
             >
+              {tab.tabMode === 'preview' ? (
+                <button
+                  type="button"
+                  className="request-tab__pin request-tab__pin--interactive"
+                  aria-label={t('workspaceRoute.tabShell.pinTab', { title: tab.title })}
+                  onClick={() => onPinTab(tab.id)}
+                >
+                  <AppIcon name="pin" size={14} />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="request-tab__pin request-tab__pin--pinned"
+                  aria-label={t('workspaceRoute.tabShell.pinnedTab', { title: tab.title })}
+                  disabled
+                >
+                  <AppIcon name="pin" size={14} />
+                </button>
+              )}
+
               <button
                 type="button"
                 role="tab"
                 className="request-tab__button"
                 aria-selected={isActive}
+                title={tabMeta.length > 0 ? `${tab.title} · ${tabMeta}` : tab.title}
                 onClick={() => onSelectTab(tab.id)}
               >
-                <span className="request-tab__title-row">
+                <span className="request-tab__label">
+                  {isRequestTab ? <span className="request-tab__method">{tab.methodLabel}</span> : null}
                   <span className="request-tab__title">{tab.title}</span>
                   {tab.hasUnsavedChanges ? (
                     <span className="request-tab__dirty" aria-label={t('workspaceRoute.tabShell.dirtyIndicator', { title: tab.title })}>
@@ -204,36 +227,19 @@ export function RequestTabShell({
                     </span>
                   ) : null}
                 </span>
-                <span className="request-tab__meta">{tabMeta}</span>
               </button>
-              {tab.tabMode === 'preview' ? (
-                <button
-                  type="button"
-                  className="request-tab__close"
-                  aria-label={t('workspaceRoute.tabShell.pinTab', { title: tab.title })}
-                  onClick={() => onPinTab(tab.id)}
-                >
-                  {t('workspaceRoute.tabShell.pinAction')}
-                </button>
-              ) : null}
+
               <button
                 type="button"
                 className="request-tab__close"
                 aria-label={t('workspaceRoute.tabShell.closeTab', { title: tab.title })}
                 onClick={() => onCloseTab(tab.id)}
               >
-                x
+                <AppIcon name="disable" size={14} />
               </button>
             </div>
           );
         })}
-
-        <button type="button" className="request-tab-shell__new-tab" onClick={onCreateRequest}>
-          <IconLabel icon="new">{t('workspaceRoute.tabShell.newRequest')}</IconLabel>
-        </button>
-        <button type="button" className="request-tab-shell__new-tab" onClick={onCreateQuickRequest}>
-          <IconLabel icon="new">{t('workspaceRoute.tabShell.quickRequest')}</IconLabel>
-        </button>
       </div>
     </div>
   );

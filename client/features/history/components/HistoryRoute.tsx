@@ -164,38 +164,6 @@ function renderEnvironmentResolutionSummary(history: HistoryRecord, t: Translate
   );
 }
 
-function HistoryExplorerSummaryCard({
-  history,
-  t,
-}: {
-  history: HistoryRecord;
-  t: Translate;
-}) {
-  return (
-    <DetailViewerSection
-      title={t('historyRoute.sidebar.selectedSummary.title')}
-      description={history.requestLabel}
-      className="observation-explorer-summary observation-explorer-summary--history"
-    >
-      <div className="request-work-surface__badges observation-explorer-summary__badges">
-        <span className="workspace-chip">{history.method}</span>
-        <StatusBadge kind="executionOutcome" value={history.executionOutcome} />
-        <StatusBadge kind="transportOutcome" value={history.transportOutcome} />
-      </div>
-      <p className="observation-explorer-summary__path">{history.hostPathHint}</p>
-      <KeyValueMetaList
-        items={[
-          { label: t('historyRoute.summaryCards.requestSnapshot.labels.snapshotSource'), value: history.sourceLabel },
-          { label: t('historyRoute.sidebar.selectedSummary.labels.transportOutcome'), value: history.transportOutcome },
-          { label: t('historyRoute.sidebar.selectedSummary.labels.tests'), value: history.testSummaryLabel },
-          { label: t('historyRoute.sidebar.selectedSummary.labels.duration'), value: history.durationLabel },
-          { label: t('historyRoute.sidebar.selectedSummary.labels.executedAt'), value: history.executedAtLabel },
-        ]}
-      />
-    </DetailViewerSection>
-  );
-}
-
 export function HistoryRoute() {
   const navigate = useNavigate();
   const { t } = useI18n();
@@ -345,10 +313,6 @@ export function HistoryRoute() {
               </select>
             </label>
           </div>
-
-          {selectedHistory ? (
-            <HistoryExplorerSummaryCard history={selectedHistory} t={t} />
-          ) : null}
 
           {isListLoading ? (
             <EmptyStateCallout

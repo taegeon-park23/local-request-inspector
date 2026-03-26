@@ -114,36 +114,6 @@ function getCaptureObservationSourceLabel(t: TranslateFn) {
   return t('capturesRoute.helpers.observationSourceLabel');
 }
 
-function CapturesExplorerSummaryCard({
-  capture,
-  t,
-}: {
-  capture: CaptureRecord;
-  t: TranslateFn;
-}) {
-  return (
-    <DetailViewerSection
-      title={t('capturesRoute.sidebar.selectedSummary.title')}
-      description={`${capture.method} ${capture.path}`}
-      className="observation-explorer-summary observation-explorer-summary--captures"
-    >
-      <div className="request-work-surface__badges observation-explorer-summary__badges">
-        <span className="workspace-chip">{capture.method}</span>
-        <StatusBadge kind="mockOutcome" value={capture.mockOutcome} />
-      </div>
-      <p className="observation-explorer-summary__path">{capture.host}{capture.path}</p>
-      <KeyValueMetaList
-        items={[
-          { label: t('capturesRoute.sidebar.selectedSummary.labels.scope'), value: capture.scopeLabel },
-          { label: t('capturesRoute.sidebar.selectedSummary.labels.observedAt'), value: capture.receivedAtLabel },
-          { label: t('capturesRoute.sidebar.selectedSummary.labels.bodyHint'), value: capture.bodyHint },
-          { label: t('capturesRoute.sidebar.selectedSummary.labels.previewPolicy'), value: getCaptureBodyPreviewPolicy(capture, t) },
-        ]}
-      />
-    </DetailViewerSection>
-  );
-}
-
 export function CapturesRoute() {
   const navigate = useNavigate();
   const { t } = useI18n();
@@ -272,10 +242,6 @@ export function CapturesRoute() {
               </select>
             </label>
           </div>
-
-          {selectedCapture ? (
-            <CapturesExplorerSummaryCard capture={selectedCapture} t={t} />
-          ) : null}
 
           {isLoading ? (
             <EmptyStateCallout

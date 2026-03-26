@@ -7,6 +7,8 @@
 - **Update Rule:** Update after each active-task status change or verification-state change.
 
 ## Current Snapshot
+- `T102` is archived after converting the tab shell into a browser-style one-line rail with horizontal overflow scrolling, moving search/bulk-close controls to a dedicated toolbar, removing in-rail `새 요청/빠른 요청` actions, and adding left-side pin icons for preview/pinned tabs across request and overview sources.
+- `T101` is archived after removing redundant selected-item explorer summary cards across management/observation routes and deleting the workspace explorer selection summary line while preserving list workflows.
 - `T100` is archived after adding backend-unavailable error classification and deduplicating repeated workspace degraded detail lines while preserving resource-specific diagnostics for non-transport failures.
 - `T099` is archived after introducing shared localized transport-error messaging (`backend_unavailable`/`invalid_api_response`) across workspace, settings, environments, scripts, mocks, captures, history, and request-builder save/run status flows.
 - `T098` is archived after introducing shared frontend API response parsing, classifying backend-unavailable/proxy failures into deterministic actionable errors, and removing duplicated per-module parser seams.

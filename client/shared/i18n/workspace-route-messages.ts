@@ -290,6 +290,8 @@ export const workspaceRouteMessagesEn = {
         manageRequestGroup: 'Manage request group',
       },
       actions: {
+        expandPanel: 'Expand manager panel',
+        collapsePanel: 'Collapse manager panel',
         exportSavedRequest: 'Export saved request',
         deleteSavedRequest: 'Delete saved request',
       },
@@ -341,6 +343,7 @@ export const workspaceRouteMessagesEn = {
       dirtyIndicator: '{title} has unsaved changes',
       pinAction: 'Pin',
       pinTab: 'Pin {title}',
+      pinnedTab: '{title} is pinned',
       closeTab: 'Close {title}',
       searchLabel: 'Tab search',
       searchPlaceholder: 'Search open tabs',
@@ -1406,6 +1409,8 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         manageRequestGroup: '관리할 요청 그룹',
       },
       actions: {
+        expandPanel: '관리 패널 펼치기',
+        collapsePanel: '관리 패널 접기',
         exportSavedRequest: '저장 요청 내보내기',
         deleteSavedRequest: '저장 요청 삭제',
       },
@@ -1457,6 +1462,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
       dirtyIndicator: '{title}에 저장되지 않은 변경이 있습니다',
       pinAction: '고정',
       pinTab: '{title} 고정',
+      pinnedTab: '{title} 고정됨',
       closeTab: '{title} 닫기',
       searchLabel: '탭 검색',
       searchPlaceholder: '열린 탭 검색',
@@ -2226,11 +2232,4 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
     },
   },
 };
-
-
-
-
-
-
-
 

@@ -42,7 +42,8 @@ export type AppIconName =
   | 'command'
   | 'paths'
   | 'summary'
-  | 'warning';
+  | 'warning'
+  | 'pin';
 
 interface AppIconProps extends Omit<SVGProps<SVGSVGElement>, 'children'> {
   name: AppIconName;
@@ -125,6 +126,8 @@ function resolveCanonicalName(name: AppIconName) {
       return 'route';
     case 'warning':
       return 'warning';
+    case 'pin':
+      return 'pin';
     default:
       return name;
   }
@@ -391,6 +394,14 @@ function renderIcon(name: ReturnType<typeof resolveCanonicalName>) {
           <path d="M12 5.25 19.5 18.5h-15Z" />
           <path d="M12 10v4.5" />
           <circle cx="12" cy="16.6" r="0.9" fill="currentColor" stroke="none" />
+        </>
+      );
+    case 'pin':
+      return (
+        <>
+          <path d="M9.5 5.5h5l1.25 3.25H8.25Z" />
+          <path d="M12 8.75v7.5" />
+          <path d="m12 16.25-1.75 2.25" />
         </>
       );
     default:
