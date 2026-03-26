@@ -56,6 +56,10 @@ const enCatalog = {
         collapseAction: 'Collapse explorer',
         expandAction: 'Expand explorer',
       },
+      detailPanel: {
+        expandAction: 'Expand details panel',
+        restoreAction: 'Restore details panel',
+      },
     },
   },
   roles: {
@@ -409,6 +413,10 @@ const koCatalog: CatalogShape<typeof enCatalog> = {
       floatingExplorer: {
         collapseAction: '탐색기 접기',
         expandAction: '탐색기 펼치기',
+      },
+      detailPanel: {
+        expandAction: '세부 패널 확장',
+        restoreAction: '세부 패널 원복',
       },
     },
   },

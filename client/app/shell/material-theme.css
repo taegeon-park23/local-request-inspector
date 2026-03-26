@@ -99,6 +99,9 @@
   --app-status-warn: #f2c078;
   --app-status-error: #ffb4ab;
   --app-status-neutral: #c0c7ce;
+  --app-scrollbar-size: 0.24rem;
+  --app-scrollbar-thumb: rgba(192, 199, 206, 0.34);
+  --app-scrollbar-thumb-hover: rgba(192, 199, 206, 0.52);
 }
 
 :root[data-theme="light"] {
@@ -133,6 +136,8 @@
   --m3-color-inverse-on-surface: #eff1f7;
   --m3-color-inverse-primary: #9bd1ff;
   --m3-color-scrim: rgba(0, 0, 0, 0.32);
+  --app-scrollbar-thumb: rgba(114, 119, 127, 0.36);
+  --app-scrollbar-thumb-hover: rgba(83, 95, 112, 0.54);
 }
 
 html {
@@ -143,6 +148,34 @@ html {
 body {
   background: var(--m3-color-surface);
   color: var(--m3-color-on-surface);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--app-scrollbar-thumb) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: var(--app-scrollbar-size);
+  height: var(--app-scrollbar-size);
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: var(--m3-shape-full);
+  background: var(--app-scrollbar-thumb);
+}
+
+*:hover::-webkit-scrollbar-thumb,
+*:focus-within::-webkit-scrollbar-thumb {
+  background: var(--app-scrollbar-thumb-hover);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 :where(button, input, select, textarea, a) {
@@ -1435,7 +1468,7 @@ body {
 }
 
 .request-tab-shell__rail {
-  --request-tab-scrollbar-space: 0.42rem;
+  --request-tab-scrollbar-space: 0.3rem;
   display: flex;
   flex-wrap: nowrap;
   align-items: stretch;
@@ -1458,12 +1491,12 @@ body {
 }
 
 .request-tab-shell__rail:focus-within::-webkit-scrollbar {
-  height: 0.45rem;
+  height: 0.28rem;
 }
 
 .request-tab-shell__rail::-webkit-scrollbar-thumb {
   border-radius: var(--m3-shape-full);
-  background: rgba(192, 199, 206, 0.38);
+  background: var(--app-scrollbar-thumb);
 }
 
 .request-tab-shell__search-input {
@@ -4107,6 +4140,7 @@ body {
   grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
   grid-template-rows: minmax(0, 1fr);
   gap: 0.75rem;
+  position: relative;
   min-width: 0;
   min-height: 0;
   height: 100%;
@@ -4117,6 +4151,7 @@ body {
 .shell-route-panels__floating-detail {
   display: grid;
   grid-template-rows: minmax(0, 1fr);
+  position: relative;
   min-width: 0;
   min-height: 0;
   height: 100%;
@@ -4129,6 +4164,51 @@ body {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+.shell-route-panels__detail-toggle {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  z-index: 4;
+  width: 2rem;
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 0;
+  border-radius: 0.7rem;
+}
+
+.shell-route-panels__detail-toggle .app-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.shell-route-panels__floating-detail--expanded {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: min(42rem, calc(100% - 0.75rem));
+  max-width: 100%;
+  z-index: 4;
+}
+
+.shell-route-panels__floating-detail--expanded::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 -1rem;
+  width: 1rem;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(2, 6, 23, 0.42),
+    rgba(2, 6, 23, 0)
+  );
+}
+
+.shell-route-panels__floating-detail--expanded > .shell-panel {
+  box-shadow:
+    -20px 0 32px rgba(2, 6, 23, 0.34),
+    0 20px 40px rgba(4, 9, 18, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .shell-route-panels--floating[data-floating-explorer-open="true"]

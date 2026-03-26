@@ -10,6 +10,7 @@ export type FloatingExplorerRouteKey =
   | 'scripts';
 
 type FloatingExplorerOpenByRoute = Record<FloatingExplorerRouteKey, boolean>;
+type DetailPanelExpandedByRoute = Record<FloatingExplorerRouteKey, boolean>;
 export type ShellDensityMode = 'compact' | 'comfortable';
 
 export const shellNavRailPreferenceStorageKey = 'local-request-inspector.shell.navRailCollapsed';
@@ -31,6 +32,7 @@ interface ShellState {
   floatingExplorerDefaultOpen: boolean;
   shellDensityMode: ShellDensityMode;
   floatingExplorerOpenByRoute: FloatingExplorerOpenByRoute;
+  detailPanelExpandedByRoute: DetailPanelExpandedByRoute;
   setRuntimeConnectionHealth: (health: RuntimeConnectionHealth) => void;
   setNavRailCollapsed: (collapsed: boolean) => void;
   setFloatingExplorerDefaultOpen: (open: boolean) => void;
@@ -38,6 +40,8 @@ interface ShellState {
   toggleNavRailCollapsed: () => void;
   setFloatingExplorerOpen: (route: FloatingExplorerRouteKey, open: boolean) => void;
   toggleFloatingExplorer: (route: FloatingExplorerRouteKey) => void;
+  setDetailPanelExpanded: (route: FloatingExplorerRouteKey, expanded: boolean) => void;
+  toggleDetailPanelExpanded: (route: FloatingExplorerRouteKey) => void;
 }
 
 function readNavRailPreference() {
@@ -121,7 +125,14 @@ function createFloatingExplorerOpenByRoute(open: boolean): FloatingExplorerOpenB
   }, {} as FloatingExplorerOpenByRoute);
 }
 
-function createInitialShellState(): Pick<ShellState, 'runtimeConnectionHealth' | 'navRailCollapsed' | 'floatingExplorerDefaultOpen' | 'shellDensityMode' | 'floatingExplorerOpenByRoute'> {
+function createDetailPanelExpandedByRoute(expanded: boolean): DetailPanelExpandedByRoute {
+  return floatingExplorerRouteKeys.reduce<DetailPanelExpandedByRoute>((accumulator, routeKey) => {
+    accumulator[routeKey] = expanded;
+    return accumulator;
+  }, {} as DetailPanelExpandedByRoute);
+}
+
+function createInitialShellState(): Pick<ShellState, 'runtimeConnectionHealth' | 'navRailCollapsed' | 'floatingExplorerDefaultOpen' | 'shellDensityMode' | 'floatingExplorerOpenByRoute' | 'detailPanelExpandedByRoute'> {
   const floatingExplorerDefaultOpen = readFloatingExplorerDefaultOpenPreference();
   return {
     runtimeConnectionHealth: 'idle',
@@ -129,6 +140,7 @@ function createInitialShellState(): Pick<ShellState, 'runtimeConnectionHealth' |
     floatingExplorerDefaultOpen,
     shellDensityMode: readShellDensityPreference(),
     floatingExplorerOpenByRoute: createFloatingExplorerOpenByRoute(floatingExplorerDefaultOpen),
+    detailPanelExpandedByRoute: createDetailPanelExpandedByRoute(false),
   };
 }
 
@@ -165,6 +177,18 @@ export const useShellStore = create<ShellState>((set) => ({
     floatingExplorerOpenByRoute: {
       ...state.floatingExplorerOpenByRoute,
       [route]: !state.floatingExplorerOpenByRoute[route],
+    },
+  })),
+  setDetailPanelExpanded: (route, expanded) => set((state) => ({
+    detailPanelExpandedByRoute: {
+      ...state.detailPanelExpandedByRoute,
+      [route]: expanded,
+    },
+  })),
+  toggleDetailPanelExpanded: (route) => set((state) => ({
+    detailPanelExpandedByRoute: {
+      ...state.detailPanelExpandedByRoute,
+      [route]: !state.detailPanelExpandedByRoute[route],
     },
   })),
 }));

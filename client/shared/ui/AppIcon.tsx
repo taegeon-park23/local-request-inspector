@@ -43,7 +43,9 @@ export type AppIconName =
   | 'paths'
   | 'summary'
   | 'warning'
-  | 'pin';
+  | 'pin'
+  | 'maximize'
+  | 'minimize';
 
 interface AppIconProps extends Omit<SVGProps<SVGSVGElement>, 'children'> {
   name: AppIconName;
@@ -128,6 +130,10 @@ function resolveCanonicalName(name: AppIconName) {
       return 'warning';
     case 'pin':
       return 'pin';
+    case 'maximize':
+      return 'maximize';
+    case 'minimize':
+      return 'minimize';
     default:
       return name;
   }
@@ -402,6 +408,32 @@ function renderIcon(name: ReturnType<typeof resolveCanonicalName>) {
           <path d="M9.5 5.5h5l1.25 3.25H8.25Z" />
           <path d="M12 8.75v7.5" />
           <path d="m12 16.25-1.75 2.25" />
+        </>
+      );
+    case 'maximize':
+      return (
+        <>
+          <path d="M9 5.5H5.5V9" />
+          <path d="m5.5 5.5 5 5" />
+          <path d="M15 18.5h3.5V15" />
+          <path d="m18.5 18.5-5-5" />
+          <path d="M15 5.5h3.5V9" />
+          <path d="m18.5 5.5-5 5" />
+          <path d="M9 18.5H5.5V15" />
+          <path d="m5.5 18.5 5-5" />
+        </>
+      );
+    case 'minimize':
+      return (
+        <>
+          <path d="M9 9H5.5V5.5" />
+          <path d="m5.5 5.5 3.5 3.5" />
+          <path d="M15 15h3.5v3.5" />
+          <path d="m18.5 18.5-3.5-3.5" />
+          <path d="M15 9h3.5V5.5" />
+          <path d="m18.5 5.5-3.5 3.5" />
+          <path d="M9 15H5.5v3.5" />
+          <path d="m5.5 18.5 3.5-3.5" />
         </>
       );
     default:

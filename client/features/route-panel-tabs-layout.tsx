@@ -42,10 +42,14 @@ export function RoutePanelTabsLayout({
   onActiveTabChange,
 }: RoutePanelTabsLayoutProps) {
   const { t } = useI18n();
+  const detailPanelExpanded = useShellStore((state) => (
+    floatingExplorerRouteKey ? state.detailPanelExpandedByRoute[floatingExplorerRouteKey] : false
+  ));
   const floatingExplorerOpen = useShellStore((state) => (
     floatingExplorerRouteKey ? state.floatingExplorerOpenByRoute[floatingExplorerRouteKey] : false
   ));
   const setFloatingExplorerOpen = useShellStore((state) => state.setFloatingExplorerOpen);
+  const setDetailPanelExpanded = useShellStore((state) => state.setDetailPanelExpanded);
   const [uncontrolledActiveTab, setUncontrolledActiveTab] = useState<RoutePanelTabId>(defaultActiveTab);
   const activeTab = controlledActiveTab ?? uncontrolledActiveTab;
 
@@ -62,6 +66,18 @@ export function RoutePanelTabsLayout({
     { id: 'main', label: t('shell.routePanels.main'), icon: routePanelTabIcons.main },
     { id: 'detail', label: t('shell.routePanels.detail'), icon: routePanelTabIcons.detail },
   ];
+
+  const detailPanelToggleLabel = detailPanelExpanded
+    ? t('shell.routePanels.detailPanel.restoreAction')
+    : t('shell.routePanels.detailPanel.expandAction');
+
+  const handleDetailPanelToggle = () => {
+    if (!floatingExplorerRouteKey) {
+      return;
+    }
+
+    setDetailPanelExpanded(floatingExplorerRouteKey, !detailPanelExpanded);
+  };
 
   if (layoutMode === 'floating-explorer' && floatingExplorerRouteKey) {
     const isFocusedOverlay = floatingExplorerVariant === 'focused-overlay';
@@ -141,12 +157,26 @@ export function RoutePanelTabsLayout({
               {main}
             </div>
             <div
-              className={isFocusedOverlay && floatingExplorerOpen
-                ? 'shell-route-panels__floating-detail shell-route-panels__floating-detail--hidden'
-                : 'shell-route-panels__floating-detail'}
+              className={[
+                isFocusedOverlay && floatingExplorerOpen
+                  ? 'shell-route-panels__floating-detail shell-route-panels__floating-detail--hidden'
+                  : 'shell-route-panels__floating-detail',
+                detailPanelExpanded ? 'shell-route-panels__floating-detail--expanded' : null,
+              ].filter(Boolean).join(' ')}
               data-route-panel={activeTab === 'detail' ? 'detail-active' : 'detail'}
               data-detail-visibility={isFocusedOverlay && floatingExplorerOpen ? 'hidden' : 'visible'}
+              data-detail-expanded={detailPanelExpanded ? 'true' : 'false'}
             >
+              <button
+                type="button"
+                className="workspace-button workspace-button--secondary shell-route-panels__detail-toggle"
+                aria-label={detailPanelToggleLabel}
+                title={detailPanelToggleLabel}
+                aria-pressed={detailPanelExpanded}
+                onClick={handleDetailPanelToggle}
+              >
+                <AppIcon name={detailPanelExpanded ? 'minimize' : 'maximize'} />
+              </button>
               {detail}
             </div>
           </div>
