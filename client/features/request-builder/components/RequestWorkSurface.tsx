@@ -63,6 +63,7 @@ function getLocalizedRequestEditorTabLabel(
 }
 
 const httpMethodOptions: RequestDraftState['method'][] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+const EMPTY_MULTIPART_FILES_BY_ROW_ID: Record<string, File[]> = {};
 const bodyModeOptions: RequestDraftState['bodyMode'][] = ['none', 'json', 'text', 'form-urlencoded', 'multipart-form-data'];
 const authTypeOptions: RequestDraftState['auth']['type'][] = ['none', 'bearer', 'basic', 'api-key'];
 
@@ -229,9 +230,9 @@ export function RequestWorkSurface({
   const linkScriptStageToSavedScript = useRequestDraftStore((state) => state.linkScriptStageToSavedScript);
   const updateSelectedEnvironmentId = useRequestDraftStore((state) => state.updateSelectedEnvironmentId);
   const updateDraftPlacement = useRequestDraftStore((state) => state.updateDraftPlacement);
-  const multipartFilesByRowId = useRequestDraftStore((state) =>
-    activeTab ? state.multipartFilesByTabId[activeTab.id] ?? {} : {},
-  );
+  const multipartFilesByRowId = useRequestDraftStore((state) => (
+    activeTab ? (state.multipartFilesByTabId[activeTab.id] ?? EMPTY_MULTIPART_FILES_BY_ROW_ID) : EMPTY_MULTIPART_FILES_BY_ROW_ID
+  ));
   const setMultipartRowFiles = useRequestDraftStore((state) => state.setMultipartRowFiles);
   const clearMultipartRowFiles = useRequestDraftStore((state) => state.clearMultipartRowFiles);
   const pinTab = useWorkspaceShellStore((state: ReturnType<typeof useWorkspaceShellStore.getState>) => state.pinTab);

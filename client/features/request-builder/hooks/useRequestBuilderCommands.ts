@@ -33,6 +33,8 @@ import { useWorkspaceBatchRunStore } from '@client/features/workspace/state/work
 import { useWorkspaceUiStore } from '@client/features/workspace/state/workspace-ui-store';
 import { resolveApiErrorMessage } from '@client/shared/api-error-message';
 
+const EMPTY_MULTIPART_FILES_BY_ROW_ID: Record<string, File[]> = {};
+
 function isJsonBodyMalformed(draft: RequestDraftState) {
   if (draft.bodyMode !== 'json') {
     return false;
@@ -320,9 +322,9 @@ export function useRequestBuilderCommands(
   const finishRunSuccess = useRequestCommandStore((state) => state.finishRunSuccess);
   const finishRunError = useRequestCommandStore((state) => state.finishRunError);
   const commitSavedDraft = useRequestDraftStore((state) => state.commitSavedDraft);
-  const multipartFilesByRowId = useRequestDraftStore((state) =>
-    activeTab ? state.multipartFilesByTabId[activeTab.id] ?? {} : {},
-  );
+  const multipartFilesByRowId = useRequestDraftStore((state) => (
+    activeTab ? (state.multipartFilesByTabId[activeTab.id] ?? EMPTY_MULTIPART_FILES_BY_ROW_ID) : EMPTY_MULTIPART_FILES_BY_ROW_ID
+  ));
   const markTabSaved = useWorkspaceShellStore((state) => state.markTabSaved);
   const setTabSaveState = useWorkspaceShellStore((state) => state.setTabSaveState);
   const setTabRunState = useWorkspaceShellStore((state) => state.setTabRunState);
