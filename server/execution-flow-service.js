@@ -270,8 +270,8 @@ function createExecutionFlowService(dependencies) {
           ...createScriptStageBlockedResult(
             stageId,
             childResult.errorSummary
-              || childResult.summary
-              || `${createStageLabel(stageId)} was blocked before completion.`,
+            || childResult.summary
+            || `${createStageLabel(stageId)} was blocked before completion.`,
             childResult.errorCode || (childResult.outcome === 'cancelled' ? 'execution_cancelled' : 'script_capability_blocked'),
           ),
           consoleEntries: Array.isArray(childResult.consoleEntries) ? childResult.consoleEntries : [],
@@ -309,14 +309,14 @@ function createExecutionFlowService(dependencies) {
           ? 'failed'
           : 'succeeded',
         childResult.summary || `${createStageLabel(stageId)} completed.`,
-        ...(stageId === 'tests'
+        stageId === 'tests'
           && Array.isArray(childResult.testResults)
           && childResult.testResults.some((result) => result.status === 'failed')
           ? {
             errorCode: childResult.errorCode || 'script_assertion_failed',
             errorSummary: childResult.errorSummary || childResult.summary,
           }
-          : {}),
+          : {},
       ),
       consoleEntries: Array.isArray(childResult.consoleEntries) ? childResult.consoleEntries : [],
       consoleLogCount: Number(childResult.consoleLogCount || 0),
