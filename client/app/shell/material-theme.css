@@ -1840,6 +1840,10 @@ body {
   gap: var(--m3-space-3);
 }
 
+.request-builder-core__header .request-work-surface__header-copy {
+  padding-left: var(--m3-space-2);
+}
+
 .request-builder-core .request-editor-card h3,
 .request-builder-core .request-script-stage-card h4,
 .request-builder-core .request-script-footer h4,
@@ -1896,6 +1900,8 @@ body {
 
 .request-builder-core__command-area {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
   gap: var(--m3-space-3);
   padding: var(--m3-space-4);
   border: 1px solid rgba(255, 255, 255, 0.04);
@@ -1903,6 +1909,15 @@ body {
   background:
     linear-gradient(180deg, rgba(155, 209, 255, 0.06), transparent 12rem),
     rgba(255, 255, 255, 0.02);
+}
+
+.request-builder-core__command-area > * {
+  min-width: 0;
+}
+
+.request-builder-core__command-area .request-work-surface__future-actions {
+  width: 100%;
+  justify-content: flex-start;
 }
 
 .request-builder-core__command-copy-group {
