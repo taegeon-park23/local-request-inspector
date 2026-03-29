@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
 import {
   useShellStore,
@@ -8,9 +8,11 @@ import { AppIcon, type AppIconName } from '@client/shared/ui/AppIcon';
 import { PanelTabs, type PanelTabOption } from '@client/shared/ui/PanelTabs';
 
 export type RoutePanelTabId = 'explorer' | 'main' | 'detail';
+type ContentRoutePanelTabId = Exclude<RoutePanelTabId, 'explorer'>;
 
 type RoutePanelLayoutMode = 'tabs' | 'floating-explorer';
 type FloatingExplorerVariant = 'default' | 'focused-overlay';
+type FloatingLayoutTier = 'wide' | 'balanced' | 'stacked';
 
 interface RoutePanelTabsLayoutProps {
   explorer: ReactNode;
@@ -29,6 +31,27 @@ const routePanelTabIcons: Record<RoutePanelTabId, AppIconName> = {
   main: 'workspace',
   detail: 'info',
 };
+
+const FLOATING_LAYOUT_WIDE_MIN_WIDTH = 1360;
+const FLOATING_LAYOUT_BALANCED_MIN_WIDTH = 1100;
+
+function readFloatingLayoutTier(): FloatingLayoutTier {
+  if (typeof window === 'undefined') {
+    return 'wide';
+  }
+
+  const width = window.innerWidth || document.documentElement.clientWidth || FLOATING_LAYOUT_WIDE_MIN_WIDTH;
+
+  if (width >= FLOATING_LAYOUT_WIDE_MIN_WIDTH) {
+    return 'wide';
+  }
+
+  if (width >= FLOATING_LAYOUT_BALANCED_MIN_WIDTH) {
+    return 'balanced';
+  }
+
+  return 'stacked';
+}
 
 export function RoutePanelTabsLayout({
   explorer,
@@ -51,7 +74,25 @@ export function RoutePanelTabsLayout({
   const setFloatingExplorerOpen = useShellStore((state) => state.setFloatingExplorerOpen);
   const setDetailPanelExpanded = useShellStore((state) => state.setDetailPanelExpanded);
   const [uncontrolledActiveTab, setUncontrolledActiveTab] = useState<RoutePanelTabId>(defaultActiveTab);
+  const [floatingLayoutTier, setFloatingLayoutTier] = useState<FloatingLayoutTier>(() => readFloatingLayoutTier());
   const activeTab = controlledActiveTab ?? uncontrolledActiveTab;
+
+  useEffect(() => {
+    if (layoutMode !== 'floating-explorer') {
+      return undefined;
+    }
+
+    const handleResize = () => {
+      setFloatingLayoutTier(readFloatingLayoutTier());
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [layoutMode]);
 
   const handleActiveTabChange = (tab: RoutePanelTabId) => {
     if (controlledActiveTab === undefined) {
@@ -63,6 +104,10 @@ export function RoutePanelTabsLayout({
 
   const tabs: PanelTabOption<RoutePanelTabId>[] = [
     { id: 'explorer', label: t('shell.routePanels.explorer'), icon: routePanelTabIcons.explorer },
+    { id: 'main', label: t('shell.routePanels.main'), icon: routePanelTabIcons.main },
+    { id: 'detail', label: t('shell.routePanels.detail'), icon: routePanelTabIcons.detail },
+  ];
+  const stackedTabs: PanelTabOption<ContentRoutePanelTabId>[] = [
     { id: 'main', label: t('shell.routePanels.main'), icon: routePanelTabIcons.main },
     { id: 'detail', label: t('shell.routePanels.detail'), icon: routePanelTabIcons.detail },
   ];
@@ -81,14 +126,19 @@ export function RoutePanelTabsLayout({
 
   if (layoutMode === 'floating-explorer' && floatingExplorerRouteKey) {
     const isFocusedOverlay = floatingExplorerVariant === 'focused-overlay';
+    const isStackedTier = floatingLayoutTier === 'stacked';
+    const shouldShowFocusedScrim = isFocusedOverlay && isStackedTier;
+    const stackedActiveTab: ContentRoutePanelTabId = activeTab === 'detail' ? 'detail' : 'main';
     const floatingExplorerToggleLabel = floatingExplorerOpen
       ? t('shell.routePanels.floatingExplorer.collapseAction')
       : t('shell.routePanels.floatingExplorer.expandAction');
     const floatingPanelClassName = [
       'shell-route-panels',
       'shell-route-panels--floating',
+      `shell-route-panels--floating-${floatingLayoutTier}`,
       !floatingExplorerOpen ? 'shell-route-panels--floating-collapsed' : null,
       isFocusedOverlay ? 'shell-route-panels--floating-focused' : null,
+      isStackedTier ? 'shell-route-panels--floating-stacked' : null,
     ]
       .filter(Boolean)
       .join(' ');
@@ -102,9 +152,10 @@ export function RoutePanelTabsLayout({
         className={floatingPanelClassName}
         data-floating-explorer-open={floatingExplorerOpen}
         data-floating-explorer-variant={floatingExplorerVariant}
+        data-floating-layout-tier={floatingLayoutTier}
       >
         <div className="shell-route-panels__floating-layout">
-          {isFocusedOverlay ? (
+          {shouldShowFocusedScrim ? (
             <div
               className={floatingExplorerOpen
                 ? 'shell-route-panels__floating-scrim shell-route-panels__floating-scrim--visible'
@@ -147,38 +198,67 @@ export function RoutePanelTabsLayout({
             </div>
           </div>
           <div className="shell-route-panels__floating-content">
-            <div
-              className={isFocusedOverlay && floatingExplorerOpen
-                ? 'shell-route-panels__floating-main shell-route-panels__floating-main--scrimmed'
-                : 'shell-route-panels__floating-main'}
-              data-route-panel={activeTab === 'main' ? 'main-active' : 'main'}
-              data-scrimmed={isFocusedOverlay && floatingExplorerOpen ? 'true' : 'false'}
-            >
-              {main}
-            </div>
-            <div
-              className={[
-                isFocusedOverlay && floatingExplorerOpen
-                  ? 'shell-route-panels__floating-detail shell-route-panels__floating-detail--hidden'
-                  : 'shell-route-panels__floating-detail',
-                detailPanelExpanded ? 'shell-route-panels__floating-detail--expanded' : null,
-              ].filter(Boolean).join(' ')}
-              data-route-panel={activeTab === 'detail' ? 'detail-active' : 'detail'}
-              data-detail-visibility={isFocusedOverlay && floatingExplorerOpen ? 'hidden' : 'visible'}
-              data-detail-expanded={detailPanelExpanded ? 'true' : 'false'}
-            >
-              <button
-                type="button"
-                className="workspace-button workspace-button--secondary shell-route-panels__detail-toggle"
-                aria-label={detailPanelToggleLabel}
-                title={detailPanelToggleLabel}
-                aria-pressed={detailPanelExpanded}
-                onClick={handleDetailPanelToggle}
-              >
-                <AppIcon name={detailPanelExpanded ? 'minimize' : 'maximize'} />
-              </button>
-              {detail}
-            </div>
+            {isStackedTier ? (
+              <div className="shell-route-panels__floating-stack" data-route-panel={stackedActiveTab}>
+                <PanelTabs
+                  ariaLabel={t('shell.routePanels.tabList')}
+                  tabs={stackedTabs}
+                  activeTab={stackedActiveTab}
+                  onChange={(tab) => handleActiveTabChange(tab)}
+                />
+                <div className="shell-route-panels__floating-stack-panels">
+                  <div
+                    className={stackedActiveTab === 'main'
+                      ? 'shell-route-panels__floating-stack-panel shell-route-panels__floating-stack-panel--active'
+                      : 'shell-route-panels__floating-stack-panel shell-route-panels__floating-stack-panel--inactive'}
+                    data-route-panel="main"
+                  >
+                    {main}
+                  </div>
+                  <div
+                    className={stackedActiveTab === 'detail'
+                      ? 'shell-route-panels__floating-stack-panel shell-route-panels__floating-stack-panel--active'
+                      : 'shell-route-panels__floating-stack-panel shell-route-panels__floating-stack-panel--inactive'}
+                    data-route-panel="detail"
+                  >
+                    {detail}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div
+                  className={shouldShowFocusedScrim && floatingExplorerOpen
+                    ? 'shell-route-panels__floating-main shell-route-panels__floating-main--scrimmed'
+                    : 'shell-route-panels__floating-main'}
+                  data-route-panel={activeTab === 'main' ? 'main-active' : 'main'}
+                  data-scrimmed={shouldShowFocusedScrim && floatingExplorerOpen ? 'true' : 'false'}
+                >
+                  {main}
+                </div>
+                <div
+                  className={[
+                    'shell-route-panels__floating-detail',
+                    detailPanelExpanded ? 'shell-route-panels__floating-detail--expanded' : null,
+                  ].filter(Boolean).join(' ')}
+                  data-route-panel={activeTab === 'detail' ? 'detail-active' : 'detail'}
+                  data-detail-visibility="visible"
+                  data-detail-expanded={detailPanelExpanded ? 'true' : 'false'}
+                >
+                  <button
+                    type="button"
+                    className="workspace-button workspace-button--secondary shell-route-panels__detail-toggle"
+                    aria-label={detailPanelToggleLabel}
+                    title={detailPanelToggleLabel}
+                    aria-pressed={detailPanelExpanded}
+                    onClick={handleDetailPanelToggle}
+                  >
+                    <AppIcon name={detailPanelExpanded ? 'minimize' : 'maximize'} />
+                  </button>
+                  {detail}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

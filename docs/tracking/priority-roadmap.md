@@ -38,14 +38,15 @@
 29. `T101` Explorer Selected-Summary Card Removal is archived.
 30. `T102` Browser-Style One-Line Tab Rail + Horizontal Scroll Conversion is archived.
 31. `T103` Script Editor Modernization (Monaco + Stage Intellisense) is archived.
-32. `T104` remains blocked on user-local UI capture evidence and is intentionally not promoted in Codex.
+32. `T104` was dropped by explicit user reprioritization on 2026-03-29 and is not a live blocker.
 33. `T105` Workspace Core Layout Primitives Cleanup is archived.
+34. `T106` Workspace Pane Responsive Cleanup is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.
 - Define and execute one bounded task at a time.
 - Keep Codex-side UI reruns closed; use Playwright smoke in Codex and reserve `npm.cmd run test:ui` for user-managed local verification.
-- Keep `T104` blocked until user-local capture/runtime evidence is available or the user explicitly reprioritizes it.
+- `T104` is dropped; do not treat missing UI capture evidence as a prerequisite for future bounded tasks.
 
 ## Immediate Next Step
-- Preserve `T104` as blocked, then promote exactly one new bounded task when the next implementation slice is chosen.
+- Promote exactly one follow-up bounded task. Explorer row action safety cleanup is the current leading candidate after `T106`.

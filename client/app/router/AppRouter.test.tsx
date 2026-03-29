@@ -1,6 +1,6 @@
 import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { vi } from 'vitest';
+import { afterEach, beforeEach, vi } from 'vitest';
 import { AppRouter } from '@client/app/router/AppRouter';
 import {
   resetShellStore,
@@ -52,6 +52,30 @@ function installLayoutRectMock() {
   });
 }
 
+const defaultAppRouterViewportWidth = 1440;
+const originalWindowInnerWidth = window.innerWidth;
+
+function setViewportWidth(width: number) {
+  Object.defineProperty(window, 'innerWidth', {
+    configurable: true,
+    writable: true,
+    value: width,
+  });
+
+  window.dispatchEvent(new Event('resize'));
+}
+
+beforeEach(() => {
+  window.localStorage.clear();
+  resetShellStore();
+  setViewportWidth(defaultAppRouterViewportWidth);
+});
+
+afterEach(() => {
+  setViewportWidth(originalWindowInnerWidth);
+  resetShellStore();
+  window.localStorage.clear();
+});
 describe('AppRouter shell bootstrap', () => {
   it('renders the persistent shell regions and nav labels', () => {
     renderApp(<AppRouter />);
@@ -111,8 +135,9 @@ describe('AppRouter shell bootstrap', () => {
 
     const floatingDetail = document.querySelector('.shell-route-panels__floating-detail');
     expect(floatingDetail).not.toBeNull();
-    expect(floatingDetail).toHaveAttribute('data-detail-visibility', 'hidden');
-    expect(document.querySelector('.shell-route-panels__floating-scrim--visible')).not.toBeNull();
+    expect(floatingDetail).toHaveAttribute('data-detail-visibility', 'visible');
+    expect(document.querySelector('.shell-route-panels__floating-scrim--visible')).toBeNull();
+    expect(document.querySelector('.shell-route-panels--floating')).toHaveAttribute('data-floating-layout-tier', 'wide');
     expect(screen.getByRole('button', { name: 'Collapse explorer' })).toBeInTheDocument();
 
     const historyList = await screen.findByLabelText('History list');
@@ -132,7 +157,8 @@ describe('AppRouter shell bootstrap', () => {
       const compactToggle = document.querySelector('.shell-route-panels__floating-toggle--compact');
 
       expect(floatingRoot).toHaveAttribute('data-floating-explorer-variant', 'focused-overlay');
-      expect(floatingDetail).toHaveAttribute('data-detail-visibility', 'hidden');
+      expect(floatingRoot).toHaveAttribute('data-floating-layout-tier', 'wide');
+      expect(floatingDetail).toHaveAttribute('data-detail-visibility', 'visible');
       expect(compactToggle).not.toBeNull();
       expect(screen.getByRole('button', { name: 'Collapse explorer' })).toBeInTheDocument();
     };
@@ -205,7 +231,7 @@ describe('AppRouter shell bootstrap', () => {
     const explorer = screen.getByLabelText('Section explorer');
     const detailPanel = screen.getByLabelText('Contextual detail panel');
     const floatingDetail = document.querySelector('.shell-route-panels__floating-detail');
-    expect(floatingDetail).toHaveAttribute('data-detail-visibility', 'hidden');
+    expect(floatingDetail).toHaveAttribute('data-detail-visibility', 'visible');
     await user.click(within(explorer).getByRole('button', { name: 'Open Health check' }));
 
     expect(screen.getByLabelText('Request URL')).toHaveValue('http://localhost:5671/health');
@@ -317,3 +343,5 @@ describe('AppRouter shell bootstrap', () => {
     expect(screen.getByRole('button', { name: 'Save rule' })).toBeEnabled();
   }, 15000);
 });
+
+

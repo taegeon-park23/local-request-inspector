@@ -7,8 +7,9 @@
 - **Update Rule:** Update after each active-task status change or verification-state change.
 
 ## Current Snapshot
+- `T106` is archived after adding responsive floating-pane tiers to `RoutePanelTabsLayout`, keeping detail visible beside the main surface on desktop widths, collapsing main/detail into a stacked tab lane below the medium breakpoint, and updating shared shell tests to expect the new desktop-wide focused-overlay behavior.
 - `T105` is archived after consolidating shared workspace/request-builder layout primitives into `material-theme.css`, introducing shared `SegmentedControl`/`DialogFooter`/overflow action-menu primitives, reducing the workspace header to one visible top-level `New Request` CTA, stabilizing request key/value multipart rows and create-sheet row recipes, and adding focused component coverage for the new header/tab-shell/settings layouts.
-- `T104` remains blocked on user-local UI capture evidence. The historical task doc is not present in the repo, so the carried-forward title is **확실하지 않음**.
+- `T104` was explicitly dropped by user reprioritization on 2026-03-29. The historical task doc is not present in the repo, so the carried-forward title remains **확실하지 않음**.
 - `T103` is archived after introducing a Monaco-backed shared script editor surface, stage-aware completion/diagnostic profiles, forbidden-token warning markers, linked-stage read-only preview rendering, and save/run flush registration so Request Builder + `/scripts` both persist the latest script text reliably.
 - `T102` is archived after converting the tab shell into a browser-style one-line rail with horizontal overflow scrolling, moving search/bulk-close controls to a dedicated toolbar, removing in-rail `새 요청/빠른 요청` actions, and adding left-side pin icons for preview/pinned tabs across request and overview sources.
 - `T101` is archived after removing redundant selected-item explorer summary cards across management/observation routes and deleting the workspace explorer selection summary line while preserving list workflows.

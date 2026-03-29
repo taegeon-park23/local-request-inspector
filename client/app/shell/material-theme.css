@@ -4197,8 +4197,18 @@ body {
   overflow: hidden;
 }
 
+.shell-route-panels--floating-balanced .shell-route-panels__floating-content {
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, 21rem);
+}
+
+.shell-route-panels--floating-stacked .shell-route-panels__floating-content {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .shell-route-panels__floating-main,
-.shell-route-panels__floating-detail {
+.shell-route-panels__floating-detail,
+.shell-route-panels__floating-stack,
+.shell-route-panels__floating-stack-panel {
   display: grid;
   grid-template-rows: minmax(0, 1fr);
   position: relative;
@@ -4208,8 +4218,39 @@ body {
   overflow: hidden;
 }
 
+.shell-route-panels__floating-stack {
+  gap: 0.75rem;
+}
+
+.shell-route-panels__floating-stack > .shared-panel-tabs {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.shell-route-panels__floating-stack-panels {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.shell-route-panels__floating-stack-panel--inactive {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.shell-route-panels__floating-stack-panel--active {
+  position: relative;
+  display: block;
+  height: 100%;
+}
+
 .shell-route-panels__floating-main > .shell-panel,
-.shell-route-panels__floating-detail > .shell-panel {
+.shell-route-panels__floating-detail > .shell-panel,
+.shell-route-panels__floating-stack-panel > .shell-panel {
   height: 100%;
   min-height: 0;
   overflow-y: auto;
@@ -4270,16 +4311,6 @@ body {
   grid-template-columns: minmax(0, 1fr);
 }
 
-@media (max-width: 1180px) {
-  .shell-route-panels__floating-content {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .shell-route-panels__floating-detail {
-    display: none;
-  }
-}
-
 @media (max-width: 900px) {
   .shell-route-panels__floating-overlay {
     inset: auto auto 1rem 1rem;
@@ -4306,13 +4337,17 @@ body {
     max-width: none;
   }
 
+  .shell-route-panels__floating-stack > .shared-panel-tabs {
+    width: 100%;
+  }
+
   .shell-route-panels__floating-explorer > .shell-panel,
   .shell-route-panels__floating-main > .shell-panel,
-  .shell-route-panels__floating-detail > .shell-panel {
+  .shell-route-panels__floating-detail > .shell-panel,
+  .shell-route-panels__floating-stack-panel > .shell-panel {
     min-height: 0;
   }
 }
-
 /* T048 - observation explorer focused overlay and information density refinement */
 .shell-route-panels__floating-layout {
   isolation: isolate;
@@ -5717,5 +5752,6 @@ body {
     right: auto;
   }
 }
+
 
 

@@ -113,6 +113,8 @@
 | T102 | Browser-Style One-Line Tab Rail + Horizontal Scroll Conversion | Reworked the tab shell into a compact browser-style one-line rail with focus-visible horizontal scroll, removed in-rail new-request actions, kept bulk tab actions in a separate toolbar, and added left pin icons for preview/pinned tabs (request/collection/group/batch tabs) with localized pinned-state labels. | Codebase; master-task-board.md; priority-roadmap.md; progress-status.md |
 | T103 | Script Editor Modernization (Monaco + Stage Intellisense) | Added a shared Monaco-backed script editor for Request Builder and `/scripts`, introduced stage-aware completion/declaration profiles plus forbidden-token warning markers, rendered linked script sources in read-only editor preview mode, and wired script-input flush registration so Save/Run payloads always capture the latest staged text. | Codebase; master-task-board.md; priority-roadmap.md; progress-status.md |
 
+| T105 | Workspace Core Layout Primitives Cleanup | Consolidated shared workspace/request-builder control primitives into `material-theme.css`, introduced shared segmented/footer/overflow action wrappers, reduced the workspace header to one visible primary `New Request` CTA, stabilized request multipart rows and create-sheet row recipes, and added focused component coverage for the new header/tab-shell/settings flows. | Codebase; completed-work-summary.md |
+| T106 | Workspace Pane Responsive Cleanup | Added responsive floating-pane tiers so desktop widths keep detail visible beside the main surface, medium widths absorb detail into a stacked surface/detail tab lane, updated shared shell tests for the new desktop default, and preserved Codex verification on `lint`, `typecheck`, and `test:node` without reopening the UI full-suite lane. | Codebase; completed-work-summary.md; progress-status.md |
 ## Closed Tracking Decisions
 | Deleted Doc | Final Conclusion | Remaining Canonical Docs |
 | --- | --- | --- |
@@ -121,6 +123,7 @@
 | `request-stage-script-linkage-lane-comparison.md` | The reusable-script lane comparison culminated in the shipped `T072` baseline and no separate linkage-comparison doc remains live. | `completed-work-summary.md`; `master-task-board.md` |
 | `resolved-preview-sub-lane-comparison.md` | No resolved-preview follow-up is active; future work must be reintroduced as a new bounded task if needed. | `master-task-board.md`; `priority-roadmap.md` |
 | `settings-mutation-lane-comparison.md` | Client-owned settings preference work is complete, and broader settings expansion remains deferred until a new task is defined. | `master-task-board.md`; `priority-roadmap.md` |
+
 
 
 
