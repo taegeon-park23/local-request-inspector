@@ -7,6 +7,8 @@
 - **Update Rule:** Update after each active-task status change or verification-state change.
 
 ## Current Snapshot
+- No bounded task is currently active. The next implementation step must start from one newly promoted task, while broader UI verification remains user-managed unless a new bounded slice is explicitly defined.
+- `T117` is archived after restructuring environment variable editing rows into clearer primary/secondary/content regions, moving secret replacement controls into an explicit support editor block, clamping long environments/scripts explorer support lines, tightening script template copy/preview readability, and updating focused environments/scripts route coverage for the new row/readability markers.
 - `T116` is archived after aligning settings copy/detail surfaces with the shared support-block grammar: command/path copy cards now render copied values inside bounded preview blocks, preference helper content and secret-policy notes use support blocks, and settings sidebar/detail sections now read as explicit supporting-tier surfaces with focused route coverage.
 - `T115` is archived after aligning environments and scripts management/detail surfaces with the shared support-block grammar: management cards now keep actions in shared action bars, readiness and mutation feedback render inside bounded support blocks, and secondary summary/guidance/template sections render as explicit supporting-tier detail surfaces with focused route coverage.
 - `T114` is archived after reframing persisted capture/history/mock preview payloads and summary lists into bounded support-preview blocks, tightening long-content readability without reopening layout or hierarchy work, and updating focused observation-route coverage for the new preview container contract.
@@ -29,6 +31,7 @@
 - `T097` is archived after expanding runner inputs (selection/order/environment/iteration/data-file), wiring run-history visibility, and aligning collection/request-group batch payload composition with CLI-friendly server run contracts.
 
 ## Verification
+- Focused environments/scripts route coverage was updated for management-row/readability markers on 2026-03-30.
 - Focused settings route coverage was updated for support-block and supporting-section markers on 2026-03-30.
 - Focused environments/scripts route coverage was updated for management/detail support-block markers on 2026-03-30.
 - Focused captures/history/mocks route coverage was updated for bounded preview support-block markers on 2026-03-30.
@@ -36,6 +39,7 @@
 - `npm.cmd run lint` passed on 2026-03-30.
 - `npm.cmd run typecheck` passed on 2026-03-30.
 - `npm.cmd run test:node` passed on 2026-03-30.
+- Direct Codex-side vitest execution for focused environments/scripts route tests was blocked on 2026-03-30 by local PowerShell execution policy (`npx`) and a Vite/esbuild `spawn EPERM` when retried via `npm.cmd exec -- vitest run ...`.
 - Agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - If UI full-suite verification is needed, instruct the user to run `npm.cmd run test:ui` locally and treat that result as authoritative.
 

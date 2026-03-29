@@ -117,6 +117,9 @@ describe('Scripts MVP route', () => {
     expect(await screen.findByRole('button', { name: 'Open script Health status assertions' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Use Trace ID starter' })).toBeInTheDocument();
     expect(document.querySelector('.workspace-detail-panel .shared-detail-viewer-section--supporting .shared-support-block--preview .scripts-template-card__preview')).not.toBeNull();
+    expect(document.querySelector('.scripts-list .workspace-request__meta--clamped')).not.toBeNull();
+    expect(document.querySelector('.scripts-template-card__header')).not.toBeNull();
+    expect(document.querySelector('.scripts-template-card__preview-block')).not.toBeNull();
     expect(screen.getByText(/Top-level Scripts manages standalone saved scripts/i)).toBeInTheDocument();
   });
 

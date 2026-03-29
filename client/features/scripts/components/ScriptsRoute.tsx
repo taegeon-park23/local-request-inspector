@@ -234,29 +234,33 @@ export function ScriptsRoute() {
             {!listQuery.isPending && (listQuery.data ?? []).length > 0 && sortedItems.length === 0 ? <EmptyStateCallout title={t('scriptsRoute.empty.noFilteredItems.title')} description={t('scriptsRoute.empty.noFilteredItems.description')} /> : null}
             {sortedItems.length > 0 ? (
               <ul className="scripts-list" aria-label={t('scriptsRoute.sidebar.listAriaLabel')}>
-                {sortedItems.map((script) => (
-                  <li key={script.id}>
-                    <button
-                      type="button"
-                      className={script.id === effectiveSelectedId && !isCreatingDraft ? 'workspace-request workspace-request--selected' : 'workspace-request'}
-                      aria-label={t('scriptsRoute.sidebar.openScriptAction', { name: script.name })}
-                      onClick={() => {
-                        setIsCreatingDraft(false);
-                        setSelectedScriptId(script.id);
-                        setFloatingExplorerOpen('scripts', false);
-                      }}
-                    >
-                      <span className="workspace-request__header">
-                        <span className="workspace-request__title">{script.name}</span>
-                        <span className="workspace-request__badges">
-                          <span className="workspace-chip">{getScriptTypeLabel(script.scriptType, t)}</span>
+                {sortedItems.map((script) => {
+                  const description = script.description || t('scriptsRoute.list.noDescription');
+                  const sourcePreview = script.sourcePreview || t('scriptsRoute.list.emptySource');
+                  return (
+                    <li key={script.id}>
+                      <button
+                        type="button"
+                        className={script.id === effectiveSelectedId && !isCreatingDraft ? 'workspace-request workspace-request--selected' : 'workspace-request'}
+                        aria-label={t('scriptsRoute.sidebar.openScriptAction', { name: script.name })}
+                        onClick={() => {
+                          setIsCreatingDraft(false);
+                          setSelectedScriptId(script.id);
+                          setFloatingExplorerOpen('scripts', false);
+                        }}
+                      >
+                        <span className="workspace-request__header">
+                          <span className="workspace-request__title">{script.name}</span>
+                          <span className="workspace-request__badges">
+                            <span className="workspace-chip">{getScriptTypeLabel(script.scriptType, t)}</span>
+                          </span>
                         </span>
-                      </span>
-                      <span className="workspace-request__meta">{script.description || t('scriptsRoute.list.noDescription')}</span>
-                      <span className="workspace-request__meta workspace-request__meta--support">{script.sourcePreview || t('scriptsRoute.list.emptySource')}</span>
-                    </button>
-                  </li>
-                ))}
+                        <span className="workspace-request__meta workspace-request__meta--clamped" title={description}>{description}</span>
+                        <span className="workspace-request__meta workspace-request__meta--support workspace-request__meta--clamped" title={sourcePreview}>{sourcePreview}</span>
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             ) : null}
           </div>
@@ -505,15 +509,17 @@ export function ScriptsRoute() {
                 <ul className="scripts-template-list" aria-label={t('scriptsRoute.list.templatesListAriaLabel')}>
                   {(templatesQuery.data ?? []).map((template) => (
                     <li key={template.id} className="scripts-template-card">
-                      <div>
-                        <h3>{template.name}</h3>
-                        <p>{template.description}</p>
+                      <div className="scripts-template-card__header">
+                        <div className="scripts-template-card__copy">
+                          <h3>{template.name}</h3>
+                          <p title={template.description}>{template.description}</p>
+                        </div>
                         <div className="workspace-explorer__role-strip">
                           <span className="workspace-chip">{getScriptTypeLabel(template.templateType, t)}</span>
                           <span className="workspace-chip workspace-chip--secondary">{template.tags.join(', ')}</span>
                         </div>
                       </div>
-                      <div className="shared-support-block shared-support-block--preview">
+                      <div className="shared-support-block shared-support-block--preview scripts-template-card__preview-block">
                         <pre className="scripts-template-card__preview">{template.sourceCode}</pre>
                       </div>
                       <button

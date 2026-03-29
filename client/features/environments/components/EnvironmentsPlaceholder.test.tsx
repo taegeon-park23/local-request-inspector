@@ -167,6 +167,10 @@ describe('Environments MVP route', () => {
     expect(screen.getAllByText(/env\.get\('token'\)/i).length).toBeGreaterThan(0);
     expect(document.querySelector('.environments-detail .shared-support-block--notes .shared-readiness-note')).not.toBeNull();
     expect(document.querySelectorAll('.environments-summary-grid .shared-detail-viewer-section--supporting')).toHaveLength(2);
+    expect(document.querySelector('.environments-list .workspace-request__meta--clamped')).not.toBeNull();
+    expect(document.querySelector('.request-row-editor-list .environment-row-editor__primary')).not.toBeNull();
+    expect(document.querySelector('.request-row-editor-list .environment-row-editor__secondary')).not.toBeNull();
+    expect(document.querySelector('.request-row-editor-list [data-row-kind="secret"] .environment-secret-editor__controls')).not.toBeNull();
     expect(screen.getByText(/replacementValue is reserved for a future secure backend/i)).toBeInTheDocument();
     expect(screen.getByLabelText('Secret replacement value 2')).toHaveValue('');
     expect(screen.queryByDisplayValue('secret-token')).not.toBeInTheDocument();

@@ -51,6 +51,7 @@
 42. `T114` Result Content Readability Follow-Up is archived.
 43. `T115` Management Detail Consistency Follow-Up is archived.
 44. `T116` Settings Detail Consistency Follow-Up is archived.
+45. `T117` Management Row Readability Follow-Up is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.
@@ -59,4 +60,4 @@
 - `T104` is dropped; do not treat missing UI capture evidence as a prerequisite for future bounded tasks.
 
 ## Immediate Next Step
-- No bounded implementation task is active. Run the user-managed local `npm.cmd run test:ui` lane if broader UI verification is needed, or promote exactly one new bounded task before further implementation.
+- Run user-managed local `npm.cmd run test:ui` plus key width-based manual verification if broader UI confidence is needed, or define exactly one new bounded task before starting more implementation work.
