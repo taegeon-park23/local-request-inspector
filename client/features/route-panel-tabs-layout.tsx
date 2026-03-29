@@ -53,6 +53,14 @@ function readFloatingLayoutTier(): FloatingLayoutTier {
   return 'stacked';
 }
 
+function renderScrollOwner(tabId: RoutePanelTabId, content: ReactNode) {
+  return (
+    <div className="shell-route-panels__scroll-owner" data-scroll-owner={tabId}>
+      {content}
+    </div>
+  );
+}
+
 export function RoutePanelTabsLayout({
   explorer,
   main,
@@ -193,7 +201,7 @@ export function RoutePanelTabsLayout({
                   ? 'shell-route-panels__floating-explorer shell-route-panels__floating-explorer--open'
                   : 'shell-route-panels__floating-explorer shell-route-panels__floating-explorer--closed'}
               >
-                {explorer}
+                {renderScrollOwner('explorer', explorer)}
               </div>
             </div>
           </div>
@@ -213,7 +221,7 @@ export function RoutePanelTabsLayout({
                       : 'shell-route-panels__floating-stack-panel shell-route-panels__floating-stack-panel--inactive'}
                     data-route-panel="main"
                   >
-                    {main}
+                    {renderScrollOwner('main', main)}
                   </div>
                   <div
                     className={stackedActiveTab === 'detail'
@@ -221,7 +229,7 @@ export function RoutePanelTabsLayout({
                       : 'shell-route-panels__floating-stack-panel shell-route-panels__floating-stack-panel--inactive'}
                     data-route-panel="detail"
                   >
-                    {detail}
+                    {renderScrollOwner('detail', detail)}
                   </div>
                 </div>
               </div>
@@ -234,7 +242,7 @@ export function RoutePanelTabsLayout({
                   data-route-panel={activeTab === 'main' ? 'main-active' : 'main'}
                   data-scrimmed={shouldShowFocusedScrim && floatingExplorerOpen ? 'true' : 'false'}
                 >
-                  {main}
+                  {renderScrollOwner('main', main)}
                 </div>
                 <div
                   className={[
@@ -255,7 +263,7 @@ export function RoutePanelTabsLayout({
                   >
                     <AppIcon name={detailPanelExpanded ? 'minimize' : 'maximize'} />
                   </button>
-                  {detail}
+                  {renderScrollOwner('detail', detail)}
                 </div>
               </>
             )}
@@ -278,21 +286,22 @@ export function RoutePanelTabsLayout({
           className={activeTab === 'explorer' ? 'shell-route-panels__panel shell-route-panels__panel--active' : 'shell-route-panels__panel shell-route-panels__panel--inactive'}
           data-route-panel="explorer"
         >
-          {explorer}
+          {renderScrollOwner('explorer', explorer)}
         </div>
         <div
           className={activeTab === 'main' ? 'shell-route-panels__panel shell-route-panels__panel--active' : 'shell-route-panels__panel shell-route-panels__panel--inactive'}
           data-route-panel="main"
         >
-          {main}
+          {renderScrollOwner('main', main)}
         </div>
         <div
           className={activeTab === 'detail' ? 'shell-route-panels__panel shell-route-panels__panel--active' : 'shell-route-panels__panel shell-route-panels__panel--inactive'}
           data-route-panel="detail"
         >
-          {detail}
+          {renderScrollOwner('detail', detail)}
         </div>
       </div>
     </div>
   );
 }
+

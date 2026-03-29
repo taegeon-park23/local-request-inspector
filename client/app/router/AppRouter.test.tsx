@@ -35,6 +35,7 @@ function installLayoutRectMock() {
     ['shell-route-panels__floating-content', 720],
     ['shell-route-panels__floating-main', 720],
     ['shell-route-panels__floating-detail', 720],
+    ['shell-route-panels__scroll-owner', 720],
   ];
 
   return vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function mockRect(this: HTMLElement) {
@@ -44,7 +45,7 @@ function installLayoutRectMock() {
       }
     }
 
-    if (this.matches('.shell-route-panels__floating-main > .shell-panel, .shell-route-panels__floating-detail > .shell-panel')) {
+    if (this.matches('.shell-route-panels__floating-main > .shell-route-panels__scroll-owner, .shell-route-panels__floating-detail > .shell-route-panels__scroll-owner')) {
       return createRect(720);
     }
 
@@ -282,8 +283,8 @@ describe('AppRouter shell bootstrap', () => {
 
     const shellBody = document.querySelector('.shell-body');
     const shellContent = document.querySelector('main.shell-content');
-    const floatingMain = document.querySelector('.shell-route-panels__floating-main > .shell-panel');
-    const floatingDetail = document.querySelector('.shell-route-panels__floating-detail > .shell-panel');
+    const floatingMain = document.querySelector('.shell-route-panels__floating-main > .shell-route-panels__scroll-owner[data-scroll-owner="main"]');
+    const floatingDetail = document.querySelector('.shell-route-panels__floating-detail > .shell-route-panels__scroll-owner[data-scroll-owner="detail"]');
 
     expect(shellBody).not.toBeNull();
     expect(shellContent).not.toBeNull();
@@ -343,5 +344,4 @@ describe('AppRouter shell bootstrap', () => {
     expect(screen.getByRole('button', { name: 'Save rule' })).toBeEnabled();
   }, 15000);
 });
-
 

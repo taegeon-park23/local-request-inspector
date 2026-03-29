@@ -43,6 +43,7 @@
 34. `T106` Workspace Pane Responsive Cleanup is archived.
 35. `T107` Explorer Row Action Safety Cleanup is archived.
 36. `T108` Runner And Resource-Manager Surface Tier Cleanup is archived.
+37. `T109` Scroll Owner And Overflow Normalization is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.
@@ -51,4 +52,4 @@
 - `T104` is dropped; do not treat missing UI capture evidence as a prerequisite for future bounded tasks.
 
 ## Immediate Next Step
-- Promote exactly one follow-up bounded task. Scroll owner / overflow normalization is the current leading candidate after `T108`.
+- Promote exactly one follow-up bounded task. Detail/context density follow-up is the current leading candidate after `T109`.

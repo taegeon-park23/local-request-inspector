@@ -27,7 +27,7 @@ function renderFloatingLayout() {
       explorer={<section className="shell-panel" aria-label="Section explorer"><p>Explorer pane</p></section>}
       main={<section className="shell-panel" aria-label="Main work surface"><p>Main pane</p></section>}
       detail={<aside className="shell-panel" aria-label="Contextual detail panel"><p>Detail pane</p></aside>}
-    />, 
+    />,
   );
 }
 
@@ -43,15 +43,21 @@ afterEach(() => {
 });
 
 describe('RoutePanelTabsLayout', () => {
-  it('keeps the detail column visible on desktop floating layouts', () => {
+  it('keeps the detail column visible on desktop floating layouts and assigns explicit scroll owners', () => {
     setViewportWidth(1440);
     renderFloatingLayout();
 
     const floatingRoot = document.querySelector('.shell-route-panels--floating');
     const floatingDetail = document.querySelector('.shell-route-panels__floating-detail');
+    const explorerScrollOwner = document.querySelector('.shell-route-panels__floating-explorer .shell-route-panels__scroll-owner[data-scroll-owner="explorer"]');
+    const mainScrollOwner = document.querySelector('.shell-route-panels__floating-main > .shell-route-panels__scroll-owner[data-scroll-owner="main"]');
+    const detailScrollOwner = document.querySelector('.shell-route-panels__floating-detail > .shell-route-panels__scroll-owner[data-scroll-owner="detail"]');
 
     expect(floatingRoot).toHaveAttribute('data-floating-layout-tier', 'wide');
     expect(floatingDetail).toHaveAttribute('data-detail-visibility', 'visible');
+    expect(explorerScrollOwner).not.toBeNull();
+    expect(mainScrollOwner).not.toBeNull();
+    expect(detailScrollOwner).not.toBeNull();
     expect(screen.queryByRole('tablist', { name: 'Route layout panels' })).not.toBeInTheDocument();
   });
 
@@ -65,11 +71,13 @@ describe('RoutePanelTabsLayout', () => {
     expect(screen.queryByRole('tab', { name: 'Explorer' })).not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Surface' })).toHaveAttribute('aria-selected', 'true');
     expect(document.querySelector('.shell-route-panels__floating-stack-panel--active[data-route-panel="main"]')).not.toBeNull();
+    expect(document.querySelector('.shell-route-panels__floating-stack-panel--active .shell-route-panels__scroll-owner[data-scroll-owner="main"]')).not.toBeNull();
 
     await user.click(screen.getByRole('tab', { name: 'Details' }));
 
     expect(screen.getByRole('tab', { name: 'Details' })).toHaveAttribute('aria-selected', 'true');
     expect(document.querySelector('.shell-route-panels__floating-stack-panel--active[data-route-panel="detail"]')).not.toBeNull();
+    expect(document.querySelector('.shell-route-panels__floating-stack-panel--active .shell-route-panels__scroll-owner[data-scroll-owner="detail"]')).not.toBeNull();
   });
 
   it('shows the focused-overlay scrim only in stacked mode', async () => {
@@ -83,3 +91,4 @@ describe('RoutePanelTabsLayout', () => {
     expect(document.querySelector('.shell-route-panels__floating-scrim--hidden')).not.toBeNull();
   });
 });
+

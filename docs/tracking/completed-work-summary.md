@@ -117,6 +117,8 @@
 | T106 | Workspace Pane Responsive Cleanup | Added responsive floating-pane tiers so desktop widths keep detail visible beside the main surface, medium widths absorb detail into a stacked surface/detail tab lane, updated shared shell tests for the new desktop default, and preserved Codex verification on `lint`, `typecheck`, and `test:node` without reopening the UI full-suite lane. | Codebase; completed-work-summary.md; progress-status.md |
 | T107 | Explorer Row Action Safety Cleanup | Removed double-click request pinning from the workspace explorer, added explicit request pin actions plus row-scoped overflow menus for destructive cleanup, updated explorer copy to match the safer interaction model, and added focused component coverage for row pin/delete behavior without reopening the Codex-side UI full-suite lane. | Codebase; completed-work-summary.md; progress-status.md |
 | T108 | Runner And Resource-Manager Surface Tier Cleanup | Promoted the workspace runner into a contextual run surface with dedicated configuration/request-selection tiers, moved the contextual Run Selected action into that panel, recast the saved-resource manager as a lighter companion management surface with inline notes/action bars, and added focused component coverage for the new runner plus manager structure. | Codebase; completed-work-summary.md; progress-status.md |
+| T109 | Scroll Owner And Overflow Normalization | Introduced explicit shared scroll-owner wrappers for route panels, moved route-panel vertical overflow containment off direct `.shell-panel` selectors, contained tab-rail horizontal overscroll, and updated shared shell tests to target pane scroll owners while keeping Codex verification on `lint`, `typecheck`, and `test:node` without reopening the `test:ui` lane. | Codebase; completed-work-summary.md; progress-status.md |
+
 ## Closed Tracking Decisions
 | Deleted Doc | Final Conclusion | Remaining Canonical Docs |
 | --- | --- | --- |
@@ -125,9 +127,4 @@
 | `request-stage-script-linkage-lane-comparison.md` | The reusable-script lane comparison culminated in the shipped `T072` baseline and no separate linkage-comparison doc remains live. | `completed-work-summary.md`; `master-task-board.md` |
 | `resolved-preview-sub-lane-comparison.md` | No resolved-preview follow-up is active; future work must be reintroduced as a new bounded task if needed. | `master-task-board.md`; `priority-roadmap.md` |
 | `settings-mutation-lane-comparison.md` | Client-owned settings preference work is complete, and broader settings expansion remains deferred until a new task is defined. | `master-task-board.md`; `priority-roadmap.md` |
-
-
-
-
-
 
