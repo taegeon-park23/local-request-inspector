@@ -27,11 +27,20 @@ describe('Settings MVP route', () => {
     expect(screen.getByRole('heading', { name: 'Data path and route hints' })).toBeInTheDocument();
     expect(screen.getAllByText('connected', { selector: '[data-kind="connection"]' }).length).toBeGreaterThan(0);
 
+    const secretPolicySection = screen.getByRole('heading', { name: 'Secret storage policy' }).closest('section');
+    expect(secretPolicySection).not.toBeNull();
+    expect((secretPolicySection as HTMLElement).querySelector('.shared-support-block--notes')).not.toBeNull();
+
     const commandsList = screen.getByLabelText('Settings commands list');
     expect(within(commandsList).getAllByRole('button', { name: 'Copy command' }).length).toBeGreaterThan(0);
+    expect(commandsList.querySelector('.settings-copy-item__preview.shared-support-block--preview')).not.toBeNull();
 
     const routesList = screen.getByLabelText('Settings route hints list');
     expect(within(routesList).getAllByRole('button', { name: 'Copy path' }).length).toBeGreaterThan(0);
+    expect(routesList.querySelector('.settings-copy-item__preview.shared-support-block--preview')).not.toBeNull();
+
+    const detailPanel = screen.getByLabelText('Contextual detail panel');
+    expect(detailPanel.querySelectorAll('.shared-detail-viewer-section--supporting')).toHaveLength(2);
   });
 
   it('switches visible settings copy to Korean and persists the locale choice locally', async () => {

@@ -7,6 +7,7 @@
 - **Update Rule:** Update after each active-task status change or verification-state change.
 
 ## Current Snapshot
+- `T116` is archived after aligning settings copy/detail surfaces with the shared support-block grammar: command/path copy cards now render copied values inside bounded preview blocks, preference helper content and secret-policy notes use support blocks, and settings sidebar/detail sections now read as explicit supporting-tier surfaces with focused route coverage.
 - `T115` is archived after aligning environments and scripts management/detail surfaces with the shared support-block grammar: management cards now keep actions in shared action bars, readiness and mutation feedback render inside bounded support blocks, and secondary summary/guidance/template sections render as explicit supporting-tier detail surfaces with focused route coverage.
 - `T114` is archived after reframing persisted capture/history/mock preview payloads and summary lists into bounded support-preview blocks, tightening long-content readability without reopening layout or hierarchy work, and updating focused observation-route coverage for the new preview container contract.
 - `T113` is archived after aligning capture, history, and mock-rule detail surfaces around the shared supporting-tier grammar: secondary persistence/outcome/timeline notes now render as supporting `DetailViewerSection`s, persisted response/test/execution metadata uses bounded support blocks, and observation vs management color treatment stays consistent with the route role without reopening layout or breakpoint work.
@@ -28,6 +29,7 @@
 - `T097` is archived after expanding runner inputs (selection/order/environment/iteration/data-file), wiring run-history visibility, and aligning collection/request-group batch payload composition with CLI-friendly server run contracts.
 
 ## Verification
+- Focused settings route coverage was updated for support-block and supporting-section markers on 2026-03-30.
 - Focused environments/scripts route coverage was updated for management/detail support-block markers on 2026-03-30.
 - Focused captures/history/mocks route coverage was updated for bounded preview support-block markers on 2026-03-30.
 - Playwright smoke confirmed script-editor focus retention plus typing on 2026-03-29.

@@ -73,6 +73,7 @@ describe('SettingsRoute', () => {
     const densityHeading = await screen.findByRole('heading', { name: 'Shell density preference' });
     const densitySection = densityHeading.closest('section');
     expect(densitySection).not.toBeNull();
+    expect((densitySection as HTMLElement).querySelector('.shared-support-block--notes')).not.toBeNull();
 
     const densityControls = within(densitySection as HTMLElement);
     expect(densityControls.getByRole('button', { name: 'Compact' })).toHaveAttribute('aria-pressed', 'true');

@@ -76,6 +76,14 @@ export function SettingsRoute() {
     { value: 'compact', label: t('settings.cards.shellDensityPreference.actions.compact') },
     { value: 'comfortable', label: t('settings.cards.shellDensityPreference.actions.comfortable') },
   ] as const;
+  const copyValue = async (label: string, value: string) => {
+    try {
+      await writeClipboardText(value);
+      setCopiedMessage(t('common.copy.copied', { label }));
+    } catch {
+      setCopiedMessage(t('common.copy.unavailable', { label }));
+    }
+  };
 
   return (
     <RoutePanelTabsLayout
@@ -109,6 +117,7 @@ export function SettingsRoute() {
                 title={t('settings.cards.connectionHealth.title')}
                 description={t('settings.cards.connectionHealth.description')}
                 className="workspace-surface-card"
+                tone="supporting"
               >
                 <div className="request-work-surface__badges">
                   <StatusBadge kind="connection" value={runtimeConnectionHealth} />
@@ -201,6 +210,7 @@ export function SettingsRoute() {
                   title={t('settings.cards.secretStoragePolicy.title')}
                   description={t('settings.cards.secretStoragePolicy.description')}
                   className="workspace-surface-card workspace-surface-card--muted"
+                  tone="supporting"
                 >
                   <KeyValueMetaList
                     items={[
@@ -212,8 +222,10 @@ export function SettingsRoute() {
                       { label: t('settings.cards.secretStoragePolicy.labels.legacySanitizedRows'), value: secretStorage.sanitizedLegacySecretRowCount },
                     ]}
                   />
-                  <p className="shared-readiness-note">{secretStorage.note}</p>
-                  <p className="shared-readiness-note">{secretStorage.legacySanitizationNote}</p>
+                  <div className="shared-support-block shared-support-block--notes">
+                    <p className="shared-readiness-note">{secretStorage.note}</p>
+                    <p className="shared-readiness-note">{secretStorage.legacySanitizationNote}</p>
+                  </div>
                 </DetailViewerSection>
               ) : null}
               <DetailViewerSection
@@ -230,13 +242,15 @@ export function SettingsRoute() {
                     { label: t('settings.cards.interfaceLanguage.labels.coverage'), value: t('settings.cards.interfaceLanguage.values.coverage') },
                   ]}
                 />
-                <p className="shared-readiness-note">{t('settings.cards.interfaceLanguage.helper')}</p>
-                <SegmentedControl
-                  ariaLabel="Locale switcher"
-                  value={locale}
-                  options={localeOptions}
-                  onChange={setLocale}
-                />
+                <div className="shared-support-block shared-support-block--notes">
+                  <p className="shared-readiness-note">{t('settings.cards.interfaceLanguage.helper')}</p>
+                  <SegmentedControl
+                    ariaLabel="Locale switcher"
+                    value={locale}
+                    options={localeOptions}
+                    onChange={setLocale}
+                  />
+                </div>
               </DetailViewerSection>
               <DetailViewerSection
                 icon="settings"
@@ -251,13 +265,15 @@ export function SettingsRoute() {
                     { label: t('settings.cards.navigationRailPreference.labels.scope'), value: t('settings.cards.navigationRailPreference.values.scope') },
                   ]}
                 />
-                <p className="shared-readiness-note">{t('settings.cards.navigationRailPreference.helper')}</p>
-                <SegmentedControl
-                  ariaLabel={t('settings.cards.navigationRailPreference.actions.groupLabel')}
-                  value={navRailCollapsed ? 'collapsed' : 'expanded'}
-                  options={navRailOptions}
-                  onChange={(value) => setNavRailCollapsed(value === 'collapsed')}
-                />
+                <div className="shared-support-block shared-support-block--notes">
+                  <p className="shared-readiness-note">{t('settings.cards.navigationRailPreference.helper')}</p>
+                  <SegmentedControl
+                    ariaLabel={t('settings.cards.navigationRailPreference.actions.groupLabel')}
+                    value={navRailCollapsed ? 'collapsed' : 'expanded'}
+                    options={navRailOptions}
+                    onChange={(value) => setNavRailCollapsed(value === 'collapsed')}
+                  />
+                </div>
               </DetailViewerSection>
               <DetailViewerSection
                 icon="overview"
@@ -273,13 +289,15 @@ export function SettingsRoute() {
                     { label: t('settings.cards.routeExplorerPreference.labels.scope'), value: t('settings.cards.routeExplorerPreference.values.scope') },
                   ]}
                 />
-                <p className="shared-readiness-note">{t('settings.cards.routeExplorerPreference.helper')}</p>
-                <SegmentedControl
-                  ariaLabel={t('settings.cards.routeExplorerPreference.actions.groupLabel')}
-                  value={floatingExplorerDefaultOpen ? 'expanded' : 'collapsed'}
-                  options={routeExplorerOptions}
-                  onChange={(value) => setFloatingExplorerDefaultOpen(value === 'expanded')}
-                />
+                <div className="shared-support-block shared-support-block--notes">
+                  <p className="shared-readiness-note">{t('settings.cards.routeExplorerPreference.helper')}</p>
+                  <SegmentedControl
+                    ariaLabel={t('settings.cards.routeExplorerPreference.actions.groupLabel')}
+                    value={floatingExplorerDefaultOpen ? 'expanded' : 'collapsed'}
+                    options={routeExplorerOptions}
+                    onChange={(value) => setFloatingExplorerDefaultOpen(value === 'expanded')}
+                  />
+                </div>
               </DetailViewerSection>
               <DetailViewerSection
                 icon="workspace"
@@ -295,39 +313,39 @@ export function SettingsRoute() {
                     { label: t('settings.cards.shellDensityPreference.labels.scope'), value: t('settings.cards.shellDensityPreference.values.scope') },
                   ]}
                 />
-                <p className="shared-readiness-note">{t('settings.cards.shellDensityPreference.helper')}</p>
-                <SegmentedControl
-                  ariaLabel={t('settings.cards.shellDensityPreference.actions.groupLabel')}
-                  value={shellDensityMode}
-                  options={shellDensityOptions}
-                  onChange={setShellDensityMode}
-                />
+                <div className="shared-support-block shared-support-block--notes">
+                  <p className="shared-readiness-note">{t('settings.cards.shellDensityPreference.helper')}</p>
+                  <SegmentedControl
+                    ariaLabel={t('settings.cards.shellDensityPreference.actions.groupLabel')}
+                    value={shellDensityMode}
+                    options={shellDensityOptions}
+                    onChange={setShellDensityMode}
+                  />
+                </div>
               </DetailViewerSection>
               <DetailViewerSection
                 icon="command"
                 title={t('settings.cards.localCommandCatalog.title')}
                 description={t('settings.cards.localCommandCatalog.description')}
                 className="workspace-surface-card"
+                tone="supporting"
               >
                 <ul className="settings-copy-list" aria-label="Settings commands list">
                   {runtimeStatus.commands.map((command) => (
                     <li key={command.command} className="settings-copy-item">
-                      <div>
-                        <strong>{command.label}</strong>
-                        <p>{command.purpose}</p>
-                        <code>{command.command}</code>
+                      <div className="settings-copy-item__content">
+                        <div>
+                          <strong>{command.label}</strong>
+                          <p>{command.purpose}</p>
+                        </div>
+                        <div className="shared-support-block shared-support-block--preview settings-copy-item__preview">
+                          <code>{command.command}</code>
+                        </div>
                       </div>
                       <button
                         type="button"
                         className="workspace-button workspace-button--secondary"
-                        onClick={async () => {
-                          try {
-                            await writeClipboardText(command.command);
-                            setCopiedMessage(t('common.copy.copied', { label: command.label }));
-                          } catch {
-                            setCopiedMessage(t('common.copy.unavailable', { label: command.label }));
-                          }
-                        }}
+                        onClick={() => void copyValue(command.label, command.command)}
                       >
                         <IconLabel icon="copy">{t('settings.cards.localCommandCatalog.copyAction')}</IconLabel>
                       </button>
@@ -335,34 +353,32 @@ export function SettingsRoute() {
                   ))}
                 </ul>
               </DetailViewerSection>
-              <DetailViewerSection
-                icon="paths"
-                title={t('settings.cards.dataPathAndRouteHints.title')}
-                description={t('settings.cards.dataPathAndRouteHints.description')}
-                className="workspace-surface-card workspace-surface-card--muted"
-              >
-                <ul className="settings-copy-list" aria-label="Settings route hints list">
-                  {runtimeStatus.routes.map((routeHint) => (
-                    <li key={routeHint.path} className="settings-copy-item">
-                      <div>
-                        <strong>{routeHint.label}</strong>
-                        <p>{routeHint.note}</p>
-                        <code>{routeHint.path}</code>
-                      </div>
-                      <button
-                        type="button"
-                        className="workspace-button workspace-button--secondary"
-                        onClick={async () => {
-                          try {
-                            await writeClipboardText(routeHint.path);
-                            setCopiedMessage(t('common.copy.copied', { label: routeHint.label }));
-                          } catch {
-                            setCopiedMessage(t('common.copy.unavailable', { label: routeHint.label }));
-                          }
-                        }}
-                      >
-                        <IconLabel icon="copy">{t('settings.cards.dataPathAndRouteHints.copyAction')}</IconLabel>
-                      </button>
+                <DetailViewerSection
+                  icon="paths"
+                  title={t('settings.cards.dataPathAndRouteHints.title')}
+                  description={t('settings.cards.dataPathAndRouteHints.description')}
+                  className="workspace-surface-card workspace-surface-card--muted"
+                  tone="supporting"
+                >
+                  <ul className="settings-copy-list" aria-label="Settings route hints list">
+                    {runtimeStatus.routes.map((routeHint) => (
+                      <li key={routeHint.path} className="settings-copy-item">
+                        <div className="settings-copy-item__content">
+                          <div>
+                            <strong>{routeHint.label}</strong>
+                            <p>{routeHint.note}</p>
+                          </div>
+                          <div className="shared-support-block shared-support-block--preview settings-copy-item__preview">
+                            <code>{routeHint.path}</code>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className="workspace-button workspace-button--secondary"
+                          onClick={() => void copyValue(routeHint.label, routeHint.path)}
+                        >
+                          <IconLabel icon="copy">{t('settings.cards.dataPathAndRouteHints.copyAction')}</IconLabel>
+                        </button>
                     </li>
                   ))}
                 </ul>
@@ -381,6 +397,7 @@ export function SettingsRoute() {
                   title={t('settings.cards.storagePaths.title')}
                   description={t('settings.cards.storagePaths.description')}
                   className="workspace-surface-card"
+                  tone="supporting"
                 >
                   <KeyValueMetaList
                     items={[
@@ -396,6 +413,7 @@ export function SettingsRoute() {
                   title={t('settings.cards.scopeBoundary.title')}
                   description={t('settings.cards.scopeBoundary.description')}
                   className="workspace-surface-card workspace-surface-card--muted"
+                  tone="supporting"
                 >
                   <EmptyStateCallout
                     title={t('settings.empty.readOnlyByDesign.title')}
@@ -404,7 +422,9 @@ export function SettingsRoute() {
                       scriptsLabel: t('sections.scripts.label'),
                     })}
                   />
-                  <p className="shared-readiness-note">{localeStorageKey}</p>
+                  <div className="shared-support-block shared-support-block--notes">
+                    <p className="shared-readiness-note">{localeStorageKey}</p>
+                  </div>
                 </DetailViewerSection>
               </>
             ) : (
