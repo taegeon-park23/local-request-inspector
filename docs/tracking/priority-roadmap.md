@@ -49,6 +49,7 @@
 40. `T112` Script Editor Focus Retention Debug is archived.
 41. `T113` Cross-Route Detail Surface Consistency Cleanup is archived.
 42. `T114` Result Content Readability Follow-Up is archived.
+43. `T115` Management Detail Consistency Follow-Up is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.

@@ -271,6 +271,7 @@ export function ScriptsRoute() {
               title={t('scriptsRoute.libraryAssist.title')}
               description={t('scriptsRoute.libraryAssist.description')}
               className="workspace-surface-card scripts-route-bridge-card"
+              tone="supporting"
               actions={(
                 <button
                   type="button"
@@ -281,16 +282,18 @@ export function ScriptsRoute() {
                 </button>
               )}
             >
-              <p className="shared-readiness-note">
-                {requestedStageLabel
-                  ? t('scriptsRoute.libraryAssist.stageContext', { stage: requestedStageLabel })
-                  : t('scriptsRoute.libraryAssist.genericContext')}
-              </p>
-              {requestedListScript ? (
+              <div className="shared-support-block shared-support-block--notes">
                 <p className="shared-readiness-note">
-                  {t('scriptsRoute.libraryAssist.scriptContext', { name: requestedListScript.name })}
+                  {requestedStageLabel
+                    ? t('scriptsRoute.libraryAssist.stageContext', { stage: requestedStageLabel })
+                    : t('scriptsRoute.libraryAssist.genericContext')}
                 </p>
-              ) : null}
+                {requestedListScript ? (
+                  <p className="shared-readiness-note">
+                    {t('scriptsRoute.libraryAssist.scriptContext', { name: requestedListScript.name })}
+                  </p>
+                ) : null}
+              </div>
             </DetailViewerSection>
           ) : null}
           {listQuery.isPending && !listQuery.data ? (
@@ -328,7 +331,7 @@ export function ScriptsRoute() {
                 description={t('scriptsRoute.detail.management.description')}
                 className="workspace-surface-card"
                 actions={(
-                  <div className="request-work-surface__future-actions">
+                  <div className="shared-action-bar">
                     <button
                       type="button"
                       className="workspace-button workspace-button--secondary"
@@ -373,12 +376,16 @@ export function ScriptsRoute() {
                   </div>
                 )}
               >
-                <p className="shared-readiness-note">{saveDisabledReason ?? deleteDisabledReason ?? t('scriptsRoute.detail.management.readinessNote')}</p>
+                <div className="shared-support-block shared-support-block--notes">
+                  <p className="shared-readiness-note">{saveDisabledReason ?? deleteDisabledReason ?? t('scriptsRoute.detail.management.readinessNote')}</p>
+                </div>
                 {(createMutation.error || updateMutation.error || deleteMutation.error) ? (
-                  <EmptyStateCallout
-                    title={t('scriptsRoute.detail.management.mutationFailedTitle')}
-                    description={([createMutation.error, updateMutation.error, deleteMutation.error].find(Boolean) as Error | undefined)?.message ?? t('scriptsRoute.detail.management.mutationFailedFallbackDescription')}
-                  />
+                  <div className="shared-support-block shared-support-block--notes">
+                    <EmptyStateCallout
+                      title={t('scriptsRoute.detail.management.mutationFailedTitle')}
+                      description={([createMutation.error, updateMutation.error, deleteMutation.error].find(Boolean) as Error | undefined)?.message ?? t('scriptsRoute.detail.management.mutationFailedFallbackDescription')}
+                    />
+                  </div>
                 ) : null}
               </DetailViewerSection>
               <div className="scripts-summary-grid">
@@ -387,6 +394,7 @@ export function ScriptsRoute() {
                   title={t('scriptsRoute.detail.summaryCard.title')}
                   description={t('scriptsRoute.detail.summaryCard.description')}
                   className="workspace-surface-card"
+                  tone="supporting"
                 >
                   <KeyValueMetaList
                     items={[
@@ -403,6 +411,7 @@ export function ScriptsRoute() {
                   title={t('scriptsRoute.detail.capabilityCard.title')}
                   description={t('scriptsRoute.detail.capabilityCard.description')}
                   className="workspace-surface-card workspace-surface-card--muted"
+                  tone="supporting"
                 >
                   <KeyValueMetaList
                     items={[
@@ -486,33 +495,43 @@ export function ScriptsRoute() {
             ) : templatesQuery.isError ? (
               <EmptyStateCallout title={t('scriptsRoute.empty.templatesDegraded.title')} description={resolveApiErrorMessage(templatesQuery.error, t('scriptsRoute.empty.templatesDegraded.fallbackDescription'), t)} />
             ) : (
-              <ul className="scripts-template-list" aria-label={t('scriptsRoute.list.templatesListAriaLabel')}>
-                {(templatesQuery.data ?? []).map((template) => (
-                  <li key={template.id} className="scripts-template-card">
-                    <div>
-                      <h3>{template.name}</h3>
-                      <p>{template.description}</p>
-                      <div className="workspace-explorer__role-strip">
-                        <span className="workspace-chip">{getScriptTypeLabel(template.templateType, t)}</span>
-                        <span className="workspace-chip workspace-chip--secondary">{template.tags.join(', ')}</span>
+              <DetailViewerSection
+                icon="template"
+                title={t('scriptsRoute.detail.templatesCard.title')}
+                description={t('scriptsRoute.detail.templatesCard.description')}
+                className="workspace-surface-card workspace-surface-card--muted"
+                tone="supporting"
+              >
+                <ul className="scripts-template-list" aria-label={t('scriptsRoute.list.templatesListAriaLabel')}>
+                  {(templatesQuery.data ?? []).map((template) => (
+                    <li key={template.id} className="scripts-template-card">
+                      <div>
+                        <h3>{template.name}</h3>
+                        <p>{template.description}</p>
+                        <div className="workspace-explorer__role-strip">
+                          <span className="workspace-chip">{getScriptTypeLabel(template.templateType, t)}</span>
+                          <span className="workspace-chip workspace-chip--secondary">{template.tags.join(', ')}</span>
+                        </div>
                       </div>
-                    </div>
-                    <pre className="scripts-template-card__preview">{template.sourceCode}</pre>
-                    <button
-                      type="button"
-                      className="workspace-button workspace-button--secondary"
-                      onClick={() => {
-                        setDraft(createDraftFromTemplate(template, t('scriptsRoute.list.templateCopySuffix')));
-                        setIsCreatingDraft(true);
-                        setSelectedScriptId(null);
-                        setFloatingExplorerOpen('scripts', false);
-                      }}
-                    >
-                      <IconLabel icon="template">{t('scriptsRoute.list.useTemplateAction', { name: template.name })}</IconLabel>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+                      <div className="shared-support-block shared-support-block--preview">
+                        <pre className="scripts-template-card__preview">{template.sourceCode}</pre>
+                      </div>
+                      <button
+                        type="button"
+                        className="workspace-button workspace-button--secondary"
+                        onClick={() => {
+                          setDraft(createDraftFromTemplate(template, t('scriptsRoute.list.templateCopySuffix')));
+                          setIsCreatingDraft(true);
+                          setSelectedScriptId(null);
+                          setFloatingExplorerOpen('scripts', false);
+                        }}
+                      >
+                        <IconLabel icon="template">{t('scriptsRoute.list.useTemplateAction', { name: template.name })}</IconLabel>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </DetailViewerSection>
             )}
           </div>
         </aside>

@@ -243,44 +243,110 @@ export function EnvironmentsRoute() {
               </div>
               <div className="request-work-surface__badges management-detail__badge-rail"><span className="workspace-chip">{t('environmentsRoute.detail.enabledChip', { count: activeDraft.variables.filter((row) => row.isEnabled !== false).length })}</span><span className="workspace-chip workspace-chip--secondary">{t('environmentsRoute.detail.secretChip', { count: activeDraft.variables.filter((row) => row.isSecret === true).length })}</span>{activeDraft.isDefault ? <span className="workspace-chip">{t('environmentsRoute.detail.defaultChip')}</span> : null}</div>
             </header>
-            <DetailViewerSection icon="summary" title={t('environmentsRoute.detail.management.title')} description={t('environmentsRoute.detail.management.description')} className="workspace-surface-card" actions={<div className="request-work-surface__future-actions"><button type="button" className="workspace-button workspace-button--secondary" onClick={() => { if (!saveDisabledReason) { if (isCreatingDraft || !activeDraft.id) { createMutation.mutate(activeDraft); } else { updateMutation.mutate({ environmentId: activeDraft.id, environment: activeDraft }); } } }} disabled={saveDisabledReason !== null}><IconLabel icon="save">{isCreatingDraft ? t('environmentsRoute.detail.management.createAction') : t('environmentsRoute.detail.management.saveAction')}</IconLabel></button>{isCreatingDraft ? <button type="button" className="workspace-button workspace-button--ghost" onClick={() => { setIsCreatingDraft(false); setSelectedEnvironmentId(sortedItems[0]?.id ?? null); }}>{t('environmentsRoute.detail.management.cancelDraft')}</button> : <button type="button" className="workspace-button workspace-button--ghost" onClick={() => { if (detailQuery.data && !deleteDisabledReason) { deleteMutation.mutate(detailQuery.data.id); } }} disabled={deleteDisabledReason !== null}><IconLabel icon="delete">{t('environmentsRoute.detail.management.deleteAction')}</IconLabel></button>}</div>}>
-              <p className="shared-readiness-note">{saveDisabledReason ?? deleteDisabledReason ?? t('environmentsRoute.detail.management.readinessNote')}</p>
-              {selectedLegacySecretRowCount > 0 ? (
-                <p className="shared-readiness-note">
-                  {t('environmentsRoute.detail.management.legacySanitizedNote', { count: selectedLegacySecretRowCount })}
-                </p>
+            <DetailViewerSection
+              icon="summary"
+              title={t('environmentsRoute.detail.management.title')}
+              description={t('environmentsRoute.detail.management.description')}
+              className="workspace-surface-card"
+              actions={(
+                <div className="shared-action-bar">
+                  <button
+                    type="button"
+                    className="workspace-button workspace-button--secondary"
+                    onClick={() => {
+                      if (!saveDisabledReason) {
+                        if (isCreatingDraft || !activeDraft.id) {
+                          createMutation.mutate(activeDraft);
+                        } else {
+                          updateMutation.mutate({ environmentId: activeDraft.id, environment: activeDraft });
+                        }
+                      }
+                    }}
+                    disabled={saveDisabledReason !== null}
+                  >
+                    <IconLabel icon="save">{isCreatingDraft ? t('environmentsRoute.detail.management.createAction') : t('environmentsRoute.detail.management.saveAction')}</IconLabel>
+                  </button>
+                  {isCreatingDraft ? (
+                    <button
+                      type="button"
+                      className="workspace-button workspace-button--ghost"
+                      onClick={() => {
+                        setIsCreatingDraft(false);
+                        setSelectedEnvironmentId(sortedItems[0]?.id ?? null);
+                      }}
+                    >
+                      {t('environmentsRoute.detail.management.cancelDraft')}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="workspace-button workspace-button--ghost"
+                      onClick={() => {
+                        if (detailQuery.data && !deleteDisabledReason) {
+                          deleteMutation.mutate(detailQuery.data.id);
+                        }
+                      }}
+                      disabled={deleteDisabledReason !== null}
+                    >
+                      <IconLabel icon="delete">{t('environmentsRoute.detail.management.deleteAction')}</IconLabel>
+                    </button>
+                  )}
+                </div>
+              )}
+            >
+              <div className="shared-support-block shared-support-block--notes">
+                <p className="shared-readiness-note">{saveDisabledReason ?? deleteDisabledReason ?? t('environmentsRoute.detail.management.readinessNote')}</p>
+                {selectedLegacySecretRowCount > 0 ? (
+                  <p className="shared-readiness-note">
+                    {t('environmentsRoute.detail.management.legacySanitizedNote', { count: selectedLegacySecretRowCount })}
+                  </p>
+                ) : null}
+              </div>
+              {validationMessages.length > 0 ? (
+                <div className="shared-support-block">
+                  <ul className="environment-validation-list" aria-label={t('environmentsRoute.detail.management.validationListAriaLabel')}>
+                    {validationMessages.map((message) => <li key={message}>{message}</li>)}
+                  </ul>
+                </div>
               ) : null}
-              {validationMessages.length > 0 ? <ul className="environment-validation-list" aria-label={t('environmentsRoute.detail.management.validationListAriaLabel')}>{validationMessages.map((message) => <li key={message}>{message}</li>)}</ul> : null}
-              {(createMutation.error || updateMutation.error || deleteMutation.error) ? <EmptyStateCallout title={t('environmentsRoute.detail.management.mutationFailedTitle')} description={([createMutation.error, updateMutation.error, deleteMutation.error].find(Boolean) as Error | undefined)?.message ?? t('environmentsRoute.detail.management.mutationFailedFallbackDescription')} /> : null}
+              {(createMutation.error || updateMutation.error || deleteMutation.error) ? (
+                <div className="shared-support-block shared-support-block--notes">
+                  <EmptyStateCallout title={t('environmentsRoute.detail.management.mutationFailedTitle')} description={([createMutation.error, updateMutation.error, deleteMutation.error].find(Boolean) as Error | undefined)?.message ?? t('environmentsRoute.detail.management.mutationFailedFallbackDescription')} />
+                </div>
+              ) : null}
             </DetailViewerSection>
             <div className="environments-summary-grid">
-              <DetailViewerSection icon="environments" title={t('environmentsRoute.detail.summaryCard.title')} description={t('environmentsRoute.detail.summaryCard.description')} className="workspace-surface-card"><KeyValueMetaList items={[{ label: t('environmentsRoute.detail.summaryCard.labels.name'), value: activeDraft.name || t('environmentsRoute.detail.summaryCard.values.untitled') }, { label: t('environmentsRoute.detail.summaryCard.labels.default'), value: activeDraft.isDefault ? t('common.values.yes') : t('common.values.no') }, { label: t('environmentsRoute.detail.summaryCard.labels.variableCount'), value: activeDraft.variables.length }, { label: t('environmentsRoute.detail.summaryCard.labels.enabledVariables'), value: activeDraft.variables.filter((row) => row.isEnabled !== false).length }, { label: t('environmentsRoute.detail.summaryCard.labels.secretBackedVariables'), value: activeDraft.variables.filter((row) => row.isSecret === true).length }]} /></DetailViewerSection>
-              <DetailViewerSection icon="shield" title={t('environmentsRoute.detail.secretPolicyCard.title')} description={t('environmentsRoute.detail.secretPolicyCard.description')} className="workspace-surface-card workspace-surface-card--muted"><KeyValueMetaList items={[{ label: t('environmentsRoute.detail.secretPolicyCard.labels.readModel'), value: t('environmentsRoute.detail.secretPolicyCard.values.readModel') }, { label: t('environmentsRoute.detail.secretPolicyCard.labels.storedIndicator'), value: t('environmentsRoute.detail.secretPolicyCard.values.storedIndicator') }, { label: t('environmentsRoute.detail.secretPolicyCard.labels.updatePolicy'), value: t('environmentsRoute.detail.secretPolicyCard.values.updatePolicy') }, { label: t('environmentsRoute.detail.secretPolicyCard.labels.runtimeLinkage'), value: t('environmentsRoute.detail.secretPolicyCard.values.runtimeLinkage') }, { label: t('environmentsRoute.detail.secretPolicyCard.labels.legacySanitizedRows'), value: selectedLegacySecretRowCount }]} /></DetailViewerSection>
+              <DetailViewerSection icon="environments" title={t('environmentsRoute.detail.summaryCard.title')} description={t('environmentsRoute.detail.summaryCard.description')} className="workspace-surface-card" tone="supporting"><KeyValueMetaList items={[{ label: t('environmentsRoute.detail.summaryCard.labels.name'), value: activeDraft.name || t('environmentsRoute.detail.summaryCard.values.untitled') }, { label: t('environmentsRoute.detail.summaryCard.labels.default'), value: activeDraft.isDefault ? t('common.values.yes') : t('common.values.no') }, { label: t('environmentsRoute.detail.summaryCard.labels.variableCount'), value: activeDraft.variables.length }, { label: t('environmentsRoute.detail.summaryCard.labels.enabledVariables'), value: activeDraft.variables.filter((row) => row.isEnabled !== false).length }, { label: t('environmentsRoute.detail.summaryCard.labels.secretBackedVariables'), value: activeDraft.variables.filter((row) => row.isSecret === true).length }]} /></DetailViewerSection>
+              <DetailViewerSection icon="shield" title={t('environmentsRoute.detail.secretPolicyCard.title')} description={t('environmentsRoute.detail.secretPolicyCard.description')} className="workspace-surface-card workspace-surface-card--muted" tone="supporting"><KeyValueMetaList items={[{ label: t('environmentsRoute.detail.secretPolicyCard.labels.readModel'), value: t('environmentsRoute.detail.secretPolicyCard.values.readModel') }, { label: t('environmentsRoute.detail.secretPolicyCard.labels.storedIndicator'), value: t('environmentsRoute.detail.secretPolicyCard.values.storedIndicator') }, { label: t('environmentsRoute.detail.secretPolicyCard.labels.updatePolicy'), value: t('environmentsRoute.detail.secretPolicyCard.values.updatePolicy') }, { label: t('environmentsRoute.detail.secretPolicyCard.labels.runtimeLinkage'), value: t('environmentsRoute.detail.secretPolicyCard.values.runtimeLinkage') }, { label: t('environmentsRoute.detail.secretPolicyCard.labels.legacySanitizedRows'), value: selectedLegacySecretRowCount }]} /></DetailViewerSection>
             </div>
             <DetailViewerSection icon="summary" title={t('environmentsRoute.detail.metadataCard.title')} description={t('environmentsRoute.detail.metadataCard.description')} className="workspace-surface-card"><div className="request-editor-card__grid"><label className="request-field"><span>{t('environmentsRoute.detail.metadataCard.labels.name')}</span><input aria-label={t('environmentsRoute.detail.metadataCard.labels.name')} type="text" value={activeDraft.name} onChange={(event) => { const nextName = event.currentTarget.value; setDraft((current) => ({ ...(current.id === activeDraft.id ? current : activeDraft), name: nextName })); }} /></label><label className="request-field request-field--toggle"><span>{t('environmentsRoute.detail.metadataCard.labels.defaultEnvironment')}</span><input aria-label={t('environmentsRoute.detail.metadataCard.labels.defaultEnvironment')} type="checkbox" checked={activeDraft.isDefault} onChange={(event) => { const nextIsDefault = event.currentTarget.checked; setDraft((current) => ({ ...(current.id === activeDraft.id ? current : activeDraft), isDefault: nextIsDefault })); }} /></label><label className="request-field request-field--wide"><span>{t('environmentsRoute.detail.metadataCard.labels.description')}</span><textarea aria-label={t('environmentsRoute.detail.metadataCard.labels.description')} value={activeDraft.description} onChange={(event) => { const nextDescription = event.currentTarget.value; setDraft((current) => ({ ...(current.id === activeDraft.id ? current : activeDraft), description: nextDescription })); }} /></label></div></DetailViewerSection>
-            <DetailViewerSection icon="code" title={t('environmentsRoute.detail.examplesCard.title')} description={t('environmentsRoute.detail.examplesCard.description')} className="workspace-surface-card workspace-surface-card--muted">
-              <div className="request-script-helper-list">
-                <p>{t('environmentsRoute.detail.examplesCard.replacementSyntaxNote')}</p>
-                <p>{t('environmentsRoute.detail.examplesCard.scriptSyntaxNote')}</p>
-                <p>{t('environmentsRoute.detail.examplesCard.secretPolicyNote')}</p>
-                <p>{t('environmentsRoute.detail.examplesCard.replacementValueNote')}</p>
+            <DetailViewerSection icon="code" title={t('environmentsRoute.detail.examplesCard.title')} description={t('environmentsRoute.detail.examplesCard.description')} className="workspace-surface-card workspace-surface-card--muted" tone="supporting">
+              <div className="shared-support-block shared-support-block--notes">
+                <div className="request-script-helper-list">
+                  <p>{t('environmentsRoute.detail.examplesCard.replacementSyntaxNote')}</p>
+                  <p>{t('environmentsRoute.detail.examplesCard.scriptSyntaxNote')}</p>
+                  <p>{t('environmentsRoute.detail.examplesCard.secretPolicyNote')}</p>
+                  <p>{t('environmentsRoute.detail.examplesCard.replacementValueNote')}</p>
+                </div>
               </div>
-              <div className="request-script-editor__meta">
-                <div className="request-script-example">
-                  <span>{t('environmentsRoute.detail.examplesCard.labels.url')}</span>
-                  <pre>{t('environmentsRoute.detail.examplesCard.examples.url')}</pre>
-                </div>
-                <div className="request-script-example">
-                  <span>{t('environmentsRoute.detail.examplesCard.labels.header')}</span>
-                  <pre>{t('environmentsRoute.detail.examplesCard.examples.header')}</pre>
-                </div>
-                <div className="request-script-example">
-                  <span>{t('environmentsRoute.detail.examplesCard.labels.jsonBody')}</span>
-                  <pre>{t('environmentsRoute.detail.examplesCard.examples.jsonBody')}</pre>
-                </div>
-                <div className="request-script-example">
-                  <span>{t('environmentsRoute.detail.examplesCard.labels.script')}</span>
-                  <pre>{t('environmentsRoute.detail.examplesCard.examples.script')}</pre>
+              <div className="shared-support-block">
+                <div className="request-script-editor__meta">
+                  <div className="request-script-example">
+                    <span>{t('environmentsRoute.detail.examplesCard.labels.url')}</span>
+                    <pre>{t('environmentsRoute.detail.examplesCard.examples.url')}</pre>
+                  </div>
+                  <div className="request-script-example">
+                    <span>{t('environmentsRoute.detail.examplesCard.labels.header')}</span>
+                    <pre>{t('environmentsRoute.detail.examplesCard.examples.header')}</pre>
+                  </div>
+                  <div className="request-script-example">
+                    <span>{t('environmentsRoute.detail.examplesCard.labels.jsonBody')}</span>
+                    <pre>{t('environmentsRoute.detail.examplesCard.examples.jsonBody')}</pre>
+                  </div>
+                  <div className="request-script-example">
+                    <span>{t('environmentsRoute.detail.examplesCard.labels.script')}</span>
+                    <pre>{t('environmentsRoute.detail.examplesCard.examples.script')}</pre>
+                  </div>
                 </div>
               </div>
             </DetailViewerSection>
@@ -294,8 +360,8 @@ export function EnvironmentsRoute() {
       detail={(
         <aside className="shell-panel shell-panel--detail" aria-label={t('shell.routePanels.detailRegion')}>
         <div className="workspace-detail-panel">
-          <DetailViewerSection icon="info" title={t('environmentsRoute.detail.defaultGuidanceCard.title')} description={t('environmentsRoute.detail.defaultGuidanceCard.description')} className="workspace-surface-card"><KeyValueMetaList items={[{ label: t('environmentsRoute.detail.defaultGuidanceCard.labels.currentDefaultIntent'), value: activeDraft.isDefault ? t('environmentsRoute.detail.defaultGuidanceCard.values.currentDefaultIsThisDraft') : t('environmentsRoute.detail.defaultGuidanceCard.values.currentDefaultIsAnother') }, { label: t('environmentsRoute.detail.defaultGuidanceCard.labels.workspaceDefaultCount'), value: detailQuery.data?.isDefault ? t('environmentsRoute.detail.defaultGuidanceCard.values.workspaceDefaultCountActive') : t('environmentsRoute.detail.defaultGuidanceCard.values.workspaceDefaultCountServer') }, { label: t('environmentsRoute.detail.defaultGuidanceCard.labels.firstCreateBehavior'), value: t('environmentsRoute.detail.defaultGuidanceCard.values.firstCreateBehavior') }]} /></DetailViewerSection>
-          <DetailViewerSection icon="shield" title={t('environmentsRoute.detail.secretHandlingCard.title')} description={t('environmentsRoute.detail.secretHandlingCard.description')} className="workspace-surface-card workspace-surface-card--muted"><EmptyStateCallout title={selectedLegacySecretRowCount > 0 ? t('environmentsRoute.detail.secretHandlingCard.sanitized.title') : t('environmentsRoute.detail.secretHandlingCard.empty.title')} description={selectedLegacySecretRowCount > 0 ? t('environmentsRoute.detail.secretHandlingCard.sanitized.description', { count: selectedLegacySecretRowCount }) : t('environmentsRoute.detail.secretHandlingCard.empty.description')} /></DetailViewerSection>
+          <DetailViewerSection icon="info" title={t('environmentsRoute.detail.defaultGuidanceCard.title')} description={t('environmentsRoute.detail.defaultGuidanceCard.description')} className="workspace-surface-card" tone="supporting"><KeyValueMetaList items={[{ label: t('environmentsRoute.detail.defaultGuidanceCard.labels.currentDefaultIntent'), value: activeDraft.isDefault ? t('environmentsRoute.detail.defaultGuidanceCard.values.currentDefaultIsThisDraft') : t('environmentsRoute.detail.defaultGuidanceCard.values.currentDefaultIsAnother') }, { label: t('environmentsRoute.detail.defaultGuidanceCard.labels.workspaceDefaultCount'), value: detailQuery.data?.isDefault ? t('environmentsRoute.detail.defaultGuidanceCard.values.workspaceDefaultCountActive') : t('environmentsRoute.detail.defaultGuidanceCard.values.workspaceDefaultCountServer') }, { label: t('environmentsRoute.detail.defaultGuidanceCard.labels.firstCreateBehavior'), value: t('environmentsRoute.detail.defaultGuidanceCard.values.firstCreateBehavior') }]} /></DetailViewerSection>
+          <DetailViewerSection icon="shield" title={t('environmentsRoute.detail.secretHandlingCard.title')} description={t('environmentsRoute.detail.secretHandlingCard.description')} className="workspace-surface-card workspace-surface-card--muted" tone="supporting"><EmptyStateCallout title={selectedLegacySecretRowCount > 0 ? t('environmentsRoute.detail.secretHandlingCard.sanitized.title') : t('environmentsRoute.detail.secretHandlingCard.empty.title')} description={selectedLegacySecretRowCount > 0 ? t('environmentsRoute.detail.secretHandlingCard.sanitized.description', { count: selectedLegacySecretRowCount }) : t('environmentsRoute.detail.secretHandlingCard.empty.description')} /></DetailViewerSection>
         </div>
         </aside>
       )}

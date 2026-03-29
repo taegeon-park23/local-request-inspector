@@ -165,6 +165,8 @@ describe('Environments MVP route', () => {
     expect(screen.getByRole('heading', { name: 'Where environment values resolve' })).toBeInTheDocument();
     expect(screen.getByText(/\{\{VARIABLE_NAME\}\} form/i)).toBeInTheDocument();
     expect(screen.getAllByText(/env\.get\('token'\)/i).length).toBeGreaterThan(0);
+    expect(document.querySelector('.environments-detail .shared-support-block--notes .shared-readiness-note')).not.toBeNull();
+    expect(document.querySelectorAll('.environments-summary-grid .shared-detail-viewer-section--supporting')).toHaveLength(2);
     expect(screen.getByText(/replacementValue is reserved for a future secure backend/i)).toBeInTheDocument();
     expect(screen.getByLabelText('Secret replacement value 2')).toHaveValue('');
     expect(screen.queryByDisplayValue('secret-token')).not.toBeInTheDocument();
@@ -184,6 +186,7 @@ describe('Environments MVP route', () => {
     expect(screen.getByRole('heading', { name: 'Edit environment' })).toBeInTheDocument();
     expect(screen.getByLabelText('Environment name')).toHaveValue('Local API');
     expect(within(detailPanel).getByText(/Current default intent/i)).toBeInTheDocument();
+    expect(detailPanel.querySelectorAll('.shared-detail-viewer-section--supporting')).toHaveLength(2);
     expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
 
     await user.click(screen.getByRole('button', { name: 'Expand explorer' }));

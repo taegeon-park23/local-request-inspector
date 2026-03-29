@@ -346,6 +346,10 @@
           deferredNoteFallback: 'Attachment, backlinks, and live reference behavior remain deferred.',
         },
       },
+      templatesCard: {
+        title: 'Template starters',
+        description: 'System starter templates stay copy-first and remain a supporting library beside saved-script authoring.',
+      },
       editorCard: {
         title: 'Saved script editor',
         description: 'Monaco-backed stage-aware editing is enabled for saved script source authoring.',
@@ -717,6 +721,10 @@ export const managementRouteMessagesKo: RouteCatalogShape<typeof managementRoute
           capabilitySummaryFallback: '여기에 단계별 capability 가이드가 표시됩니다.',
           deferredNoteFallback: 'attachment, backlink, live reference 동작은 계속 유예됩니다.',
         },
+      },
+      templatesCard: {
+        title: '템플릿 스타터',
+        description: '시스템 스타터 템플릿은 복사 우선 흐름으로 유지되며 저장 스크립트 작성 옆의 보조 라이브러리로 남습니다.',
       },
       editorCard: {
         title: '저장 스크립트 편집기',

@@ -116,6 +116,7 @@ describe('Scripts MVP route', () => {
     expect(screen.getByLabelText('Stage filter')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: 'Open script Health status assertions' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Use Trace ID starter' })).toBeInTheDocument();
+    expect(document.querySelector('.workspace-detail-panel .shared-detail-viewer-section--supporting .shared-support-block--preview .scripts-template-card__preview')).not.toBeNull();
     expect(screen.getByText(/Top-level Scripts manages standalone saved scripts/i)).toBeInTheDocument();
   });
 
@@ -130,6 +131,7 @@ describe('Scripts MVP route', () => {
     expect(screen.getByLabelText('Stage filter')).toHaveValue('tests');
     expect(screen.getByText('Requested stage: Tests')).toBeInTheDocument();
     expect(screen.getByText('Requested saved script: Health status assertions')).toBeInTheDocument();
+    expect(document.querySelector('.scripts-route-bridge-card.shared-detail-viewer-section--supporting .shared-support-block--notes')).not.toBeNull();
     expect(screen.getByLabelText('Script name')).toHaveValue('Health status assertions');
     expect(screen.getByRole('button', { name: 'Back to request builder' })).toBeInTheDocument();
   });
@@ -144,6 +146,8 @@ describe('Scripts MVP route', () => {
     await user.click(await within(explorer).findByRole('button', { name: 'Open script Health status assertions' }));
     expect(screen.getByRole('heading', { name: 'Edit saved script' })).toBeInTheDocument();
     expect(screen.getByLabelText('Script name')).toHaveValue('Health status assertions');
+    expect(document.querySelector('.scripts-detail .shared-support-block--notes .shared-readiness-note')).not.toBeNull();
+    expect(document.querySelectorAll('.scripts-summary-grid .shared-detail-viewer-section--supporting')).toHaveLength(2);
     expect(within(detailPanel).getByRole('button', { name: 'Use Trace ID starter' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
 

@@ -5549,6 +5549,18 @@ body {
   white-space: pre-wrap;
 }
 
+.environment-validation-list {
+  display: grid;
+  gap: var(--m3-space-2);
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--m3-color-error);
+}
+
+.environment-validation-list li {
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 1100px) {
   .workspace-explorer__header--stacked,
   .environments-explorer__header,
@@ -6062,6 +6074,14 @@ body {
 .workspace-detail-panel__support-block--preview .history-preview-list,
 .shared-support-block--preview .history-preview-list {
   margin: 0;
+}
+
+.workspace-detail-panel__support-block--preview .scripts-template-card__preview,
+.shared-support-block--preview .scripts-template-card__preview {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .workspace-detail-panel__support-block--preview .history-preview-block,
