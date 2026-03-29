@@ -8,6 +8,7 @@
 
 ## Current Snapshot
 - No bounded task is currently active. The next implementation step must start from one newly promoted task, while broader UI verification remains user-managed unless a new bounded slice is explicitly defined.
+- `T121` is archived after adding containment markers for observation badge rails and bounded preview blocks, tightening shared support-block overflow handling in `material-theme.css`, retiring overlapping legacy preview rules from `shell.css`, and verifying `1100px` history/captures/mocks containment with Playwright smoke plus `lint`, `typecheck`, and `test:node`.
 - `T120` is archived after applying the same route-local medium-width pane-tier guard to `/captures`, `/history`, and `/mocks`, moving those observation routes into stacked surface/detail tabs earlier and auto-collapsing the explorer once on stacked entry so medium-width observation surfaces remain readable at `1100px` without reopening the broader route-panel architecture.
 - `T119` is archived after applying the same route-local medium-width pane-tier guard to `/workspace`, moving the focused-overlay workspace into stacked surface/detail tabs earlier and auto-collapsing the explorer once on stacked entry so the authoring surface remains readable at `1100px` without reopening the broader route-panel architecture.
 - Broader UI verification remains user-managed unless a new bounded slice explicitly changes that rule.

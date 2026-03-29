@@ -122,6 +122,7 @@ describe('Captures S18 fidelity refinement', () => {
 
     const capturesHeaderBadges = document.querySelector('.captures-detail__header .observation-detail__badge-rail');
     expect(capturesHeaderBadges).not.toBeNull();
+    expect(capturesHeaderBadges).toHaveAttribute('data-badge-contained', 'true');
     expect(within(capturesHeaderBadges as HTMLElement).getByText('POST')).toBeInTheDocument();
     expect(within(capturesHeaderBadges as HTMLElement).getByText('Mocked', { selector: '[data-kind="mockOutcome"]' })).toBeInTheDocument();
     expect(within(capturesHeaderBadges as HTMLElement).queryByText(firstCapture.receivedAtLabel)).not.toBeInTheDocument();
@@ -130,11 +131,11 @@ describe('Captures S18 fidelity refinement', () => {
     await waitFor(() => expect(document.querySelector('.capture-timeline__item > .capture-timeline__entry.shared-detail-viewer-section')).not.toBeNull());
     expect(document.querySelector('.capture-summary-card--storage.shared-detail-viewer-section--supporting')).not.toBeNull();
     expect(document.querySelector('.capture-summary-card--outcome.shared-detail-viewer-section--supporting')).not.toBeNull();
-    expect(document.querySelector('.capture-summary-card--preview .shared-support-block--preview .capture-preview-block')).not.toBeNull();
+    expect(document.querySelector('.capture-summary-card--preview .shared-support-block--preview .capture-preview-block[data-preview-contained="true"]')).not.toBeNull();
     expect(document.querySelector('.capture-timeline__entry.shared-detail-viewer-section--supporting')).not.toBeNull();
     await user.click(screen.getByRole('tab', { name: 'Deferred detail' }));
     expect(document.querySelector('.capture-summary-card--deferred.shared-detail-viewer-section--supporting')).not.toBeNull();
-    expect(document.querySelector('.capture-summary-card--deferred .shared-support-block--preview .capture-preview-block')).not.toBeNull();
+    expect(document.querySelector('.capture-summary-card--deferred .shared-support-block--preview .capture-preview-block[data-preview-contained="true"]')).not.toBeNull();
     expect(screen.getAllByText('Mocked', { selector: '[data-kind="mockOutcome"]' }).length).toBeGreaterThan(0);
     expect(screen.queryByText('Succeeded', { selector: '[data-kind="executionOutcome"]' })).not.toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([input]) => getUrl(input as RequestInfo | URL) === '/api/captured-requests')).toBe(true);

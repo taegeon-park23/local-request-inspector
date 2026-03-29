@@ -711,7 +711,7 @@ export function MocksRoute() {
                   <span className="workspace-chip workspace-chip--secondary">{t('mocksRoute.detail.header.authoredRuleChip')}</span>
                 </div>
               </div>
-              <div className="request-work-surface__badges observation-detail__badge-rail">
+              <div className="request-work-surface__badges observation-detail__badge-rail" data-badge-contained="true">
                 <StatusBadge kind="neutral" value={currentPresentation.ruleState} />
                 <span className="workspace-chip">{t('mocksRoute.helpers.priorityChip', { priority: draft.priority })}</span>
               </div>
@@ -904,7 +904,7 @@ export function MocksRoute() {
                     </label>
                   </div>
                   <div className="shared-support-block shared-support-block--preview">
-                    <pre className="mocks-preview-block">{currentPresentation.responseBodyPreview}</pre>
+                    <pre className="mocks-preview-block" data-preview-contained="true">{currentPresentation.responseBodyPreview}</pre>
                   </div>
                 </DetailViewerSection>
 

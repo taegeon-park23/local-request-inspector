@@ -23,10 +23,10 @@
 
 ## Current State
 - **Current bounded task:** none.
-- **Most recent archived implementation:** `T120` Observation Medium-Width Readability Polish.
+- **Most recent archived implementation:** `T121` Result/Content Overflow Follow-Up.
 - **Dropped task decision:** `T104` UI Capture Evidence Baseline was explicitly dropped by user reprioritization on 2026-03-29; it is no longer treated as a live blocker.
-- **Highest-priority next step:** run user-managed local UI verification (`npm.cmd run test:ui` plus medium-width checks) or promote one new bounded polish slice if additional implementation work is still needed.
-- **Verification baseline:** `npm.cmd run lint`, `npm.cmd run typecheck`, and `npm.cmd run test:node` passed on 2026-03-30 after `T120` observation medium-width readability polish. Playwright smoke also confirmed that `/workspace`, `/environments`, `/scripts`, `/captures`, `/history`, and `/mocks` drop into stacked surface/detail tabs with the explorer collapsed at `1100px`. Direct Codex-side vitest execution remains blocked by local PowerShell execution policy and a Vite/esbuild `spawn EPERM`; `npm.cmd run test:ui` remains user-managed only.
+- **Highest-priority next step:** run user-managed local UI verification (`npm.cmd run test:ui` plus medium-width checks) or promote one new bounded task before starting another implementation slice.
+- **Verification baseline:** `npm.cmd run lint`, `npm.cmd run typecheck`, and `npm.cmd run test:node` passed on 2026-03-30 after `T121` result/content overflow follow-up. Playwright smoke also confirmed that `/history`, `/captures`, and `/mocks` keep badge rails and bounded preview content contained at `1100px`; earlier medium-width pane-tier smoke for `/workspace`, `/environments`, `/scripts`, `/captures`, `/history`, and `/mocks` remains valid. Direct Codex-side vitest execution remains blocked by local PowerShell execution policy and a Vite/esbuild `spawn EPERM`; `npm.cmd run test:ui` remains user-managed only.
 - **Closed UI-test rerun policy:** agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - **Codex UI verification lane:** use the Playwright skill workflow against the dev route or built shell when available.
 - **User-managed local verification:** if UI full-suite verification is still needed, instruct the user to run `npm.cmd run test:ui` locally and treat that result as authoritative.

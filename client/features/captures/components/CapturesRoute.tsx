@@ -364,7 +364,7 @@ export function CapturesRoute() {
                   <span className="workspace-chip workspace-chip--secondary">{t('capturesRoute.detail.header.roleChip')}</span>
                 </div>
               </div>
-              <div className="request-work-surface__badges observation-detail__badge-rail">
+              <div className="request-work-surface__badges observation-detail__badge-rail" data-badge-contained="true">
                 <span className="workspace-chip">{selectedCapture.method}</span>
                 <StatusBadge kind="mockOutcome" value={selectedCapture.mockOutcome} />
               </div>
@@ -434,7 +434,7 @@ export function CapturesRoute() {
                   ]}
                 />
                 <div className="shared-support-block shared-support-block--preview">
-                  <pre className="capture-preview-block">{selectedCapture.bodyPreview}</pre>
+                  <pre className="capture-preview-block" data-preview-contained="true">{selectedCapture.bodyPreview}</pre>
                 </div>
               </DetailViewerSection>
 
@@ -528,7 +528,7 @@ export function CapturesRoute() {
                   <p className="shared-readiness-note">{selectedCapture.mockRuleName}</p>
                 ) : null}
                 <div className="shared-support-block shared-support-block--preview">
-                  <pre className="capture-preview-block">{selectedCapture.bodyPreview}</pre>
+                  <pre className="capture-preview-block" data-preview-contained="true">{selectedCapture.bodyPreview}</pre>
                 </div>
               </DetailViewerSection>
             )}

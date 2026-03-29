@@ -833,20 +833,6 @@ body { margin: 0; background: #020617; overflow: hidden; }
 .history-row__meta {
   font-size: 0.85rem;
 }
-.history-preview-block {
-  margin: 0;
-  border-radius: 0.85rem;
-  padding: 0.85rem;
-  background: #020617;
-  color: #cbd5e1;
-  white-space: pre-wrap;
-  word-break: break-word;
-  overflow: auto;
-}
-.history-preview-list {
-  margin: 0;
-  padding-left: 1.2rem;
-}
 .history-timeline {
   list-style: none;
   margin: 0;
@@ -969,16 +955,6 @@ body { margin: 0; background: #020617; overflow: hidden; }
 }
 .mocks-row__meta {
   font-size: 0.85rem;
-}
-.mocks-preview-block {
-  margin: 0;
-  border-radius: 0.85rem;
-  padding: 0.85rem;
-  background: #020617;
-  color: #cbd5e1;
-  white-space: pre-wrap;
-  word-break: break-word;
-  overflow: auto;
 }
 @media (max-width: 1024px) {
   .mocks-explorer__header,

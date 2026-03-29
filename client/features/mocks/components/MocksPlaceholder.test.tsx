@@ -282,6 +282,7 @@ describe('Mocks S16 persisted CRUD surface', () => {
 
     const mocksHeaderBadges = document.querySelector('.mocks-detail__header .observation-detail__badge-rail');
     expect(mocksHeaderBadges).not.toBeNull();
+    expect(mocksHeaderBadges).toHaveAttribute('data-badge-contained', 'true');
     expect(within(mocksHeaderBadges as HTMLElement).getByText('Enabled', { selector: '[data-kind="neutral"]' })).toBeInTheDocument();
     expect(within(mocksHeaderBadges as HTMLElement).getByText('Priority 90')).toBeInTheDocument();
     expect(within(mocksHeaderBadges as HTMLElement).queryByText('Fixed delay: 250 ms')).not.toBeInTheDocument();
@@ -292,7 +293,7 @@ describe('Mocks S16 persisted CRUD surface', () => {
     expect(document.querySelector('.workspace-detail-panel .mocks-summary-card--deferred.shared-detail-viewer-section--supporting')).not.toBeNull();
 
     await user.click(screen.getByRole('tab', { name: 'Response' }));
-    expect(document.querySelector('.mocks-summary-card--response .shared-support-block--preview .mocks-preview-block')).not.toBeNull();
+    expect(document.querySelector('.mocks-summary-card--response .shared-support-block--preview .mocks-preview-block[data-preview-contained="true"]')).not.toBeNull();
 
     await user.click(screen.getByRole('tab', { name: 'Diagnostics' }));
     expect(document.querySelector('.mocks-summary-card--diagnostics.shared-detail-viewer-section--supporting')).not.toBeNull();

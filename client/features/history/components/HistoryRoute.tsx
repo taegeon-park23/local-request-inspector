@@ -433,7 +433,7 @@ export function HistoryRoute() {
                   <span className="workspace-chip workspace-chip--secondary">{t('historyRoute.detail.header.roleChip')}</span>
                 </div>
               </div>
-              <div className="request-work-surface__badges observation-detail__badge-rail">
+              <div className="request-work-surface__badges observation-detail__badge-rail" data-badge-contained="true">
                 <span className="workspace-chip">{selectedHistory.method}</span>
                 <StatusBadge kind="executionOutcome" value={selectedHistory.executionOutcome} />
                 <StatusBadge kind="transportOutcome" value={selectedHistory.transportOutcome} />
@@ -527,7 +527,7 @@ export function HistoryRoute() {
                 />
                 <p className="shared-readiness-note">{selectedHistory.responsePreviewPolicy ?? createFallbackResponsePreviewPolicy(selectedHistory, t)}</p>
                 <div className="shared-support-block shared-support-block--preview">
-                  <pre className="history-preview-block">{selectedHistory.bodyPreview}</pre>
+                  <pre className="history-preview-block" data-preview-contained="true">{selectedHistory.bodyPreview}</pre>
                 </div>
                 {persistedExecutionResult ? (
                   <div className="shared-support-block shared-support-block--notes">
@@ -558,7 +558,7 @@ export function HistoryRoute() {
                 />
                 {selectedHistory.consolePreview.length > 0 ? (
                   <div className="shared-support-block shared-support-block--preview">
-                    <ul className="history-preview-list" aria-label={t('historyRoute.resultPanels.console.consolePreviewAriaLabel')}>
+                    <ul className="history-preview-list" data-preview-contained="true" aria-label={t('historyRoute.resultPanels.console.consolePreviewAriaLabel')}>
                       {selectedHistory.consolePreview.map((entry) => (
                         <li key={entry}>{entry}</li>
                       ))}
@@ -592,7 +592,7 @@ export function HistoryRoute() {
                 />
                 {selectedHistory.testsPreview.length > 0 ? (
                   <div className="shared-support-block shared-support-block--preview">
-                    <ul className="history-preview-list" aria-label={t('historyRoute.resultPanels.tests.testsPreviewAriaLabel')}>
+                    <ul className="history-preview-list" data-preview-contained="true" aria-label={t('historyRoute.resultPanels.tests.testsPreviewAriaLabel')}>
                       {selectedHistory.testsPreview.map((entry) => (
                         <li key={entry}>{entry}</li>
                       ))}
@@ -606,7 +606,7 @@ export function HistoryRoute() {
                 )}
                 {persistedTestResults.length > 0 ? (
                   <div className="shared-support-block shared-support-block--preview">
-                    <ul className="history-preview-list" aria-label="Persisted test result details">
+                    <ul className="history-preview-list" data-preview-contained="true" aria-label="Persisted test result details">
                       {persistedTestResults.map((result) => (
                         <li key={result.id}>
                           <strong>{result.testName}</strong>: {result.status} - {result.message ?? 'No persisted detail message.'}
@@ -642,7 +642,7 @@ export function HistoryRoute() {
                 {renderEnvironmentResolutionSummary(selectedHistory, t)}
                 {selectedStageSummaries.length > 0 ? (
                   <div className="shared-support-block shared-support-block--preview">
-                    <ul className="history-preview-list" aria-label={t('historyRoute.resultPanels.executionInfo.stageSummaryAriaLabel')}>
+                    <ul className="history-preview-list" data-preview-contained="true" aria-label={t('historyRoute.resultPanels.executionInfo.stageSummaryAriaLabel')}>
                       {selectedStageSummaries.map((summary) => (
                         <li key={`${selectedHistory.executionId}-${summary.stageId}`}>
                           <strong>{summary.label}</strong>: {summary.status} - {summary.summary}
