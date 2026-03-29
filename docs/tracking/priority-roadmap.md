@@ -46,6 +46,7 @@
 37. `T109` Scroll Owner And Overflow Normalization is archived.
 38. `T110` Detail And Context Density Follow-Up is archived.
 39. `T111` Script Surface Focus And Badge Containment is archived.
+40. `T112` Script Editor Focus Retention Debug is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.
@@ -54,4 +55,4 @@
 - `T104` is dropped; do not treat missing UI capture evidence as a prerequisite for future bounded tasks.
 
 ## Immediate Next Step
-- Promote exactly one follow-up bounded task after `T111`, or route the next pass through user-managed local UI verification if visual confirmation is now the priority.
+- Run user-managed local `npm.cmd run test:ui` if full-suite UI verification is required, or promote exactly one new bounded follow-up slice before more implementation work starts.

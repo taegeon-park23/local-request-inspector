@@ -1,6 +1,10 @@
 ﻿import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import monaco from 'monaco-editor';
 
+export const loader = {
+  config: () => undefined,
+};
+
 interface MonacoReactMockProps {
   value?: string;
   height?: string;
@@ -93,4 +97,5 @@ export default function MonacoEditorMock({
     />
   );
 }
+
 

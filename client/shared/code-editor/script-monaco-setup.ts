@@ -1,3 +1,5 @@
+import { loader } from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 
@@ -17,6 +19,18 @@ interface MonacoLike {
 }
 
 let configured = false;
+let loaderConfigured = false;
+
+function configureScriptMonacoLoader() {
+  if (loaderConfigured) {
+    return;
+  }
+
+  loader.config({ monaco });
+  loaderConfigured = true;
+}
+
+configureScriptMonacoLoader();
 
 export function configureScriptMonaco(monaco: MonacoLike) {
   if (configured) {
