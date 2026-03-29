@@ -179,7 +179,7 @@ describe('WorkspaceContextPanel', () => {
     expect(within(screen.getByText('Request groups').closest('dl') ?? document.body).getByText('1')).toBeInTheDocument();
   });
 
-  it('renders container run summary in runs tab when batch execution exists', async () => {
+  it('renders container run summary with supporting steps and history sections', async () => {
     useWorkspaceBatchRunStore.getState().finishBatchRunSuccess(collectionBatchExecution);
     const user = userEvent.setup();
 
@@ -195,7 +195,26 @@ describe('WorkspaceContextPanel', () => {
     expect(screen.getByRole('heading', { name: 'Run summary' })).toBeInTheDocument();
     expect(within(screen.getByText('Outcome').closest('dl') ?? document.body).getByText('Succeeded')).toBeInTheDocument();
     expect(within(screen.getByText('Run history').closest('dl') ?? document.body).getByText('1')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Ordered steps' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Recent run history' })).toBeInTheDocument();
     expect(screen.getByText(/Health check/i)).toBeInTheDocument();
+  });
+
+  it('renders inheritance comparison sections as supporting cards for request tabs', async () => {
+    const user = userEvent.setup();
+
+    renderApp(
+      <WorkspaceContextPanel
+        activeTab={requestTab}
+        workspaceContext={workspaceContext}
+      />,
+    );
+
+    await user.click(screen.getByRole('tab', { name: 'Inheritance' }));
+
+    expect(screen.getByRole('heading', { name: 'Inheritance snapshot' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Variables' })).toBeInTheDocument();
+    expect(document.querySelectorAll('.workspace-context-panel__comparison-grid .shared-detail-viewer-section--supporting')).toHaveLength(4);
   });
 
   it('keeps request-result tabs inside runs context for request tabs', () => {

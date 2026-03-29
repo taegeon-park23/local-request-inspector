@@ -1,4 +1,4 @@
-﻿import { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
 import type { RequestRunObservation } from '@client/features/request-builder/request-builder.api';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
@@ -482,7 +482,7 @@ export function RequestResultPanel({
                 icon="tests"
                 title={t('workspaceRoute.resultPanel.batch.summary.preview.stepTitle')}
                 description={t('workspaceRoute.resultPanel.batch.summary.preview.stepDescription')}
-                tone="muted"
+                tone="supporting"
               >
                 <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.batch.summary.preview.stepAriaLabel')}>
                   {batchStepPreviewItems.map((entry, index) => (
@@ -496,7 +496,7 @@ export function RequestResultPanel({
                 icon="console"
                 title={t('workspaceRoute.resultPanel.batch.summary.preview.consoleTitle')}
                 description={t('workspaceRoute.resultPanel.batch.summary.preview.consoleDescription')}
-                tone="muted"
+                tone="supporting"
               >
                 <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.batch.summary.preview.consoleAriaLabel')}>
                   {batchConsolePreviewItems.map((entry, index) => (
@@ -539,13 +539,15 @@ export function RequestResultPanel({
                   />
                 </div>
                 <div className="workspace-detail-panel__result-support">
-                  <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.batch.response.stepsAriaLabel')}>
-                    {batchExecution.steps.map((step) => (
-                      <li key={`${step.requestId}-${step.stepIndex}`}>
-                        <strong>{step.requestName}</strong>: {step.execution.executionOutcome} · {getTransportOutcomeLabel(step.execution.responseStatus, t)} · {formatBatchStepPlacement(step, t)}
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="workspace-detail-panel__support-block">
+                    <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.batch.response.stepsAriaLabel')}>
+                      {batchExecution.steps.map((step) => (
+                        <li key={`${step.requestId}-${step.stepIndex}`}>
+                          <strong>{step.requestName}</strong>: {step.execution.executionOutcome} · {getTransportOutcomeLabel(step.execution.responseStatus, t)} · {formatBatchStepPlacement(step, t)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -661,14 +663,20 @@ export function RequestResultPanel({
                   />
                 </div>
                 <div className="workspace-detail-panel__result-support">
-                  <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.batch.executionInfo.stepsAriaLabel')}>
-                    {batchExecution.steps.map((step) => (
-                      <li key={`batch-info-${step.stepIndex}-${step.requestId}`}>
-                        <strong>{step.requestName}</strong>: {step.execution.executionId} · {step.execution.executionOutcome} · {formatBatchStepPlacement(step, t)}
-                      </li>
-                    ))}
-                  </ul>
-                  {batchRunMessage ? <p className="shared-readiness-note">{batchRunMessage}</p> : null}
+                  <div className="workspace-detail-panel__support-block">
+                    <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.batch.executionInfo.stepsAriaLabel')}>
+                      {batchExecution.steps.map((step) => (
+                        <li key={`batch-info-${step.stepIndex}-${step.requestId}`}>
+                          <strong>{step.requestName}</strong>: {step.execution.executionId} · {step.execution.executionOutcome} · {formatBatchStepPlacement(step, t)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  {batchRunMessage ? (
+                    <div className="workspace-detail-panel__support-block workspace-detail-panel__support-block--notes">
+                      <p className="shared-readiness-note">{batchRunMessage}</p>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ) : (
@@ -773,7 +781,7 @@ export function RequestResultPanel({
                 icon="tests"
                 title={t('workspaceRoute.resultPanel.summary.preview.testsTitle')}
                 description={t('workspaceRoute.resultPanel.summary.preview.testsDescription')}
-                tone="muted"
+                tone="supporting"
               >
                 <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.summary.preview.testsAriaLabel')}>
                   {testPreviewItems.map((entry, index) => (
@@ -787,7 +795,7 @@ export function RequestResultPanel({
                 icon="console"
                 title={t('workspaceRoute.resultPanel.summary.preview.consoleTitle')}
                 description={t('workspaceRoute.resultPanel.summary.preview.consoleDescription')}
-                tone="muted"
+                tone="supporting"
               >
                 <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.summary.preview.consoleAriaLabel')}>
                   {consolePreviewItems.map((entry, index) => (
@@ -831,22 +839,26 @@ export function RequestResultPanel({
                 />
               </div>
               <div className="workspace-detail-panel__result-support">
-                {execution.consoleEntries.length > 0 ? (
-                  <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.summary.preview.consoleAriaLabel')}>
-                    {consolePreviewItems.map((entry, index) => (
-                      <li key={`response-console-${index}`}>{entry}</li>
-                    ))}
-                  </ul>
-                ) : null}
-                {assertionEntries.length > 0 ? (
-                  <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.summary.preview.testsAriaLabel')}>
-                    {testPreviewItems.map((entry, index) => (
-                      <li key={`response-tests-${index}`}>{entry}</li>
-                    ))}
-                  </ul>
-                ) : null}
-                <p className="shared-readiness-note">{execution.responsePreviewPolicy ?? t('workspaceRoute.resultPanel.response.values.previewSupportFallback')}</p>
-                <pre className="history-preview-block" data-testid="request-response-preview">{execution.responseBodyPreview || t('workspaceRoute.resultPanel.response.values.noBodyPreview')}</pre>
+                <div className="workspace-detail-panel__support-block">
+                  {execution.consoleEntries.length > 0 ? (
+                    <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.summary.preview.consoleAriaLabel')}>
+                      {consolePreviewItems.map((entry, index) => (
+                        <li key={`response-console-${index}`}>{entry}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {assertionEntries.length > 0 ? (
+                    <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.summary.preview.testsAriaLabel')}>
+                      {testPreviewItems.map((entry, index) => (
+                        <li key={`response-tests-${index}`}>{entry}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  <p className="shared-readiness-note">{execution.responsePreviewPolicy ?? t('workspaceRoute.resultPanel.response.values.previewSupportFallback')}</p>
+                </div>
+                <div className="workspace-detail-panel__support-block workspace-detail-panel__support-block--preview">
+                  <pre className="history-preview-block" data-testid="request-response-preview">{execution.responseBodyPreview || t('workspaceRoute.resultPanel.response.values.noBodyPreview')}</pre>
+                </div>
               </div>
             </div>
           ) : (
@@ -991,7 +1003,7 @@ export function RequestResultPanel({
                     icon="info"
                     title={t('workspaceRoute.resultPanel.executionInfo.environmentResolution.title')}
                     description={environmentResolutionSummary.summary}
-                    tone="muted"
+                    tone="supporting"
                   >
                     <KeyValueMetaList
                       items={[
@@ -1028,16 +1040,22 @@ export function RequestResultPanel({
                               </div>
               <div className="workspace-detail-panel__result-support">
                 {executionStageSummaries.length > 0 ? (
-                  <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.executionInfo.executionStageSummaryAriaLabel')}>
-                    {executionStageSummaries.map((summary) => (
-                      <li key={`${execution.executionId}-${summary.stageId}`}>
-                        <strong>{summary.label}</strong>: {summary.status} - {summary.summary}
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="workspace-detail-panel__support-block">
+                    <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.executionInfo.executionStageSummaryAriaLabel')}>
+                      {executionStageSummaries.map((summary) => (
+                        <li key={`${execution.executionId}-${summary.stageId}`}>
+                          <strong>{summary.label}</strong>: {summary.status} - {summary.summary}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ) : null}
-                {execution.requestSnapshotSummary ? <p className="shared-readiness-note">{execution.requestSnapshotSummary}</p> : null}
-                {runStatus.message ? <p className="shared-readiness-note">{runStatus.message}</p> : null}
+                {execution.requestSnapshotSummary || runStatus.message ? (
+                  <div className="workspace-detail-panel__support-block workspace-detail-panel__support-block--notes">
+                    {execution.requestSnapshotSummary ? <p className="shared-readiness-note">{execution.requestSnapshotSummary}</p> : null}
+                    {runStatus.message ? <p className="shared-readiness-note">{runStatus.message}</p> : null}
+                  </div>
+                ) : null}
               </div>
             </div>
           ) : (
@@ -1077,6 +1095,11 @@ function getRunLaneCopy(
 
   return t('workspaceRoute.resultPanel.summary.values.noExecutionYet');
 }
+
+
+
+
+
 
 
 

@@ -404,6 +404,51 @@ function createTabPlacementValue(activeTab: RequestTabRecord): RequestPlacementV
   return placement;
 }
 
+interface ContextComparisonSectionProps {
+  icon: 'params' | 'auth' | 'scripts' | 'settings';
+  title: string;
+  description: string;
+  effectiveLabel: string;
+  effectiveValue: unknown;
+  effectiveFallback: string;
+  overrideLabel: string;
+  overrideValue: unknown;
+  overrideFallback: string;
+}
+
+function ContextComparisonSection({
+  icon,
+  title,
+  description,
+  effectiveLabel,
+  effectiveValue,
+  effectiveFallback,
+  overrideLabel,
+  overrideValue,
+  overrideFallback,
+}: ContextComparisonSectionProps) {
+  return (
+    <DetailViewerSection
+      icon={icon}
+      title={title}
+      description={description}
+      tone="supporting"
+      className="workspace-context-panel__supporting-section"
+    >
+      <div className="workspace-context-json-grid">
+        <section className="workspace-context-json-grid__column">
+          <h4>{effectiveLabel}</h4>
+          <pre className="history-preview-block">{formatJsonValue(effectiveValue, effectiveFallback)}</pre>
+        </section>
+        <section className="workspace-context-json-grid__column">
+          <h4>{overrideLabel}</h4>
+          <pre className="history-preview-block">{formatJsonValue(overrideValue, overrideFallback)}</pre>
+        </section>
+      </div>
+    </DetailViewerSection>
+  );
+}
+
 export function WorkspaceContextPanel({
   activeTab,
   workspaceContext,
@@ -665,6 +710,47 @@ export function WorkspaceContextPanel({
     t,
   ]);
 
+  const inheritanceSections = useMemo(() => {
+    if (!inheritanceSnapshot) {
+      return [];
+    }
+
+    return [
+      {
+        key: 'variables',
+        icon: 'params' as const,
+        title: t('workspaceRoute.resultPanel.context.inheritance.sections.variables'),
+        description: t('workspaceRoute.resultPanel.context.inheritance.sectionDescription'),
+        effectiveValue: inheritanceSnapshot.variables.effective,
+        overrideValue: inheritanceSnapshot.variables.override,
+      },
+      {
+        key: 'auth',
+        icon: 'auth' as const,
+        title: t('workspaceRoute.resultPanel.context.inheritance.sections.auth'),
+        description: t('workspaceRoute.resultPanel.context.inheritance.sectionDescription'),
+        effectiveValue: inheritanceSnapshot.auth.effective,
+        overrideValue: inheritanceSnapshot.auth.override,
+      },
+      {
+        key: 'scripts',
+        icon: 'scripts' as const,
+        title: t('workspaceRoute.resultPanel.context.inheritance.sections.scripts'),
+        description: t('workspaceRoute.resultPanel.context.inheritance.sectionDescription'),
+        effectiveValue: inheritanceSnapshot.scripts.effective,
+        overrideValue: inheritanceSnapshot.scripts.override,
+      },
+      {
+        key: 'run-config',
+        icon: 'settings' as const,
+        title: t('workspaceRoute.resultPanel.context.inheritance.sections.runConfig'),
+        description: t('workspaceRoute.resultPanel.context.inheritance.sectionDescription'),
+        effectiveValue: inheritanceSnapshot.runConfig.effective,
+        overrideValue: inheritanceSnapshot.runConfig.override,
+      },
+    ];
+  }, [inheritanceSnapshot, t]);
+
   if (!activeTab) {
     return <RequestResultPanel activeTab={null} />;
   }
@@ -690,100 +776,45 @@ export function WorkspaceContextPanel({
       ) : null}
 
       {activeContextTab === 'inheritance' && inheritanceSnapshot ? (
-        <>
+        <div className="workspace-context-panel__panel-stack">
           <DetailViewerSection
             icon="paths"
             title={t('workspaceRoute.resultPanel.context.inheritance.title')}
             description={t('workspaceRoute.resultPanel.context.inheritance.description')}
-            tone="muted"
+            className="workspace-context-panel__hero-section"
           >
-            <p className="shared-readiness-note">{t('workspaceRoute.resultPanel.context.inheritance.note')}</p>
+            <p className="shared-readiness-note workspace-context-panel__support-note">{t('workspaceRoute.resultPanel.context.inheritance.note')}</p>
           </DetailViewerSection>
 
-          <DetailViewerSection
-            icon="params"
-            title={t('workspaceRoute.resultPanel.context.inheritance.sections.variables')}
-            description={t('workspaceRoute.resultPanel.context.inheritance.sectionDescription')}
-            tone="muted"
-          >
-            <div className="workspace-context-json-grid">
-              <section className="workspace-context-json-grid__column">
-                <h4>{t('workspaceRoute.resultPanel.context.inheritance.labels.effective')}</h4>
-                <pre className="history-preview-block">{formatJsonValue(inheritanceSnapshot.variables.effective, t('workspaceRoute.resultPanel.context.inheritance.values.none'))}</pre>
-              </section>
-              <section className="workspace-context-json-grid__column">
-                <h4>{t('workspaceRoute.resultPanel.context.inheritance.labels.override')}</h4>
-                <pre className="history-preview-block">{formatJsonValue(inheritanceSnapshot.variables.override, t('workspaceRoute.resultPanel.context.inheritance.values.noOverride'))}</pre>
-              </section>
-            </div>
-          </DetailViewerSection>
-
-          <DetailViewerSection
-            icon="auth"
-            title={t('workspaceRoute.resultPanel.context.inheritance.sections.auth')}
-            description={t('workspaceRoute.resultPanel.context.inheritance.sectionDescription')}
-            tone="muted"
-          >
-            <div className="workspace-context-json-grid">
-              <section className="workspace-context-json-grid__column">
-                <h4>{t('workspaceRoute.resultPanel.context.inheritance.labels.effective')}</h4>
-                <pre className="history-preview-block">{formatJsonValue(inheritanceSnapshot.auth.effective, t('workspaceRoute.resultPanel.context.inheritance.values.none'))}</pre>
-              </section>
-              <section className="workspace-context-json-grid__column">
-                <h4>{t('workspaceRoute.resultPanel.context.inheritance.labels.override')}</h4>
-                <pre className="history-preview-block">{formatJsonValue(inheritanceSnapshot.auth.override, t('workspaceRoute.resultPanel.context.inheritance.values.noOverride'))}</pre>
-              </section>
-            </div>
-          </DetailViewerSection>
-
-          <DetailViewerSection
-            icon="scripts"
-            title={t('workspaceRoute.resultPanel.context.inheritance.sections.scripts')}
-            description={t('workspaceRoute.resultPanel.context.inheritance.sectionDescription')}
-            tone="muted"
-          >
-            <div className="workspace-context-json-grid">
-              <section className="workspace-context-json-grid__column">
-                <h4>{t('workspaceRoute.resultPanel.context.inheritance.labels.effective')}</h4>
-                <pre className="history-preview-block">{formatJsonValue(inheritanceSnapshot.scripts.effective, t('workspaceRoute.resultPanel.context.inheritance.values.none'))}</pre>
-              </section>
-              <section className="workspace-context-json-grid__column">
-                <h4>{t('workspaceRoute.resultPanel.context.inheritance.labels.override')}</h4>
-                <pre className="history-preview-block">{formatJsonValue(inheritanceSnapshot.scripts.override, t('workspaceRoute.resultPanel.context.inheritance.values.noOverride'))}</pre>
-              </section>
-            </div>
-          </DetailViewerSection>
-
-          <DetailViewerSection
-            icon="settings"
-            title={t('workspaceRoute.resultPanel.context.inheritance.sections.runConfig')}
-            description={t('workspaceRoute.resultPanel.context.inheritance.sectionDescription')}
-            tone="muted"
-          >
-            <div className="workspace-context-json-grid">
-              <section className="workspace-context-json-grid__column">
-                <h4>{t('workspaceRoute.resultPanel.context.inheritance.labels.effective')}</h4>
-                <pre className="history-preview-block">{formatJsonValue(inheritanceSnapshot.runConfig.effective, t('workspaceRoute.resultPanel.context.inheritance.values.none'))}</pre>
-              </section>
-              <section className="workspace-context-json-grid__column">
-                <h4>{t('workspaceRoute.resultPanel.context.inheritance.labels.override')}</h4>
-                <pre className="history-preview-block">{formatJsonValue(inheritanceSnapshot.runConfig.override, t('workspaceRoute.resultPanel.context.inheritance.values.noOverride'))}</pre>
-              </section>
-            </div>
-          </DetailViewerSection>
-        </>
+          <div className="workspace-context-panel__comparison-grid">
+            {inheritanceSections.map((section) => (
+              <ContextComparisonSection
+                key={section.key}
+                icon={section.icon}
+                title={section.title}
+                description={section.description}
+                effectiveLabel={t('workspaceRoute.resultPanel.context.inheritance.labels.effective')}
+                effectiveValue={section.effectiveValue}
+                effectiveFallback={t('workspaceRoute.resultPanel.context.inheritance.values.none')}
+                overrideLabel={t('workspaceRoute.resultPanel.context.inheritance.labels.override')}
+                overrideValue={section.overrideValue}
+                overrideFallback={t('workspaceRoute.resultPanel.context.inheritance.values.noOverride')}
+              />
+            ))}
+          </div>
+        </div>
       ) : null}
 
       {activeContextTab === 'runs' ? (
         isContainerOverviewTab ? (
-          <DetailViewerSection
-            icon="run"
-            title={t('workspaceRoute.resultPanel.context.runs.title')}
-            description={t('workspaceRoute.resultPanel.context.runs.description')}
-            tone="muted"
-          >
-            {matchingContainerExecution ? (
-              <>
+          matchingContainerExecution ? (
+            <div className="workspace-context-panel__panel-stack">
+              <DetailViewerSection
+                icon="run"
+                title={t('workspaceRoute.resultPanel.context.runs.title')}
+                description={t('workspaceRoute.resultPanel.context.runs.description')}
+                className="workspace-context-panel__hero-section"
+              >
                 <KeyValueMetaList
                   items={[
                     { label: t('workspaceRoute.resultPanel.context.runs.labels.scope'), value: matchingContainerExecution.containerType },
@@ -821,30 +852,57 @@ export function WorkspaceContextPanel({
                     { label: t('workspaceRoute.resultPanel.context.runs.labels.status'), value: batchStatus },
                   ]}
                 />
-                <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.context.runs.stepsAriaLabel')}>
-                  {matchingContainerExecution.steps.map((step) => (
-                    <li key={`context-run-${step.requestId}-${step.stepIndex}`}>
-                      <strong>{step.requestName}</strong>
-                      {step.iteration ? ` #${step.iteration}` : ''}: {step.execution.executionOutcome}
-                    </li>
-                  ))}
-                </ul>
-                <p className="shared-readiness-note">{t('workspaceRoute.resultPanel.context.runs.historySummary')}</p>
-                <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.context.runs.historyAriaLabel')}>
-                  {matchingContainerExecutions.map((execution) => (
-                    <li key={`context-run-history-${execution.batchExecutionId}`}>
-                      <strong>{execution.aggregateOutcome}</strong> · {execution.startedAt} · {execution.totalRuns}
-                    </li>
-                  ))}
-                </ul>
-              </>
-            ) : (
+              </DetailViewerSection>
+
+              <div className="workspace-context-panel__support-grid">
+                <DetailViewerSection
+                  icon="timeline"
+                  title={t('workspaceRoute.resultPanel.context.runs.sections.stepsTitle')}
+                  description={t('workspaceRoute.resultPanel.context.runs.sections.stepsDescription')}
+                  tone="supporting"
+                  className="workspace-context-panel__supporting-section"
+                >
+                  <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.context.runs.stepsAriaLabel')}>
+                    {matchingContainerExecution.steps.map((step) => (
+                      <li key={`context-run-${step.requestId}-${step.stepIndex}`}>
+                        <strong>{step.requestName}</strong>
+                        {step.iteration ? ` #${step.iteration}` : ''}: {step.execution.executionOutcome}
+                      </li>
+                    ))}
+                  </ul>
+                </DetailViewerSection>
+
+                <DetailViewerSection
+                  icon="history"
+                  title={t('workspaceRoute.resultPanel.context.runs.sections.historyTitle')}
+                  description={t('workspaceRoute.resultPanel.context.runs.sections.historyDescription')}
+                  tone="supporting"
+                  className="workspace-context-panel__supporting-section"
+                >
+                  <p className="shared-readiness-note workspace-context-panel__support-note">{t('workspaceRoute.resultPanel.context.runs.historySummary')}</p>
+                  <ul className="history-preview-list" aria-label={t('workspaceRoute.resultPanel.context.runs.historyAriaLabel')}>
+                    {matchingContainerExecutions.map((execution) => (
+                      <li key={`context-run-history-${execution.batchExecutionId}`}>
+                        <strong>{execution.aggregateOutcome}</strong> · {execution.startedAt} · {execution.totalRuns}
+                      </li>
+                    ))}
+                  </ul>
+                </DetailViewerSection>
+              </div>
+            </div>
+          ) : (
+            <DetailViewerSection
+              icon="run"
+              title={t('workspaceRoute.resultPanel.context.runs.title')}
+              description={t('workspaceRoute.resultPanel.context.runs.description')}
+              className="workspace-context-panel__hero-section"
+            >
               <EmptyStateCallout
                 title={t('workspaceRoute.resultPanel.context.runs.empty.title')}
                 description={t('workspaceRoute.resultPanel.context.runs.empty.description')}
               />
-            )}
-          </DetailViewerSection>
+            </DetailViewerSection>
+          )
         ) : (
           <RequestResultPanel activeTab={activeTab} />
         )
@@ -852,3 +910,10 @@ export function WorkspaceContextPanel({
     </div>
   );
 }
+
+
+
+
+
+
+

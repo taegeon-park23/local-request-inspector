@@ -6,7 +6,7 @@ interface DetailViewerSectionProps {
   description?: ReactNode;
   children?: ReactNode;
   actions?: ReactNode;
-  tone?: 'default' | 'muted';
+  tone?: 'default' | 'muted' | 'supporting';
   className?: string;
   icon?: AppIconName;
 }
@@ -23,6 +23,7 @@ export function DetailViewerSection({
   const classNames = [
     'shared-detail-viewer-section',
     tone === 'muted' ? 'shared-detail-viewer-section--muted' : null,
+    tone === 'supporting' ? 'shared-detail-viewer-section--supporting' : null,
     className ?? null,
   ]
     .filter(Boolean)
@@ -48,3 +49,4 @@ export function DetailViewerSection({
     </section>
   );
 }
+

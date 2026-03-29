@@ -811,6 +811,12 @@ export const workspaceRouteMessagesEn = {
             notProvided: 'Not provided',
             allRequests: 'All requests',
           },
+          sections: {
+            stepsTitle: 'Ordered steps',
+            stepsDescription: 'Latest request order and per-step outcome for this container run.',
+            historyTitle: 'Recent run history',
+            historyDescription: 'Recent runs stay compact here so the main run summary remains easier to scan.',
+          },
           stepsAriaLabel: 'Container run steps',
           historyAriaLabel: 'Container run history',
           historySummary: 'Recent runs for this container are listed below.',
@@ -1960,6 +1966,12 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
             notProvided: '미지정',
             allRequests: '전체 요청',
           },
+          sections: {
+            stepsTitle: '순서화된 단계',
+            stepsDescription: '이 컨테이너 실행의 최신 요청 순서와 단계별 결과를 보여줍니다.',
+            historyTitle: '최근 실행 이력',
+            historyDescription: '메인 실행 요약을 빠르게 읽을 수 있도록 최근 실행 이력은 여기서 compact하게 유지됩니다.',
+          },
           stepsAriaLabel: '컨테이너 실행 단계',
           historyAriaLabel: '컨테이너 실행 히스토리',
           historySummary: '아래에 이 컨테이너의 최근 실행 이력이 표시됩니다.',
@@ -2290,6 +2302,9 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
     },
   },
 };
+
+
+
 
 
 

@@ -14,19 +14,19 @@
 ## Active Register
 | ID | Title | Status | Notes |
 | --- | --- | --- | --- |
-| - | No active bounded task | - | `T109` is archived. Promote exactly one new bounded task before resuming implementation. |
+| - | No active bounded task | - | `T110` is archived. Promote exactly one new bounded task before resuming implementation. |
 
 ## Defined Queue
 | ID | Title | Status | Notes |
 | --- | --- | --- | --- |
-| - | No queued bounded task | - | Choose and promote one follow-up slice after `T109`. |
+| - | No queued bounded task | - | Choose and promote one follow-up slice after `T110`. |
 
 ## Current State
-- **Current bounded task:** None (`idle` after archiving `T109`).
-- **Most recent archived implementation:** `T109` Scroll Owner And Overflow Normalization.
+- **Current bounded task:** None (`idle` after archiving `T110`).
+- **Most recent archived implementation:** `T110` Detail And Context Density Follow-Up.
 - **Dropped task decision:** `T104` UI Capture Evidence Baseline was explicitly dropped by user reprioritization on 2026-03-29; it is no longer treated as a live blocker.
-- **Highest-priority next step:** promote exactly one follow-up bounded task; detail/context density follow-up is the leading candidate after `T109`.
-- **Verification baseline:** `npm.cmd run lint`, `npm.cmd run typecheck`, and `npm.cmd run test:node` passed on 2026-03-29 after `T109` scroll owner / overflow normalization.
+- **Highest-priority next step:** promote exactly one follow-up bounded task; user-managed local UI verification or a new workspace polish slice should be explicitly chosen after `T110`.
+- **Verification baseline:** `npm.cmd run lint`, `npm.cmd run typecheck`, and `npm.cmd run test:node` passed on 2026-03-29 after `T110` detail/context density follow-up.
 - **Closed UI-test rerun policy:** agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - **Codex UI verification lane:** use the Playwright skill workflow against the dev route or built shell when available.
 - **User-managed local verification:** if UI full-suite verification is still needed, instruct the user to run `npm.cmd run test:ui` locally and treat that result as authoritative.
@@ -36,3 +36,5 @@
 - `docs/tasks/` is reserved for active or incomplete task docs.
 - Future work must start from one newly promoted bounded task.
 - `T074` and `T075` are archived; future secret-storage work should extend their shipped seams instead of reintroducing raw secret persistence into environment JSON.
+
+

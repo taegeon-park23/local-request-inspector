@@ -44,6 +44,7 @@
 35. `T107` Explorer Row Action Safety Cleanup is archived.
 36. `T108` Runner And Resource-Manager Surface Tier Cleanup is archived.
 37. `T109` Scroll Owner And Overflow Normalization is archived.
+38. `T110` Detail And Context Density Follow-Up is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.
@@ -52,4 +53,4 @@
 - `T104` is dropped; do not treat missing UI capture evidence as a prerequisite for future bounded tasks.
 
 ## Immediate Next Step
-- Promote exactly one follow-up bounded task. Detail/context density follow-up is the current leading candidate after `T109`.
+- Promote exactly one follow-up bounded task after `T110`; user-managed local UI verification or a newly defined workspace polish slice should be chosen explicitly.
