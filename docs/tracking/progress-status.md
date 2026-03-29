@@ -7,6 +7,7 @@
 - **Update Rule:** Update after each active-task status change or verification-state change.
 
 ## Current Snapshot
+- `T107` is archived after removing double-click request pinning from the workspace explorer, adding explicit request pin actions plus row-scoped overflow menus for destructive cleanup, and aligning explorer copy/component coverage with the safer row-action model.
 - `T106` is archived after adding responsive floating-pane tiers to `RoutePanelTabsLayout`, keeping detail visible beside the main surface on desktop widths, collapsing main/detail into a stacked tab lane below the medium breakpoint, and updating shared shell tests to expect the new desktop-wide focused-overlay behavior.
 - `T105` is archived after consolidating shared workspace/request-builder layout primitives into `material-theme.css`, introducing shared `SegmentedControl`/`DialogFooter`/overflow action-menu primitives, reducing the workspace header to one visible top-level `New Request` CTA, stabilizing request key/value multipart rows and create-sheet row recipes, and adding focused component coverage for the new header/tab-shell/settings layouts.
 - `T104` was explicitly dropped by user reprioritization on 2026-03-29. The historical task doc is not present in the repo, so the carried-forward title remains **확실하지 않음**.
@@ -17,7 +18,6 @@
 - `T099` is archived after introducing shared localized transport-error messaging (`backend_unavailable`/`invalid_api_response`) across workspace, settings, environments, scripts, mocks, captures, history, and request-builder save/run status flows.
 - `T098` is archived after introducing shared frontend API response parsing, classifying backend-unavailable/proxy failures into deterministic actionable errors, and removing duplicated per-module parser seams.
 - `T097` is archived after expanding runner inputs (selection/order/environment/iteration/data-file), wiring run-history visibility, and aligning collection/request-group batch payload composition with CLI-friendly server run contracts.
-- `T096` is archived after shipping workspace context-panel tabs (`Overview/Inheritance/Runs`), effective-vs-override inheritance visualization, and collection/request-group/request detail continuity with existing result-panel flows.
 
 ## Verification
 - `npm.cmd run lint` passed on 2026-03-29.

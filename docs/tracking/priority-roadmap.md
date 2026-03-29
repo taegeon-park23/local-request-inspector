@@ -41,6 +41,7 @@
 32. `T104` was dropped by explicit user reprioritization on 2026-03-29 and is not a live blocker.
 33. `T105` Workspace Core Layout Primitives Cleanup is archived.
 34. `T106` Workspace Pane Responsive Cleanup is archived.
+35. `T107` Explorer Row Action Safety Cleanup is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.
@@ -49,4 +50,4 @@
 - `T104` is dropped; do not treat missing UI capture evidence as a prerequisite for future bounded tasks.
 
 ## Immediate Next Step
-- Promote exactly one follow-up bounded task. Explorer row action safety cleanup is the current leading candidate after `T106`.
+- Promote exactly one follow-up bounded task. Runner/resource-manager surface tier cleanup is the current leading candidate after `T107`.

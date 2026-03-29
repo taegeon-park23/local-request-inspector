@@ -4877,9 +4877,12 @@ body {
   width: 0;
 }
 
-.workspace-tree-node__delete {
+.workspace-tree-node__action-button,
+.workspace-tree-node__menu .shared-action-menu__trigger {
   width: 1.42rem;
   height: 1.42rem;
+  min-width: 1.42rem;
+  min-height: 1.42rem;
   border-radius: 0.45rem;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(2, 6, 23, 0.52);
@@ -4888,26 +4891,72 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  flex: 0 0 1.42rem;
   padding: 0;
-  margin: 0.06rem 0.14rem 0.06rem 0.2rem;
+  box-shadow: none;
 }
 
-.workspace-tree-node__delete-icon {
-  width: 0.8rem;
-  height: 0.8rem;
+.workspace-tree-node__action-button:hover:not(:disabled),
+.workspace-tree-node__menu .shared-action-menu__trigger:hover:not(:disabled) {
+  border-color: rgba(155, 209, 255, 0.48);
+  color: var(--m3-color-on-surface);
+  background: rgba(11, 17, 32, 0.78);
 }
 
-.workspace-tree-node__delete:hover:not(:disabled) {
-  border-color: rgba(255, 180, 171, 0.8);
-  color: var(--m3-color-error);
-}
-
-.workspace-tree-node__delete:disabled {
+.workspace-tree-node__action-button:disabled,
+.workspace-tree-node__menu .shared-action-menu__trigger:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
+.workspace-tree-node__row-actions {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  opacity: 0;
+  transform: translateX(0.12rem);
+  pointer-events: none;
+  transition:
+    opacity var(--m3-motion-short) var(--m3-easing-standard),
+    transform var(--m3-motion-short) var(--m3-easing-standard);
+}
+
+.workspace-tree-node:hover .workspace-tree-node__row-actions,
+.workspace-tree-node:focus-within .workspace-tree-node__row-actions,
+.workspace-tree-node__row-actions[data-open="true"] {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.workspace-tree-node__menu {
+  display: inline-flex;
+}
+
+.workspace-tree-node__menu .shared-action-menu__trigger {
+  padding: 0;
+}
+
+.workspace-tree-node__menu .shared-action-menu__trigger .app-icon-label {
+  gap: 0;
+}
+
+.workspace-tree-node__menu .shared-action-menu__trigger .app-icon-label > span:last-child {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.workspace-tree-node__menu .shared-action-menu__surface {
+  min-width: 11rem;
+}
 .workspace-tree-node--managed {
   display: grid;
   grid-template-columns: 1.5rem minmax(0, 1fr);
@@ -5752,6 +5801,7 @@ body {
     right: auto;
   }
 }
+
 
 
 

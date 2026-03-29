@@ -2,10 +2,13 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
   type KeyboardEvent,
   type MouseEvent,
 } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
+import { AppIcon, type AppIconName } from '@client/shared/ui/AppIcon';
+import { ActionMenu, type ActionMenuItem } from '@client/shared/ui/ActionMenu';
 import type {
   WorkspaceCollectionNode,
   WorkspaceRequestGroupNode,
@@ -243,36 +246,58 @@ function readTreeLevel(treeItem: HTMLButtonElement | undefined) {
   return Number.isFinite(parsedLevel) ? parsedLevel : 1;
 }
 
-function ExplorerDeleteButton({
+function ExplorerActionButton({
   label,
+  icon,
   disabled = false,
   onClick,
 }: {
   label: string;
+  icon: AppIconName;
   disabled?: boolean;
   onClick: (event: MouseEvent<HTMLButtonElement>) => void;
 }) {
   return (
     <button
       type="button"
-      className="workspace-tree-node__delete"
+      className="workspace-tree-node__action-button"
       aria-label={label}
       title={label}
       disabled={disabled}
       onClick={onClick}
     >
-      <svg
-        className="workspace-tree-node__delete-icon"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <path
-          d="M9 3h6l1 2h4v2H4V5h4l1-2Zm1 7h2v8h-2v-8Zm4 0h2v8h-2v-8ZM7 10h2v8H7v-8Zm-1 10h12l1-13H5l1 13Z"
-          fill="currentColor"
-        />
-      </svg>
+      <AppIcon name={icon} size={14} />
     </button>
+  );
+}
+
+function ExplorerRowActionMenu({
+  ariaLabel,
+  triggerLabel,
+  items,
+  children,
+}: {
+  ariaLabel: string;
+  triggerLabel: string;
+  items: ActionMenuItem[];
+  children?: import('react').ReactNode;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="workspace-tree-node__row-actions" data-open={isOpen ? 'true' : 'false'}>
+      {children}
+      <ActionMenu
+        ariaLabel={ariaLabel}
+        triggerLabel={triggerLabel}
+        triggerIcon="command"
+        items={items}
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        className="workspace-tree-node__menu"
+        triggerClassName="workspace-tree-node__action-button workspace-tree-node__action-button--menu"
+      />
+    </div>
   );
 }
 
@@ -637,10 +662,20 @@ export function WorkspaceExplorer({
                 {t('workspaceRoute.explorer.tree.requestCount', { count: requestGroupSummary.requestCount })}
               </span>
             </button>
-            <ExplorerDeleteButton
-              label={t('workspaceRoute.explorer.actions.deleteRequestGroupShort')}
-              disabled={requestGroup.childGroups.length > 0 || requestGroup.requests.length > 0}
-              onClick={(event) => { stopEvent(event); void onDeleteRequestGroup(requestGroup); }}
+            <ExplorerRowActionMenu
+              ariaLabel={t('workspaceRoute.explorer.actions.rowActions', { name: requestGroup.name })}
+              triggerLabel={t('workspaceRoute.explorer.actions.rowActions', { name: requestGroup.name })}
+              items={[
+                {
+                  id: `delete-request-group-${requestGroup.requestGroupId}`,
+                  label: t('workspaceRoute.explorer.actions.deleteRequestGroupShort'),
+                  icon: 'delete',
+                  disabled: requestGroup.childGroups.length > 0 || requestGroup.requests.length > 0,
+                  onSelect: () => {
+                    void onDeleteRequestGroup(requestGroup);
+                  },
+                },
+              ]}
             />
           </div>
         </div>
@@ -681,17 +716,35 @@ export function WorkspaceExplorer({
                           expanded: false,
                         })}
                         onClick={() => onPreviewSavedRequest(requestNode.request)}
-                        onDoubleClick={() => onPinSavedRequest(requestNode.request)}
                       >
                         <span className="workspace-request__title">
                           <span className="workspace-request__method">{requestNode.request.methodLabel}</span>
                           <span className="workspace-request__name">{requestNode.request.name}</span>
                         </span>
                       </button>
-                      <ExplorerDeleteButton
-                        label={t('workspaceRoute.explorer.actions.deleteRequestShort')}
-                        onClick={(event) => { stopEvent(event); void onDeleteRequest(requestNode.request); }}
-                      />
+                      <ExplorerRowActionMenu
+                        ariaLabel={t('workspaceRoute.explorer.actions.rowActions', { name: requestNode.request.name })}
+                        triggerLabel={t('workspaceRoute.explorer.actions.rowActions', { name: requestNode.request.name })}
+                        items={[
+                          {
+                            id: `delete-request-${requestNode.request.id}`,
+                            label: t('workspaceRoute.explorer.actions.deleteRequestShort'),
+                            icon: 'delete',
+                            onSelect: () => {
+                              void onDeleteRequest(requestNode.request);
+                            },
+                          },
+                        ]}
+                      >
+                        <ExplorerActionButton
+                          label={t('workspaceRoute.explorer.actions.pinRequest', { name: requestNode.request.name })}
+                          icon="pin"
+                          onClick={(event) => {
+                            stopEvent(event);
+                            void onPinSavedRequest(requestNode.request);
+                          }}
+                        />
+                      </ExplorerRowActionMenu>
                     </div>
                   </div>
                 </li>
@@ -788,10 +841,20 @@ export function WorkspaceExplorer({
                       {t('workspaceRoute.explorer.tree.requestGroupCount', { count: collectionSummary.requestGroupCount })} · {t('workspaceRoute.explorer.tree.requestCount', { count: collectionSummary.requestCount })}
                     </span>
                   </button>
-                  <ExplorerDeleteButton
-                    label={t('workspaceRoute.explorer.actions.deleteCollectionShort')}
-                    disabled={collection.childGroups.length > 0}
-                    onClick={(event) => { stopEvent(event); void onDeleteCollection(collection); }}
+                  <ExplorerRowActionMenu
+                    ariaLabel={t('workspaceRoute.explorer.actions.rowActions', { name: collection.name })}
+                    triggerLabel={t('workspaceRoute.explorer.actions.rowActions', { name: collection.name })}
+                    items={[
+                      {
+                        id: `delete-collection-${collection.collectionId}`,
+                        label: t('workspaceRoute.explorer.actions.deleteCollectionShort'),
+                        icon: 'delete',
+                        disabled: collection.childGroups.length > 0,
+                        onSelect: () => {
+                          void onDeleteCollection(collection);
+                        },
+                      },
+                    ]}
                   />
                 </div>
               </div>
@@ -812,4 +875,7 @@ export function WorkspaceExplorer({
     </div>
   );
 }
+
+
+
 

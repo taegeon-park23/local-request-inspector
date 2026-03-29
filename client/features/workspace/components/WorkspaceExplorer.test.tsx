@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { WorkspaceExplorer } from '@client/features/workspace/components/WorkspaceExplorer';
 import {
@@ -121,7 +121,7 @@ describe('WorkspaceExplorer', () => {
     expect(screen.getByRole('searchbox', { name: 'Explorer search' })).toBeInTheDocument();
   });
 
-  it('uses preview on single click and pin on double click for request rows', async () => {
+  it('uses preview on single click and pins requests only from the explicit row action', async () => {
     const user = userEvent.setup();
     const tree = createTree();
     const previewRequest = vi.fn();
@@ -148,8 +148,50 @@ describe('WorkspaceExplorer', () => {
 
     previewRequest.mockClear();
     await user.dblClick(requestButton);
+    expect(pinRequest).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Pin Create session' }));
     expect(pinRequest).toHaveBeenCalledWith(tree[0]!.childGroups[0]!.childGroups[0]!.requests[0]!.request);
     expect(screen.queryByRole('button', { name: 'New Request' })).not.toBeInTheDocument();
+  });
+
+  it('moves destructive request cleanup into the row action menu', async () => {
+    const user = userEvent.setup();
+    const tree = createTree();
+    const previewRequest = vi.fn();
+    const deleteRequest = vi.fn();
+
+    renderApp(
+      <WorkspaceExplorer
+        tree={tree}
+        selectedItemId={null}
+        selectedItemKind={null}
+        onSelectCollection={vi.fn()}
+        onSelectRequestGroup={vi.fn()}
+        onPreviewSavedRequest={previewRequest}
+        onPinSavedRequest={vi.fn()}
+        onDeleteCollection={vi.fn()}
+        onDeleteRequestGroup={vi.fn()}
+        onDeleteRequest={deleteRequest}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'More actions for Create session' }));
+    const menu = screen.getByLabelText('More actions for Create session');
+    await user.click(within(menu).getByRole('button', { name: 'Delete' }));
+
+    expect(deleteRequest).toHaveBeenCalledWith(tree[0]!.childGroups[0]!.childGroups[0]!.requests[0]!.request);
+    expect(previewRequest).not.toHaveBeenCalled();
+  });
+
+  it('keeps non-empty collection cleanup disabled inside the row action menu', async () => {
+    const user = userEvent.setup();
+    renderApp(createExplorer({ selectedItemId: null, selectedItemKind: null }));
+
+    await user.click(screen.getByRole('button', { name: 'More actions for Saved Requests' }));
+    const menu = screen.getByLabelText('More actions for Saved Requests');
+
+    expect(within(menu).getByRole('button', { name: 'Delete' })).toBeDisabled();
   });
 
   it('filters tree nodes by search query and shows empty-state copy when there are no matches', async () => {
@@ -215,5 +257,6 @@ describe('WorkspaceExplorer', () => {
     expect(screen.getByRole('treeitem', { name: /Login/i })).toHaveFocus();
   });
 });
+
 
 
