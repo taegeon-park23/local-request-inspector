@@ -2,7 +2,7 @@
 
 - **Purpose:** Retain only compact historical summaries for finished work after completed task and closed tracking docs are pruned.
 - **Created:** 2026-03-24
-- **Last Updated:** 2026-03-27
+- **Last Updated:** 2026-03-29
 - **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `../prd/overview.md`
 - **Update Rule:** When a task becomes `done`, summarize it here, prune its completed task doc, remove closed tracking docs tied only to completed work, and clean stale references from live docs.
 
@@ -121,5 +121,6 @@
 | `request-stage-script-linkage-lane-comparison.md` | The reusable-script lane comparison culminated in the shipped `T072` baseline and no separate linkage-comparison doc remains live. | `completed-work-summary.md`; `master-task-board.md` |
 | `resolved-preview-sub-lane-comparison.md` | No resolved-preview follow-up is active; future work must be reintroduced as a new bounded task if needed. | `master-task-board.md`; `priority-roadmap.md` |
 | `settings-mutation-lane-comparison.md` | Client-owned settings preference work is complete, and broader settings expansion remains deferred until a new task is defined. | `master-task-board.md`; `priority-roadmap.md` |
+
 
 

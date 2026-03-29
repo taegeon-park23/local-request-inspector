@@ -14,9 +14,10 @@ function createTab(overrides: Partial<RequestTabRecord> & Pick<RequestTabRecord,
 }
 
 describe('RequestTabShell', () => {
-  it('renders localized bulk actions and pin controls for all tab sources', async () => {
+  it('renders localized overflow actions and pin controls for all tab sources', async () => {
     const user = userEvent.setup();
     const onPinTab = vi.fn();
+
     renderApp(
       <RequestTabShell
         tabs={[
@@ -62,13 +63,17 @@ describe('RequestTabShell', () => {
     );
 
     expect(screen.getByRole('tablist', { name: '요청 탭 스트립' })).toBeInTheDocument();
+    expect(screen.getByLabelText('탭 검색')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '탭 작업' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '닫은 탭 다시 열기' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '새 요청' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '빠른 요청' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '탭 작업' }));
     expect(screen.getByRole('button', { name: '닫은 탭 다시 열기' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '현재 탭 닫기' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '다른 탭 닫기' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '모든 탭 닫기' })).toBeInTheDocument();
-    expect(screen.getByLabelText('탭 검색')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '새 요청' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '빠른 요청' })).not.toBeInTheDocument();
 
     expect(screen.getByRole('tab', { name: /Health check/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Scratch/i })).toBeInTheDocument();
@@ -84,8 +89,9 @@ describe('RequestTabShell', () => {
     expect(onPinTab).toHaveBeenCalledTimes(1);
   });
 
-  it('filters tabs by search query and shows empty search result copy', async () => {
+  it('filters tabs by search query and routes close-current through the overflow menu', async () => {
     const user = userEvent.setup();
+    const onCloseCurrentTab = vi.fn();
 
     renderApp(
       <RequestTabShell
@@ -112,7 +118,7 @@ describe('RequestTabShell', () => {
         onCloseTab={vi.fn()}
         onPinTab={vi.fn()}
         onReopenClosedTab={vi.fn()}
-        onCloseCurrentTab={vi.fn()}
+        onCloseCurrentTab={onCloseCurrentTab}
         onCloseOtherTabs={vi.fn()}
         onCloseAllTabs={vi.fn()}
         canReopenClosedTab={false}
@@ -132,7 +138,12 @@ describe('RequestTabShell', () => {
     await user.type(searchInput, 'no-match');
 
     expect(screen.getByText('No tabs match the current search.')).toBeInTheDocument();
+
+    await user.clear(searchInput);
+    await user.click(screen.getByRole('button', { name: 'Tab Actions' }));
     expect(screen.getByRole('button', { name: 'Reopen Closed Tab' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Close Current Tab' }));
+
+    expect(onCloseCurrentTab).toHaveBeenCalledTimes(1);
   });
 });
-

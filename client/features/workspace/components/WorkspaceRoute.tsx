@@ -35,13 +35,13 @@ import {
   type CreateSheetTarget,
   type CreateType,
 } from '@client/features/workspace/components/WorkspaceCreateSheet';
+import { WorkspaceHeaderActions } from '@client/features/workspace/components/WorkspaceHeaderActions';
 import {
   WorkspaceResourceManagerPanel,
   type WorkspaceResourceManagerStatus,
   type WorkspaceResourceManagerStatusScope,
 } from '@client/features/workspace/components/WorkspaceResourceManagerPanel';
 import { SectionHeading } from '@client/shared/ui/SectionHeading';
-import { IconLabel } from '@client/shared/ui/IconLabel';
 import {
   downloadAuthoredResourceBundle,
   exportSavedRequestResource,
@@ -96,15 +96,6 @@ interface CreateSheetState {
   defaultType: CreateType;
   target: CreateSheetTarget;
 }
-
-const WORKSPACE_SHORTCUTS = {
-  openCommandMenu: 'Control+K',
-  newRequest: 'Alt+Shift+N',
-  quickRequest: 'Alt+Shift+Q',
-  newCollection: 'Alt+Shift+C',
-  newRequestGroup: 'Alt+Shift+G',
-  runSelected: 'Alt+Shift+R',
-} as const;
 
 
 const RUNNER_ENVIRONMENT_INHERIT = '__inherit__';
@@ -534,8 +525,7 @@ export function WorkspaceRoute() {
   const [managerStatuses, setManagerStatuses] = useState<WorkspaceResourceManagerStatuses>({});
   const [pendingImportPreview, setPendingImportPreview] = useState<PendingImportPreview | null>(null);
   const [createSheetState, setCreateSheetState] = useState<CreateSheetState | null>(null);
-  const [isNewImportMenuOpen, setIsNewImportMenuOpen] = useState(false);
-  const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
+  const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState(false);
   const openApiImportInputRef = useRef<HTMLInputElement | null>(null);
   const postmanImportInputRef = useRef<HTMLInputElement | null>(null);
   const [runnerConfigState, setRunnerConfigState] = useState<WorkspaceRunnerConfigState>({
@@ -627,8 +617,7 @@ export function WorkspaceRoute() {
   };
 
   const closeHeaderMenus = () => {
-    setIsNewImportMenuOpen(false);
-    setIsCommandMenuOpen(false);
+    setIsHeaderMenuOpen(false);
   };
 
   const exportResourcesMutation = useMutation({
@@ -1617,30 +1606,11 @@ export function WorkspaceRoute() {
     event.currentTarget.value = '';
   };
 
-  const toggleNewImportMenu = () => {
-    setIsNewImportMenuOpen((open) => {
-      if (open) {
-        return false;
-      }
-
-      setIsCommandMenuOpen(false);
-      return true;
-    });
+  const toggleHeaderMenu = () => {
+    setIsHeaderMenuOpen((open) => !open);
   };
-
-  const toggleCommandMenu = () => {
-    setIsCommandMenuOpen((open) => {
-      if (open) {
-        return false;
-      }
-
-      setIsNewImportMenuOpen(false);
-      return true;
-    });
-  };
-
   const shortcutContextRef = useRef({
-    toggleCommandMenu,
+    toggleCommandMenu: toggleHeaderMenu,
     handleCreateRequest,
     handleCreateQuickRequest,
     handleOpenCreateCollectionSheet,
@@ -1652,7 +1622,7 @@ export function WorkspaceRoute() {
 
   useEffect(() => {
     shortcutContextRef.current = {
-      toggleCommandMenu,
+      toggleCommandMenu: toggleHeaderMenu,
       handleCreateRequest,
       handleCreateQuickRequest,
       handleOpenCreateCollectionSheet,
@@ -1788,77 +1758,43 @@ export function WorkspaceRoute() {
           </div>
         ) : null}
 
-        <div className="request-work-surface__future-actions" aria-label={t('workspaceRoute.a11y.headerActions')}>
-          <button
-            type="button"
-            className={`workspace-button workspace-button--secondary${isCommandMenuOpen ? ' workspace-button--ghost' : ''}`}
-            onClick={toggleCommandMenu}
-            aria-expanded={isCommandMenuOpen}
-            aria-controls="workspace-command-menu"
-            aria-keyshortcuts={WORKSPACE_SHORTCUTS.openCommandMenu}
-          >
-            <IconLabel icon="command">{t('workspaceRoute.commandMenu.actions.openMenu')}</IconLabel>
-          </button>
-          <button
-            type="button"
-            className={`workspace-button workspace-button--secondary${isNewImportMenuOpen ? ' workspace-button--ghost' : ''}`}
-            onClick={toggleNewImportMenu}
-            aria-expanded={isNewImportMenuOpen}
-            aria-controls="workspace-new-import-menu"
-          >
-            <IconLabel icon="add">{t('workspaceRoute.newImport.actions.openMenu')}</IconLabel>
-          </button>
-          <button
-            type="button"
-            className="workspace-button"
-            onClick={handleCreateRequest}
-            aria-keyshortcuts={WORKSPACE_SHORTCUTS.newRequest}
-          >
-            <IconLabel icon="new">{t('workspaceRoute.tabShell.newRequest')}</IconLabel>
-          </button>
-          <button
-            type="button"
-            className="workspace-button workspace-button--secondary"
-            onClick={handleCreateQuickRequest}
-            aria-keyshortcuts={WORKSPACE_SHORTCUTS.quickRequest}
-          >
-            <IconLabel icon="new">{t('workspaceRoute.tabShell.quickRequest')}</IconLabel>
-          </button>
-          <button
-            type="button"
-            className="workspace-button workspace-button--secondary"
-            onClick={handleOpenCreateCollectionSheet}
-            aria-keyshortcuts={WORKSPACE_SHORTCUTS.newCollection}
-          >
-            <IconLabel icon="add">{t('workspaceRoute.explorer.actions.createCollectionShort')}</IconLabel>
-          </button>
-          {selectedCollection || selectedRequestGroupLocation ? (
-            <button
-              type="button"
-              className="workspace-button workspace-button--secondary"
-              onClick={() => {
-                const createTarget = selectedRequestGroupLocation?.requestGroup ?? selectedCollection;
+        <WorkspaceHeaderActions
+          isMenuOpen={isHeaderMenuOpen}
+          canCreateRequestGroup={Boolean(selectedCollection || selectedRequestGroupLocation)}
+          canRunSelectedContainer={Boolean(selectedCollection || selectedRequestGroupLocation)}
+          onMenuOpenChange={setIsHeaderMenuOpen}
+          onCreateRequest={handleCreateRequest}
+          onCreateQuickRequest={handleCreateQuickRequest}
+          onOpenCreateCollectionSheet={handleOpenCreateCollectionSheet}
+          onOpenCreateRequestGroupSheet={() => {
+            const createTarget = selectedRequestGroupLocation?.requestGroup ?? selectedCollection;
 
-                if (createTarget) {
-                  handleOpenCreateRequestGroupSheet(createTarget);
-                }
-              }}
-              aria-keyshortcuts={WORKSPACE_SHORTCUTS.newRequestGroup}
-            >
-              <IconLabel icon="add">{t('workspaceRoute.explorer.actions.createRequestGroupShort')}</IconLabel>
-            </button>
-          ) : null}
-          {selectedCollection || selectedRequestGroupLocation ? (
-            <button
-              type="button"
-              className="workspace-button workspace-button--secondary"
-              onClick={handleRunSelectedContainer}
-              aria-keyshortcuts={WORKSPACE_SHORTCUTS.runSelected}
-            >
-              <IconLabel icon="run">{t('workspaceRoute.explorer.actions.runSelected')}</IconLabel>
-            </button>
-          ) : null}
-        </div>
+            if (createTarget) {
+              handleOpenCreateRequestGroupSheet(createTarget);
+            }
+          }}
+          onRunSelectedContainer={handleRunSelectedContainer}
+          onImportCurl={handleImportCurl}
+          onImportOpenApi={() => openApiImportInputRef.current?.click()}
+          onImportPostman={() => postmanImportInputRef.current?.click()}
+        />
+
+        <input
+          ref={openApiImportInputRef}
+          aria-label={t('workspaceRoute.newImport.actions.importOpenApiInput')}
+          type="file"
+          accept=".json,.yaml,.yml,application/json,text/yaml,application/x-yaml"
+          style={{ display: 'none' }}
+          onChange={handleOpenApiFileSelection}
+        />
+        <input
+          ref={postmanImportInputRef}
+          aria-label={t('workspaceRoute.newImport.actions.importPostmanInput')}
+          type="file"
+          accept=".json,application/json"
+          style={{ display: 'none' }}
+          onChange={handlePostmanFileSelection}
+        />
 
         {selectedRunnerContainer ? (
           <section className="workspace-surface-card workspace-runner-panel" aria-label={t('workspaceRoute.runner.ariaLabel')}>
@@ -2000,128 +1936,6 @@ export function WorkspaceRoute() {
           </section>
         ) : null}
 
-        {isCommandMenuOpen ? (
-          <section
-            id="workspace-command-menu"
-            className="workspace-surface-card workspace-create-sheet"
-            aria-label={t('workspaceRoute.commandMenu.ariaLabel')}
-          >
-            <header className="request-editor-card__header">
-              <div>
-                <h3>{t('workspaceRoute.commandMenu.title')}</h3>
-                <p>{t('workspaceRoute.commandMenu.description')}</p>
-              </div>
-            </header>
-            <div className="request-work-surface__future-actions" aria-label={t('workspaceRoute.commandMenu.actions.menuAriaLabel')}>
-              <button type="button" className="workspace-button" onClick={handleCreateRequest}>
-                <IconLabel icon="new">
-                  {`${t('workspaceRoute.commandMenu.actions.newRequest')} (${t('workspaceRoute.commandMenu.shortcuts.newRequest')})`}
-                </IconLabel>
-              </button>
-              <button type="button" className="workspace-button workspace-button--secondary" onClick={handleCreateQuickRequest}>
-                <IconLabel icon="new">
-                  {`${t('workspaceRoute.commandMenu.actions.quickRequest')} (${t('workspaceRoute.commandMenu.shortcuts.quickRequest')})`}
-                </IconLabel>
-              </button>
-              <button type="button" className="workspace-button workspace-button--secondary" onClick={handleOpenCreateCollectionSheet}>
-                <IconLabel icon="add">
-                  {`${t('workspaceRoute.commandMenu.actions.newCollection')} (${t('workspaceRoute.commandMenu.shortcuts.newCollection')})`}
-                </IconLabel>
-              </button>
-              <button
-                type="button"
-                className="workspace-button workspace-button--secondary"
-                onClick={() => {
-                  if (selectedRequestGroupLocation) {
-                    handleOpenCreateRequestGroupSheet(selectedRequestGroupLocation.requestGroup);
-                  } else if (selectedCollection) {
-                    handleOpenCreateRequestGroupSheet(selectedCollection);
-                  }
-                }}
-                disabled={!selectedCollection && !selectedRequestGroupLocation}
-              >
-                <IconLabel icon="add">
-                  {`${t('workspaceRoute.commandMenu.actions.newRequestGroup')} (${t('workspaceRoute.commandMenu.shortcuts.newRequestGroup')})`}
-                </IconLabel>
-              </button>
-              <button
-                type="button"
-                className="workspace-button workspace-button--secondary"
-                onClick={handleRunSelectedContainer}
-                disabled={!selectedCollection && !selectedRequestGroupLocation}
-              >
-                <IconLabel icon="run">
-                  {`${t('workspaceRoute.commandMenu.actions.runSelected')} (${t('workspaceRoute.commandMenu.shortcuts.runSelected')})`}
-                </IconLabel>
-              </button>
-              <button
-                type="button"
-                className="workspace-button workspace-button--ghost"
-                onClick={() => setIsCommandMenuOpen(false)}
-              >
-                {t('workspaceRoute.commandMenu.actions.closeMenu')}
-              </button>
-            </div>
-          </section>
-        ) : null}
-
-        {isNewImportMenuOpen ? (
-          <section
-            id="workspace-new-import-menu"
-            className="workspace-surface-card workspace-create-sheet"
-            aria-label={t('workspaceRoute.newImport.ariaLabel')}
-          >
-            <header className="request-editor-card__header">
-              <div>
-                <h3>{t('workspaceRoute.newImport.title')}</h3>
-                <p>{t('workspaceRoute.newImport.description')}</p>
-              </div>
-            </header>
-            <div className="request-work-surface__future-actions" aria-label={t('workspaceRoute.newImport.actions.menuAriaLabel')}>
-              <button type="button" className="workspace-button" onClick={handleImportCurl}>
-                <IconLabel icon="import">{t('workspaceRoute.newImport.actions.importCurl')}</IconLabel>
-              </button>
-              <button
-                type="button"
-                className="workspace-button workspace-button--secondary"
-                onClick={() => openApiImportInputRef.current?.click()}
-              >
-                <IconLabel icon="import">{t('workspaceRoute.newImport.actions.importOpenApi')}</IconLabel>
-              </button>
-              <button
-                type="button"
-                className="workspace-button workspace-button--secondary"
-                onClick={() => postmanImportInputRef.current?.click()}
-              >
-                <IconLabel icon="import">{t('workspaceRoute.newImport.actions.importPostman')}</IconLabel>
-              </button>
-              <button
-                type="button"
-                className="workspace-button workspace-button--ghost"
-                onClick={closeHeaderMenus}
-              >
-                {t('workspaceRoute.newImport.actions.closeMenu')}
-              </button>
-              <input
-                ref={openApiImportInputRef}
-                aria-label={t('workspaceRoute.newImport.actions.importOpenApiInput')}
-                type="file"
-                accept=".json,.yaml,.yml,application/json,text/yaml,application/x-yaml"
-                style={{ display: 'none' }}
-                onChange={handleOpenApiFileSelection}
-              />
-              <input
-                ref={postmanImportInputRef}
-                aria-label={t('workspaceRoute.newImport.actions.importPostmanInput')}
-                type="file"
-                accept=".json,application/json"
-                style={{ display: 'none' }}
-                onChange={handlePostmanFileSelection}
-              />
-            </div>
-          </section>
-        ) : null}
-
         <WorkspaceCreateSheet
           isOpen={Boolean(createSheetState)}
           tree={explorerTree}
@@ -2199,3 +2013,7 @@ export function WorkspaceRoute() {
     />
   );
 }
+
+
+
+

@@ -8,7 +8,7 @@ import {
   useRequestDraftStore,
 } from '@client/features/request-builder/state/request-draft-store';
 import { AppIcon } from '@client/shared/ui/AppIcon';
-import { IconLabel } from '@client/shared/ui/IconLabel';
+import { ActionMenu, type ActionMenuItem } from '@client/shared/ui/ActionMenu';
 
 interface RequestTabShellProps {
   tabs: RequestTabRecord[];
@@ -221,30 +221,31 @@ export function RequestTabShell({
 }: RequestTabShellProps) {
   const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const searchPresentationsByTabId = useRequestDraftStore(useShallow((state): Record<string, ResolvedTabPresentation | null> | null => {
-      if (normalizedQuery.length === 0) {
-        return null;
+    if (normalizedQuery.length === 0) {
+      return null;
+    }
+
+    const nextEntries = tabs.map((tab) => {
+      const presentation = selectRequestTabDraftPresentation(state, tab.id);
+
+      if (!presentation) {
+        return [tab.id, null] as const;
       }
 
-      const nextEntries = tabs.map((tab) => {
-        const presentation = selectRequestTabDraftPresentation(state, tab.id);
+      return [
+        tab.id,
+        {
+          ...presentation,
+          title: presentation.title.trim() || t('workspaceRoute.requestBuilder.defaultTitle'),
+        } satisfies ResolvedTabPresentation,
+      ] as const;
+    });
 
-        if (!presentation) {
-          return [tab.id, null] as const;
-        }
-
-        return [
-          tab.id,
-          {
-            ...presentation,
-            title: presentation.title.trim() || t('workspaceRoute.requestBuilder.defaultTitle'),
-          } satisfies ResolvedTabPresentation,
-        ] as const;
-      });
-
-      return Object.fromEntries(nextEntries) as Record<string, ResolvedTabPresentation | null>;
-    }));
+    return Object.fromEntries(nextEntries) as Record<string, ResolvedTabPresentation | null>;
+  }));
 
   const filteredTabs = useMemo(() => {
     if (normalizedQuery.length === 0) {
@@ -264,6 +265,44 @@ export function RequestTabShell({
     });
   }, [normalizedQuery, searchPresentationsByTabId, t, tabs]);
 
+  const actionMenuItems = useMemo<ActionMenuItem[]>(() => ([
+    {
+      id: 'reopen-closed-tab',
+      label: t('workspaceRoute.tabShell.reopenClosedTab'),
+      icon: 'replay',
+      disabled: !canReopenClosedTab,
+      onSelect: onReopenClosedTab,
+    },
+    {
+      id: 'close-current-tab',
+      label: t('workspaceRoute.tabShell.closeCurrentTab'),
+      disabled: !canCloseCurrentTab,
+      onSelect: onCloseCurrentTab,
+    },
+    {
+      id: 'close-other-tabs',
+      label: t('workspaceRoute.tabShell.closeOtherTabs'),
+      disabled: !canCloseOtherTabs,
+      onSelect: onCloseOtherTabs,
+    },
+    {
+      id: 'close-all-tabs',
+      label: t('workspaceRoute.tabShell.closeAllTabs'),
+      disabled: !canCloseAllTabs,
+      onSelect: onCloseAllTabs,
+    },
+  ]), [
+    canCloseAllTabs,
+    canCloseCurrentTab,
+    canCloseOtherTabs,
+    canReopenClosedTab,
+    onCloseAllTabs,
+    onCloseCurrentTab,
+    onCloseOtherTabs,
+    onReopenClosedTab,
+    t,
+  ]);
+
   return (
     <div className="request-tab-shell">
       <div className="request-tab-shell__toolbar">
@@ -279,38 +318,15 @@ export function RequestTabShell({
         </div>
 
         <div className="request-tab-shell__bulk-actions">
-          <button
-            type="button"
-            className="request-tab-shell__new-tab"
-            onClick={onReopenClosedTab}
-            disabled={!canReopenClosedTab}
-          >
-            <IconLabel icon="replay">{t('workspaceRoute.tabShell.reopenClosedTab')}</IconLabel>
-          </button>
-          <button
-            type="button"
-            className="request-tab-shell__new-tab"
-            onClick={onCloseCurrentTab}
-            disabled={!canCloseCurrentTab}
-          >
-            {t('workspaceRoute.tabShell.closeCurrentTab')}
-          </button>
-          <button
-            type="button"
-            className="request-tab-shell__new-tab"
-            onClick={onCloseOtherTabs}
-            disabled={!canCloseOtherTabs}
-          >
-            {t('workspaceRoute.tabShell.closeOtherTabs')}
-          </button>
-          <button
-            type="button"
-            className="request-tab-shell__new-tab"
-            onClick={onCloseAllTabs}
-            disabled={!canCloseAllTabs}
-          >
-            {t('workspaceRoute.tabShell.closeAllTabs')}
-          </button>
+          <ActionMenu
+            ariaLabel={t('workspaceRoute.tabShell.actionsAriaLabel')}
+            triggerLabel={t('workspaceRoute.tabShell.actionsTrigger')}
+            triggerIcon="command"
+            items={actionMenuItems}
+            isOpen={isActionsMenuOpen}
+            onOpenChange={setIsActionsMenuOpen}
+            triggerClassName="request-tab-shell__new-tab"
+          />
         </div>
       </div>
 

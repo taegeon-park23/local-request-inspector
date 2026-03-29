@@ -838,7 +838,7 @@ export function RequestWorkSurface({
 
       <div className="request-work-surface__header-strip request-builder-core__header-strip">
         <div className="request-builder-core__identity">
-          <label className="request-field">
+          <label className="request-field request-field--wide">
             <span>{t('workspaceRoute.requestBuilder.fields.requestName')}</span>
             <input
               aria-label={t('workspaceRoute.requestBuilder.fields.requestName')}
@@ -848,71 +848,71 @@ export function RequestWorkSurface({
               onBlur={requestNameField.flush}
             />
           </label>
-          <div className="request-builder-core__identity-support">
-            <p className="request-builder-core__source-copy">{locationSummary}</p>
-            <div className="request-builder-core__placement-grid">
-              <label className="request-field request-field--compact">
-                <span>{t('workspaceRoute.requestBuilder.fields.saveCollection')}</span>
-                <select
-                  aria-label={t('workspaceRoute.requestBuilder.fields.saveCollection')}
-                  value={collectionSelectValue}
-                  onChange={(event) => {
-                    const nextCollection = placementOptions.find((collection) => (
-                      getCollectionPlacementValue(collection) === event.currentTarget.value
-                    ));
+          <p className="request-builder-core__source-copy">{locationSummary}</p>
+          <div className="request-editor-card__row request-editor-card__row--compact-fluid request-builder-core__placement-row">
+            <label className="request-field request-field--compact">
+              <span>{t('workspaceRoute.requestBuilder.fields.saveCollection')}</span>
+              <select
+                aria-label={t('workspaceRoute.requestBuilder.fields.saveCollection')}
+                value={collectionSelectValue}
+                onChange={(event) => {
+                  const nextCollection = placementOptions.find((collection) => (
+                    getCollectionPlacementValue(collection) === event.currentTarget.value
+                  ));
 
-                    if (!nextCollection) {
-                      return;
-                    }
+                  if (!nextCollection) {
+                    return;
+                  }
 
-                    const nextRequestGroup = nextCollection.requestGroups[0] ?? { requestGroupName: DEFAULT_REQUEST_GROUP_NAME };
-                    updateDraftPlacement(
-                      draft.tabId,
-                      createRequestPlacementFromSelection(nextCollection, nextRequestGroup),
-                    );
-                  }}
-                >
-                  {placementOptions.map((collection) => (
-                    <option key={getCollectionPlacementValue(collection)} value={getCollectionPlacementValue(collection)}>
-                      {collection.collectionName}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="request-field request-field--compact">
-                <span>{t('workspaceRoute.requestBuilder.fields.saveRequestGroup')}</span>
-                <select
-                  aria-label={t('workspaceRoute.requestBuilder.fields.saveRequestGroup')}
-                  value={requestGroupSelectValue}
-                  onChange={(event) => {
-                    const nextRequestGroup = selectedCollection?.requestGroups.find((requestGroup) => (
-                      getRequestGroupPlacementValue(requestGroup) === event.currentTarget.value
-                    ));
+                  const nextRequestGroup = nextCollection.requestGroups[0] ?? { requestGroupName: DEFAULT_REQUEST_GROUP_NAME };
+                  updateDraftPlacement(
+                    draft.tabId,
+                    createRequestPlacementFromSelection(nextCollection, nextRequestGroup),
+                  );
+                }}
+              >
+                {placementOptions.map((collection) => (
+                  <option key={getCollectionPlacementValue(collection)} value={getCollectionPlacementValue(collection)}>
+                    {collection.collectionName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="request-field request-field--wide">
+              <span>{t('workspaceRoute.requestBuilder.fields.saveRequestGroup')}</span>
+              <select
+                aria-label={t('workspaceRoute.requestBuilder.fields.saveRequestGroup')}
+                value={requestGroupSelectValue}
+                onChange={(event) => {
+                  const nextRequestGroup = selectedCollection?.requestGroups.find((requestGroup) => (
+                    getRequestGroupPlacementValue(requestGroup) === event.currentTarget.value
+                  ));
 
-                    if (!selectedCollection || !nextRequestGroup) {
-                      return;
-                    }
+                  if (!selectedCollection || !nextRequestGroup) {
+                    return;
+                  }
 
-                    updateDraftPlacement(
-                      draft.tabId,
-                      createRequestPlacementFromSelection(selectedCollection, nextRequestGroup),
-                    );
-                  }}
-                  disabled={!selectedCollection || selectedRequestGroupPendingCreate || selectedCollection.requestGroups.length === 0}
-                >
-                  {(selectedCollection?.requestGroups.length ?? 0) > 0
-                    ? selectedCollection?.requestGroups.map((requestGroup) => (
-                        <option key={getRequestGroupPlacementValue(requestGroup)} value={getRequestGroupPlacementValue(requestGroup)}>
-                          {isPendingRequestPlacementGroup(requestGroup)
-                            ? t('workspaceRoute.requestBuilder.placement.pendingOption', { name: requestGroup.requestGroupName })
-                            : requestGroup.requestGroupPathLabel ?? requestGroup.requestGroupName}
-                        </option>
-                      ))
-                    : <option value="">{t('workspaceRoute.requestBuilder.placement.noRequestGroups')}</option>}
-                </select>
-              </label>
-            </div>
-            <p className="shared-readiness-note">{placementSupportCopy}</p>
+                  updateDraftPlacement(
+                    draft.tabId,
+                    createRequestPlacementFromSelection(selectedCollection, nextRequestGroup),
+                  );
+                }}
+                disabled={!selectedCollection || selectedRequestGroupPendingCreate || selectedCollection.requestGroups.length === 0}
+              >
+                {(selectedCollection?.requestGroups.length ?? 0) > 0
+                  ? selectedCollection?.requestGroups.map((requestGroup) => (
+                      <option key={getRequestGroupPlacementValue(requestGroup)} value={getRequestGroupPlacementValue(requestGroup)}>
+                        {isPendingRequestPlacementGroup(requestGroup)
+                          ? t('workspaceRoute.requestBuilder.placement.pendingOption', { name: requestGroup.requestGroupName })
+                          : requestGroup.requestGroupPathLabel ?? requestGroup.requestGroupName}
+                      </option>
+                    ))
+                  : <option value="">{t('workspaceRoute.requestBuilder.placement.noRequestGroups')}</option>}
+              </select>
+            </label>
+          </div>
+          <p className="shared-readiness-note request-builder-core__support-copy">{placementSupportCopy}</p>
+          <div className="request-editor-card__row request-editor-card__row--compact-fluid request-builder-core__environment-row">
             <label className="request-field request-field--compact">
               <span>{t('workspaceRoute.requestBuilder.fields.requestEnvironment')}</span>
               <select
@@ -931,15 +931,15 @@ export function RequestWorkSurface({
                 ) : null}
               </select>
             </label>
-            <div className="request-work-surface__badges">
+            <div className="request-work-surface__badges request-builder-core__environment-badges">
               {selectedEnvironment?.isDefault ? <span className="workspace-chip workspace-chip--secondary">{t('workspaceRoute.requestBuilder.environment.defaultBadge')}</span> : null}
               {hasMissingEnvironmentReference ? <span className="workspace-chip workspace-chip--replay">{t('workspaceRoute.requestBuilder.environment.missingBadge')}</span> : null}
             </div>
-            <p className="shared-readiness-note">{environmentSupportCopy}</p>
           </div>
+          <p className="shared-readiness-note request-builder-core__support-copy">{environmentSupportCopy}</p>
         </div>
         <div className="request-builder-core__command-area">
-          <div className="request-work-surface__future-actions" aria-label={t('workspaceRoute.requestBuilder.a11y.headerActions')}>
+          <div className="shared-action-bar request-builder-core__command-actions" aria-label={t('workspaceRoute.requestBuilder.a11y.headerActions')}>
             <button
               type="button"
               className="workspace-button workspace-button--secondary"
@@ -960,7 +960,7 @@ export function RequestWorkSurface({
             </button>
             <button
               type="button"
-              className="workspace-button workspace-button--secondary"
+              className="workspace-button"
               onClick={handleRunWithFlush}
               disabled={Boolean(runDisabledReason)}
             >
@@ -968,48 +968,41 @@ export function RequestWorkSurface({
             </button>
           </div>
           <div className="request-builder-core__command-copy-group">
-            <div className="request-builder-core__command-intro">
-              <p className="request-builder-core__command-copy">
-                {replaySource
-                  ? t('workspaceRoute.requestBuilder.commands.replayIntro')
-                  : t('workspaceRoute.requestBuilder.commands.defaultIntro')}
-              </p>
-            </div>
-            <div className="request-builder-core__command-status-list">
-              <p className="shared-readiness-note" data-testid="save-command-status">{saveStatusCopy}</p>
-              <p className="shared-readiness-note" data-testid="run-command-status">{runStatusCopy}</p>
-            </div>
-            <div className="request-builder-core__command-support">
-              {hasSaveConflict ? (
-                <>
-                  <div className="request-work-surface__future-actions">
-                    <button
-                      type="button"
-                      className="workspace-button workspace-button--secondary"
-                      onClick={handleOverwriteSaveWithFlush}
-                      disabled={saveStatus.status === 'pending'}
-                    >
-                      {t('workspaceRoute.requestBuilder.commands.overwrite')}
-                    </button>
-                    <button
-                      type="button"
-                      className="workspace-button workspace-button--secondary"
-                      onClick={handleSaveAsNewWithFlush}
-                      disabled={saveStatus.status === 'pending'}
-                    >
-                      {t('workspaceRoute.requestBuilder.commands.saveAsNew')}
-                    </button>
-                  </div>
-                  <p className="shared-readiness-note">{t('workspaceRoute.requestBuilder.status.saveConflictResolutionHint')}</p>
-                </>
-              ) : (
-                <p className="shared-readiness-note">{t('workspaceRoute.requestBuilder.commands.duplicateDeferred')}</p>
-              )}
-            </div>
+            <p className="request-builder-core__command-copy">
+              {replaySource
+                ? t('workspaceRoute.requestBuilder.commands.replayIntro')
+                : t('workspaceRoute.requestBuilder.commands.defaultIntro')}
+            </p>
+            <p className="shared-readiness-note" data-testid="save-command-status">{saveStatusCopy}</p>
+            <p className="shared-readiness-note" data-testid="run-command-status">{runStatusCopy}</p>
+            {hasSaveConflict ? (
+              <>
+                <div className="shared-action-bar request-builder-core__conflict-actions">
+                  <button
+                    type="button"
+                    className="workspace-button workspace-button--secondary"
+                    onClick={handleOverwriteSaveWithFlush}
+                    disabled={saveStatus.status === 'pending'}
+                  >
+                    {t('workspaceRoute.requestBuilder.commands.overwrite')}
+                  </button>
+                  <button
+                    type="button"
+                    className="workspace-button workspace-button--secondary"
+                    onClick={handleSaveAsNewWithFlush}
+                    disabled={saveStatus.status === 'pending'}
+                  >
+                    {t('workspaceRoute.requestBuilder.commands.saveAsNew')}
+                  </button>
+                </div>
+                <p className="shared-readiness-note">{t('workspaceRoute.requestBuilder.status.saveConflictResolutionHint')}</p>
+              </>
+            ) : (
+              <p className="shared-readiness-note">{t('workspaceRoute.requestBuilder.commands.duplicateDeferred')}</p>
+            )}
           </div>
         </div>
       </div>
-
       {isDetachedDraft ? (
         <section className="request-builder-core__detached-banner" role="status">
           <div>
@@ -1025,7 +1018,7 @@ export function RequestWorkSurface({
       ) : null}
 
       <section className="workspace-surface-card request-editor-card request-editor-card--primary">
-        <div className="request-editor-card__grid">
+        <div className="request-editor-card__row request-editor-card__row--compact-fluid request-editor-card__row--method-url">
           <label className="request-field request-field--compact">
             <span>{t('workspaceRoute.requestBuilder.fields.requestMethod')}</span>
             <select
@@ -1053,7 +1046,6 @@ export function RequestWorkSurface({
           </label>
         </div>
       </section>
-
       <div className="request-work-surface__editor-tabs" aria-label={t('workspaceRoute.requestBuilder.a11y.editorTabs')}>
         {requestEditorTabs.map((tab) => (
           <button
@@ -1350,4 +1342,5 @@ export function RequestWorkSurface({
     </div>
   );
 }
+
 

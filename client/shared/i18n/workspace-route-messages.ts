@@ -232,6 +232,11 @@ export const workspaceRouteMessagesEn = {
         runSelected: 'Alt+Shift+R',
       },
     },
+    headerMenu: {
+      ariaLabel: 'Workspace header actions',
+      trigger: 'More Actions',
+      shortcutHint: 'Keyboard shortcuts remain available via {shortcut}.',
+    },
     runner: {
       ariaLabel: 'Workspace runner controls',
       title: 'Runner',
@@ -348,6 +353,8 @@ export const workspaceRouteMessagesEn = {
       searchLabel: 'Tab search',
       searchPlaceholder: 'Search open tabs',
       searchNoMatches: 'No tabs match the current search.',
+      actionsTrigger: 'Tab Actions',
+      actionsAriaLabel: 'Tab action menu',
       reopenClosedTab: 'Reopen Closed Tab',
       closeCurrentTab: 'Close Current Tab',
       closeOtherTabs: 'Close Other Tabs',
@@ -1365,6 +1372,11 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         runSelected: 'Alt+Shift+R',
       },
     },
+    headerMenu: {
+      ariaLabel: 'Workspace header actions',
+      trigger: 'More Actions',
+      shortcutHint: 'Keyboard shortcuts remain available via {shortcut}.',
+    },
     runner: {
       ariaLabel: '워크스페이스 러너 제어',
       title: '러너',
@@ -1481,6 +1493,8 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
       searchLabel: '탭 검색',
       searchPlaceholder: '열린 탭 검색',
       searchNoMatches: '현재 검색과 일치하는 탭이 없습니다.',
+      actionsTrigger: '탭 작업',
+      actionsAriaLabel: '탭 작업 메뉴',
       reopenClosedTab: '닫은 탭 다시 열기',
       closeCurrentTab: '현재 탭 닫기',
       closeOtherTabs: '다른 탭 닫기',
@@ -2260,6 +2274,9 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
     },
   },
 };
+
+
+
 
 
 

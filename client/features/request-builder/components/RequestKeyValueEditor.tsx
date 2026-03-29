@@ -1,5 +1,5 @@
-import { memo, useCallback } from 'react';
 import type { ChangeEvent } from 'react';
+import { memo, useCallback } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
 import type { RequestKeyValueRow } from '@client/features/request-builder/request-draft.types';
 import { IconLabel } from '@client/shared/ui/IconLabel';
@@ -99,60 +99,95 @@ const RequestKeyValueEditorRow = memo(function RequestKeyValueEditorRow({
     onClearFiles?.(row.id);
   }, [onClearFiles, row.id]);
 
+  const isMultipartFileRow = allowRowValueTypeSelection && rowValueType === 'file';
+  const rowClassName = [
+    'request-row-editor',
+    allowRowValueTypeSelection ? 'request-row-editor--multipart' : 'request-row-editor--standard',
+  ].join(' ');
+  const rowMainClassName = [
+    'request-row-editor__main',
+    allowRowValueTypeSelection ? 'request-row-editor__main--multipart' : 'request-row-editor__main--standard',
+  ].join(' ');
+
   return (
-    <div
-      className={allowRowValueTypeSelection ? 'request-row-editor request-row-editor--multipart' : 'request-row-editor'}
-    >
-      <label className="request-field request-field--toggle">
-        <span>{enabledLabel}</span>
-        <input
-          aria-label={enabledAriaLabel}
-          checked={row.enabled}
-          type="checkbox"
-          onChange={handleEnabledChange}
-        />
-      </label>
-      <label className="request-field">
-        <span>{keyLabel}</span>
-        <input
-          aria-label={keyAriaLabel}
-          type="text"
-          value={row.key}
-          onChange={handleKeyChange}
-        />
-      </label>
-
-      {allowRowValueTypeSelection ? (
-        <label className="request-field request-field--compact">
-          <span>{valueTypeLabel}</span>
-          <select
-            aria-label={valueTypeAriaLabel}
-            value={rowValueType}
-            onChange={handleValueTypeChange}
-          >
-            <option value="text">{t('workspaceRoute.keyValueEditor.valueTypes.text')}</option>
-            <option value="file">{t('workspaceRoute.keyValueEditor.valueTypes.file')}</option>
-          </select>
-        </label>
-      ) : null}
-
-      {rowValueType === 'file' && allowRowValueTypeSelection ? (
-        <div className="request-field request-field--file-picker">
-          <span>{filesLabel}</span>
+    <div className={rowClassName}>
+      <div className={rowMainClassName}>
+        <label className="request-field request-field--inline-toggle">
+          <span>{enabledLabel}</span>
           <input
-            aria-label={filesAriaLabel}
-            type="file"
-            multiple
-            disabled={!fileSelectionEnabled}
-            onChange={handleFileSelection}
+            aria-label={enabledAriaLabel}
+            checked={row.enabled}
+            type="checkbox"
+            onChange={handleEnabledChange}
           />
-          <p className="request-row-editor__file-summary">
+        </label>
+
+        <label className="request-field">
+          <span>{keyLabel}</span>
+          <input
+            aria-label={keyAriaLabel}
+            type="text"
+            value={row.key}
+            onChange={handleKeyChange}
+          />
+        </label>
+
+        {allowRowValueTypeSelection ? (
+          <label className="request-field request-field--compact">
+            <span>{valueTypeLabel}</span>
+            <select
+              aria-label={valueTypeAriaLabel}
+              value={rowValueType}
+              onChange={handleValueTypeChange}
+            >
+              <option value="text">{t('workspaceRoute.keyValueEditor.valueTypes.text')}</option>
+              <option value="file">{t('workspaceRoute.keyValueEditor.valueTypes.file')}</option>
+            </select>
+          </label>
+        ) : null}
+
+        {isMultipartFileRow ? (
+          <label className="request-field request-field--file-trigger">
+            <span>{filesLabel}</span>
+            <input
+              aria-label={filesAriaLabel}
+              type="file"
+              multiple
+              disabled={!fileSelectionEnabled}
+              onChange={handleFileSelection}
+            />
+          </label>
+        ) : (
+          <label className="request-field">
+            <span>{valueLabel}</span>
+            <input
+              aria-label={valueAriaLabel}
+              type="text"
+              value={row.value}
+              onChange={handleValueChange}
+            />
+          </label>
+        )}
+
+        <button
+          type="button"
+          className="workspace-button workspace-button--ghost request-row-editor__remove"
+          aria-label={t('workspaceRoute.keyValueEditor.removeAriaLabel', { rowLabel: accessibleRowLabel, index: rowIndex })}
+          onClick={handleRemoveRow}
+        >
+          <IconLabel icon="delete">{t('workspaceRoute.keyValueEditor.removeAction')}</IconLabel>
+        </button>
+      </div>
+
+      {isMultipartFileRow ? (
+        <div className="request-row-editor__support">
+          <p className="request-row-editor__file-summary" data-testid={`file-summary-${row.id}`}>
             {selectedFiles.length === 0
               ? t('workspaceRoute.keyValueEditor.file.noneSelected')
               : t('workspaceRoute.keyValueEditor.file.selected', {
-                count: selectedFiles.length,
-                names: summarizeSelectedFiles(selectedFiles),
-              })}
+                  count: selectedFiles.length,
+                  names: summarizeSelectedFiles(selectedFiles),
+                })}
           </p>
           {fileSelectionDisabledReason ? (
             <p className="request-row-editor__file-summary">{fileSelectionDisabledReason}</p>
@@ -160,32 +195,14 @@ const RequestKeyValueEditorRow = memo(function RequestKeyValueEditorRow({
           {selectedFiles.length > 0 ? (
             <button
               type="button"
-              className="workspace-button workspace-button--ghost"
+              className="workspace-button workspace-button--ghost request-row-editor__clear-files"
               onClick={handleClearFiles}
             >
               {t('workspaceRoute.keyValueEditor.file.clearAction')}
             </button>
           ) : null}
         </div>
-      ) : (
-        <label className="request-field">
-          <span>{valueLabel}</span>
-          <input
-            aria-label={valueAriaLabel}
-            type="text"
-            value={row.value}
-            onChange={handleValueChange}
-          />
-        </label>
-      )}
-      <button
-        type="button"
-        className="workspace-button workspace-button--ghost"
-        aria-label={t('workspaceRoute.keyValueEditor.removeAriaLabel', { rowLabel: accessibleRowLabel, index: rowIndex })}
-        onClick={handleRemoveRow}
-      >
-        <IconLabel icon="delete">{t('workspaceRoute.keyValueEditor.removeAction')}</IconLabel>
-      </button>
+      ) : null}
     </div>
   );
 });

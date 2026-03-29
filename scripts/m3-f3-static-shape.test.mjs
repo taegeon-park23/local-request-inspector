@@ -36,15 +36,16 @@ assertContainsInOrder(
   requestWorkSurfaceSource,
   [
     '<div className="request-work-surface__header-copy">',
-    '<div className="request-builder-core__identity-support">',
+    '<div className="request-builder-core__identity">',
+    '<div className="request-editor-card__row request-editor-card__row--compact-fluid request-builder-core__placement-row">',
+    '<div className="request-editor-card__row request-editor-card__row--compact-fluid request-builder-core__environment-row">',
+    '<div className="request-builder-core__command-area">',
+    '<div className="shared-action-bar request-builder-core__command-actions"',
     '<div className="request-builder-core__command-copy-group">',
-    '<div className="request-builder-core__command-intro">',
-    '<div className="request-builder-core__command-status-list">',
     'data-testid="save-command-status"',
     'data-testid="run-command-status"',
-    '<div className="request-builder-core__command-support">',
   ],
-  'Request work surface should keep the M3-F3 header/identity/command grouping in place',
+  'Request work surface should keep the workspace-core identity and command grouping in place',
 );
 
 const resultPanelSource = readRepoFile(
@@ -100,10 +101,10 @@ const materialThemeSource = readRepoFile('client/app/shell/material-theme.css');
 
 for (const className of [
   'request-work-surface__header-copy',
-  'request-builder-core__identity-support',
-  'request-builder-core__command-intro',
-  'request-builder-core__command-status-list',
-  'request-builder-core__command-support',
+  'request-builder-core__placement-row',
+  'request-builder-core__environment-row',
+  'request-builder-core__command-actions',
+  'request-builder-core__conflict-actions',
   'workspace-detail-panel__header-copy',
   'workspace-detail-panel__header-meta',
   'workspace-detail-panel__result-stack',
@@ -113,7 +114,6 @@ for (const className of [
   assert.match(
     materialThemeSource,
     new RegExp(`\\.${className}\\b`, 'u'),
-    `material-theme.css should keep the applied M3-F3 selector ".${className}"`,
+    `material-theme.css should keep the applied selector ".${className}"`,
   );
 }
-

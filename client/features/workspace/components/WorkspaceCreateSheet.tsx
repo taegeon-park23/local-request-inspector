@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
+import { DialogFooter } from '@client/shared/ui/DialogFooter';
 import type {
   WorkspaceCollectionNode,
   WorkspaceRequestGroupNode,
@@ -154,6 +155,8 @@ export function WorkspaceCreateSheet({
   const submitLabel = isSubmitting
     ? t('workspaceRoute.explorer.createSheet.actions.creating')
     : t('workspaceRoute.explorer.createSheet.actions.create');
+  const collectionRootOptionLabel = t('workspaceRoute.explorer.createSheet.parentRootLabel');
+  const collectionParentValue = parentOptions.length > 0 ? '__collection-root__' : '';
 
   const handleSubmit = async () => {
     if (isSubmitting) {
@@ -231,7 +234,7 @@ export function WorkspaceCreateSheet({
         </div>
       </header>
 
-      <div className="request-editor-card__grid">
+      <div className="request-editor-card__row request-editor-card__row--compact-fluid">
         <label className="request-field request-field--compact">
           <span>{t('workspaceRoute.explorer.createSheet.fields.type')}</span>
           <select
@@ -246,22 +249,24 @@ export function WorkspaceCreateSheet({
           </select>
         </label>
 
-        {createType !== 'collection' ? (
-          <label className="request-field request-field--wide">
-            <span>{t('workspaceRoute.explorer.createSheet.fields.parent')}</span>
-            <select
-              aria-label={t('workspaceRoute.explorer.createSheet.fields.parent')}
-              value={parentKey}
-              onChange={(event) => setParentKey(event.currentTarget.value)}
-              disabled={isSubmitting || parentOptions.length === 0}
-            >
-              {parentOptions.map((option) => (
-                <option key={option.key} value={option.key}>{option.label}</option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+        <label className="request-field request-field--wide">
+          <span>{t('workspaceRoute.explorer.createSheet.fields.parent')}</span>
+          <select
+            aria-label={t('workspaceRoute.explorer.createSheet.fields.parent')}
+            value={createType === 'collection' ? collectionParentValue : parentKey}
+            onChange={(event) => setParentKey(event.currentTarget.value)}
+            disabled={isSubmitting || createType === 'collection' || parentOptions.length === 0}
+          >
+            {createType === 'collection' ? (
+              <option value={collectionParentValue}>{collectionRootOptionLabel}</option>
+            ) : parentOptions.map((option) => (
+              <option key={option.key} value={option.key}>{option.label}</option>
+            ))}
+          </select>
+        </label>
+      </div>
 
+      <div className="request-editor-card__row request-editor-card__row--single">
         <label className="request-field request-field--wide">
           <span>{t('workspaceRoute.explorer.createSheet.fields.name')}</span>
           <input
@@ -276,14 +281,14 @@ export function WorkspaceCreateSheet({
 
       {validationMessage ? <p className="workspace-explorer__status workspace-explorer__status--error">{validationMessage}</p> : null}
 
-      <div className="request-work-surface__future-actions">
+      <DialogFooter>
         <button type="button" className="workspace-button" onClick={() => { void handleSubmit(); }} disabled={isSubmitting}>
           {submitLabel}
         </button>
         <button type="button" className="workspace-button workspace-button--secondary" onClick={onCancel} disabled={isSubmitting}>
           {t('workspaceRoute.explorer.createSheet.actions.cancel')}
         </button>
-      </div>
+      </DialogFooter>
     </section>
   );
 }

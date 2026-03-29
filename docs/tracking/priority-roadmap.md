@@ -2,7 +2,7 @@
 
 - **Purpose:** Show the live delivery sequence after completed work has been archived out of the default read path.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-27
+- **Last Updated:** 2026-03-29
 - **Related Documents:** `master-task-board.md`, `progress-status.md`, `completed-work-summary.md`, `../prd/overview.md`
 - **Update Rule:** Update when a new bounded task is promoted or when the live verification baseline changes.
 
@@ -38,12 +38,14 @@
 29. `T101` Explorer Selected-Summary Card Removal is archived.
 30. `T102` Browser-Style One-Line Tab Rail + Horizontal Scroll Conversion is archived.
 31. `T103` Script Editor Modernization (Monaco + Stage Intellisense) is archived.
+32. `T104` remains blocked on user-local UI capture evidence and is intentionally not promoted in Codex.
+33. `T105` Workspace Core Layout Primitives Cleanup is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.
 - Define and execute one bounded task at a time.
 - Keep Codex-side UI reruns closed; use Playwright smoke in Codex and reserve `npm.cmd run test:ui` for user-managed local verification.
+- Keep `T104` blocked until user-local capture/runtime evidence is available or the user explicitly reprioritizes it.
 
 ## Immediate Next Step
-- Promote one new bounded task and execute it end-to-end before opening another.
-
+- Preserve `T104` as blocked, then promote exactly one new bounded task when the next implementation slice is chosen.
