@@ -8,6 +8,7 @@
 
 ## Current Snapshot
 - No bounded task is currently active. The next implementation step must start from one newly promoted task, while broader UI verification remains user-managed unless a new bounded slice is explicitly defined.
+- `T120` is archived after applying the same route-local medium-width pane-tier guard to `/captures`, `/history`, and `/mocks`, moving those observation routes into stacked surface/detail tabs earlier and auto-collapsing the explorer once on stacked entry so medium-width observation surfaces remain readable at `1100px` without reopening the broader route-panel architecture.
 - `T119` is archived after applying the same route-local medium-width pane-tier guard to `/workspace`, moving the focused-overlay workspace into stacked surface/detail tabs earlier and auto-collapsing the explorer once on stacked entry so the authoring surface remains readable at `1100px` without reopening the broader route-panel architecture.
 - Broader UI verification remains user-managed unless a new bounded slice explicitly changes that rule.
 - `T118` is archived after adding a route-local medium-width guard for environments and scripts so those focused-overlay routes enter stacked surface/detail tabs earlier, auto-collapse the explorer once on stacked entry, and keep management surfaces readable at `1100px` without reopening the broader route-panel architecture.
@@ -34,6 +35,7 @@
 - `T097` is archived after expanding runner inputs (selection/order/environment/iteration/data-file), wiring run-history visibility, and aligning collection/request-group batch payload composition with CLI-friendly server run contracts.
 
 ## Verification
+- Playwright smoke confirmed `/captures`, `/history`, and `/mocks` switch to stacked route-panel tabs with the explorer collapsed at `1100px` on 2026-03-30.
 - Playwright smoke confirmed `/workspace` switches to stacked route-panel tabs with the explorer collapsed at `1100px` on 2026-03-30.
 - Playwright smoke confirmed `/environments` and `/scripts` switch to stacked route-panel tabs with the explorer collapsed at `1100px` on 2026-03-30.
 - Focused environments/scripts route coverage was updated for management-row/readability markers on 2026-03-30.

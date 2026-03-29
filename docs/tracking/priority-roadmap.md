@@ -54,6 +54,7 @@
 45. `T117` Management Row Readability Follow-Up is archived.
 46. `T118` Narrow-Width Management Surface Polish is archived.
 47. `T119` Workspace Medium-Width Follow-Up is archived.
+48. `T120` Observation Medium-Width Readability Polish is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.

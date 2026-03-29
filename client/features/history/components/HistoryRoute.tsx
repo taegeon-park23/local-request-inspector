@@ -274,6 +274,8 @@ export function HistoryRoute() {
       layoutMode="floating-explorer"
       floatingExplorerRouteKey="history"
       floatingExplorerVariant="focused-overlay"
+      floatingBalancedMinWidth={1200}
+      collapseFloatingExplorerOnStacked
       defaultActiveTab="explorer"
       explorer={(
         <section className="shell-panel shell-panel--sidebar" aria-label={t('shell.routePanels.explorerRegion')}>

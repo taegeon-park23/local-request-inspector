@@ -200,6 +200,31 @@ describe('AppRouter shell bootstrap', () => {
     expect(screen.getByRole('tab', { name: 'Surface' })).toHaveAttribute('aria-selected', 'true');
   });
 
+  it('drops captures, history, and mocks into stacked panel mode earlier at medium widths', async () => {
+    const user = userEvent.setup();
+    setViewportWidth(1100);
+    renderApp(<AppRouter />, { initialEntries: ['/captures'] });
+
+    expect(await screen.findByRole('heading', { name: 'Captures' })).toBeInTheDocument();
+    expect(document.querySelector('.shell-route-panels--floating')).toHaveAttribute('data-floating-layout-tier', 'stacked');
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('tab', { name: 'Surface' })).toHaveAttribute('aria-selected', 'true');
+
+    await user.click(screen.getByRole('link', { name: /history/i }));
+
+    expect(await screen.findByRole('heading', { name: 'History' })).toBeInTheDocument();
+    expect(document.querySelector('.shell-route-panels--floating')).toHaveAttribute('data-floating-layout-tier', 'stacked');
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('tab', { name: 'Surface' })).toHaveAttribute('aria-selected', 'true');
+
+    await user.click(screen.getByRole('link', { name: /mocks/i }));
+
+    expect(await screen.findByRole('heading', { name: 'Mocks' })).toBeInTheDocument();
+    expect(document.querySelector('.shell-route-panels--floating')).toHaveAttribute('data-floating-layout-tier', 'stacked');
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('tab', { name: 'Surface' })).toHaveAttribute('aria-selected', 'true');
+  });
+
   it('collapses the navigation rail without losing accessible route names', async () => {
     renderApp(<AppRouter />);
 
