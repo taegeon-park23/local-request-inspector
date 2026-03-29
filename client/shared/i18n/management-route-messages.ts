@@ -221,7 +221,7 @@
     sidebar: {
       eyebrow: 'Saved scripts library',
       title: 'Scripts list',
-      summary: 'Top-level Scripts manages standalone saved scripts and read-only starter templates. Request-stage attachment remains deferred.',
+      summary: 'Top-level Scripts manages standalone saved scripts and read-only starter templates. Request-stage linking starts from Request Builder.',
       newButton: 'New script',
       searchLabel: 'Search scripts',
       stageFilterLabel: 'Stage filter',
@@ -305,7 +305,7 @@
       templateSeededChip: 'Template seeded',
       management: {
         title: 'Management boundary',
-        description: 'Save persists standalone scripts only. Request-stage attachment, backlinks, and reference semantics remain deferred.',
+        description: 'Save persists standalone scripts only. Backlinks and richer shared-reference semantics remain deferred.',
         createAction: 'Create script',
         saveAction: 'Save script',
         cancelDraft: 'Cancel draft',
@@ -314,7 +314,7 @@
         nameRequired: 'Script name is required before saving.',
         draftDeleteGuard: 'Discard the draft instead of deleting it. Only persisted scripts can be deleted.',
         pendingDelete: 'Deleting the persisted script.',
-        readinessNote: 'Templates can seed a new saved script, but template CRUD, request linking, and Monaco-class editing remain deferred.',
+        readinessNote: 'Templates can seed a new saved script, but template CRUD and richer shared-reference semantics remain deferred.',
         mutationFailedTitle: 'Script mutation failed',
         mutationFailedFallbackDescription: 'Script mutation failed.',
       },
@@ -348,7 +348,7 @@
       },
       editorCard: {
         title: 'Saved script editor',
-        description: 'Textarea-based editing remains intentionally lightweight in this MVP.',
+        description: 'Monaco-backed stage-aware editing is enabled for saved script source authoring.',
         labels: {
           name: 'Script name',
           stage: 'Script stage',
@@ -593,7 +593,7 @@ export const managementRouteMessagesKo: RouteCatalogShape<typeof managementRoute
     sidebar: {
       eyebrow: '저장된 스크립트 라이브러리',
       title: '스크립트 목록',
-      summary: 'Top-level Scripts는 독립 저장 스크립트와 읽기 전용 starter template를 관리합니다. request-stage attachment는 아직 유예되어 있습니다.',
+      summary: 'Top-level Scripts는 독립 저장 스크립트와 읽기 전용 starter template를 관리합니다. request-stage 연결은 Request Builder에서 시작합니다.',
       newButton: '새 스크립트',
       searchLabel: '스크립트 검색',
       stageFilterLabel: '단계 필터',
@@ -677,7 +677,7 @@ export const managementRouteMessagesKo: RouteCatalogShape<typeof managementRoute
       templateSeededChip: '템플릿 기반',
       management: {
         title: '관리 경계',
-        description: 'Save는 독립 스크립트만 저장합니다. request-stage attachment, backlink, reference semantics는 여전히 유예된 범위입니다.',
+        description: 'Save는 독립 스크립트만 저장합니다. backlink와 더 풍부한 shared-reference semantics는 여전히 유예된 범위입니다.',
         createAction: '스크립트 만들기',
         saveAction: '스크립트 저장',
         cancelDraft: 'draft 취소',
@@ -686,7 +686,7 @@ export const managementRouteMessagesKo: RouteCatalogShape<typeof managementRoute
         nameRequired: '저장하기 전에 스크립트 이름이 필요합니다.',
         draftDeleteGuard: 'draft는 삭제 대신 취소하세요. 삭제는 저장된 스크립트에만 적용됩니다.',
         pendingDelete: '저장된 스크립트를 삭제하고 있습니다.',
-        readinessNote: '템플릿은 새 저장 스크립트의 시작점을 제공할 수 있지만, template CRUD, request linking, Monaco급 편집기는 여전히 유예된 범위입니다.',
+        readinessNote: '템플릿은 새 저장 스크립트의 시작점을 제공할 수 있지만, template CRUD와 더 풍부한 shared-reference semantics는 여전히 유예된 범위입니다.',
         mutationFailedTitle: '스크립트 변경에 실패했습니다',
         mutationFailedFallbackDescription: '스크립트 변경에 실패했습니다.',
       },
@@ -720,7 +720,7 @@ export const managementRouteMessagesKo: RouteCatalogShape<typeof managementRoute
       },
       editorCard: {
         title: '저장 스크립트 편집기',
-        description: '이 MVP에서는 textarea 기반 편집을 의도적으로 가볍게 유지합니다.',
+        description: '저장 스크립트 소스 작성에 Monaco 기반 단계 인식 편집기를 사용합니다.',
         labels: {
           name: '스크립트 이름',
           stage: '스크립트 단계',

@@ -2,11 +2,12 @@
 
 - **Purpose:** Provide a compact live snapshot without requiring contributors to read archived task history by default.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-26
+- **Last Updated:** 2026-03-27
 - **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `completed-work-summary.md`, `../prd/overview.md`
 - **Update Rule:** Update after each active-task status change or verification-state change.
 
 ## Current Snapshot
+- `T103` is archived after introducing a Monaco-backed shared script editor surface, stage-aware completion/diagnostic profiles, forbidden-token warning markers, linked-stage read-only preview rendering, and save/run flush registration so Request Builder + `/scripts` both persist the latest script text reliably.
 - `T102` is archived after converting the tab shell into a browser-style one-line rail with horizontal overflow scrolling, moving search/bulk-close controls to a dedicated toolbar, removing in-rail `새 요청/빠른 요청` actions, and adding left-side pin icons for preview/pinned tabs across request and overview sources.
 - `T101` is archived after removing redundant selected-item explorer summary cards across management/observation routes and deleting the workspace explorer selection summary line while preserving list workflows.
 - `T100` is archived after adding backend-unavailable error classification and deduplicating repeated workspace degraded detail lines while preserving resource-specific diagnostics for non-transport failures.
@@ -30,9 +31,9 @@
 - `T091` is archived after adding bounded transport timeouts for batch execution paths and explicit immediate `Empty` completion for empty collection/request-group runs.
 
 ## Verification
-- `npm.cmd run lint` passed on 2026-03-26.
-- `npm.cmd run typecheck` passed on 2026-03-26.
-- `npm.cmd run test:node` passed on 2026-03-26.
+- `npm.cmd run lint` passed on 2026-03-27.
+- `npm.cmd run typecheck` passed on 2026-03-27.
+- `npm.cmd run test:node` passed on 2026-03-27.
 - Agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - If UI full-suite verification is needed, instruct the user to run `npm.cmd run test:ui` locally and treat that result as authoritative.
 

@@ -358,6 +358,7 @@ export function RequestWorkSurface({
   );
   const activeDraftTabId = draft?.tabId ?? activeTab?.id ?? 'none';
   const editableDraftTabId = draft?.tabId ?? null;
+  const scriptInlineFlushRef = useRef<(() => void) | null>(null);
 
   const commitDraftName = useCallback((nextValue: string) => {
     if (!editableDraftTabId) {
@@ -457,7 +458,12 @@ export function RequestWorkSurface({
     onCommit: commitDraftApiKeyValue,
   });
 
+  const registerScriptInlineFlush = useCallback((flush: (() => void) | null) => {
+    scriptInlineFlushRef.current = flush;
+  }, []);
+
   const flushHotInputFields = useCallback(() => {
+    scriptInlineFlushRef.current?.();
     requestNameField.flush();
     requestUrlField.flush();
     requestBodyTextField.flush();
@@ -1302,6 +1308,7 @@ export function RequestWorkSurface({
               draft={draft}
               onStageChange={(stage) => setActiveScriptStage(draft.tabId, stage)}
               onContentChange={(stage, content) => updateScriptContent(draft.tabId, stage, content)}
+              onRegisterInlineFlush={registerScriptInlineFlush}
               copiedFromScriptNames={copiedScriptNames}
               onAttachSavedScript={(stage, scriptName, content) => {
                 updateScriptContent(draft.tabId, stage, content);
@@ -1343,3 +1350,4 @@ export function RequestWorkSurface({
     </div>
   );
 }
+

@@ -1555,7 +1555,7 @@ describe('Workspace request builder authoring shell', () => {
                 updatedAt: '2026-03-21T11:00:00.000Z',
                 sourcePreview: 'request.setHeader("x-trace-id", "abc-123");',
                 capabilitySummary: 'Pre-request scripts can use bounded request mutation helpers before transport is sent.',
-                deferredSummary: 'Request-stage attachment, live shared references, and Monaco-class editor expansion remain deferred.',
+                deferredSummary: 'Live shared references, backlinks, and plugin-style editor expansion remain deferred.',
                 templateSummary: 'Created directly in the scripts library.',
                 sourceLabel: 'Persisted workspace script',
               },
@@ -1770,7 +1770,7 @@ describe('Workspace request builder authoring shell', () => {
         updatedAt: '2026-03-20T09:30:00.000Z',
         sourcePreview: 'request.setHeader("x-trace-id", "existing-trace");',
         capabilitySummary: 'Pre-request scripts can use bounded request mutation helpers before transport is sent.',
-        deferredSummary: 'Request-stage attachment, live shared references, and Monaco-class editor expansion remain deferred.',
+        deferredSummary: 'Live shared references, backlinks, and plugin-style editor expansion remain deferred.',
         templateSummary: 'Created directly in the scripts library.',
         sourceLabel: 'Persisted workspace script',
       },
@@ -1996,7 +1996,7 @@ describe('Workspace request builder authoring shell', () => {
             updatedAt: '2026-03-21T11:00:00.000Z',
             sourcePreview: 'request.setHeader("x-trace-id", "imported-trace");',
             capabilitySummary: 'Pre-request scripts can use bounded request mutation helpers before transport is sent.',
-            deferredSummary: 'Request-stage attachment, live shared references, and Monaco-class editor expansion remain deferred.',
+            deferredSummary: 'Live shared references, backlinks, and plugin-style editor expansion remain deferred.',
             templateSummary: 'Created directly in the scripts library.',
             sourceLabel: 'Persisted workspace script',
           },
@@ -2119,7 +2119,7 @@ describe('Workspace request builder authoring shell', () => {
         updatedAt: '2026-03-20T09:30:00.000Z',
         sourcePreview: 'request.setHeader("x-trace-id", "existing-trace");',
         capabilitySummary: 'Pre-request scripts can use bounded request mutation helpers before transport is sent.',
-        deferredSummary: 'Request-stage attachment, live shared references, and Monaco-class editor expansion remain deferred.',
+        deferredSummary: 'Live shared references, backlinks, and plugin-style editor expansion remain deferred.',
         templateSummary: 'Created directly in the scripts library.',
         sourceLabel: 'Persisted workspace script',
       },
@@ -2638,19 +2638,4 @@ describe('Workspace request builder authoring shell', () => {
     expect(within(detailPanel).getByText('아직 실행 정보가 없습니다')).toBeInTheDocument();
   });
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

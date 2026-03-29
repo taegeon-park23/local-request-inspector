@@ -46,7 +46,7 @@ function summarizeScript(input: SavedScriptInput, existing?: SavedScriptRecord):
       : input.scriptType === 'post-response'
         ? 'Post-response scripts stay read-focused and emit bounded console summaries after transport completes.'
         : 'Pre-request scripts can use bounded request mutation helpers before transport is sent.',
-    deferredSummary: 'Request-stage attachment, live shared references, and Monaco-class editor expansion remain deferred.',
+    deferredSummary: 'Live shared references, backlinks, and plugin-style editor expansion remain deferred.',
     templateSummary: templateName ? `Created from template: ${templateName}.` : 'Created directly in the scripts library.',
     sourceLabel: 'Persisted workspace script',
   };

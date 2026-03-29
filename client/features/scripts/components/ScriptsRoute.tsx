@@ -19,6 +19,7 @@ import type {
   ScriptTemplateRecord,
   ScriptType,
 } from '@client/features/scripts/scripts.types';
+import { ScriptCodeEditor } from '@client/shared/code-editor/ScriptCodeEditor';
 import { DetailViewerSection } from '@client/shared/ui/DetailViewerSection';
 import { EmptyStateCallout } from '@client/shared/ui/EmptyStateCallout';
 import { IconLabel } from '@client/shared/ui/IconLabel';
@@ -462,13 +463,13 @@ export function ScriptsRoute() {
                   </label>
                   <label className="request-field request-field--wide">
                     <span>{t('scriptsRoute.detail.editorCard.labels.source')}</span>
-                    <textarea
-                      aria-label={t('scriptsRoute.detail.editorCard.ariaLabels.source')}
+                    <ScriptCodeEditor
+                      ariaLabel={t('scriptsRoute.detail.editorCard.ariaLabels.source')}
                       value={activeDraft.sourceCode}
-                      onChange={(event) => {
-                        const nextSourceCode = event.currentTarget.value;
+                      onChange={(nextSourceCode) => {
                         setDraft((current) => ({ ...(current.id === activeDraft.id ? current : activeDraft), sourceCode: nextSourceCode }));
                       }}
+                      stageId={activeDraft.scriptType}
                     />
                   </label>
                 </div>

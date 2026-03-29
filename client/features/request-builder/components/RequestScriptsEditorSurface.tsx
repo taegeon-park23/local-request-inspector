@@ -16,6 +16,7 @@ import {
   workspaceScriptsQueryKey,
 } from '@client/features/scripts/scripts.api';
 import type { SavedScriptRecord } from '@client/features/scripts/scripts.types';
+import { ScriptCodeEditor } from '@client/shared/code-editor/ScriptCodeEditor';
 import type { AppIconName } from '@client/shared/ui/AppIcon';
 import { IconLabel } from '@client/shared/ui/IconLabel';
 
@@ -38,6 +39,7 @@ interface RequestScriptsEditorSurfaceProps {
   draft: RequestDraftState;
   onStageChange: (stage: RequestScriptStageId) => void;
   onContentChange: (stage: RequestScriptStageId, content: string) => void;
+  onRegisterInlineFlush?: (flush: (() => void) | null) => void;
   copiedFromScriptNames: Partial<Record<RequestScriptStageId, string>>;
   onAttachSavedScript: (stage: RequestScriptStageId, scriptName: string, content: string) => void;
   onLinkSavedScript: (stage: RequestScriptStageId, script: SavedScriptRecord) => void;
@@ -86,6 +88,7 @@ export default function RequestScriptsEditorSurface({
   draft,
   onStageChange,
   onContentChange,
+  onRegisterInlineFlush,
   copiedFromScriptNames,
   onAttachSavedScript,
   onLinkSavedScript,
@@ -276,6 +279,18 @@ export default function RequestScriptsEditorSurface({
     flushPendingInlineContent();
   }, [flushPendingInlineContent]);
 
+  useEffect(() => {
+    if (!onRegisterInlineFlush) {
+      return;
+    }
+
+    onRegisterInlineFlush(flushPendingInlineContent);
+
+    return () => {
+      onRegisterInlineFlush(null);
+    };
+  }, [flushPendingInlineContent, onRegisterInlineFlush]);
+
   return (
     <section className="workspace-surface-card request-editor-card request-editor-card--scripts" data-testid="script-editor-surface">
       <header className="request-editor-card__header">
@@ -328,13 +343,13 @@ export default function RequestScriptsEditorSurface({
           {activeStageBinding.mode === 'inline' ? (
             <label className="request-field">
               <span>{activeStageDefinition.label}</span>
-              <textarea
-                aria-label={activeStageDefinition.fieldAriaLabel}
-                rows={14}
+              <ScriptCodeEditor
+                ariaLabel={activeStageDefinition.fieldAriaLabel}
                 placeholder={activeStageDefinition.exampleSnippet}
                 value={activeInlineContent}
-                onChange={(event) => handleInlineContentChange(event.currentTarget.value)}
+                onChange={handleInlineContentChange}
                 onBlur={handleInlineBlur}
+                stageId={activeStage}
               />
             </label>
           ) : (
@@ -362,7 +377,14 @@ export default function RequestScriptsEditorSurface({
                 {linkedResolution?.savedScript ? (
                   <div className="request-script-example">
                     <span>{t('workspaceRoute.scriptsEditor.attach.linkedPreviewLabel')}</span>
-                    <pre>{linkedSourcePreview}</pre>
+                    <ScriptCodeEditor
+                      value={linkedSourcePreview}
+                      onChange={() => undefined}
+                      readOnly
+                      ariaLabel={t('workspaceRoute.scriptsEditor.attach.linkedPreviewLabel')}
+                      stageId={activeStage}
+                      diagnostics={false}
+                    />
                   </div>
                 ) : null}
               </div>
@@ -497,3 +519,4 @@ export default function RequestScriptsEditorSurface({
     </section>
   );
 }
+

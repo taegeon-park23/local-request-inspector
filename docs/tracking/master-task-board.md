@@ -1,7 +1,7 @@
 # Master Task Board
 - **Purpose:** Provide the canonical live execution status for work that is still operationally relevant.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-26
+- **Last Updated:** 2026-03-27
 - **Related Documents:** `priority-roadmap.md`, `progress-status.md`, `completed-work-summary.md`, `../prd/overview.md`, `../architecture/overview.md`
 - **Update Rule:** Update when an active task is created, completed, blocked, reprioritized, or archived.
 
@@ -23,9 +23,9 @@
 
 ## Current State
 - **Current bounded task:** None (`idle` until the next bounded task is promoted).
-- **Most recent archived implementation:** `T102` Browser-Style One-Line Tab Rail + Horizontal Scroll Conversion.
+- **Most recent archived implementation:** `T103` Script Editor Modernization (Monaco + Stage Intellisense).
 - **Highest-priority next step:** promote the next bounded task and keep single-task execution discipline.
-- **Verification baseline:** `npm.cmd run lint`, `npm.cmd run typecheck`, and `npm.cmd run test:node` passed on 2026-03-26 after `T102` tab-shell browser-rail and pin-icon updates.
+- **Verification baseline:** `npm.cmd run lint`, `npm.cmd run typecheck`, and `npm.cmd run test:node` passed on 2026-03-27 after `T103` Monaco editor migration and stage-aware script diagnostics updates.
 - **Closed UI-test rerun policy:** agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - **Codex UI verification lane:** use the Playwright skill workflow against the dev route or built shell when available.
 - **User-managed local verification:** if UI full-suite verification is still needed, instruct the user to run `npm.cmd run test:ui` locally and treat that result as authoritative.

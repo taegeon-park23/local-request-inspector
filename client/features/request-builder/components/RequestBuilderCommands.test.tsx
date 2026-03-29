@@ -204,6 +204,96 @@ describe('Request builder save/run wiring', () => {
     expect(savePayload.request.bodyText).toContain('sku');
   }, 10000);
 
+  it('flushes pending script input before Save so latest stage source reaches payload', async () => {
+    const user = userEvent.setup();
+    const latestPreRequestSource = "request.headers.set('x-trace-id', 'flush-check');";
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = getUrl(input);
+
+      if (url === '/api/workspaces/local-workspace/requests' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: [] });
+      }
+
+      if (url === '/api/workspaces/local-workspace/scripts' && (!init || !init.method || init.method === 'GET')) {
+        return createApiResponse({ items: defaultSavedScriptFixtureRecords });
+      }
+
+      if (url === '/api/workspaces/local-workspace/requests' && init?.method === 'POST') {
+        return createApiResponse({
+          request: {
+            id: 'request-script-flush',
+            workspaceId: 'local-workspace',
+            name: 'Flush check request',
+            method: 'GET',
+            url: 'https://api.example.com/flush-check',
+            selectedEnvironmentId: null,
+            params: [],
+            headers: [],
+            bodyMode: 'none',
+            bodyText: '',
+            formBody: [],
+            multipartBody: [],
+            auth: {
+              type: 'none',
+              bearerToken: '',
+              basicUsername: '',
+              basicPassword: '',
+              apiKeyName: '',
+              apiKeyValue: '',
+              apiKeyPlacement: 'header',
+            },
+            scripts: {
+              activeStage: 'pre-request',
+              preRequest: latestPreRequestSource,
+              postResponse: '',
+              tests: '',
+            },
+            summary: 'GET https://api.example.com/flush-check',
+            collectionName: 'Saved Requests',
+            createdAt: '2026-03-27T00:00:00.000Z',
+            updatedAt: '2026-03-27T00:00:00.000Z',
+          },
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp(<AppRouter />);
+
+    await openNewRequest(user);
+    await user.type(screen.getByLabelText('Request name'), 'Flush check request');
+    await user.type(screen.getByLabelText('Request URL'), 'https://api.example.com/flush-check');
+
+    const mainSurface = screen.getByLabelText('Main work surface');
+    await user.click(within(mainSurface).getByRole('button', { name: 'Scripts' }));
+    await user.type(await screen.findByLabelText('Pre-request script'), latestPreRequestSource);
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    const saveCall = await waitFor(() => fetchMock.mock.calls.find(
+      ([requestInput, requestInit]) => getUrl(requestInput as RequestInfo | URL) === '/api/workspaces/local-workspace/requests'
+        && requestInit?.method === 'POST',
+    ));
+
+    expect(saveCall).toBeDefined();
+
+    const savePayload = JSON.parse(String(saveCall?.[1]?.body)) as {
+      request: {
+        scripts: {
+          preRequest: {
+            mode: 'inline';
+            sourceCode: string;
+          };
+        };
+      };
+    };
+
+    expect(savePayload.request.scripts.preRequest.mode).toBe('inline');
+    expect(savePayload.request.scripts.preRequest.sourceCode).toBe(latestPreRequestSource);
+  });
+
   it('copies only stage-compatible saved scripts into the active script editor stage', async () => {
     const user = userEvent.setup();
 
@@ -322,6 +412,7 @@ describe('Request builder save/run wiring', () => {
     expect(screen.queryByLabelText('Pre-request script')).not.toBeInTheDocument();
     expect(screen.getByText('Linked saved script')).toBeInTheDocument();
     expect(screen.getByText('Currently linked to Pre-request trace seed.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Resolved source preview')).toHaveValue("request.headers.set('x-trace-id', 'local-dev-trace');");
 
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
@@ -1190,10 +1281,4 @@ describe('Request builder save/run wiring', () => {
     expect(updatePayload.request.name).toBe('Replay of Create user refined');
   });
 });
-
-
-
-
-
-
 

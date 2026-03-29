@@ -2,7 +2,7 @@
 
 - **Purpose:** Show the live delivery sequence after completed work has been archived out of the default read path.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-26
+- **Last Updated:** 2026-03-27
 - **Related Documents:** `master-task-board.md`, `progress-status.md`, `completed-work-summary.md`, `../prd/overview.md`
 - **Update Rule:** Update when a new bounded task is promoted or when the live verification baseline changes.
 
@@ -37,6 +37,7 @@
 28. `T100` Workspace Degraded Detail Deduplication is archived.
 29. `T101` Explorer Selected-Summary Card Removal is archived.
 30. `T102` Browser-Style One-Line Tab Rail + Horizontal Scroll Conversion is archived.
+31. `T103` Script Editor Modernization (Monaco + Stage Intellisense) is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.

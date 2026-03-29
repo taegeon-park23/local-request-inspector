@@ -594,7 +594,7 @@ export const workspaceRouteMessagesEn = {
           'Loading the stage-aware script editor on demand so Params, Headers, Body, and Auth stay responsive while the heavier authoring path initializes.',
         lazyPathTitle: 'Lazy editor path',
         lazyPathDescription:
-          'This fallback explains the wait: the script editor bundle is loaded only when Scripts is active. Advanced editor assistance remains deferred even though bounded script execution already writes observation summaries elsewhere.',
+          'This fallback explains the wait: the script editor bundle is loaded only when Scripts is active while the rest of request authoring stays responsive.',
       },
     },
     keyValueEditor: {
@@ -671,7 +671,7 @@ export const workspaceRouteMessagesEn = {
             'Keep assertions request-bound instead of coupling them to history or capture detail panels.',
           helperSecond: 'Reusable script templates and shared libraries remain deferred.',
           helperThird:
-            'Editor assistance, Monaco, and richer diagnostics will arrive in later slices.',
+            'Assertion authoring is stage-scoped and bounded to runtime-safe helpers.',
           exampleLabel: 'Typical use',
         },
       },
@@ -708,9 +708,9 @@ export const workspaceRouteMessagesEn = {
         linkedSnapshotHint: 'Linked from snapshot name: {name}',
       },
       footer: {
-        title: 'Deferred in later slices',
+        title: 'Deferred follow-up scope',
         description:
-          'Reusable script management, richer diagnostics, broader capability surfaces, and Monaco or intellisense expansion remain explicitly later-slice work.',
+          'Reusable script management, richer diagnostics, broader capability surfaces, and plugin-style editor extensibility remain explicit follow-up work.',
       },
     },
     resultPanel: {
@@ -1727,7 +1727,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
           '무거운 작성 경로가 초기화되는 동안에도 파라미터·헤더·본문·인증이 반응성을 유지하도록 단계 인식 스크립트 편집기를 필요할 때만 로드합니다.',
         lazyPathTitle: '지연 편집기 경로',
         lazyPathDescription:
-          '이 fallback은 대기 이유를 설명합니다. Scripts가 활성화될 때만 스크립트 편집기 번들을 불러옵니다. 고급 편집 보조 기능은 여전히 유예되어 있지만, 제한된 스크립트 실행은 다른 곳에 관측 요약을 기록합니다.',
+          '이 fallback은 대기 이유를 설명합니다. Scripts가 활성화될 때만 스크립트 편집기 번들을 불러오고, 그동안 다른 요청 작성 입력은 반응성을 유지합니다.',
       },
     },
     keyValueEditor: {
@@ -1805,7 +1805,7 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
           helperSecond:
             '재사용 가능한 스크립트 템플릿과 공유 라이브러리는 아직 유예된 범위입니다.',
           helperThird:
-            '편집기 보조 기능, Monaco, 더 풍부한 진단은 이후 slice에서 들어옵니다.',
+            '단언 작성은 단계 범위에 고정되며 런타임 안전 helper 안에서만 동작합니다.',
           exampleLabel: '사용 예시',
         },
       },
@@ -1842,9 +1842,9 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         linkedSnapshotHint: '연결 당시 이름 스냅샷: {name}',
       },
       footer: {
-        title: '나중 slice에서 처리',
+        title: '후속 범위',
         description:
-          '재사용 가능한 스크립트 관리, 더 풍부한 진단, 더 넓은 capability surface, Monaco나 intellisense 확장은 명시적으로 이후 slice 작업으로 남아 있습니다.',
+          '재사용 가능한 스크립트 관리, 더 풍부한 진단, 더 넓은 capability surface, 플러그인형 편집기 확장은 명시적인 후속 작업으로 남아 있습니다.',
       },
     },
     resultPanel: {

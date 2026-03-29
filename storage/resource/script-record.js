@@ -77,7 +77,7 @@ function getCapabilitySummary(scriptType) {
 }
 
 function getDeferredSummary() {
-  return 'Request-stage attachment, live shared references, and Monaco-class editor expansion remain deferred.';
+  return 'Live shared references, backlinks, and plugin-style editor expansion remain deferred.';
 }
 
 function summarizeTemplateOrigin(templateId) {

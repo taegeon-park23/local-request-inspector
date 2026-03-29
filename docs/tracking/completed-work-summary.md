@@ -2,7 +2,7 @@
 
 - **Purpose:** Retain only compact historical summaries for finished work after completed task and closed tracking docs are pruned.
 - **Created:** 2026-03-24
-- **Last Updated:** 2026-03-26
+- **Last Updated:** 2026-03-27
 - **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `../prd/overview.md`
 - **Update Rule:** When a task becomes `done`, summarize it here, prune its completed task doc, remove closed tracking docs tied only to completed work, and clean stale references from live docs.
 
@@ -111,6 +111,7 @@
 | T100 | Workspace Degraded Detail Deduplication | Added a shared backend-unavailable classifier and deduplicated repeated workspace degraded detail guidance so concurrent transport failures surface one actionable outage message while preserving resource-specific lines for non-transport errors. | Codebase; master-task-board.md; priority-roadmap.md; progress-status.md |
 | T101 | Explorer Selected-Summary Card Removal | Removed redundant selected-item info/summary cards from explorer sidebars (environments/scripts/mocks/captures/history) and removed the workspace explorer selected-path summary line while keeping list filtering/selection workflows unchanged. | Codebase; master-task-board.md; priority-roadmap.md; progress-status.md |
 | T102 | Browser-Style One-Line Tab Rail + Horizontal Scroll Conversion | Reworked the tab shell into a compact browser-style one-line rail with focus-visible horizontal scroll, removed in-rail new-request actions, kept bulk tab actions in a separate toolbar, and added left pin icons for preview/pinned tabs (request/collection/group/batch tabs) with localized pinned-state labels. | Codebase; master-task-board.md; priority-roadmap.md; progress-status.md |
+| T103 | Script Editor Modernization (Monaco + Stage Intellisense) | Added a shared Monaco-backed script editor for Request Builder and `/scripts`, introduced stage-aware completion/declaration profiles plus forbidden-token warning markers, rendered linked script sources in read-only editor preview mode, and wired script-input flush registration so Save/Run payloads always capture the latest staged text. | Codebase; master-task-board.md; priority-roadmap.md; progress-status.md |
 
 ## Closed Tracking Decisions
 | Deleted Doc | Final Conclusion | Remaining Canonical Docs |

@@ -2399,6 +2399,41 @@ body {
   text-transform: uppercase;
 }
 
+.script-code-editor {
+  border: 1px solid rgba(155, 209, 255, 0.18);
+  border-radius: var(--m3-shape-l);
+  overflow: hidden;
+  background: var(--m3-color-surface-container-lowest);
+  min-height: 19rem;
+}
+
+.script-code-editor:focus-within {
+  border-color: rgba(155, 209, 255, 0.34);
+  box-shadow: 0 0 0 1px rgba(155, 209, 255, 0.1);
+}
+
+.script-code-editor--readonly {
+  min-height: 11rem;
+}
+
+.script-code-editor .monaco-editor,
+.script-code-editor .overflow-guard {
+  border-radius: inherit;
+}
+
+.script-code-editor__fallback {
+  width: 100%;
+  min-height: inherit;
+  border: 0;
+  resize: vertical;
+  font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--m3-color-on-surface);
+  background: transparent;
+  padding: var(--m3-space-3);
+}
+
 .request-script-example pre,
 .history-preview-block,
 .capture-summary-card pre,
