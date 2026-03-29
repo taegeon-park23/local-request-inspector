@@ -1,7 +1,7 @@
 # Master Task Board
 - **Purpose:** Provide the canonical live execution status for work that is still operationally relevant.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-29
+- **Last Updated:** 2026-03-30
 - **Related Documents:** `priority-roadmap.md`, `progress-status.md`, `completed-work-summary.md`, `../prd/overview.md`, `../architecture/overview.md`
 - **Update Rule:** Update when an active task is created, completed, blocked, reprioritized, or archived.
 
@@ -19,14 +19,14 @@
 ## Defined Queue
 | ID | Title | Status | Notes |
 | --- | --- | --- | --- |
-| - | No queued bounded task | - | Choose and promote one follow-up slice after `T112`. |
+| - | No queued bounded task | - | Choose and promote one follow-up slice after `T113`. |
 
 ## Current State
 - **Current bounded task:** none.
-- **Most recent archived implementation:** `T112` Script Editor Focus Retention Debug.
+- **Most recent archived implementation:** `T113` Cross-Route Detail Surface Consistency Cleanup.
 - **Dropped task decision:** `T104` UI Capture Evidence Baseline was explicitly dropped by user reprioritization on 2026-03-29; it is no longer treated as a live blocker.
 - **Highest-priority next step:** either run user-managed local `npm.cmd run test:ui` verification or promote one new bounded follow-up slice.
-- **Verification baseline:** Playwright smoke confirmed script-editor focus retention on 2026-03-29, and `npm.cmd run lint`, `npm.cmd run typecheck`, plus `npm.cmd run test:node` passed on 2026-03-29 after the `T112` Monaco loader fix.
+- **Verification baseline:** `npm.cmd run lint`, `npm.cmd run typecheck`, and `npm.cmd run test:node` passed on 2026-03-30 after `T113` cross-route detail-surface hierarchy cleanup. `npm.cmd run test:ui` remains user-managed only.
 - **Closed UI-test rerun policy:** agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - **Codex UI verification lane:** use the Playwright skill workflow against the dev route or built shell when available.
 - **User-managed local verification:** if UI full-suite verification is still needed, instruct the user to run `npm.cmd run test:ui` locally and treat that result as authoritative.

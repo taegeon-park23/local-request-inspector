@@ -772,7 +772,7 @@ export function MocksRoute() {
                 />
               </DetailViewerSection>
 
-              <DetailViewerSection title={t('mocksRoute.detail.summaryCards.evaluation.title')} description={t('mocksRoute.detail.summaryCards.evaluation.description')} className="mocks-summary-card mocks-summary-card--evaluation">
+              <DetailViewerSection title={t('mocksRoute.detail.summaryCards.evaluation.title')} description={t('mocksRoute.detail.summaryCards.evaluation.description')} className="mocks-summary-card mocks-summary-card--evaluation" tone="supporting">
                 <KeyValueMetaList
                   items={[
                     { label: t('mocksRoute.detail.summaryCards.evaluation.labels.matcherSummary'), value: currentPresentation.matcherSummary },
@@ -940,7 +940,7 @@ export function MocksRoute() {
             ) : null}
 
             {activeDetailTab === 'diagnostics' ? (
-              <DetailViewerSection title={t('mocksRoute.detail.diagnostics.title')} description={t('mocksRoute.detail.diagnostics.description')} className="mocks-summary-card mocks-summary-card--diagnostics">
+              <DetailViewerSection title={t('mocksRoute.detail.diagnostics.title')} description={t('mocksRoute.detail.diagnostics.description')} className="mocks-summary-card mocks-summary-card--diagnostics" tone="supporting">
                 <KeyValueMetaList
                   items={[
                     { label: t('mocksRoute.detail.diagnostics.labels.deferredNote'), value: t('mocksRoute.detail.diagnostics.values.deferredNote') },
@@ -975,7 +975,7 @@ export function MocksRoute() {
               </div>
             </header>
 
-            <DetailViewerSection title={t('mocksRoute.contextual.guardrails.title')} description={t('mocksRoute.contextual.guardrails.description')} className="mocks-summary-card mocks-summary-card--guardrails">
+            <DetailViewerSection title={t('mocksRoute.contextual.guardrails.title')} description={t('mocksRoute.contextual.guardrails.description')} className="mocks-summary-card mocks-summary-card--guardrails" tone="supporting">
               <KeyValueMetaList
                 items={[
                   { label: t('mocksRoute.contextual.guardrails.labels.methodSummary'), value: currentPresentation.methodSummary },
@@ -985,7 +985,7 @@ export function MocksRoute() {
               />
             </DetailViewerSection>
 
-            <DetailViewerSection title={t('mocksRoute.contextual.deferred.title')} description={t('mocksRoute.contextual.deferred.description')} className="mocks-summary-card mocks-summary-card--deferred" tone="muted">
+            <DetailViewerSection title={t('mocksRoute.contextual.deferred.title')} description={t('mocksRoute.contextual.deferred.description')} className="mocks-summary-card mocks-summary-card--deferred" tone="supporting">
               <KeyValueMetaList
                 items={[
                   { label: t('mocksRoute.contextual.deferred.labels.persistence'), value: t('mocksRoute.contextual.deferred.values.persistence') },

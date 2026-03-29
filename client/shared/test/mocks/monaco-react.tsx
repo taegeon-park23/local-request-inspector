@@ -1,6 +1,8 @@
 ﻿import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import monaco from 'monaco-editor';
 
+/* eslint-disable react-refresh/only-export-components */
+
 export const loader = {
   config: () => undefined,
 };

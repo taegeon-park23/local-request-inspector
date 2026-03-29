@@ -128,7 +128,7 @@ function renderEnvironmentResolutionSummary(history: HistoryRecord, t: Translate
     <DetailViewerSection
       title={t('historyRoute.resultPanels.executionInfo.environmentResolution.title')}
       description={history.environmentResolutionSummary.summary}
-      tone="muted"
+      tone="supporting"
     >
       <KeyValueMetaList
         items={[
@@ -463,6 +463,7 @@ export function HistoryRoute() {
                 title={t('historyRoute.summaryCards.executionSummary.title')}
                 description={t('historyRoute.summaryCards.executionSummary.description')}
                 className="history-summary-card history-summary-card--execution"
+                tone="supporting"
               >
                 <KeyValueMetaList
                   items={[
@@ -525,12 +526,14 @@ export function HistoryRoute() {
                 <p className="shared-readiness-note">{selectedHistory.responsePreviewPolicy ?? createFallbackResponsePreviewPolicy(selectedHistory, t)}</p>
                 <pre className="history-preview-block">{selectedHistory.bodyPreview}</pre>
                 {persistedExecutionResult ? (
-                  <KeyValueMetaList
-                    items={[
-                      { label: t('historyRoute.resultPanels.response.labels.headersSummary'), value: selectedHistory.headersSummary },
-                      { label: t('historyRoute.resultPanels.response.labels.previewPolicy'), value: persistedExecutionResult.redactionApplied ? 'Redaction applied to persisted result snapshots.' : 'Persisted result snapshot stored without extra redaction flag.' },
-                    ]}
-                  />
+                  <div className="shared-support-block shared-support-block--notes">
+                    <KeyValueMetaList
+                      items={[
+                        { label: t('historyRoute.resultPanels.response.labels.headersSummary'), value: selectedHistory.headersSummary },
+                        { label: t('historyRoute.resultPanels.response.labels.previewPolicy'), value: persistedExecutionResult.redactionApplied ? 'Redaction applied to persisted result snapshots.' : 'Persisted result snapshot stored without extra redaction flag.' },
+                      ]}
+                    />
+                  </div>
                 ) : null}
               </DetailViewerSection>
             ) : null}
@@ -594,13 +597,15 @@ export function HistoryRoute() {
                   />
                 )}
                 {persistedTestResults.length > 0 ? (
-                  <ul className="history-preview-list" aria-label="Persisted test result details">
-                    {persistedTestResults.map((result) => (
-                      <li key={result.id}>
-                        <strong>{result.testName}</strong>: {result.status} - {result.message ?? 'No persisted detail message.'}
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="shared-support-block shared-support-block--notes">
+                    <ul className="history-preview-list" aria-label="Persisted test result details">
+                      {persistedTestResults.map((result) => (
+                        <li key={result.id}>
+                          <strong>{result.testName}</strong>: {result.status} - {result.message ?? 'No persisted detail message.'}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ) : null}
               </DetailViewerSection>
             ) : null}
@@ -628,21 +633,25 @@ export function HistoryRoute() {
                 />
                 {renderEnvironmentResolutionSummary(selectedHistory, t)}
                 {selectedStageSummaries.length > 0 ? (
-                  <ul className="history-preview-list" aria-label={t('historyRoute.resultPanels.executionInfo.stageSummaryAriaLabel')}>
-                    {selectedStageSummaries.map((summary) => (
-                      <li key={`${selectedHistory.executionId}-${summary.stageId}`}>
-                        <strong>{summary.label}</strong>: {summary.status} - {summary.summary}
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="shared-support-block">
+                    <ul className="history-preview-list" aria-label={t('historyRoute.resultPanels.executionInfo.stageSummaryAriaLabel')}>
+                      {selectedStageSummaries.map((summary) => (
+                        <li key={`${selectedHistory.executionId}-${summary.stageId}`}>
+                          <strong>{summary.label}</strong>: {summary.status} - {summary.summary}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ) : null}
                 {persistedExecutionResult ? (
-                  <KeyValueMetaList
-                    items={[
-                      { label: t('historyRoute.resultPanels.executionInfo.labels.errorCode'), value: selectedHistory.errorCode ?? t('historyRoute.resultPanels.executionInfo.noExecutionErrorCode') },
-                      { label: t('historyRoute.resultPanels.response.labels.previewPolicy'), value: persistedExecutionResult.responseBodyRedacted ? 'Response preview stayed redacted in runtime persistence.' : 'Response preview stored without body redaction flag.' },
-                    ]}
-                  />
+                  <div className="shared-support-block shared-support-block--notes">
+                    <KeyValueMetaList
+                      items={[
+                        { label: t('historyRoute.resultPanels.executionInfo.labels.errorCode'), value: selectedHistory.errorCode ?? t('historyRoute.resultPanels.executionInfo.noExecutionErrorCode') },
+                        { label: t('historyRoute.resultPanels.response.labels.previewPolicy'), value: persistedExecutionResult.responseBodyRedacted ? 'Response preview stayed redacted in runtime persistence.' : 'Response preview stored without body redaction flag.' },
+                      ]}
+                    />
+                  </div>
                 ) : null}
               </DetailViewerSection>
             ) : null}
@@ -681,7 +690,7 @@ export function HistoryRoute() {
               <ol className="history-timeline" aria-label={t('historyRoute.timelinePanel.timelineSummary.ariaLabel')}>
                 {selectedHistory.timelineEntries.map((entry) => (
                   <li key={entry.id} className="history-timeline__item">
-                    <DetailViewerSection title={entry.title} description={entry.summary} tone="muted" className="history-timeline__entry" />
+                    <DetailViewerSection title={entry.title} description={entry.summary} tone="supporting" className="history-timeline__entry" />
                   </li>
                 ))}
               </ol>
@@ -691,7 +700,7 @@ export function HistoryRoute() {
               title={t('historyRoute.timelinePanel.deferred.title')}
               description={t('historyRoute.timelinePanel.deferred.description')}
               className="history-summary-card history-summary-card--deferred"
-              tone="muted"
+              tone="supporting"
             >
               <KeyValueMetaList
                 items={[

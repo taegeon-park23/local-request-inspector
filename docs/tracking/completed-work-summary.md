@@ -2,7 +2,7 @@
 
 - **Purpose:** Retain only compact historical summaries for finished work after completed task and closed tracking docs are pruned.
 - **Created:** 2026-03-24
-- **Last Updated:** 2026-03-29
+- **Last Updated:** 2026-03-30
 - **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `progress-status.md`, `../prd/overview.md`
 - **Update Rule:** When a task becomes `done`, summarize it here, prune its completed task doc, remove closed tracking docs tied only to completed work, and clean stale references from live docs.
 
@@ -121,6 +121,7 @@
 | T110 | Detail And Context Density Follow-Up | Rebalanced workspace detail/context hierarchy so inheritance and container-run secondary content render as lighter supporting sections, tightened request and batch result panel preview density with supporting subsections plus support blocks instead of equal-weight nested cards, and added focused component coverage for the new context/detail structure while keeping Codex verification on `lint`, `typecheck`, and `test:node` without reopening the `test:ui` lane. | Codebase; completed-work-summary.md; progress-status.md |
 | T111 | Script Surface Focus And Badge Containment | Rebalanced the request scripts surface so the guidance column no longer stretches into excessive whitespace, stabilized inline script editor focus across debounced draft-sync flushes by keeping local inline content authoritative while focused, contained observation header badges within the detail-panel width, and added focused editor/result-panel coverage plus static-shape updates while keeping Codex verification on `lint`, `typecheck`, and `test:node` without reopening the `test:ui` lane. | Codebase; completed-work-summary.md; progress-status.md |
 | T112 | Script Editor Focus Retention Debug | Bound `@monaco-editor/react` to the local Monaco runtime so request-scripts editors stop mixing loader instances, eliminated the worker/request-handler console errors that broke post-click editing, confirmed with Playwright that `사전 요청` and `테스트` editors retain focus and accept typing, and added focused loader wiring coverage while keeping Codex verification on Playwright smoke plus `lint`, `typecheck`, and `test:node` without reopening the `test:ui` lane. | Codebase; completed-work-summary.md; progress-status.md |
+| T113 | Cross-Route Detail Surface Consistency Cleanup | Aligned captures, history, and mock-rule detail surfaces to the shared primary/supporting section hierarchy, moved secondary persisted notes into supporting sections or bounded support blocks, kept observation and management color treatment consistent by route, and updated focused route coverage while keeping Codex verification on `lint`, `typecheck`, and `test:node` without reopening the `test:ui` lane. | Codebase; completed-work-summary.md; progress-status.md |
 
 ## Closed Tracking Decisions
 | Deleted Doc | Final Conclusion | Remaining Canonical Docs |

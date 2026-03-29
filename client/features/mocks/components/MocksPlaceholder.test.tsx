@@ -255,6 +255,7 @@ function createMockRulesFetch(initialRules = defaultMockRuleFixtureRecords) {
 
 describe('Mocks S16 persisted CRUD surface', () => {
   it('renders persisted mock rules without collapsing rule state into mock outcome family', async () => {
+    const user = userEvent.setup();
     const firstRule = {
       ...cloneRule(defaultMockRuleFixtureRecords[0]!),
       priority: 90,
@@ -286,6 +287,12 @@ describe('Mocks S16 persisted CRUD surface', () => {
     expect(within(mocksHeaderBadges as HTMLElement).queryByText('Fixed delay: 250 ms')).not.toBeInTheDocument();
     expect(screen.getAllByText('Enabled', { selector: '[data-kind="neutral"]' }).length).toBeGreaterThan(0);
     expect(screen.queryByText('Mocked', { selector: '[data-kind="mockOutcome"]' })).not.toBeInTheDocument();
+    expect(document.querySelector('.mocks-summary-card--evaluation.shared-detail-viewer-section--supporting')).not.toBeNull();
+    expect(document.querySelector('.workspace-detail-panel .mocks-summary-card--guardrails.shared-detail-viewer-section--supporting')).not.toBeNull();
+    expect(document.querySelector('.workspace-detail-panel .mocks-summary-card--deferred.shared-detail-viewer-section--supporting')).not.toBeNull();
+
+    await user.click(screen.getByRole('tab', { name: 'Diagnostics' }));
+    expect(document.querySelector('.mocks-summary-card--diagnostics.shared-detail-viewer-section--supporting')).not.toBeNull();
   });
 
   it('renders localized mock-management copy when the initial locale is Korean', async () => {

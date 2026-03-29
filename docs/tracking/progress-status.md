@@ -2,11 +2,12 @@
 
 - **Purpose:** Provide a compact live snapshot without requiring contributors to read archived task history by default.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-29
+- **Last Updated:** 2026-03-30
 - **Related Documents:** `master-task-board.md`, `priority-roadmap.md`, `completed-work-summary.md`, `../prd/overview.md`
 - **Update Rule:** Update after each active-task status change or verification-state change.
 
 ## Current Snapshot
+- `T113` is archived after aligning capture, history, and mock-rule detail surfaces around the shared supporting-tier grammar: secondary persistence/outcome/timeline notes now render as supporting `DetailViewerSection`s, persisted response/test/execution metadata uses bounded support blocks, and observation vs management color treatment stays consistent with the route role without reopening layout or breakpoint work.
 - `T112` is archived after binding `@monaco-editor/react` to the local `monaco-editor` instance inside the shared script Monaco setup, eliminating the runtime mismatch that broke worker requests and caused the request-scripts editor to drop usability after click. Playwright smoke on 2026-03-29 confirmed that both `사전 요청` and `테스트` stages keep textarea focus after click and brief idle time, and normal typing now updates Monaco content without console errors.
 - `T111` is archived after rebalancing the request-scripts two-column layout so the guidance card no longer stretches into excessive blank space, stabilizing inline Monaco editor focus across debounced draft sync flushes, containing observation header badges within the detail-panel width, and adding focused editor/result-panel coverage plus static-shape guard updates for the new containment hook.
 - `T110` is archived after rebalancing workspace detail/context hierarchy so inheritance and container-run secondary content render as lighter supporting sections, tightening request and batch result panel preview density with support blocks instead of equal-weight nested cards, and adding focused component coverage for the new detail/context structure.
@@ -25,10 +26,11 @@
 - `T097` is archived after expanding runner inputs (selection/order/environment/iteration/data-file), wiring run-history visibility, and aligning collection/request-group batch payload composition with CLI-friendly server run contracts.
 
 ## Verification
+- Focused captures/history/mocks route coverage was updated for supporting-section markers on 2026-03-30.
 - Playwright smoke confirmed script-editor focus retention plus typing on 2026-03-29.
-- `npm.cmd run lint` passed on 2026-03-29.
-- `npm.cmd run typecheck` passed on 2026-03-29.
-- `npm.cmd run test:node` passed on 2026-03-29.
+- `npm.cmd run lint` passed on 2026-03-30.
+- `npm.cmd run typecheck` passed on 2026-03-30.
+- `npm.cmd run test:node` passed on 2026-03-30.
 - Agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - If UI full-suite verification is needed, instruct the user to run `npm.cmd run test:ui` locally and treat that result as authoritative.
 

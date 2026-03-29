@@ -56,6 +56,7 @@ const connectedAdapterFactory = () =>
 
 describe('Captures S18 fidelity refinement', () => {
   it('renders persisted captures from the query seam and preserves mock outcome family detail', async () => {
+    const user = userEvent.setup();
     const firstCapture = {
       ...defaultCaptureFixtureRecords[0]!,
       bodyHint: 'Stripe webhook payload snapshot with an intentionally long body hint that should stay visible inside compact observer cards.',
@@ -127,6 +128,11 @@ describe('Captures S18 fidelity refinement', () => {
     expect(within(capturesHeaderBadges as HTMLElement).queryByText(firstCapture.scopeLabel)).not.toBeInTheDocument();
 
     await waitFor(() => expect(document.querySelector('.capture-timeline__item > .capture-timeline__entry.shared-detail-viewer-section')).not.toBeNull());
+    expect(document.querySelector('.capture-summary-card--storage.shared-detail-viewer-section--supporting')).not.toBeNull();
+    expect(document.querySelector('.capture-summary-card--outcome.shared-detail-viewer-section--supporting')).not.toBeNull();
+    expect(document.querySelector('.capture-timeline__entry.shared-detail-viewer-section--supporting')).not.toBeNull();
+    await user.click(screen.getByRole('tab', { name: 'Deferred detail' }));
+    expect(document.querySelector('.capture-summary-card--deferred.shared-detail-viewer-section--supporting')).not.toBeNull();
     expect(screen.getAllByText('Mocked', { selector: '[data-kind="mockOutcome"]' }).length).toBeGreaterThan(0);
     expect(screen.queryByText('Succeeded', { selector: '[data-kind="executionOutcome"]' })).not.toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([input]) => getUrl(input as RequestInfo | URL) === '/api/captured-requests')).toBe(true);

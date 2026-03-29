@@ -194,6 +194,9 @@ describe('History S18 fidelity refinement', () => {
     expect(within(historyHeaderBadges as HTMLElement).queryByText('All tests passed')).not.toBeInTheDocument();
 
     await waitFor(() => expect(document.querySelector('.history-timeline__item > .history-timeline__entry.shared-detail-viewer-section')).not.toBeNull());
+    expect(document.querySelector('.history-summary-card--execution.shared-detail-viewer-section--supporting')).not.toBeNull();
+    expect(document.querySelector('.history-timeline__entry.shared-detail-viewer-section--supporting')).not.toBeNull();
+    expect(document.querySelector('.history-summary-card--deferred.shared-detail-viewer-section--supporting')).not.toBeNull();
 
     expect(screen.getAllByText('Succeeded', { selector: '[data-kind="executionOutcome"]' }).length).toBeGreaterThan(0);
     expect(screen.getAllByText('200 OK', { selector: '[data-kind="transportOutcome"]' }).length).toBeGreaterThan(0);
@@ -229,6 +232,8 @@ describe('History S18 fidelity refinement', () => {
     expect(screen.getByText('upstream_503')).toBeInTheDocument();
     expect(screen.getByText('Transport returned a retryable 503 summary.')).toBeInTheDocument();
     expect(screen.getByText('Environment resolution')).toBeInTheDocument();
+    expect(document.querySelector('.history-summary-card--execution-info .shared-detail-viewer-section--supporting')).not.toBeNull();
+    expect(document.querySelectorAll('.history-summary-card--execution-info .shared-support-block')).toHaveLength(2);
     expect(screen.getByText('Resolved 2 environment placeholder(s) in params and headers.')).toBeInTheDocument();
     expect(screen.getByText('Params, Headers')).toBeInTheDocument();
     expect(screen.getByLabelText('Execution stage summary')).toBeInTheDocument();

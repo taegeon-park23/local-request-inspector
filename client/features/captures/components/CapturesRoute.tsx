@@ -408,6 +408,7 @@ export function CapturesRoute() {
                 title={t('capturesRoute.detail.persistenceSummary.title')}
                 description={t('capturesRoute.detail.persistenceSummary.description')}
                 className="capture-summary-card capture-summary-card--storage"
+                tone="supporting"
               >
                 <KeyValueMetaList
                   items={[
@@ -437,6 +438,7 @@ export function CapturesRoute() {
                 title={t('capturesRoute.detail.mockHandling.title')}
                 description={t('capturesRoute.detail.mockHandling.description')}
                 className="capture-summary-card capture-summary-card--outcome"
+                tone="supporting"
               >
                 <p className="captures-meta-label">{t('capturesRoute.detail.mockHandling.outcomeFamilyLabel')}</p>
                 <StatusBadge kind="mockOutcome" value={selectedCapture.mockOutcome} />
@@ -493,7 +495,7 @@ export function CapturesRoute() {
                 <ol className="capture-timeline" aria-label={t('capturesRoute.timelinePanel.timelineSummary.ariaLabel')}>
                   {selectedCapture.timelineEntries.map((entry) => (
                     <li key={entry.id} className="capture-timeline__item">
-                      <DetailViewerSection title={entry.title} description={entry.summary} tone="muted" className="capture-timeline__entry" />
+                      <DetailViewerSection title={entry.title} description={entry.summary} tone="supporting" className="capture-timeline__entry" />
                     </li>
                   ))}
                 </ol>
@@ -503,7 +505,7 @@ export function CapturesRoute() {
                 title={t('capturesRoute.timelinePanel.deferred.title')}
                 description={selectedCapture.responseSummary}
                 className="capture-summary-card capture-summary-card--deferred"
-                tone="muted"
+                tone="supporting"
               >
                 <KeyValueMetaList
                   items={[

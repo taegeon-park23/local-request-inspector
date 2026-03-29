@@ -2,7 +2,7 @@
 
 - **Purpose:** Show the live delivery sequence after completed work has been archived out of the default read path.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-29
+- **Last Updated:** 2026-03-30
 - **Related Documents:** `master-task-board.md`, `progress-status.md`, `completed-work-summary.md`, `../prd/overview.md`
 - **Update Rule:** Update when a new bounded task is promoted or when the live verification baseline changes.
 
@@ -47,6 +47,7 @@
 38. `T110` Detail And Context Density Follow-Up is archived.
 39. `T111` Script Surface Focus And Badge Containment is archived.
 40. `T112` Script Editor Focus Retention Debug is archived.
+41. `T113` Cross-Route Detail Surface Consistency Cleanup is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.
@@ -55,4 +56,4 @@
 - `T104` is dropped; do not treat missing UI capture evidence as a prerequisite for future bounded tasks.
 
 ## Immediate Next Step
-- Run user-managed local `npm.cmd run test:ui` if full-suite UI verification is required, or promote exactly one new bounded follow-up slice before more implementation work starts.
+- Run user-managed local `npm.cmd run test:ui` if broader UI verification is needed, or promote exactly one new bounded follow-up slice before more implementation work starts.
