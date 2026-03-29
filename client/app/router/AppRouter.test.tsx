@@ -175,6 +175,24 @@ describe('AppRouter shell bootstrap', () => {
     assertFocusedOverlayChrome();
   });
 
+  it('drops environments and scripts into stacked panel mode earlier at medium widths', async () => {
+    const user = userEvent.setup();
+    setViewportWidth(1100);
+    renderApp(<AppRouter />, { initialEntries: ['/environments'] });
+
+    expect(await screen.findByRole('heading', { name: 'Environments' })).toBeInTheDocument();
+    expect(document.querySelector('.shell-route-panels--floating')).toHaveAttribute('data-floating-layout-tier', 'stacked');
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('tab', { name: 'Surface' })).toHaveAttribute('aria-selected', 'true');
+
+    await user.click(screen.getByRole('link', { name: /scripts/i }));
+
+    expect(await screen.findByRole('heading', { name: 'Scripts' })).toBeInTheDocument();
+    expect(document.querySelector('.shell-route-panels--floating')).toHaveAttribute('data-floating-layout-tier', 'stacked');
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('tab', { name: 'Surface' })).toHaveAttribute('aria-selected', 'true');
+  });
+
   it('collapses the navigation rail without losing accessible route names', async () => {
     renderApp(<AppRouter />);
 

@@ -178,6 +178,8 @@ export function ScriptsRoute() {
       layoutMode="floating-explorer"
       floatingExplorerRouteKey="scripts"
       floatingExplorerVariant="focused-overlay"
+      floatingBalancedMinWidth={1200}
+      collapseFloatingExplorerOnStacked
       defaultActiveTab="explorer"
       activeTab={activePanel}
       onActiveTabChange={(panel) => setRouteActivePanel('scripts', panel)}

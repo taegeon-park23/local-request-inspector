@@ -52,6 +52,7 @@
 43. `T115` Management Detail Consistency Follow-Up is archived.
 44. `T116` Settings Detail Consistency Follow-Up is archived.
 45. `T117` Management Row Readability Follow-Up is archived.
+46. `T118` Narrow-Width Management Surface Polish is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.
@@ -60,4 +61,5 @@
 - `T104` is dropped; do not treat missing UI capture evidence as a prerequisite for future bounded tasks.
 
 ## Immediate Next Step
-- Run user-managed local `npm.cmd run test:ui` plus key width-based manual verification if broader UI confidence is needed, or define exactly one new bounded task before starting more implementation work.
+- Run user-managed local `npm.cmd run test:ui` plus medium-width manual verification if broader UI confidence is needed, or define exactly one new bounded task before starting more implementation work.
+

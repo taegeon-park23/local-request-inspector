@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
 import {
   useShellStore,
@@ -21,6 +21,8 @@ interface RoutePanelTabsLayoutProps {
   layoutMode?: RoutePanelLayoutMode;
   floatingExplorerRouteKey?: FloatingExplorerRouteKey;
   floatingExplorerVariant?: FloatingExplorerVariant;
+  floatingBalancedMinWidth?: number;
+  collapseFloatingExplorerOnStacked?: boolean;
   defaultActiveTab?: RoutePanelTabId;
   activeTab?: RoutePanelTabId;
   onActiveTabChange?: (tab: RoutePanelTabId) => void;
@@ -35,7 +37,9 @@ const routePanelTabIcons: Record<RoutePanelTabId, AppIconName> = {
 const FLOATING_LAYOUT_WIDE_MIN_WIDTH = 1360;
 const FLOATING_LAYOUT_BALANCED_MIN_WIDTH = 1100;
 
-function readFloatingLayoutTier(): FloatingLayoutTier {
+function readFloatingLayoutTier(
+  balancedMinWidth = FLOATING_LAYOUT_BALANCED_MIN_WIDTH,
+): FloatingLayoutTier {
   if (typeof window === 'undefined') {
     return 'wide';
   }
@@ -46,7 +50,7 @@ function readFloatingLayoutTier(): FloatingLayoutTier {
     return 'wide';
   }
 
-  if (width >= FLOATING_LAYOUT_BALANCED_MIN_WIDTH) {
+  if (width >= balancedMinWidth) {
     return 'balanced';
   }
 
@@ -68,6 +72,8 @@ export function RoutePanelTabsLayout({
   layoutMode = 'tabs',
   floatingExplorerRouteKey,
   floatingExplorerVariant = 'default',
+  floatingBalancedMinWidth = FLOATING_LAYOUT_BALANCED_MIN_WIDTH,
+  collapseFloatingExplorerOnStacked = false,
   defaultActiveTab = 'main',
   activeTab: controlledActiveTab,
   onActiveTabChange,
@@ -82,7 +88,8 @@ export function RoutePanelTabsLayout({
   const setFloatingExplorerOpen = useShellStore((state) => state.setFloatingExplorerOpen);
   const setDetailPanelExpanded = useShellStore((state) => state.setDetailPanelExpanded);
   const [uncontrolledActiveTab, setUncontrolledActiveTab] = useState<RoutePanelTabId>(defaultActiveTab);
-  const [floatingLayoutTier, setFloatingLayoutTier] = useState<FloatingLayoutTier>(() => readFloatingLayoutTier());
+  const [floatingLayoutTier, setFloatingLayoutTier] = useState<FloatingLayoutTier>(() => readFloatingLayoutTier(floatingBalancedMinWidth));
+  const hasAutoCollapsedFloatingExplorerRef = useRef(false);
   const activeTab = controlledActiveTab ?? uncontrolledActiveTab;
 
   useEffect(() => {
@@ -91,7 +98,7 @@ export function RoutePanelTabsLayout({
     }
 
     const handleResize = () => {
-      setFloatingLayoutTier(readFloatingLayoutTier());
+      setFloatingLayoutTier(readFloatingLayoutTier(floatingBalancedMinWidth));
     };
 
     handleResize();
@@ -100,7 +107,30 @@ export function RoutePanelTabsLayout({
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-  }, [layoutMode]);
+  }, [floatingBalancedMinWidth, layoutMode]);
+
+  useEffect(() => {
+    if (layoutMode !== 'floating-explorer' || !floatingExplorerRouteKey || !collapseFloatingExplorerOnStacked) {
+      return;
+    }
+
+    if (floatingLayoutTier !== 'stacked') {
+      hasAutoCollapsedFloatingExplorerRef.current = false;
+      return;
+    }
+
+    if (floatingExplorerOpen && !hasAutoCollapsedFloatingExplorerRef.current) {
+      setFloatingExplorerOpen(floatingExplorerRouteKey, false);
+      hasAutoCollapsedFloatingExplorerRef.current = true;
+    }
+  }, [
+    collapseFloatingExplorerOnStacked,
+    floatingExplorerOpen,
+    floatingExplorerRouteKey,
+    floatingLayoutTier,
+    layoutMode,
+    setFloatingExplorerOpen,
+  ]);
 
   const handleActiveTabChange = (tab: RoutePanelTabId) => {
     if (controlledActiveTab === undefined) {

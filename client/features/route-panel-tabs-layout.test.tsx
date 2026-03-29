@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { RoutePanelTabsLayout } from '@client/features/route-panel-tabs-layout';
 import { resetShellStore } from '@client/app/providers/shell-store';
 import { renderApp } from '@client/shared/test/render-app';
+import type { ComponentProps } from 'react';
 
 const originalWindowInnerWidth = window.innerWidth;
 
@@ -17,7 +18,7 @@ function setViewportWidth(width: number) {
   window.dispatchEvent(new Event('resize'));
 }
 
-function renderFloatingLayout() {
+function renderFloatingLayout(overrides: Partial<ComponentProps<typeof RoutePanelTabsLayout>> = {}) {
   return renderApp(
     <RoutePanelTabsLayout
       layoutMode="floating-explorer"
@@ -27,6 +28,7 @@ function renderFloatingLayout() {
       explorer={<section className="shell-panel" aria-label="Section explorer"><p>Explorer pane</p></section>}
       main={<section className="shell-panel" aria-label="Main work surface"><p>Main pane</p></section>}
       detail={<aside className="shell-panel" aria-label="Contextual detail panel"><p>Detail pane</p></aside>}
+      {...overrides}
     />,
   );
 }
@@ -89,6 +91,25 @@ describe('RoutePanelTabsLayout', () => {
     await user.click(screen.getByRole('button', { name: 'Collapse explorer' }));
     expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
     expect(document.querySelector('.shell-route-panels__floating-scrim--hidden')).not.toBeNull();
+  });
+
+  it('supports route-local medium breakpoints and auto-collapses the explorer once when entering stacked mode', async () => {
+    const user = userEvent.setup();
+    setViewportWidth(1100);
+    renderFloatingLayout({
+      floatingBalancedMinWidth: 1200,
+      collapseFloatingExplorerOnStacked: true,
+    });
+
+    const floatingRoot = document.querySelector('.shell-route-panels--floating');
+    expect(floatingRoot).toHaveAttribute('data-floating-layout-tier', 'stacked');
+    expect(screen.getByRole('button', { name: 'Expand explorer' })).toHaveAttribute('aria-expanded', 'false');
+    expect(document.querySelector('.shell-route-panels__floating-scrim--visible')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Expand explorer' }));
+
+    expect(screen.getByRole('button', { name: 'Collapse explorer' })).toHaveAttribute('aria-expanded', 'true');
+    expect(document.querySelector('.shell-route-panels__floating-scrim--visible')).not.toBeNull();
   });
 });
 

@@ -215,6 +215,8 @@ export function EnvironmentsRoute() {
       layoutMode="floating-explorer"
       floatingExplorerRouteKey="environments"
       floatingExplorerVariant="focused-overlay"
+      floatingBalancedMinWidth={1200}
+      collapseFloatingExplorerOnStacked
       defaultActiveTab="explorer"
       activeTab={activePanel}
       onActiveTabChange={(panel) => setRouteActivePanel('environments', panel)}

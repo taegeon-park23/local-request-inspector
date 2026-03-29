@@ -8,6 +8,7 @@
 
 ## Current Snapshot
 - No bounded task is currently active. The next implementation step must start from one newly promoted task, while broader UI verification remains user-managed unless a new bounded slice is explicitly defined.
+- `T118` is archived after adding a route-local medium-width guard for environments and scripts so those focused-overlay routes enter stacked surface/detail tabs earlier, auto-collapse the explorer once on stacked entry, and keep management surfaces readable at `1100px` without reopening the broader route-panel architecture.
 - `T117` is archived after restructuring environment variable editing rows into clearer primary/secondary/content regions, moving secret replacement controls into an explicit support editor block, clamping long environments/scripts explorer support lines, tightening script template copy/preview readability, and updating focused environments/scripts route coverage for the new row/readability markers.
 - `T116` is archived after aligning settings copy/detail surfaces with the shared support-block grammar: command/path copy cards now render copied values inside bounded preview blocks, preference helper content and secret-policy notes use support blocks, and settings sidebar/detail sections now read as explicit supporting-tier surfaces with focused route coverage.
 - `T115` is archived after aligning environments and scripts management/detail surfaces with the shared support-block grammar: management cards now keep actions in shared action bars, readiness and mutation feedback render inside bounded support blocks, and secondary summary/guidance/template sections render as explicit supporting-tier detail surfaces with focused route coverage.
@@ -31,6 +32,7 @@
 - `T097` is archived after expanding runner inputs (selection/order/environment/iteration/data-file), wiring run-history visibility, and aligning collection/request-group batch payload composition with CLI-friendly server run contracts.
 
 ## Verification
+- Playwright smoke confirmed `/environments` and `/scripts` switch to stacked route-panel tabs with the explorer collapsed at `1100px` on 2026-03-30.
 - Focused environments/scripts route coverage was updated for management-row/readability markers on 2026-03-30.
 - Focused settings route coverage was updated for support-block and supporting-section markers on 2026-03-30.
 - Focused environments/scripts route coverage was updated for management/detail support-block markers on 2026-03-30.
@@ -48,3 +50,4 @@
 2. Read `master-task-board.md` and `priority-roadmap.md`.
 3. Read `completed-work-summary.md` only when archived context is needed.
 4. Promote exactly one new bounded task before starting implementation.
+
