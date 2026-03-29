@@ -1702,6 +1702,8 @@ export function WorkspaceRoute() {
       layoutMode="floating-explorer"
       floatingExplorerRouteKey="workspace"
       floatingExplorerVariant="focused-overlay"
+      floatingBalancedMinWidth={1200}
+      collapseFloatingExplorerOnStacked
       defaultActiveTab="main"
       activeTab={workspaceActivePanel}
       onActiveTabChange={(panel) => setWorkspaceActivePanel('workspace', panel)}

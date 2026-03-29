@@ -53,6 +53,7 @@
 44. `T116` Settings Detail Consistency Follow-Up is archived.
 45. `T117` Management Row Readability Follow-Up is archived.
 46. `T118` Narrow-Width Management Surface Polish is archived.
+47. `T119` Workspace Medium-Width Follow-Up is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.
