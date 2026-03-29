@@ -291,6 +291,9 @@ describe('Mocks S16 persisted CRUD surface', () => {
     expect(document.querySelector('.workspace-detail-panel .mocks-summary-card--guardrails.shared-detail-viewer-section--supporting')).not.toBeNull();
     expect(document.querySelector('.workspace-detail-panel .mocks-summary-card--deferred.shared-detail-viewer-section--supporting')).not.toBeNull();
 
+    await user.click(screen.getByRole('tab', { name: 'Response' }));
+    expect(document.querySelector('.mocks-summary-card--response .shared-support-block--preview .mocks-preview-block')).not.toBeNull();
+
     await user.click(screen.getByRole('tab', { name: 'Diagnostics' }));
     expect(document.querySelector('.mocks-summary-card--diagnostics.shared-detail-viewer-section--supporting')).not.toBeNull();
   });

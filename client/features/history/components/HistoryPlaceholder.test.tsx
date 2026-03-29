@@ -197,6 +197,7 @@ describe('History S18 fidelity refinement', () => {
     expect(document.querySelector('.history-summary-card--execution.shared-detail-viewer-section--supporting')).not.toBeNull();
     expect(document.querySelector('.history-timeline__entry.shared-detail-viewer-section--supporting')).not.toBeNull();
     expect(document.querySelector('.history-summary-card--deferred.shared-detail-viewer-section--supporting')).not.toBeNull();
+    expect(document.querySelector('.history-summary-card--response .shared-support-block--preview .history-preview-block')).not.toBeNull();
 
     expect(screen.getAllByText('Succeeded', { selector: '[data-kind="executionOutcome"]' }).length).toBeGreaterThan(0);
     expect(screen.getAllByText('200 OK', { selector: '[data-kind="transportOutcome"]' }).length).toBeGreaterThan(0);
@@ -222,10 +223,12 @@ describe('History S18 fidelity refinement', () => {
     expect(screen.getByRole('heading', { name: 'Console summary' })).toBeInTheDocument();
     expect(screen.getByText('Stored summary')).toBeInTheDocument();
     expect(screen.getByText('[post-response] flagged retry-after guidance')).toBeInTheDocument();
+    expect(document.querySelector('.history-summary-card--console .shared-support-block--preview .history-preview-list')).not.toBeNull();
 
     await user.click(screen.getByRole('tab', { name: 'Tests' }));
     expect(screen.getByRole('heading', { name: 'Tests summary' })).toBeInTheDocument();
     expect(screen.getByText('FAIL service remains healthy')).toBeInTheDocument();
+    expect(document.querySelector('.history-summary-card--tests .shared-support-block--preview .history-preview-list')).not.toBeNull();
 
     await user.click(screen.getByRole('tab', { name: 'Execution Info' }));
     expect(screen.getByRole('heading', { name: 'Execution info' })).toBeInTheDocument();
@@ -234,6 +237,7 @@ describe('History S18 fidelity refinement', () => {
     expect(screen.getByText('Environment resolution')).toBeInTheDocument();
     expect(document.querySelector('.history-summary-card--execution-info .shared-detail-viewer-section--supporting')).not.toBeNull();
     expect(document.querySelectorAll('.history-summary-card--execution-info .shared-support-block')).toHaveLength(2);
+    expect(document.querySelector('.history-summary-card--execution-info .shared-support-block--preview .history-preview-list')).not.toBeNull();
     expect(screen.getByText('Resolved 2 environment placeholder(s) in params and headers.')).toBeInTheDocument();
     expect(screen.getByText('Params, Headers')).toBeInTheDocument();
     expect(screen.getByLabelText('Execution stage summary')).toBeInTheDocument();

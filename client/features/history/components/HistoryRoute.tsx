@@ -524,7 +524,9 @@ export function HistoryRoute() {
                   ]}
                 />
                 <p className="shared-readiness-note">{selectedHistory.responsePreviewPolicy ?? createFallbackResponsePreviewPolicy(selectedHistory, t)}</p>
-                <pre className="history-preview-block">{selectedHistory.bodyPreview}</pre>
+                <div className="shared-support-block shared-support-block--preview">
+                  <pre className="history-preview-block">{selectedHistory.bodyPreview}</pre>
+                </div>
                 {persistedExecutionResult ? (
                   <div className="shared-support-block shared-support-block--notes">
                     <KeyValueMetaList
@@ -553,11 +555,13 @@ export function HistoryRoute() {
                   ]}
                 />
                 {selectedHistory.consolePreview.length > 0 ? (
-                  <ul className="history-preview-list" aria-label={t('historyRoute.resultPanels.console.consolePreviewAriaLabel')}>
-                    {selectedHistory.consolePreview.map((entry) => (
-                      <li key={entry}>{entry}</li>
-                    ))}
-                  </ul>
+                  <div className="shared-support-block shared-support-block--preview">
+                    <ul className="history-preview-list" aria-label={t('historyRoute.resultPanels.console.consolePreviewAriaLabel')}>
+                      {selectedHistory.consolePreview.map((entry) => (
+                        <li key={entry}>{entry}</li>
+                      ))}
+                    </ul>
+                  </div>
                 ) : (
                   <EmptyStateCallout
                     title={t('historyRoute.resultPanels.console.noPersistedSummaryTitle')}
@@ -585,11 +589,13 @@ export function HistoryRoute() {
                   ]}
                 />
                 {selectedHistory.testsPreview.length > 0 ? (
-                  <ul className="history-preview-list" aria-label={t('historyRoute.resultPanels.tests.testsPreviewAriaLabel')}>
-                    {selectedHistory.testsPreview.map((entry) => (
-                      <li key={entry}>{entry}</li>
-                    ))}
-                  </ul>
+                  <div className="shared-support-block shared-support-block--preview">
+                    <ul className="history-preview-list" aria-label={t('historyRoute.resultPanels.tests.testsPreviewAriaLabel')}>
+                      {selectedHistory.testsPreview.map((entry) => (
+                        <li key={entry}>{entry}</li>
+                      ))}
+                    </ul>
+                  </div>
                 ) : (
                   <EmptyStateCallout
                     title={t('historyRoute.resultPanels.tests.noPersistedSummaryTitle')}
@@ -597,7 +603,7 @@ export function HistoryRoute() {
                   />
                 )}
                 {persistedTestResults.length > 0 ? (
-                  <div className="shared-support-block shared-support-block--notes">
+                  <div className="shared-support-block shared-support-block--preview">
                     <ul className="history-preview-list" aria-label="Persisted test result details">
                       {persistedTestResults.map((result) => (
                         <li key={result.id}>
@@ -633,7 +639,7 @@ export function HistoryRoute() {
                 />
                 {renderEnvironmentResolutionSummary(selectedHistory, t)}
                 {selectedStageSummaries.length > 0 ? (
-                  <div className="shared-support-block">
+                  <div className="shared-support-block shared-support-block--preview">
                     <ul className="history-preview-list" aria-label={t('historyRoute.resultPanels.executionInfo.stageSummaryAriaLabel')}>
                       {selectedStageSummaries.map((summary) => (
                         <li key={`${selectedHistory.executionId}-${summary.stageId}`}>

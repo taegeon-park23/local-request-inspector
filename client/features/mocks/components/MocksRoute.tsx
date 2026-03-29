@@ -901,7 +901,9 @@ export function MocksRoute() {
                       <textarea aria-label={t('mocksRoute.detail.response.responseCard.labels.body')} value={draft.responseBody} onChange={(event) => setDraft((current) => ({ ...current, responseBody: event.currentTarget.value }))} />
                     </label>
                   </div>
-                  <pre className="mocks-preview-block">{currentPresentation.responseBodyPreview}</pre>
+                  <div className="shared-support-block shared-support-block--preview">
+                    <pre className="mocks-preview-block">{currentPresentation.responseBodyPreview}</pre>
+                  </div>
                 </DetailViewerSection>
 
                 <DetailViewerSection

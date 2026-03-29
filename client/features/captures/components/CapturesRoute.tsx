@@ -431,7 +431,9 @@ export function CapturesRoute() {
                     { label: t('capturesRoute.detail.bodyPreview.labels.previewPolicy'), value: getCaptureBodyPreviewPolicy(selectedCapture, t) },
                   ]}
                 />
-                <pre>{selectedCapture.bodyPreview}</pre>
+                <div className="shared-support-block shared-support-block--preview">
+                  <pre className="capture-preview-block">{selectedCapture.bodyPreview}</pre>
+                </div>
               </DetailViewerSection>
 
               <DetailViewerSection
@@ -523,7 +525,9 @@ export function CapturesRoute() {
                 {selectedCapture.mockRuleName ? (
                   <p className="shared-readiness-note">{selectedCapture.mockRuleName}</p>
                 ) : null}
-                <pre>{selectedCapture.bodyPreview}</pre>
+                <div className="shared-support-block shared-support-block--preview">
+                  <pre className="capture-preview-block">{selectedCapture.bodyPreview}</pre>
+                </div>
               </DetailViewerSection>
             )}
           </div>

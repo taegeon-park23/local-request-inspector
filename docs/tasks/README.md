@@ -13,6 +13,6 @@
 
 ## Current State
 - Active bounded task doc: none.
-- Keep at most one active task doc in this folder while delivery is in bounded mode.
+- Keep at most one active task doc in this folder while delivery is in bounded mode, and create a new one before the next implementation slice starts.
 
 

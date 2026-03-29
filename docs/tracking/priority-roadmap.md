@@ -48,6 +48,7 @@
 39. `T111` Script Surface Focus And Badge Containment is archived.
 40. `T112` Script Editor Focus Retention Debug is archived.
 41. `T113` Cross-Route Detail Surface Consistency Cleanup is archived.
+42. `T114` Result Content Readability Follow-Up is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.
@@ -56,4 +57,4 @@
 - `T104` is dropped; do not treat missing UI capture evidence as a prerequisite for future bounded tasks.
 
 ## Immediate Next Step
-- Run user-managed local `npm.cmd run test:ui` if broader UI verification is needed, or promote exactly one new bounded follow-up slice before more implementation work starts.
+- No bounded implementation task is active. Run the user-managed local `npm.cmd run test:ui` lane if broader UI verification is needed, or promote exactly one new bounded task before further implementation.
