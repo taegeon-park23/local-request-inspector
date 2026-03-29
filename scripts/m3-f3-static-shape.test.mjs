@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -57,7 +57,7 @@ assertContainsInOrder(
   [
     'function renderHeaderExecutionStatus(',
     '<div className="workspace-detail-panel__header-copy">',
-    '<div className="workspace-detail-panel__header-meta request-work-surface__badges">',
+    '<div className="workspace-detail-panel__header-meta request-work-surface__badges"',
     '{renderHeaderExecutionStatus(t, runStatus, execution)}',
   ],
   'Result panel header should keep the applied M3-F3 execution-status meta cluster',
@@ -117,3 +117,4 @@ for (const className of [
     `material-theme.css should keep the applied selector ".${className}"`,
   );
 }
+

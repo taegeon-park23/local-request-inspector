@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { useI18n } from '@client/app/providers/useI18n';
 import type { RequestRunObservation } from '@client/features/request-builder/request-builder.api';
 import type { RequestTabRecord } from '@client/features/request-builder/request-tab.types';
@@ -427,13 +427,13 @@ export function RequestResultPanel({
             <p className="section-placeholder__eyebrow">{t('workspaceRoute.resultPanel.batch.header.eyebrow')}</p>
             <h2>{batchExecution ? batchExecution.containerName : t('workspaceRoute.resultPanel.batch.header.titleFallback')}</h2>
             <p>{t('workspaceRoute.resultPanel.batch.header.description')}</p>
-            <div className="workspace-detail-panel__header-meta request-work-surface__badges">
+            <div className="workspace-detail-panel__header-meta request-work-surface__badges" data-badge-contained="true">
               <span className="workspace-chip">{batchExecution ? formatBatchContainerLabel(batchExecution, t) : t('workspaceRoute.resultPanel.batch.badges.batchRun')}</span>
               <span className="workspace-chip workspace-chip--secondary">{activeBatchResultTabLabel}</span>
               {renderBatchHeaderExecutionStatus(t, { status: batchRunStatus }, batchExecution)}
             </div>
             {batchLatestBadges.length > 0 ? (
-              <div className="workspace-detail-panel__header-meta request-work-surface__badges" aria-label={t('workspaceRoute.resultPanel.batch.badges.latestAriaLabel')}>
+              <div className="workspace-detail-panel__header-meta request-work-surface__badges" data-badge-contained="true" aria-label={t('workspaceRoute.resultPanel.batch.badges.latestAriaLabel')}>
                 {batchLatestBadges}
               </div>
             ) : null}
@@ -723,7 +723,7 @@ export function RequestResultPanel({
           <p className="section-placeholder__eyebrow">{t('workspaceRoute.resultPanel.header.eyebrow')}</p>
           <h2>{t('workspaceRoute.resultPanel.header.title', { title: activeTab.title })}</h2>
           <p>{t('workspaceRoute.resultPanel.header.description')}</p>
-          <div className="workspace-detail-panel__header-meta request-work-surface__badges">
+          <div className="workspace-detail-panel__header-meta request-work-surface__badges" data-badge-contained="true">
             <span className={activeTab.source === 'replay' ? 'workspace-chip workspace-chip--replay' : 'workspace-chip'}>
               {getTabSourceCopy(activeTab, t)}
             </span>
@@ -731,7 +731,7 @@ export function RequestResultPanel({
             {renderHeaderExecutionStatus(t, runStatus, execution)}
           </div>
           {latestResultBadges.length > 0 ? (
-            <div className="workspace-detail-panel__header-meta request-work-surface__badges" aria-label={t('workspaceRoute.resultPanel.summary.badges.latestAriaLabel')}>
+            <div className="workspace-detail-panel__header-meta request-work-surface__badges" data-badge-contained="true" aria-label={t('workspaceRoute.resultPanel.summary.badges.latestAriaLabel')}>
               {latestResultBadges}
             </div>
           ) : null}
@@ -1095,6 +1095,9 @@ function getRunLaneCopy(
 
   return t('workspaceRoute.resultPanel.summary.values.noExecutionYet');
 }
+
+
+
 
 
 

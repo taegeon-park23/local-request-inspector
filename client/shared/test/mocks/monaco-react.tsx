@@ -1,4 +1,4 @@
-import { useEffect, useMemo, type ReactNode } from 'react';
+﻿import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import monaco from 'monaco-editor';
 
 interface MonacoReactMockProps {
@@ -12,6 +12,7 @@ interface MonacoReactMockProps {
     };
     getValue: () => string;
     onDidBlurEditorText: (callback: () => void) => { dispose: () => void };
+    onDidFocusEditorText: (callback: () => void) => { dispose: () => void };
   }, monacoApi: typeof monaco) => void;
   beforeMount?: (monacoApi: typeof monaco) => void;
   options?: {
@@ -31,6 +32,14 @@ export default function MonacoEditorMock({
   options,
   path,
 }: MonacoReactMockProps) {
+  const valueRef = useRef(value);
+  const blurListenersRef = useRef(new Set<() => void>());
+  const focusListenersRef = useRef(new Set<() => void>());
+
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
+
   const model = useMemo(() => ({
     uri: {
       toString: () => path ?? 'inmemory://script-editor/mock.js',
@@ -43,11 +52,24 @@ export default function MonacoEditorMock({
 
   const editor = useMemo(() => ({
     getModel: () => model,
-    getValue: () => value,
-    onDidBlurEditorText: () => ({
-      dispose: () => undefined,
-    }),
-  }), [model, value]);
+    getValue: () => valueRef.current,
+    onDidBlurEditorText: (callback: () => void) => {
+      blurListenersRef.current.add(callback);
+      return {
+        dispose: () => {
+          blurListenersRef.current.delete(callback);
+        },
+      };
+    },
+    onDidFocusEditorText: (callback: () => void) => {
+      focusListenersRef.current.add(callback);
+      return {
+        dispose: () => {
+          focusListenersRef.current.delete(callback);
+        },
+      };
+    },
+  }), [model]);
 
   useEffect(() => {
     beforeMount?.(monaco);
@@ -58,9 +80,17 @@ export default function MonacoEditorMock({
     <textarea
       aria-label={options?.ariaLabel}
       data-editor-height={height}
+      data-editor-path={path}
       value={value}
       readOnly={Boolean(options?.readOnly)}
       onChange={(event) => onChange?.(event.currentTarget.value)}
+      onFocus={() => {
+        focusListenersRef.current.forEach((listener) => listener());
+      }}
+      onBlur={() => {
+        blurListenersRef.current.forEach((listener) => listener());
+      }}
     />
   );
 }
+

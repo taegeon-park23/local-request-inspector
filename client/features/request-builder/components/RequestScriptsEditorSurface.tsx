@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+﻿import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '@client/app/providers/useI18n';
@@ -192,6 +192,7 @@ export default function RequestScriptsEditorSurface({
   const pendingInlineContentRef = useRef<string | null>(null);
   const pendingInlineStageRef = useRef<RequestScriptStageId | null>(null);
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inlineEditorFocusedRef = useRef(false);
   const [activeInlineContent, setActiveInlineContent] = useState(activeStageContent);
 
   useEffect(() => {
@@ -241,31 +242,36 @@ export default function RequestScriptsEditorSurface({
 
   useEffect(() => {
     if (activeStageBinding.mode !== 'inline') {
+      inlineEditorFocusedRef.current = false;
       clearPendingSyncTimer();
       pendingInlineStageRef.current = null;
       pendingInlineContentRef.current = null;
-      queueMicrotask(() => {
-        setActiveInlineContent(activeStageContent);
-      });
+      if (activeInlineContent !== activeStageContent) {
+        queueMicrotask(() => {
+          setActiveInlineContent((current) => current === activeStageContent ? current : activeStageContent);
+        });
+      }
       return;
     }
 
     const hasPendingForActiveStage = pendingInlineStageRef.current === activeStage
       && pendingInlineContentRef.current !== null;
 
-    if (!hasPendingForActiveStage) {
+    if (!hasPendingForActiveStage && !inlineEditorFocusedRef.current && activeInlineContent !== activeStageContent) {
       queueMicrotask(() => {
-        setActiveInlineContent(activeStageContent);
+        setActiveInlineContent((current) => current === activeStageContent ? current : activeStageContent);
       });
     }
   }, [
     activeStage,
     activeStageBinding.mode,
     activeStageContent,
+    activeInlineContent,
     clearPendingSyncTimer,
   ]);
 
   const handleStageTabChange = useCallback((stage: RequestScriptStageId) => {
+    inlineEditorFocusedRef.current = false;
     flushPendingInlineContent();
     onStageChange(stage);
   }, [flushPendingInlineContent, onStageChange]);
@@ -275,7 +281,12 @@ export default function RequestScriptsEditorSurface({
     queueInlineContentSync(activeStage, nextContent);
   }, [activeStage, queueInlineContentSync]);
 
+  const handleInlineFocus = useCallback(() => {
+    inlineEditorFocusedRef.current = true;
+  }, []);
+
   const handleInlineBlur = useCallback(() => {
+    inlineEditorFocusedRef.current = false;
     flushPendingInlineContent();
   }, [flushPendingInlineContent]);
 
@@ -348,6 +359,7 @@ export default function RequestScriptsEditorSurface({
                 placeholder={activeStageDefinition.exampleSnippet}
                 value={activeInlineContent}
                 onChange={handleInlineContentChange}
+                onFocus={handleInlineFocus}
                 onBlur={handleInlineBlur}
                 stageId={activeStage}
               />
@@ -519,4 +531,7 @@ export default function RequestScriptsEditorSurface({
     </section>
   );
 }
+
+
+
 

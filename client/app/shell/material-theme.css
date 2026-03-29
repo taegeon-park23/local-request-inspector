@@ -1,4 +1,4 @@
-:root,
+﻿:root,
 :root[data-theme="dark"] {
   color-scheme: dark;
   --m3-font-sans: Roboto, "Noto Sans KR", "Segoe UI", system-ui, sans-serif;
@@ -2365,6 +2365,9 @@ body {
   font-size: 0.8rem;
 }
 .request-script-editor__layout {
+  display: grid;
+  grid-template-columns: minmax(17rem, 0.72fr) minmax(0, 1.28fr);
+  align-items: start;
   gap: var(--m3-space-4);
 }
 
@@ -2384,13 +2387,30 @@ body {
 
 .request-script-editor__meta {
   display: grid;
-  gap: var(--m3-space-3);
-  padding: var(--m3-space-3);
+  gap: var(--m3-space-2);
+  padding: var(--m3-space-2) var(--m3-space-3) var(--m3-space-3);
   border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: var(--m3-shape-l);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 12rem),
     var(--m3-color-surface-container-lowest);
+}
+
+.request-script-editor__layout > *,
+.request-script-stage-card,
+.request-script-editor,
+.request-script-footer,
+.request-script-loading {
+  min-width: 0;
+}
+
+.request-script-stage-card,
+.request-script-editor,
+.request-script-footer,
+.request-script-loading {
+  display: grid;
+  gap: var(--m3-space-4);
+  align-content: start;
 }
 
 .request-script-example {
@@ -2655,12 +2675,15 @@ body {
 
 .request-work-surface__badges {
   justify-content: flex-end;
+  min-width: 0;
 }
 
 .workspace-detail-panel .request-work-surface__badges,
 .captures-detail .request-work-surface__badges,
 .history-detail .request-work-surface__badges,
 .mocks-detail .request-work-surface__badges {
+  width: 100%;
+  min-width: 0;
   align-self: flex-start;
   padding: var(--m3-space-2);
   border: 1px solid rgba(255, 255, 255, 0.04);
@@ -3438,11 +3461,13 @@ body {
 }
 
 .request-work-surface__badges .workspace-chip,
+.request-work-surface__badges .shared-status-badge,
 .request-run-outcome-row .shared-status-badge,
 .capture-row__top .shared-status-badge,
 .history-row__top .shared-status-badge,
 .mocks-row__top .shared-status-badge {
   align-self: center;
+  max-width: 100%;
 }
 
 .shared-panel-tabs,
@@ -5444,6 +5469,20 @@ body {
 .management-detail__badge-rail .shared-status-badge,
 .request-run-outcome-row .shared-status-badge {
   align-self: center;
+  min-width: 0;
+}
+
+.workspace-detail-panel__header-meta[data-badge-contained="true"] {
+  overflow: hidden;
+}
+
+.workspace-detail-panel__header-meta--badges > .workspace-chip,
+.workspace-detail-panel__header-meta--badges > .shared-status-badge {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .workspace-detail-panel__header-copy {
@@ -6010,3 +6049,7 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+
+
+

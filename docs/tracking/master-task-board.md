@@ -14,19 +14,19 @@
 ## Active Register
 | ID | Title | Status | Notes |
 | --- | --- | --- | --- |
-| - | No active bounded task | - | `T110` is archived. Promote exactly one new bounded task before resuming implementation. |
+| - | No active bounded task | - | `T111` is archived. Promote exactly one new bounded task before resuming implementation. |
 
 ## Defined Queue
 | ID | Title | Status | Notes |
 | --- | --- | --- | --- |
-| - | No queued bounded task | - | Choose and promote one follow-up slice after `T110`. |
+| - | No queued bounded task | - | Choose and promote one follow-up slice after `T111`. |
 
 ## Current State
-- **Current bounded task:** None (`idle` after archiving `T110`).
-- **Most recent archived implementation:** `T110` Detail And Context Density Follow-Up.
+- **Current bounded task:** None (`idle` after archiving `T111`).
+- **Most recent archived implementation:** `T111` Script Surface Focus And Badge Containment.
 - **Dropped task decision:** `T104` UI Capture Evidence Baseline was explicitly dropped by user reprioritization on 2026-03-29; it is no longer treated as a live blocker.
-- **Highest-priority next step:** promote exactly one follow-up bounded task; user-managed local UI verification or a new workspace polish slice should be explicitly chosen after `T110`.
-- **Verification baseline:** `npm.cmd run lint`, `npm.cmd run typecheck`, and `npm.cmd run test:node` passed on 2026-03-29 after `T110` detail/context density follow-up.
+- **Highest-priority next step:** promote exactly one follow-up bounded task after `T111`, or direct the user to the local UI verification lane if visual confirmation is the immediate priority.
+- **Verification baseline:** `npm.cmd run lint`, `npm.cmd run typecheck`, and `npm.cmd run test:node` passed on 2026-03-29 after `T111` script/editor and observation badge fixes.
 - **Closed UI-test rerun policy:** agents must not rerun `npm.cmd run test:ui` or `npm run test:ui` from Codex.
 - **Codex UI verification lane:** use the Playwright skill workflow against the dev route or built shell when available.
 - **User-managed local verification:** if UI full-suite verification is still needed, instruct the user to run `npm.cmd run test:ui` locally and treat that result as authoritative.

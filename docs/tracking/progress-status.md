@@ -7,6 +7,7 @@
 - **Update Rule:** Update after each active-task status change or verification-state change.
 
 ## Current Snapshot
+- `T111` is archived after rebalancing the request-scripts two-column layout so the guidance card no longer stretches into excessive blank space, stabilizing inline Monaco editor focus across debounced draft sync flushes, containing observation header badges within the detail-panel width, and adding focused editor/result-panel coverage plus static-shape guard updates for the new containment hook.
 - `T110` is archived after rebalancing workspace detail/context hierarchy so inheritance and container-run secondary content render as lighter supporting sections, tightening request and batch result panel preview density with support blocks instead of equal-weight nested cards, and adding focused component coverage for the new detail/context structure.
 - `T109` is archived after introducing explicit shared scroll-owner wrappers for explorer/main/detail panes, moving route-panel vertical overflow containment off direct `.shell-panel` selectors, containing tab-rail horizontal overscroll, and updating shared shell tests to target the new pane scroll-owner contract.
 - `T108` is archived after promoting the workspace runner into a contextual run surface with dedicated configuration/request-selection tiers, moving the contextual `Run Selected` action into that panel, recasting the saved-resource manager as a lighter companion management surface, and adding focused component coverage for the runner plus updated manager structure.

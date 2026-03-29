@@ -45,6 +45,7 @@
 36. `T108` Runner And Resource-Manager Surface Tier Cleanup is archived.
 37. `T109` Scroll Owner And Overflow Normalization is archived.
 38. `T110` Detail And Context Density Follow-Up is archived.
+39. `T111` Script Surface Focus And Badge Containment is archived.
 
 ## Current Sequencing Rules
 - Do not reopen archived completed task docs.
@@ -53,4 +54,4 @@
 - `T104` is dropped; do not treat missing UI capture evidence as a prerequisite for future bounded tasks.
 
 ## Immediate Next Step
-- Promote exactly one follow-up bounded task after `T110`; user-managed local UI verification or a newly defined workspace polish slice should be chosen explicitly.
+- Promote exactly one follow-up bounded task after `T111`, or route the next pass through user-managed local UI verification if visual confirmation is now the priority.

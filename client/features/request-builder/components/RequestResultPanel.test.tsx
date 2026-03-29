@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+﻿import { afterEach, describe, expect, it } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RequestResultPanel } from '@client/features/request-builder/components/RequestResultPanel';
@@ -190,6 +190,7 @@ describe('RequestResultPanel request mode', () => {
     expect(document.querySelectorAll('.workspace-detail-panel .shared-detail-viewer-section--supporting')).toHaveLength(2);
     expect(document.querySelectorAll('.workspace-detail-panel__support-block')).toHaveLength(2);
     expect(screen.getByTestId('request-response-preview')).toBeInTheDocument();
+    expect(document.querySelectorAll('.workspace-detail-panel__header-meta[data-badge-contained=true]').length).toBeGreaterThanOrEqual(2);
 
     await user.click(screen.getByRole('tab', { name: 'Execution info' }));
 
@@ -225,5 +226,8 @@ describe('RequestResultPanel replay source localization', () => {
     expect(screen.getAllByText('캡처에서 열림').length).toBeGreaterThan(0);
   });
 });
+
+
+
 
 

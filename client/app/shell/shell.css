@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   color-scheme: dark;
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: #0f172a;
@@ -289,7 +289,6 @@ body { margin: 0; background: #020617; overflow: hidden; }
   align-items: flex-start;
   gap: 1rem;
 }
-.request-work-surface__badges,
 .request-work-surface__future-actions {
   display: flex;
   flex-wrap: wrap;
@@ -411,18 +410,6 @@ body { margin: 0; background: #020617; overflow: hidden; }
 .request-script-stage-tabs {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
-.request-script-editor__layout {
-  display: grid;
-  grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.1fr);
-  gap: 1rem;
-}
-.request-script-stage-card,
-.request-script-editor,
-.request-script-footer,
-.request-script-loading {
-  display: grid;
-  gap: 1rem;
-}
 .request-script-helper-list {
   margin: 0;
   padding-left: 1.2rem;
@@ -430,10 +417,6 @@ body { margin: 0; background: #020617; overflow: hidden; }
 }
 .request-script-helper-list li + li {
   margin-top: 0.45rem;
-}
-.request-script-editor__meta {
-  display: grid;
-  gap: 0.75rem;
 }
 .request-script-editor__meta p,
 .request-script-example span,
@@ -1205,6 +1188,8 @@ body { margin: 0; background: #020617; overflow: hidden; }
 
 
 /* Shared workspace/request-builder primitive ownership moved to material-theme.css. */
+
+
 
 
 

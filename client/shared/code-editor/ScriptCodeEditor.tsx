@@ -10,6 +10,7 @@ export interface ScriptCodeEditorProps {
   value: string;
   onChange: (nextValue: string) => void;
   onBlur?: () => void;
+  onFocus?: () => void;
   readOnly?: boolean;
   ariaLabel: string;
   placeholder?: string;
@@ -21,6 +22,7 @@ interface MonacoEditorLike {
   getModel?: () => MonacoModelLike | null;
   getValue?: () => string;
   onDidBlurEditorText?: (listener: () => void) => { dispose: () => void };
+  onDidFocusEditorText?: (listener: () => void) => { dispose: () => void };
 }
 
 interface MonacoModelLike {
@@ -83,6 +85,7 @@ export function ScriptCodeEditor({
   value,
   onChange,
   onBlur,
+  onFocus,
   readOnly = false,
   ariaLabel,
   placeholder = '',
@@ -95,9 +98,11 @@ export function ScriptCodeEditor({
   const completionProviderRef = useRef<{ dispose: () => void } | null>(null);
   const extraLibRef = useRef<{ dispose: () => void } | null>(null);
   const blurSubscriptionRef = useRef<{ dispose: () => void } | null>(null);
+  const focusSubscriptionRef = useRef<{ dispose: () => void } | null>(null);
   const profile = useMemo(() => getScriptStageCapabilityProfile(stageId), [stageId]);
   const id = useId().replace(/:/g, '-');
-  const modelPath = `inmemory://request-script-editor/${id}-${stageId}.js`;
+  const modelRootPath = useMemo(() => `inmemory://request-script-editor/${id}`, [id]);
+  const modelPath = `${modelRootPath}/${stageId}.js`;
   const monacoApi = monaco as unknown as MonacoLike;
 
   const applyForbiddenTokenMarkers = useCallback((nextValue: string) => {
@@ -126,7 +131,7 @@ export function ScriptCodeEditor({
     const javascriptDefaults = monacoInstance.languages?.typescript?.javascriptDefaults;
     extraLibRef.current = javascriptDefaults?.addExtraLib?.(
       profile.globalDeclarationSource,
-      `ts:request-script-editor/${id}-${stageId}.d.ts`,
+      `ts:request-script-editor/${id}/${stageId}.d.ts`,
     ) ?? null;
 
     completionProviderRef.current = monacoInstance.languages?.registerCompletionItemProvider?.('javascript', {
@@ -178,12 +183,16 @@ export function ScriptCodeEditor({
   const handleMount = useCallback((editor: MonacoEditorLike, monacoInstance: MonacoLike) => {
     editorRef.current = editor;
     attachStageProviders(editor, monacoInstance);
-    applyForbiddenTokenMarkers(editor.getValue?.() ?? value);
+    applyForbiddenTokenMarkers(editor.getValue?.() ?? '');
     dispose(blurSubscriptionRef);
     blurSubscriptionRef.current = editor.onDidBlurEditorText?.(() => {
       onBlur?.();
     }) ?? null;
-  }, [applyForbiddenTokenMarkers, attachStageProviders, onBlur, value]);
+    dispose(focusSubscriptionRef);
+    focusSubscriptionRef.current = editor.onDidFocusEditorText?.(() => {
+      onFocus?.();
+    }) ?? null;
+  }, [applyForbiddenTokenMarkers, attachStageProviders, onBlur, onFocus]);
 
   const handleChange = useCallback((nextValue: string | undefined) => {
     const resolvedValue = nextValue ?? '';
@@ -199,6 +208,7 @@ export function ScriptCodeEditor({
     dispose(extraLibRef);
     dispose(completionProviderRef);
     dispose(blurSubscriptionRef);
+    dispose(focusSubscriptionRef);
   }, []);
 
   return (
@@ -236,6 +246,7 @@ export function ScriptCodeEditor({
             value={value}
             onChange={(event) => onChange(event.currentTarget.value)}
             onBlur={onBlur}
+            onFocus={onFocus}
             readOnly={readOnly}
             rows={14}
           />
