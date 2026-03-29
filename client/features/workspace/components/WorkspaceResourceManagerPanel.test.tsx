@@ -171,4 +171,21 @@ describe('WorkspaceResourceManagerPanel', () => {
       'Sign in',
     );
   });
+
+  it('shows the companion placement note and transfer/request sections when expanded', () => {
+    renderApp(
+      <WorkspaceResourceManagerPanel
+        {...createProps({
+          activeTab: createActiveTab(),
+          initiallyExpanded: true,
+        })}
+      />,
+    );
+
+    expect(screen.getByText(/Active save placement:/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Authored resource transfer' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Saved request actions' })).toBeInTheDocument();
+  });
 });
+
+

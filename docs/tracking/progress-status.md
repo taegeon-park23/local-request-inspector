@@ -7,6 +7,7 @@
 - **Update Rule:** Update after each active-task status change or verification-state change.
 
 ## Current Snapshot
+- `T108` is archived after promoting the workspace runner into a contextual run surface with dedicated configuration/request-selection tiers, moving the contextual `Run Selected` action into that panel, recasting the saved-resource manager as a lighter companion management surface, and adding focused component coverage for the runner plus updated manager structure.
 - `T107` is archived after removing double-click request pinning from the workspace explorer, adding explicit request pin actions plus row-scoped overflow menus for destructive cleanup, and aligning explorer copy/component coverage with the safer row-action model.
 - `T106` is archived after adding responsive floating-pane tiers to `RoutePanelTabsLayout`, keeping detail visible beside the main surface on desktop widths, collapsing main/detail into a stacked tab lane below the medium breakpoint, and updating shared shell tests to expect the new desktop-wide focused-overlay behavior.
 - `T105` is archived after consolidating shared workspace/request-builder layout primitives into `material-theme.css`, introducing shared `SegmentedControl`/`DialogFooter`/overflow action-menu primitives, reducing the workspace header to one visible top-level `New Request` CTA, stabilizing request key/value multipart rows and create-sheet row recipes, and adding focused component coverage for the new header/tab-shell/settings layouts.

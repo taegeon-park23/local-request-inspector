@@ -33,6 +33,12 @@ async function openNewRequest(user: ReturnType<typeof userEvent.setup>) {
   await user.click(within(sheet).getByRole('button', { name: 'Create' }));
 }
 
+async function openWorkspaceHeaderMenu(user: ReturnType<typeof userEvent.setup>) {
+  const headerActions = screen.getByLabelText('Workspace header actions');
+  await user.click(within(headerActions).getByRole('button', { name: 'More Actions' }));
+  return headerActions;
+}
+
 function getSavedResourceManager() {
   return screen.getByLabelText('Saved resource manager');
 }
@@ -83,7 +89,8 @@ describe('Workspace request builder authoring shell', () => {
     expect(screen.getByLabelText('Request URL')).toBeInTheDocument();
   });
 
-  it('keeps explorer navigation-only while create actions stay in header and transfer stays in the manager surface', () => {
+  it('keeps explorer navigation-only while create actions stay in header and transfer stays in the manager surface', async () => {
+    const user = userEvent.setup();
     renderApp(<AppRouter />);
 
     const explorer = screen.getByLabelText('Section explorer');
@@ -100,8 +107,12 @@ describe('Workspace request builder authoring shell', () => {
     expect(within(manager).getByRole('heading', { name: 'Request groups' })).toBeInTheDocument();
     expect(within(manager).getByRole('heading', { name: 'Saved request actions' })).toBeInTheDocument();
     expect(within(headerActions).getByRole('button', { name: 'New Request' })).toBeInTheDocument();
-    expect(within(headerActions).getByRole('button', { name: 'Quick Request' })).toBeInTheDocument();
-    expect(within(headerActions).getByRole('button', { name: 'New collection' })).toBeInTheDocument();
+    expect(within(headerActions).getByRole('button', { name: 'More Actions' })).toBeInTheDocument();
+    expect(within(headerActions).queryByRole('button', { name: 'Quick Request' })).not.toBeInTheDocument();
+    expect(within(headerActions).queryByRole('button', { name: 'New collection' })).not.toBeInTheDocument();
+    await openWorkspaceHeaderMenu(user);
+    expect(screen.getByRole('button', { name: 'Quick Request' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'New collection' })).toBeInTheDocument();
     expect(within(manager).queryByRole('button', { name: 'Create collection' })).not.toBeInTheDocument();
     expect(within(manager).queryByRole('button', { name: 'New group' })).not.toBeInTheDocument();
     expect(within(manager).getByRole('button', { name: 'Export Resources' })).toBeInTheDocument();
@@ -264,11 +275,11 @@ describe('Workspace request builder authoring shell', () => {
     renderApp(<AppRouter />);
 
     const explorer = screen.getByLabelText('Section explorer');
-    const headerActions = screen.getByLabelText('Workspace header actions');
     await within(explorer).findByText('Saved Requests');
 
     await user.click(within(explorer).getByRole('button', { name: /Saved Requests/ }));
-    await user.click(within(headerActions).getByRole('button', { name: 'New group' }));
+    await openWorkspaceHeaderMenu(user);
+    await user.click(screen.getByRole('button', { name: 'New group' }));
 
     expect(await within(explorer).findByText('Auth flows')).toBeInTheDocument();
     expect(await within(getSavedResourceManager()).findByText('Created request group Auth flows in the canonical saved tree.')).toBeInTheDocument();
@@ -379,10 +390,10 @@ describe('Workspace request builder authoring shell', () => {
     renderApp(<AppRouter />);
 
     const explorer = screen.getByLabelText('Section explorer');
-    const headerActions = screen.getByLabelText('Workspace header actions');
     await within(explorer).findByText('Saved Requests');
 
-    await user.click(within(headerActions).getByRole('button', { name: 'New collection' }));
+    await openWorkspaceHeaderMenu(user);
+    await user.click(screen.getByRole('button', { name: 'New collection' }));
 
     expect(await within(explorer).findByText('Team API')).toBeInTheDocument();
     expect(await within(getSavedResourceManager()).findByText('Created collection Team API in the canonical saved tree.')).toBeInTheDocument();
@@ -2638,4 +2649,6 @@ describe('Workspace request builder authoring shell', () => {
     expect(within(detailPanel).getByText('아직 실행 정보가 없습니다')).toBeInTheDocument();
   });
 });
+
+
 

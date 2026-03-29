@@ -36,6 +36,7 @@ import {
   type CreateType,
 } from '@client/features/workspace/components/WorkspaceCreateSheet';
 import { WorkspaceHeaderActions } from '@client/features/workspace/components/WorkspaceHeaderActions';
+import { WorkspaceRunnerPanel } from '@client/features/workspace/components/WorkspaceRunnerPanel';
 import {
   WorkspaceResourceManagerPanel,
   type WorkspaceResourceManagerStatus,
@@ -1797,143 +1798,43 @@ export function WorkspaceRoute() {
         />
 
         {selectedRunnerContainer ? (
-          <section className="workspace-surface-card workspace-runner-panel" aria-label={t('workspaceRoute.runner.ariaLabel')}>
-            <header className="workspace-runner-panel__header">
-              <div>
-                <h3>{t('workspaceRoute.runner.title')}</h3>
-                <p>
-                  {t('workspaceRoute.runner.description', {
-                    name: selectedRunnerContainer.containerName,
-                  })}
-                </p>
-              </div>
-              <div className="workspace-runner-panel__actions">
-                <button
-                  type="button"
-                  className="workspace-button workspace-button--secondary"
-                  onClick={handleSelectAllRunnerRequests}
-                  disabled={runnerContainerRequestIds.length === 0 || runnerOrderedSelectedRequestIds.length === runnerContainerRequestIds.length}
-                >
-                  {t('workspaceRoute.runner.actions.selectAll')}
-                </button>
-                <button
-                  type="button"
-                  className="workspace-button workspace-button--secondary"
-                  onClick={handleClearRunnerRequestSelection}
-                  disabled={runnerOrderedSelectedRequestIds.length === 0}
-                >
-                  {t('workspaceRoute.runner.actions.clearSelection')}
-                </button>
-              </div>
-            </header>
-
-            <div className="workspace-runner-panel__grid">
-              <label className="request-field">
-                <span>{t('workspaceRoute.runner.fields.executionOrder')}</span>
-                <select
-                  value={runnerExecutionOrder}
-                  onChange={(event) => {
-                    const nextOrder = event.currentTarget.value as NonNullable<WorkspaceBatchRunInput['executionOrder']>;
-                    setRunnerConfig((current) => ({
-                      ...current,
-                      executionOrder: nextOrder,
-                    }));
-                  }}
-                >
-                  <option value="depth-first-sequential">{t('workspaceRoute.runner.options.depthFirstSequential')}</option>
-                </select>
-              </label>
-
-              <label className="request-field">
-                <span>{t('workspaceRoute.runner.fields.environment')}</span>
-                <select
-                  value={runnerEnvironmentSelection}
-                  onChange={(event) => setRunnerConfig((current) => ({
-                    ...current,
-                    environmentSelection: event.currentTarget.value,
-                  }))}
-                >
-                  <option value={RUNNER_ENVIRONMENT_INHERIT}>{t('workspaceRoute.runner.options.inheritEnvironment')}</option>
-                  <option value={RUNNER_ENVIRONMENT_NONE}>{t('workspaceRoute.runner.options.noEnvironment')}</option>
-                  {runnerEnvironmentOptions.map((environment) => (
-                    <option key={environment.id} value={environment.id}>
-                      {environment.isDefault
-                        ? `${environment.name} (${t('workspaceRoute.requestBuilder.environment.defaultBadge')})`
-                        : environment.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="request-field">
-                <span>{t('workspaceRoute.runner.fields.iterationCount')}</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={RUNNER_MAX_ITERATION_COUNT}
-                  step={1}
-                  value={runnerIterationInput}
-                  onChange={(event) => setRunnerConfig((current) => ({
-                    ...current,
-                    iterationInput: event.currentTarget.value,
-                  }))}
-                />
-              </label>
-
-              <label className="request-field">
-                <span>{t('workspaceRoute.runner.fields.dataFilePath')}</span>
-                <input
-                  type="text"
-                  value={runnerDataFilePath}
-                  placeholder={t('workspaceRoute.runner.values.dataFilePathPlaceholder')}
-                  onChange={(event) => setRunnerConfig((current) => ({
-                    ...current,
-                    dataFilePath: event.currentTarget.value,
-                  }))}
-                />
-              </label>
-            </div>
-
-            <label className="workspace-runner-panel__checkbox">
-              <input
-                type="checkbox"
-                checked={runnerContinueOnError}
-                onChange={(event) => setRunnerConfig((current) => ({
-                  ...current,
-                  continueOnError: event.currentTarget.checked,
-                }))}
-              />
-              <span>{t('workspaceRoute.runner.fields.continueOnError')}</span>
-            </label>
-
-            <p className="workspace-runner-panel__selection-copy">
-              {t('workspaceRoute.runner.selectionSummary', {
-                selected: runnerOrderedSelectedRequestIds.length,
-                total: runnerContainerRequestIds.length,
-              })}
-            </p>
-            {selectedRunnerContainer.requests.length > 0 ? (
-              <ul className="workspace-runner-panel__request-list" aria-label={t('workspaceRoute.runner.requestListAriaLabel')}>
-                {selectedRunnerContainer.requests.map((request) => (
-                  <li key={`runner-request-${request.id}`}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={runnerOrderedSelectedRequestIds.includes(request.id)}
-                        onChange={() => handleToggleRunnerRequestSelection(request.id)}
-                      />
-                      <span>
-                        <span className="workspace-runner-panel__request-method">{request.methodLabel}</span>
-                        {request.name}
-                      </span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="workspace-runner-panel__empty-copy">{t('workspaceRoute.runner.values.noRequests')}</p>
-            )}
-          </section>
+          <WorkspaceRunnerPanel
+            container={selectedRunnerContainer}
+            selectedRequestIds={runnerOrderedSelectedRequestIds}
+            executionOrder={runnerExecutionOrder}
+            environmentSelection={runnerEnvironmentSelection}
+            iterationInput={runnerIterationInput}
+            dataFilePath={runnerDataFilePath}
+            continueOnError={runnerContinueOnError}
+            environmentOptions={runnerEnvironmentOptions}
+            inheritEnvironmentValue={RUNNER_ENVIRONMENT_INHERIT}
+            noEnvironmentValue={RUNNER_ENVIRONMENT_NONE}
+            maxIterationCount={RUNNER_MAX_ITERATION_COUNT}
+            onSelectAll={handleSelectAllRunnerRequests}
+            onClearSelection={handleClearRunnerRequestSelection}
+            onRunSelected={handleRunSelectedContainer}
+            onToggleRequest={handleToggleRunnerRequestSelection}
+            onExecutionOrderChange={(nextOrder) => setRunnerConfig((current) => ({
+              ...current,
+              executionOrder: nextOrder,
+            }))}
+            onEnvironmentSelectionChange={(nextSelection) => setRunnerConfig((current) => ({
+              ...current,
+              environmentSelection: nextSelection,
+            }))}
+            onIterationInputChange={(nextValue) => setRunnerConfig((current) => ({
+              ...current,
+              iterationInput: nextValue,
+            }))}
+            onDataFilePathChange={(nextValue) => setRunnerConfig((current) => ({
+              ...current,
+              dataFilePath: nextValue,
+            }))}
+            onContinueOnErrorChange={(nextValue) => setRunnerConfig((current) => ({
+              ...current,
+              continueOnError: nextValue,
+            }))}
+          />
         ) : null}
 
         <WorkspaceCreateSheet
@@ -2013,6 +1914,8 @@ export function WorkspaceRoute() {
     />
   );
 }
+
+
 
 
 

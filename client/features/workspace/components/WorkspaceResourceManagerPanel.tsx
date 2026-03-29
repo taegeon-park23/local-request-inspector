@@ -278,25 +278,32 @@ export function WorkspaceResourceManagerPanel({
 
   return (
     <section
-      className="workspace-resource-manager workspace-surface-card"
+      className="workspace-resource-manager workspace-surface-card workspace-surface-card--muted"
       aria-label={t('workspaceRoute.management.ariaLabel')}
       data-expanded={isExpanded ? 'true' : 'false'}
     >
-      <header className="workspace-resource-manager__header management-detail__header">
-        <div className="workspace-resource-manager__header-copy">
+      <header className="workspace-resource-manager__header workspace-panel-header management-detail__header">
+        <div className="workspace-resource-manager__header-copy workspace-panel-header__copy">
           <p className="section-placeholder__eyebrow">{t('workspaceRoute.management.header.eyebrow')}</p>
           <h2>{t('workspaceRoute.management.header.title')}</h2>
+          <p className="management-detail__header-meta">{t('workspaceRoute.management.header.summary')}</p>
         </div>
-        <div className="workspace-resource-manager__header-actions">
-          <button
-            type="button"
-            className="workspace-button workspace-button--secondary workspace-resource-manager__header-toggle"
-            aria-expanded={isExpanded}
-            aria-controls={panelBodyId}
-            onClick={() => setIsExpanded((current) => !current)}
-          >
-            <IconLabel icon="overview">{toggleLabel}</IconLabel>
-          </button>
+        <div className="workspace-resource-manager__header-side">
+          <div className="workspace-resource-manager__badge-rail management-detail__badge-rail request-work-surface__badges">
+            <span className="workspace-chip">{t('workspaceRoute.management.badges.savedTree')}</span>
+            <span className="workspace-chip workspace-chip--secondary">{t('workspaceRoute.management.badges.mainSurface')}</span>
+          </div>
+          <div className="workspace-resource-manager__header-actions">
+            <button
+              type="button"
+              className="workspace-button workspace-button--secondary workspace-resource-manager__header-toggle"
+              aria-expanded={isExpanded}
+              aria-controls={panelBodyId}
+              onClick={() => setIsExpanded((current) => !current)}
+            >
+              <IconLabel icon="overview">{toggleLabel}</IconLabel>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -308,24 +315,21 @@ export function WorkspaceResourceManagerPanel({
             : 'workspace-resource-manager__content workspace-resource-manager__content--collapsed'
         }
       >
-        <p className="management-detail__header-meta">{t('workspaceRoute.management.header.summary')}</p>
-        <p className="shared-readiness-note workspace-resource-manager__placement-note">
-          {activePlacementPath
-            ? t('workspaceRoute.management.state.activePlacement', { path: activePlacementPath })
-            : t('workspaceRoute.management.state.noActivePlacement')}
-        </p>
-        <div className="workspace-resource-manager__badge-rail management-detail__badge-rail request-work-surface__badges">
-          <span className="workspace-chip">{t('workspaceRoute.management.badges.savedTree')}</span>
-          <span className="workspace-chip workspace-chip--secondary">{t('workspaceRoute.management.badges.mainSurface')}</span>
+        <div className="workspace-resource-manager__intro">
+          <p className="workspace-inline-note workspace-resource-manager__placement-note">
+            {activePlacementPath
+              ? t('workspaceRoute.management.state.activePlacement', { path: activePlacementPath })
+              : t('workspaceRoute.management.state.noActivePlacement')}
+          </p>
         </div>
 
         <div className="workspace-resource-manager__grid">
-        <section className="workspace-resource-manager__section workspace-resource-manager__section--transfer">
+        <section className="workspace-resource-manager__section workspace-resource-manager__section--transfer workspace-resource-manager__section--wide">
           <div className="workspace-resource-manager__section-copy">
             <h3>{t('workspaceRoute.management.sections.transferTitle')}</h3>
             <p>{t('workspaceRoute.management.sections.transferDescription')}</p>
           </div>
-          <div className="request-work-surface__future-actions workspace-resource-manager__actions">
+          <div className="shared-action-bar workspace-resource-manager__actions">
             <button
               type="button"
               className="workspace-button workspace-button--secondary"
@@ -363,7 +367,7 @@ export function WorkspaceResourceManagerPanel({
               />
             </label>
           </div>
-          <p className="shared-readiness-note">{t('workspaceRoute.management.state.transferBoundary')}</p>
+          <p className="workspace-inline-note">{t('workspaceRoute.management.state.transferBoundary')}</p>
           {transferStatus ? (
             <div
               className={`workspace-explorer__status workspace-explorer__status--${transferStatus.tone} workspace-resource-manager__status`}
@@ -455,7 +459,7 @@ export function WorkspaceResourceManagerPanel({
               })}
             />
           </label>
-          <div className="request-work-surface__future-actions workspace-resource-manager__actions">
+          <div className="shared-action-bar workspace-resource-manager__actions">
             <button
               type="button"
               className="workspace-button workspace-button--secondary"
@@ -560,7 +564,7 @@ export function WorkspaceResourceManagerPanel({
               })}
             />
           </label>
-          <div className="request-work-surface__future-actions workspace-resource-manager__actions">
+          <div className="shared-action-bar workspace-resource-manager__actions">
             <button
               type="button"
               className="workspace-button workspace-button--secondary"
@@ -610,7 +614,7 @@ export function WorkspaceResourceManagerPanel({
           ) : null}
         </section>
 
-        <section className="workspace-resource-manager__section">
+        <section className="workspace-resource-manager__section workspace-resource-manager__section--wide">
           <div className="workspace-resource-manager__section-copy">
             <h3>{t('workspaceRoute.management.sections.requestTitle')}</h3>
             <p>{t('workspaceRoute.management.sections.requestDescription')}</p>
@@ -632,7 +636,7 @@ export function WorkspaceResourceManagerPanel({
             ]}
           />
           {activeSavedRequest ? (
-            <div className="request-work-surface__future-actions workspace-resource-manager__actions">
+            <div className="shared-action-bar workspace-resource-manager__actions">
               <button
                 type="button"
                 className="workspace-button workspace-button--secondary"
@@ -651,7 +655,7 @@ export function WorkspaceResourceManagerPanel({
               </button>
             </div>
           ) : null}
-          <p className="shared-readiness-note">
+          <p className="workspace-inline-note">
             {activeSavedRequest
               ? t('workspaceRoute.management.state.requestSelected', { name: activeSavedRequest.name })
               : isDetachedDraft
@@ -681,3 +685,8 @@ export function WorkspaceResourceManagerPanel({
     </section>
   );
 }
+
+
+
+
+

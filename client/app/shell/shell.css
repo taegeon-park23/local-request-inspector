@@ -338,7 +338,6 @@ body { margin: 0; background: #020617; overflow: hidden; }
   padding: 1rem;
   background: #111c34;
 }
-.workspace-surface-card--muted { background: #0b1220; }
 .workspace-detail-panel {
   display: grid;
   gap: 1rem;
@@ -1206,4 +1205,6 @@ body { margin: 0; background: #020617; overflow: hidden; }
 
 
 /* Shared workspace/request-builder primitive ownership moved to material-theme.css. */
+
+
 

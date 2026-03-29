@@ -259,6 +259,12 @@ export const workspaceRouteMessagesEn = {
         selectAll: 'Select all',
         clearSelection: 'Clear selection',
       },
+      sections: {
+        configurationTitle: 'Run configuration',
+        configurationDescription: 'Keep batch controls together here before opening the contextual run action.',
+        selectionTitle: 'Requests in scope',
+        selectionDescription: 'Choose which saved requests from {name} should remain in the next batch run.',
+      },
       selectionSummary: 'Request selection: {selected} / {total}',
       requestListAriaLabel: 'Runner request selection list',
       values: {
@@ -1401,6 +1407,12 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
         selectAll: '전체 선택',
         clearSelection: '선택 해제',
       },
+      sections: {
+        configurationTitle: '실행 구성',
+        configurationDescription: '다음 배치 실행 전에 실행 제어를 이 영역에서 함께 조정합니다.',
+        selectionTitle: '범위 내 요청',
+        selectionDescription: '{name}에서 다음 배치 실행에 포함할 저장 요청을 선택합니다.',
+      },
       selectionSummary: '요청 선택: {selected} / {total}',
       requestListAriaLabel: '러너 요청 선택 목록',
       values: {
@@ -2278,6 +2290,10 @@ export const workspaceRouteMessagesKo: CatalogShape<typeof workspaceRouteMessage
     },
   },
 };
+
+
+
+
 
 
 

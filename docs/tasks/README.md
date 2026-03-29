@@ -2,7 +2,7 @@
 
 - **Purpose:** Describe the active-task-only contract for `docs/tasks/`.
 - **Created:** 2026-03-18
-- **Last Updated:** 2026-03-25
+- **Last Updated:** 2026-03-29
 - **Related Documents:** `../tracking/master-task-board.md`, `../tracking/priority-roadmap.md`, `../tracking/completed-work-summary.md`
 - **Update Rule:** Update when the task-document contract changes.
 
